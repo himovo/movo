@@ -1,4 +1,4 @@
-# MOVO Open Source Productization Strategy
+# MOVO Community Source Productization Strategy
 
 本文档沉淀 MOVO 开源产品化方向的核心判断。重点不是把现有能力包装成通用工作流平台，而是围绕企业真实任务现场，明确 MOVO 与 Dify 类产品的差异、用户使用路径、部署形态和后续工程拆分节奏。
 
@@ -149,55 +149,29 @@ MOVO 不应该直接复制这条路线。MOVO 的差异应集中在以下方向�
 6. 执行中遇到不确定点可人工接管。
 7. 人工纠偏沉淀为后续策略。
 
-## 6. 开源仓库组织建议
+## 6. 社区源码仓库组织
 
-第一阶段建议采用 monorepo，不建议过早拆成多个 Git 仓库。原因：
+第一阶段采用独立 monorepo，由 ASKAI 云服务和未来企业版锁定具体 MOVO
+提交并基于其构建。社区仓库不继承 ASKAI 的 Git 历史。
 
-- 前后端、桌面端、runtime、browser、skills 仍在强耦合演进期。
-- 多仓库会增加版本匹配和部署文档复杂度。
-- 开源用户更关心一条命令能不能跑起来。
-
-推荐目录形态：
-
-```text
-movo/
-  backend/                  # 现有后端，后续可命名为 runtime-api
-  frontend/                 # Web 端，第一阶段可同时承载用户端和管理端
-  desktop/                  # 桌面端 / 本地浏览器桥
-  docs/
-  deploy/
-    docker-compose/
-    helm/
-  examples/
-  packages/
-    sdk-js/
-    sdk-python/
-    shared-types/
-    skill-spec/
-```
-
-更成熟后的目标形态：
+当前实际发布目录为：
 
 ```text
 movo/
   apps/
-    web/                    # 用户端 + 管理端 Web
-    desktop/
+    user-web/               # 用户工作台
+    admin-web/              # 初始化与管理后台
   services/
-    runtime-api/
-    worker/
-    sandbox-gateway/
-  packages/
-    sdk-js/
-    sdk-python/
-    shared-types/
-    skill-spec/
-  deploy/
+    chat-api/               # 对话、任务、Agent、Skill 与 DSH Gateway
+    admin-api/              # 组织、用户、模型与平台管理
+    document-parser/        # 文档 API 与异步 Worker
+  deploy/                   # Bootstrap 与统一网关
   docs/
-  examples/
 ```
 
-注意：产品上可以区分用户端和管理端，但工程上第一阶段不必拆成两个 Web 容器或两个 API 服务。
+社区仓库明确不发布桌面客户端、本地浏览器 Sidecar、官网、CRM 示例以及云服务或
+企业版 Overlay。当前服务之间仍有直接导入关系，因此第一阶段保留可独立构建和运行
+的完整服务端闭环；后续商业边界重构必须先增加接口和回归测试，再删除重复实现。
 
 ## 7. Docker 部署形态
 

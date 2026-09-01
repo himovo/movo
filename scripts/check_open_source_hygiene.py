@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -11,10 +12,30 @@ BLOCKED_PARTS = (
     "services/admin-api/data/admin-static/",
     "apps/official-website/docs/.vitepress/cache/",
 )
+BLOCKED_PREFIXES = (
+    "apps/desktop-electron/",
+    "apps/local-browser-agent/",
+    "apps/official-website/",
+    "apps/crm/",
+    "services/crm-service/",
+)
 PRIVATE_MARKERS = (
     "master.test.askbot.cn",
     "askbot2.openai.azure.com",
     "agentic_register@mail.guoranbot.com",
+)
+SECRET_PATTERNS = (
+    (re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"), "private key"),
+    (re.compile(r"\bAKIA[0-9A-Z]{16}\b"), "AWS access key"),
+)
+REQUIRED_ROOT_FILES = (
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "SUPPORT.md",
+    "CODE_OF_CONDUCT.md",
 )
 
 
@@ -27,17 +48,30 @@ def tracked_files() -> list[str]:
 
 def main() -> int:
     failures: list[str] = []
-    for relative in tracked_files():
+    tracked = tracked_files()
+    tracked_set = set(tracked)
+    for required in REQUIRED_ROOT_FILES:
+        if required not in tracked_set:
+            failures.append(f"required publication file is not tracked: {required}")
+    for relative in tracked:
         if relative == "scripts/check_open_source_hygiene.py":
             continue
         normalized = relative.replace("\\", "/")
         name = Path(relative).name
+        if normalized.startswith(BLOCKED_PREFIXES):
+            failures.append(f"blocked non-community source: {relative}")
         if name.startswith(".env") and name != ".env.example":
             failures.append(f"tracked environment file: {relative}")
         if any(part in normalized for part in BLOCKED_PARTS):
             failures.append(f"tracked generated/runtime data: {relative}")
 
         path = ROOT / relative
+        if path.is_symlink():
+            try:
+                path.resolve(strict=True).relative_to(ROOT.resolve())
+            except (OSError, ValueError):
+                failures.append(f"symlink escapes repository: {relative}")
+            continue
         if path.stat().st_size > 2 * 1024 * 1024:
             continue
         try:
@@ -47,6 +81,9 @@ def main() -> int:
         for marker in PRIVATE_MARKERS:
             if marker in content:
                 failures.append(f"private deployment marker {marker!r}: {relative}")
+        for pattern, label in SECRET_PATTERNS:
+            if pattern.search(content):
+                failures.append(f"possible {label}: {relative}")
 
     if failures:
         print("Open-source hygiene check failed:")

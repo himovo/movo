@@ -1,0 +1,50 @@
+name: Bug report
+description: Report a reproducible Community Edition defect.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include credentials, private documents or vulnerability details.
+  - type: input
+    id: version
+    attributes:
+      label: MOVO commit or release
+      placeholder: git rev-parse HEAD
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Docker deployment
+        - User Web
+        - Admin Web
+        - Chat API
+        - Admin API
+        - Document processing
+        - DSH Runtime Host
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Include the expected and actual behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment and sanitized logs
+      description: Include OS, Docker and Compose versions. Remove all secrets and private data.
+    validations:
+      required: true

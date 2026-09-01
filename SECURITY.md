@@ -1,8 +1,10 @@
 # Security Policy
 
-Please do not disclose suspected vulnerabilities in public issues. Report them
-privately to the project maintainers and include the affected version, impact,
-reproduction steps, and any suggested mitigation.
+Please do not disclose suspected vulnerabilities in public issues. Use GitHub's
+private vulnerability reporting feature for this repository. If that feature is
+not available, contact a maintainer privately before sharing details. Include
+the affected commit or release, impact, reproduction steps and any suggested
+mitigation, but never include real credentials or customer data.
 
 Self-hosted operators are responsible for TLS termination, network access
 controls, backups, and rotating every credential used by their deployment.

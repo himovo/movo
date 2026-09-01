@@ -1,46 +1,62 @@
-# MOVO Multi-Agent Platform
+# MOVO Community Edition
 
-> A specialized multi-agent platform for complex tasks.
-> **Version**: MVP 0.1.0
+MOVO is a goal-driven agent platform for enterprise tasks. Users describe the
+desired result; MOVO plans the work, invokes models and tools, processes
+documents, requests approval for risky actions, and returns traceable outputs.
 
-## Directory Structure
+This repository contains the self-hosted Community Edition. It is the shared
+source foundation used by MOVO cloud and future enterprise distributions.
 
-- `apps/user-web/`: Vue 3 + Vite user-facing application
-- `apps/admin-web/`: Vue 3 + Vite admin application
-- `apps/desktop-electron/`: Electron desktop shell with embedded Chromium
-- `apps/local-browser-agent/`: native-CDP desktop browser automation sidecar
-- `services/chat-api/`: Python FastAPI service (Agent Runtime)
-- `services/admin-api/`: Python FastAPI admin/control-plane service
-- `services/document-parser/`: document parsing and preview service
-- `docs/`: Requirements and Architecture documentation
+## Included components
 
-## Quick Start (Dev)
+| Path | Component |
+|---|---|
+| `apps/user-web/` | Vue 3 user workspace |
+| `apps/admin-web/` | Vue 3 setup and administration console |
+| `services/chat-api/` | FastAPI conversation, task, Agent, Skill and DSH gateway |
+| `services/chat-api/dsh/runtime-host/` | Node.js DSH Runtime Host |
+| `services/admin-api/` | FastAPI organization, user, model and platform management API |
+| `services/document-parser/` | Document parsing, preview, retrieval API and worker |
+| `deploy/` | Bootstrap and gateway configuration |
 
-### Prerequisites
-- Docker & Docker Compose
-- Python 3.10+ (for local logic dev)
-- Node.js 20+ (for local UI dev)
+The proprietary desktop client, local browser sidecar, official website and
+commercial CRM examples are not included in this repository.
 
-## Self-Hosted Quick Start
+## Community Edition behavior
 
-Only Docker and Docker Compose v2 are required. From the repository root run:
+A tenant created by the self-hosted setup flow is marked as `community`:
+
+- no member-count limit;
+- billing is disabled;
+- self-managed model connections are enabled;
+- data and runtime services remain in the operator's deployment.
+
+Cloud plan limits are not used to determine Community Edition entitlements.
+
+## Quick start
+
+### Requirements
+
+- Docker Desktop, or Docker Engine with Docker Compose v2
+- at least 8 GB of available memory; document-model image construction may
+  require more during the first build
+
+Clone the repository and run:
 
 ```bash
 chmod +x movo
 ./movo up
 ```
 
-The launcher displays the MOVO logo, starts the complete Compose stack, waits for
-the deployment checks, and prints the browser setup address:
+MOVO waits for the deployment health checks and prints the setup URL:
 
 ```text
 http://localhost:3000/admin/setup
 ```
 
-Complete the organization, initial accounts, and default model connection test
-in the browser. Credentials are encrypted before storage. The completion page
-then shows the employee Web, admin portal, and desktop enterprise-service
-addresses.
+The first build downloads Node, Python, Playwright, LibreOffice, Docling and
+model dependencies and can take several minutes. Later starts reuse Docker
+images and caches.
 
 Useful commands:
 
@@ -48,111 +64,96 @@ Useful commands:
 ./movo status
 ./movo logs chat-api
 ./movo restart
-./movo down       # Stops containers and preserves data volumes
+./movo down       # Preserve data volumes
+./movo down -v    # Permanently remove MOVO data volumes
 ```
 
-The CLI always uses English by default, regardless of the operating-system
-language. Chinese can be selected explicitly with `--lang` or `MOVO_LANG`:
+To use a different port or public URL:
 
 ```bash
-./movo --lang en up
-./movo --lang zh-CN up
-MOVO_LANG=zh-CN ./movo down
+cp .env.example .env
 ```
 
-The native command remains supported:
-
-```bash
-docker compose up -d
-```
-
-For a public domain, copy `.env.example` to `.env` and configure
-`PUBLIC_BASE_URL=https://ai.company.com` before startup. DNS, HTTPS certificates,
-and the external reverse proxy remain deployment-environment responsibilities.
-
-### Quick Start (Local Development)
-
-Since you prefer local development, here is how to start the platform without Docker.
-
-#### 0. One-Click Startup (Recommended)
-You can start both backend and frontend with a single command:
-```bash
-./dev.sh
-```
-
-#### 1. Start Backend
-
-**Option A: Using Standard Pip (Recommended)**
-```bash
-cd services/chat-api
-python3 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-```
-
-**Option B: Using Poetry (Compatibility metadata)**
-```bash
-cd services/chat-api
-poetry install
-poetry run uvicorn app.main:app --reload --port 8000
-```
-
-#### 2. Start Frontend
-Open a new terminal:
-```bash
-cd apps/user-web
-npm install
-npm run dev
-```
-
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000/docs
-
-#### 3. Start Electron Desktop
-```bash
-cd apps/desktop-electron
-npm install
-npm run dev
-```
-
-### Backend Logging
-
-The backend uses structured request-aware logging. `backend.log` is local-only
-and is written only when enabled in `services/chat-api/.env`:
+Then edit `.env`:
 
 ```env
-LOG_LEVEL=INFO
-LOG_FILE_ENABLED=true
-LOG_FILE_PATH=backend.log
-LOG_FILE_FORMAT=json
-LOG_CONSOLE_PRETTY=true
-LOG_DEBUG_PAYLOADS=false
+MOVO_PORT=3000
+PUBLIC_BASE_URL=https://movo.example.com
 ```
 
-Useful lookups:
+TLS certificates, DNS and the external reverse proxy remain the deployment
+operator's responsibility.
+
+## Services
+
+The default Compose deployment contains 12 services:
+
+- gateway, user-web and admin-web;
+- chat-api and dsh-runtime-host;
+- admin-api;
+- document-api and document-worker;
+- mongo, redis and weaviate;
+- one-time bootstrap secret initialization.
+
+MongoDB, Redis, Weaviate, generated files, document data, DSH state and
+deployment secrets are stored in named Docker volumes.
+
+## Local development
+
+The Docker deployment is the supported full-stack path. For focused local
+development, install only the dependencies for the component being changed.
 
 ```bash
-grep '"request_id":"<id>"' services/chat-api/backend.log
-grep '"session_id":"<id>"' services/chat-api/backend.log
-grep '"event":"request.heartbeat"' services/chat-api/backend.log
-grep '"level":"ERROR"' services/chat-api/backend.log
+# Chat API
+cd services/chat-api
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+
+# User Web
+cd apps/user-web
+npm ci
+npm run dev
+
+# Admin Web
+cd apps/admin-web
+npm ci --legacy-peer-deps
+npm run dev
 ```
 
-Large debug payloads are not written to the main log by default. When
-`LOG_DEBUG_PAYLOADS=true`, payloads are written under
-`services/chat-api/static/debug_snapshots/...` and the log records the artifact path.
+## Verification
 
-## Backend Docker Image
-
-Build and push the backend production image for the test cluster:
+Before publishing or submitting a change, run the relevant checks:
 
 ```bash
-./services/chat-api/scripts/build_push_image.sh
+python3 scripts/check_open_source_hygiene.py
+python3 -m compileall -q services/chat-api/app services/admin-api/app services/document-parser/app
+docker compose config --quiet
 ```
 
-Optional overrides:
+The production frontends and services can be verified with:
 
 ```bash
-REGISTRY=ghcr.io/your-org IMAGE_NAME=movo-backend IMAGE_TAG=latest PUSH=true ./services/chat-api/scripts/build_push_image.sh
+docker compose build user-web admin-web dsh-runtime-host
+docker compose build chat-api admin-api document-api document-worker
 ```
+
+## Documentation and support
+
+- Product direction and deployment decisions: `docs/open-source-productization/`
+- Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Security policy: [SECURITY.md](SECURITY.md)
+- Community support policy: [SUPPORT.md](SUPPORT.md)
+
+## License
+
+MOVO is source-available under the [MOVO Community License](LICENSE), based on
+Apache License 2.0 with additional conditions. Without written authorization,
+the license does not permit operating a hosted multi-tenant SaaS offering or
+removing/modifying the MOVO logo and copyright notices in the included
+frontends.
+
+These additional restrictions mean that the MOVO Community License is not the
+unmodified Apache License 2.0 and should not be represented as an OSI-approved
+open-source license.

@@ -1,0 +1,47 @@
+# MOVO Community License
+
+MOVO is made available under the Apache License, Version 2.0, subject to the
+additional conditions below. If an additional condition conflicts with the
+Apache License, the additional condition controls for MOVO.
+
+## Additional conditions
+
+1. Commercial use is permitted, including internal enterprise deployment,
+   secondary development, delivery as part of an enterprise solution, and use
+   as a backend for another application. A separate written commercial license
+   from MOVO is required for either of the following uses:
+
+   a. **Multi-tenant SaaS.** You may not use MOVO or a derivative work to
+      provide a hosted multi-tenant software-as-a-service offering to third
+      parties. For this condition, a tenant is an organization or workspace
+      whose data and configuration are logically separated from those of other
+      organizations or workspaces in the same hosted service. Separate
+      single-tenant deployments operated for different customers are not a
+      multi-tenant service under this definition.
+
+   b. **Logo and copyright notices.** When using or distributing the MOVO
+      frontends, you may not remove, obscure, replace, or modify the MOVO logo
+      or MOVO copyright notices. The frontends are the source under
+      `apps/user-web/` and `apps/admin-web/`, and the container images built
+      from those directories. This condition does not apply to uses that do
+      not include either frontend.
+
+2. By intentionally submitting a contribution for inclusion in MOVO, you
+   agree that:
+
+   a. the contribution may be used in MOVO's commercial products and services;
+      and
+
+   b. MOVO may make future versions of this license more or less restrictive.
+      A license change does not retroactively alter the license already granted
+      for an earlier published version.
+
+Except for these additional conditions, the rights and restrictions of the
+Apache License, Version 2.0 apply. The Apache License, Version 2.0 is available
+at https://www.apache.org/licenses/LICENSE-2.0.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied. See the Apache License, Version 2.0 for the
+specific language governing permissions and limitations.
+
+Copyright 2026 MOVO
