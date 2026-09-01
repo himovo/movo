@@ -16,7 +16,7 @@
     "@codemirror/view": "^6.43.3",
     "axios": "1.7.9",
     "codemirror": "^6.0.2",
-    "naive-ui": "2.40.3",
+    "naive-ui": "2.45.3",
     "pdfjs-dist": "^5.6.205",
     "pinia": "2.3.1",
     "vue": "3.4.38",
