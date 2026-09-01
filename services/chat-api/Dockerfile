@@ -31,7 +31,8 @@ RUN if [ "${INSTALL_SYSTEM_DEPS_AT_BUILD}" = "true" ]; then \
 COPY requirements.txt /tmp/requirements.txt
 
 RUN python -m pip install --progress-bar off --upgrade pip setuptools wheel \
-    && python -m pip install --progress-bar off -r /tmp/requirements.txt
+    && python -m pip install --progress-bar off -r /tmp/requirements.txt \
+    && find /usr/local/lib/python3.10/ensurepip/_bundled -name 'setuptools-*.whl' -delete
 
 ARG INSTALL_PLAYWRIGHT_AT_BUILD=false
 ARG PLAYWRIGHT_WITH_DEPS=false

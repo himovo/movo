@@ -62,7 +62,8 @@ RUN if [ "${INSTALL_PYTHON_DEPS_AT_BUILD}" = "true" ]; then \
                 echo "Unsupported PYTORCH_ACCELERATOR=${PYTORCH_ACCELERATOR}" >&2; exit 2 ;; \
         esac \
         && python -m pip install --progress-bar off -r /tmp/requirements.txt \
-        && python -m pip install --progress-bar off --prefer-binary -r /tmp/requirements-docling.txt; \
+        && python -m pip install --progress-bar off --prefer-binary -r /tmp/requirements-docling.txt \
+        && find /usr/local/lib/python3.10/ensurepip/_bundled -name 'setuptools-*.whl' -delete; \
     else \
         echo "Skip Python dependencies in build stage (INSTALL_PYTHON_DEPS_AT_BUILD=false)"; \
     fi \

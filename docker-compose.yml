@@ -300,7 +300,7 @@ services:
       retries: 20
 
   gateway:
-    image: nginx:1.27-alpine
+    image: nginx:1.29.8-alpine
     restart: unless-stopped
     ports:
       - "${MOVO_PORT:-${ASKAI_PORT:-3000}}:80"
