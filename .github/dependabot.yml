@@ -25,7 +25,27 @@ updates:
     schedule:
       interval: weekly
   - package-ecosystem: docker
-    directory: /
+    directory: /apps/user-web
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /apps/admin-web
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /services/chat-api
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /services/admin-api
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /services/document-parser
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /services/chat-api/dsh/runtime-host
     schedule:
       interval: weekly
   - package-ecosystem: github-actions
