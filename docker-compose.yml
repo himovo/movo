@@ -355,21 +355,21 @@ networks:
     internal: true
 
 volumes:
-  # Keep the historical physical names so upgrading the public Compose project
-  # name does not detach an existing installation from its persisted data.
+  # Community installations use their own physical volumes. Override the
+  # prefix for an isolated validation run without touching another install.
   deployment-secrets:
-    name: askai_deployment-secrets
+    name: ${MOVO_VOLUME_PREFIX:-movo}_deployment-secrets
   mongo-data:
-    name: askai_mongo-data
+    name: ${MOVO_VOLUME_PREFIX:-movo}_mongo-data
   redis-data:
-    name: askai_redis-data
+    name: ${MOVO_VOLUME_PREFIX:-movo}_redis-data
   weaviate-data:
-    name: askai_weaviate-data
+    name: ${MOVO_VOLUME_PREFIX:-movo}_weaviate-data
   dsh-runtime-data:
-    name: askai_dsh-runtime-data
+    name: ${MOVO_VOLUME_PREFIX:-movo}_dsh-runtime-data
   askai-storage:
-    name: askai_askai-storage
+    name: ${MOVO_VOLUME_PREFIX:-movo}_askai-storage
   knowledge-storage:
-    name: askai_knowledge-storage
+    name: ${MOVO_VOLUME_PREFIX:-movo}_knowledge-storage
   admin-static:
-    name: askai_admin-static
+    name: ${MOVO_VOLUME_PREFIX:-movo}_admin-static

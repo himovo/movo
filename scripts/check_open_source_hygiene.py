@@ -37,6 +37,7 @@ REQUIRED_ROOT_FILES = (
     "SUPPORT.md",
     "CODE_OF_CONDUCT.md",
 )
+EXPECTED_MOVO_VOLUMES = 8
 
 
 def tracked_files() -> list[str]:
@@ -53,6 +54,17 @@ def main() -> int:
     for required in REQUIRED_ROOT_FILES:
         if required not in tracked_set:
             failures.append(f"required publication file is not tracked: {required}")
+
+    compose_text = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+    if re.search(r"^\s*name:\s*askai_", compose_text, flags=re.MULTILINE):
+        failures.append("Compose reuses an AskAI physical volume name")
+    volume_prefix_count = compose_text.count("${MOVO_VOLUME_PREFIX:-movo}_")
+    if volume_prefix_count != EXPECTED_MOVO_VOLUMES:
+        failures.append(
+            "Compose must define exactly "
+            f"{EXPECTED_MOVO_VOLUMES} MOVO-prefixed physical volumes; "
+            f"found {volume_prefix_count}"
+        )
     for relative in tracked:
         if relative == "scripts/check_open_source_hygiene.py":
             continue

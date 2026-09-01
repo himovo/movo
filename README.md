@@ -78,8 +78,13 @@ Then edit `.env`:
 
 ```env
 MOVO_PORT=3000
+MOVO_VOLUME_PREFIX=movo
 PUBLIC_BASE_URL=https://movo.example.com
 ```
+
+Persistent Docker volumes use the `movo_` prefix by default. Keep
+`MOVO_VOLUME_PREFIX` stable after the first startup. Existing AskAI volumes
+are not reused or removed automatically.
 
 TLS certificates, DNS and the external reverse proxy remain the deployment
 operator's responsibility.
@@ -96,7 +101,7 @@ The default Compose deployment contains 12 services:
 - one-time bootstrap secret initialization.
 
 MongoDB, Redis, Weaviate, generated files, document data, DSH state and
-deployment secrets are stored in named Docker volumes.
+deployment secrets are stored in independent `movo_*` Docker volumes.
 
 ## Local development
 
