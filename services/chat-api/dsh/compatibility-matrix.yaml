@@ -1,0 +1,70 @@
+schema_version: movo.dsh-compatibility-matrix.v1
+active_release:
+  dsh_release_train: 0.1.2-alpha.2
+  node_runtime: "^22.19.0 || >=24.0.0"
+  host_protocol: askai.dsh-host.v1
+  host_overlay: askai-dsh-host-v1
+  execution_projection: askai.execution-v3
+  workspace_contract: askai.desktop-workspace-ref.v1
+  session_persistence:
+    provider: "@deepseek-ai/dsh-session-persistence-jsonl"
+    format: opaque-upstream
+    resume_probe_required: true
+  required_presets: [askai-enterprise, code]
+  code_model_tools: [read, write, edit, glob, grep, bash, skill, todo_write, subagent]
+  code_capabilities:
+    - read
+    - write
+    - edit
+    - glob
+    - grep
+    - bash
+    - job_list
+    - job_output
+    - job_kill
+    - skill
+    - todo_write
+    - subagent
+    - web_search
+    - web_fetch
+  required_host_modules:
+    - "@deepseek-ai/dsh-session"
+    - "@deepseek-ai/dsh-session-persistence-jsonl"
+    - "@deepseek-ai/dsh-sandbox-local"
+    - "@deepseek-ai/dsh-sandbox-policy"
+    - "@deepseek-ai/dsh-user-approval"
+    - "@deepseek-ai/dsh-tools"
+    - "@deepseek-ai/dsh-agent-presets"
+    - "@deepseek-ai/dsh-code-runtime-worker-thread"
+    - "@deepseek-ai/dsh-workspace"
+    - "@deepseek-ai/dsh-host-plugin-inventory"
+
+supported_releases:
+  - dsh_release_train: 0.1.2-alpha.2
+    node_runtime: "^22.19.0 || >=24.0.0"
+    host_protocol: askai.dsh-host.v1
+    host_overlay: askai-dsh-host-v1
+    old_session_resume: verified
+    status: production
+  - dsh_release_train: 0.1.1-rc.2
+    node_runtime: "^22.19.0 || >=24.0.0"
+    host_protocol: askai.dsh-host.v1
+    host_overlay: askai-dsh-host-v1
+    old_session_resume: verified
+    status: rollback
+  - dsh_release_train: 0.1.0-rc.6
+    node_runtime: "^22.19.0 || >=24.0.0"
+    host_protocol: askai.dsh-host.v1
+    host_overlay: askai-dsh-host-v1
+    old_session_resume: verified
+    status: legacy
+
+upgrade_policy:
+  floating_versions: false
+  mutate_installed_runtime_in_place: false
+  candidate_requires_full_contract_suite: true
+  candidate_requires_packaged_smoke: true
+  candidate_requires_old_session_resume: true
+  rollback_unit: versioned_container_release
+  rollback_preserves_runtime_data: true
+  publish_on_failed_admission: false

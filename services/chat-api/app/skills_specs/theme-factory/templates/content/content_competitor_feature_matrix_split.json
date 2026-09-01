@@ -1,0 +1,303 @@
+{
+  "template_id": "content_competitor_feature_matrix_split",
+  "family": "content",
+  "name": "Competitor Feature Matrix Split",
+  "purpose": "Two-panel competitor slide with a left brand stack and a right narrative plus feature comparison table.",
+  "selection_summary": "Use when the slide should contrast three market players through a simple logo stack and a structured feature matrix.",
+  "best_for": [
+    "competitor comparison",
+    "market positioning",
+    "feature parity stories"
+  ],
+  "avoid_when": [
+    "many competitors are involved",
+    "detailed analytical commentary is required"
+  ],
+  "recommended_item_range": "1 left brand stack + 1 right headline block + 1 feature matrix",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 19
+    },
+    {
+      "slot_id": "brand_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 3,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 28
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 28,
+          "max_chars_latin": 64
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 34
+    },
+    {
+      "slot_id": "subtitle_or_context",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 99
+    },
+    {
+      "slot_id": "comparison_table",
+      "component_type": "generic_diagram",
+      "region": "canvas",
+      "style_role": "surface_primary"
+    }
+  ],
+  "layout_rules": [
+    "The left side should feel like a competitor shelf rather than a data table.",
+    "The right table should remain the primary evidence block."
+  ],
+  "background_policy": "light_gradient_with_subtle_grid",
+  "preview_content": {
+    "eyebrow": "Competitors",
+    "title": "How the product stands out",
+    "subtitle_or_context": "Compare core capabilities against two established alternatives using a clean, readable matrix.",
+    "brand_cards": [
+      {
+        "icon": "growth",
+        "title": "Competitor 1",
+        "body": "Organization Tech"
+      },
+      {
+        "icon": "spark",
+        "title": "Competitor 2",
+        "body": "Enterprise Suite"
+      },
+      {
+        "icon": "brain",
+        "title": "Our product",
+        "body": "Adaptive AI platform"
+      }
+    ],
+    "comparison_table": {
+      "headers": [
+        "Feature",
+        "Competitor 1",
+        "Competitor 2",
+        "Our product"
+      ],
+      "rows": [
+        [
+          "AI-powered responses",
+          "Yes",
+          "Yes",
+          "Yes"
+        ],
+        [
+          "Context awareness",
+          "No",
+          "Yes",
+          "Yes"
+        ],
+        [
+          "CRM integrations",
+          "No",
+          "No",
+          "Yes"
+        ],
+        [
+          "Affordable pricing",
+          "No",
+          "Yes",
+          "Yes"
+        ]
+      ]
+    }
+  },
+  "executable": {
+    "geometry": {
+      "left_bg": {
+        "x": 0,
+        "y": 0,
+        "w": 664,
+        "h": 900
+      },
+      "right_bg": {
+        "x": 698,
+        "y": 98,
+        "w": 830,
+        "h": 724
+      },
+      "pill": {
+        "x": 126,
+        "y": 122,
+        "w": 330,
+        "h": 64
+      },
+      "brands": {
+        "x": 120,
+        "y": 236,
+        "w": 382,
+        "h": 468
+      },
+      "title": {
+        "x": 742,
+        "y": 136,
+        "w": 630,
+        "h": 86
+      },
+      "subtitle": {
+        "x": 742,
+        "y": 260,
+        "w": 636,
+        "h": 86
+      },
+      "table": {
+        "x": 746,
+        "y": 360,
+        "w": 736,
+        "h": 434
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "panel",
+            "box": "left_bg",
+            "z_index": 1,
+            "style": {
+              "fill": "content_band_surface",
+              "radius": 0,
+              "opacity": 0.88
+            }
+          },
+          {
+            "kind": "panel",
+            "box": "right_bg",
+            "z_index": 1,
+            "style": {
+              "fill": "content_card_surface_a",
+              "radius": 32,
+              "opacity": 0.72
+            }
+          },
+          {
+            "kind": "pill",
+            "box": "pill",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 999,
+              "font_size": 18,
+              "font_weight": 700,
+              "color": "text_on_accent",
+              "text_align": "center"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "brands",
+            "content_key": "brand_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 1,
+              "gap": 28,
+              "card_border_color": "transparent",
+              "card_shadow": "none",
+              "card_padding": 0,
+              "icon_wrap": 64,
+              "content_layout": "icon_left",
+              "content_gap": 18,
+              "content_align": "center",
+              "text_gap": 4,
+              "icon_fill": "surface_primary",
+              "icon_color": "surface_accent",
+              "title_font_size": 28,
+              "body_font_size": 18,
+              "card_fills": [
+                "content_card_surface_a",
+                "content_card_surface_b",
+                "content_card_surface_b",
+                "content_card_surface_a"
+              ]
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 56,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "subtitle",
+            "content_key": "subtitle_or_context",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 500,
+              "line_height": 1.45,
+              "color": "text_secondary"
+            }
+          },
+          {
+            "kind": "table",
+            "box": "table",
+            "content_key": "comparison_table",
+            "z_index": 2,
+            "style": {
+              "panel_fill": "content_card_surface_a",
+              "border_color": "border_subtle",
+              "panel_radius": 24,
+              "panel_padding": 18,
+              "panel_shadow": "shadow_soft",
+              "header_fill": "table_header_surface",
+              "header_color": "text_primary",
+              "header_radius": 14,
+              "font_size": 16,
+              "row_gap": 8
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

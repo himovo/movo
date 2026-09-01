@@ -1,0 +1,92 @@
+{
+  "template_id": "agenda_flag_steps",
+  "family": "agenda",
+  "name": "Agenda Pill Steps",
+  "purpose": "Left-anchored agenda title with a right-side vertical stack of numbered pill steps.",
+  "selection_summary": "Use for 5 to 6 agenda sections when the page should feel modern, light, and highly scannable.",
+  "best_for": [
+    "5 to 6 sections",
+    "startup decks",
+    "clean light themes"
+  ],
+  "avoid_when": [
+    "agenda has more than 6 sections",
+    "items require long descriptions"
+  ],
+  "preferred_visual_forms": [
+    "pills",
+    "step_flags",
+    "capsules"
+  ],
+  "preferred_slide_roles": [
+    "agenda",
+    "orientation"
+  ],
+  "preferred_density_targets": [
+    "medium"
+  ],
+  "recommended_item_range": "5 to 6 sections, one concise label per pill",
+  "layout_regions": [
+    "left_panel",
+    "right_panel"
+  ],
+  "supported_components": [
+    "title",
+    "agenda_list"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "left_panel",
+      "style_role": "section_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "agenda_main",
+      "component_type": "agenda_list",
+      "region": "right_panel",
+      "style_role": "surface_primary",
+      "max_items": 6
+    }
+  ],
+  "layout_rules": [
+    "Left panel carries the title block near the lower edge.",
+    "Right panel contains a vertical ladder of pill-shaped agenda items with numbered dots."
+  ],
+  "executable": {
+    "geometry": {
+      "title": {
+        "x": 110,
+        "y": 610,
+        "w": 360,
+        "h": 120
+      },
+      "agenda": {
+        "x": 700,
+        "y": 150,
+        "w": 600,
+        "h": 560
+      }
+    },
+    "agenda": {
+      "mode": "pill_steps",
+      "max_items": 6,
+      "layout": {
+        "list_gap": 24,
+        "number_size": 52,
+        "body_min_height": 52,
+        "body_padding_x": 20,
+        "content_gap_x": 14
+      },
+      "style": {
+        "show_shell": false,
+        "number_font_size": 20,
+        "title_font_size": 17,
+        "border_width": 1
+      }
+    },
+    "title_style": "section_title"
+  }
+}

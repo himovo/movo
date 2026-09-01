@@ -1,0 +1,95 @@
+{
+  "template_id": "agenda_numeric_outline",
+  "family": "agenda",
+  "name": "Table Of Contents Lines",
+  "purpose": "Long-form table of contents with understated dividers and numbers aligned on the right edge.",
+  "selection_summary": "Use for 6 to 8 agenda sections when the deck needs a calm and highly legible table of contents.",
+  "best_for": [
+    "6 to 8 agenda sections",
+    "table of contents pages",
+    "minimal decks"
+  ],
+  "avoid_when": [
+    "agenda must feel highly visual",
+    "section labels are very long"
+  ],
+  "preferred_visual_forms": [
+    "outline",
+    "table_of_contents",
+    "index_list"
+  ],
+  "preferred_slide_roles": [
+    "agenda",
+    "orientation"
+  ],
+  "preferred_density_targets": [
+    "medium",
+    "high"
+  ],
+  "recommended_item_range": "6 to 8 sections, one line per section",
+  "layout_regions": [
+    "header",
+    "center_content_area"
+  ],
+  "supported_components": [
+    "title",
+    "agenda_list"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "header",
+      "style_role": "section_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "agenda_main",
+      "component_type": "agenda_list",
+      "region": "center_content_area",
+      "style_role": "surface_primary",
+      "max_items": 8
+    }
+  ],
+  "layout_rules": [
+    "Top-left title introduces the agenda page.",
+    "Main body is a full-width list with thin dividers and muted step numbers on the right."
+  ],
+  "executable": {
+    "geometry": {
+      "title": {
+        "x": 90,
+        "y": 80,
+        "w": 560,
+        "h": 130
+      },
+      "agenda": {
+        "x": 110,
+        "y": 230,
+        "w": 1380,
+        "h": 520
+      }
+    },
+    "agenda": {
+      "mode": "toc_lines",
+      "max_items": 8,
+      "layout": {
+        "list_padding_top": 34,
+        "row_padding_y": 20,
+        "dot_column_width": 18,
+        "number_column_width": 56,
+        "content_gap_x": 16
+      },
+      "style": {
+        "show_shell": false,
+        "dot_size": 6,
+        "number_font_size": 18,
+        "title_font_size": 18,
+        "desc_font_size": 12,
+        "divider_width": 1
+      }
+    },
+    "title_style": "section_title"
+  }
+}

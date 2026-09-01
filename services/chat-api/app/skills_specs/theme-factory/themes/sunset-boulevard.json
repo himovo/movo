@@ -1,0 +1,240 @@
+{
+  "id": "sunset-boulevard",
+  "name": "Sunset Boulevard",
+  "description": "A warm and vibrant theme inspired by golden hour sunsets, perfect for energetic and creative presentations.",
+  "mode": "light",
+  "palette": {
+    "bg_base": "#fff7f1",
+    "bg_elevated": "#f9efe5",
+    "surface_base": "#fffdfa",
+    "surface_alt": "#f7e8d9",
+    "surface_accent": "#e76f51",
+    "text_primary": "#264653",
+    "text_secondary": "#5b6b73",
+    "text_on_accent": "#fff8f5",
+    "border_subtle": "rgba(231,111,81,0.16)",
+    "border_strong": "rgba(38,70,83,0.28)"
+  },
+  "gradients": {
+    "canvas_gradient": "linear-gradient(180deg, #fffdfa 0%, #f9efe5 100%)",
+    "accent_gradient": "linear-gradient(135deg, #e76f51 0%, #e9c46a 100%)",
+    "hero_gradient": "radial-gradient(circle at 80% 18%, rgba(231,111,81,0.16) 0%, rgba(233,196,106,0.10) 24%, rgba(255,255,255,0) 44%)"
+  },
+  "shape": {
+    "radius_sm": "12",
+    "radius_md": "18",
+    "radius_lg": "26",
+    "radius_chip": "999"
+  },
+  "elevation": {
+    "shadow_none": "none",
+    "shadow_soft": "0 10px 24px rgba(38,70,83,0.10)",
+    "shadow_strong": "0 18px 38px rgba(38,70,83,0.16)"
+  },
+  "stroke": {
+    "line_subtle": "rgba(231,111,81,0.16)",
+    "line_accent": "rgba(233,196,106,0.40)"
+  },
+  "typography": {
+    "header_font": "DejaVu Serif Bold",
+    "body_font": "DejaVu Sans",
+    "title": {
+      "color": "text_primary",
+      "font_size": "48",
+      "section_font_size": "34",
+      "font_weight": "800",
+      "line_height": "1.22",
+      "section_line_height": "1.18",
+      "section_color": "text_primary",
+      "background": "glass_surface",
+      "border_color": "line_subtle",
+      "radius": "radius_md",
+      "padding": "18"
+    },
+    "subtitle": {
+      "color": "text_secondary",
+      "font_size": "18",
+      "font_weight": "500",
+      "line_height": "1.34",
+      "background": "",
+      "border_color": "",
+      "radius": "",
+      "padding": ""
+    }
+  },
+  "best_used_for": [
+    "Creative pitches",
+    "Marketing presentations",
+    "Lifestyle brands",
+    "Event promotions"
+  ],
+  "page_policy": {
+    "cover": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "panel": "surface_inverse",
+      "accent": "accent_fill"
+    },
+    "agenda": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "panel": "surface_primary",
+      "number": "accent_fill",
+      "background": "canvas_gradient",
+      "line": "line_subtle",
+      "card": "surface_primary",
+      "pill": "surface_primary",
+      "pill_number": "surface_primary",
+      "grid_background": "canvas_gradient",
+      "grid_line": "line_subtle",
+      "grid_card": "surface_primary"
+    },
+    "content": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "panel": "surface_primary",
+      "diagram_panel": "surface_secondary"
+    },
+    "comparison": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "header": "accent_fill",
+      "body": "surface_primary"
+    },
+    "summary": {
+      "background_policy": "light_gradient",
+      "card": "surface_primary",
+      "statement": "surface_muted"
+    },
+    "progress": {
+      "background_policy": "light_gradient",
+      "stage": "accent_fill",
+      "notes": "surface_primary"
+    }
+  },
+  "semantic_tokens": {
+    "surface_primary": "#fffdfa",
+    "surface_secondary": "#f7e8d9",
+    "surface_tertiary": "#f1dbc4",
+    "surface_inverse": "#264653",
+    "surface_muted": "rgba(231,111,81,0.06)",
+    "accent_fill": "#e76f51",
+    "accent_soft": "rgba(233,196,106,0.10)",
+    "accent_line": "rgba(233,196,106,0.40)",
+    "glass_surface": "rgba(255,253,250,0.76)",
+    "content_card_surface_a": "linear-gradient(180deg, #fffefc 0%, #fcf4eb 100%)",
+    "content_card_surface_b": "linear-gradient(180deg, #fcf5ee 0%, #f7e8d9 100%)",
+    "content_band_surface": "linear-gradient(180deg, rgba(233,196,106,0.18) 0%, rgba(231,111,81,0.12) 100%)",
+    "table_header_surface": "linear-gradient(180deg, rgba(249,239,229,0.96) 0%, rgba(241,219,196,0.92) 100%)"
+  },
+  "template_overrides": {
+    "agenda_orbit_branches": {
+      "agenda": {
+        "grid_card": "surface_inverse"
+      }
+    },
+    "cover_overview": {
+      "typography": {
+        "subtitle": {
+          "color": "#264653",
+          "background": "rgba(247,232,217,0.86)",
+          "border_color": "line_accent",
+          "radius": "radius_lg",
+          "padding": "10"
+        }
+      }
+    },
+    "cover_relationship_hub": {
+      "cover": {
+        "mode": "bubble_field",
+        "background_layers": [
+          "hero_gradient",
+          "bubbles",
+          "vignette"
+        ],
+        "bubble_opacity": "1",
+        "bubble_color": "rgba(231,111,81,0.24)",
+        "arrow_bg": "#fffdfa",
+        "arrow_color": "#e76f51",
+        "arrow_border_color": "rgba(231,111,81,0.18)",
+        "arrow_shadow": "0 12px 24px rgba(38,70,83,0.14)",
+        "bubbles": [
+          {
+            "left": "67%",
+            "top": "-14%",
+            "width": "250px",
+            "height": "250px",
+            "color": "rgba(233,196,106,0.26)",
+            "opacity": "1"
+          },
+          {
+            "left": "39%",
+            "top": "25%",
+            "width": "268px",
+            "height": "268px",
+            "color": "rgba(231,111,81,0.16)",
+            "opacity": "1"
+          },
+          {
+            "left": "66%",
+            "top": "25%",
+            "width": "268px",
+            "height": "268px",
+            "color": "rgba(233,196,106,0.18)",
+            "opacity": "1"
+          },
+          {
+            "left": "8%",
+            "bottom": "-18%",
+            "width": "300px",
+            "height": "300px",
+            "color": "rgba(38,70,83,0.08)",
+            "opacity": "1"
+          },
+          {
+            "left": "38%",
+            "bottom": "-20%",
+            "width": "320px",
+            "height": "320px",
+            "color": "rgba(231,111,81,0.12)",
+            "opacity": "1"
+          },
+          {
+            "right": "8%",
+            "bottom": "-18%",
+            "width": "300px",
+            "height": "300px",
+            "color": "rgba(233,196,106,0.14)",
+            "opacity": "1"
+          }
+        ]
+      },
+      "typography": {
+        "title": {
+          "color": "#264653",
+          "font_size": "48",
+          "line_height": "1.02",
+          "background": "",
+          "border_color": "",
+          "padding": ""
+        },
+        "subtitle": {
+          "color": "#5b6b73",
+          "font_size": "20",
+          "line_height": "1.2",
+          "background": "",
+          "border_color": "",
+          "radius": "",
+          "padding": ""
+        }
+      }
+    },
+    "cover_split_hero": {
+      "typography": {
+        "title": {
+          "color": "text_primary",
+          "background": "",
+          "border_color": "",
+          "radius": "",
+          "padding": ""
+        }
+      }
+    }
+  }
+}

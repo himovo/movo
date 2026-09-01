@@ -1,0 +1,45 @@
+modes:
+  report:
+    query_templates:
+      - "{topic} 市场规模 预测 数据来源"
+      - "{topic} 竞品格局 商业模式"
+    source_priority: ["gov", "industry_report", "company_filing", "official_docs"]
+    evidence_schema: ["数据口径", "来源机构", "发布时间", "关键指标"]
+  article:
+    query_templates:
+      - "{topic} 最新进展 观点"
+      - "{topic} 案例 经验"
+    source_priority: ["official_docs", "industry_media", "expert_blog"]
+    evidence_schema: ["核心观点", "支持案例", "来源链接"]
+  brief:
+    query_templates:
+      - "{topic} 关键要点"
+    source_priority: ["official_docs", "internal_notes"]
+    evidence_schema: ["要点", "结论"]
+  comparison:
+    query_templates:
+      - "{topic} A vs B 对比"
+    source_priority: ["official_docs", "benchmark_report"]
+    evidence_schema: ["对象A", "对象B", "维度", "差异", "结论"]
+  tutorial:
+    query_templates:
+      - "{topic} 官方文档 指南"
+      - "{topic} version release notes"
+    source_priority: ["official_docs", "release_notes", "developer_docs"]
+    evidence_schema: ["步骤", "前置条件", "版本约束", "常见问题"]
+  proposal:
+    query_templates:
+      - "{topic} 实施方案 风险"
+    source_priority: ["official_docs", "industry_report", "internal_notes"]
+    evidence_schema: ["目标", "方案", "风险", "里程碑", "预算"]
+  spec:
+    query_templates:
+      - "{topic} 规范 模板"
+    source_priority: ["official_docs", "standards", "internal_notes"]
+    evidence_schema: ["范围", "约束", "字段定义", "验收标准"]
+  postmortem:
+    query_templates:
+      - "{topic} incident postmortem template"
+    source_priority: ["internal_notes", "official_docs"]
+    evidence_schema: ["时间线", "影响", "根因", "修复", "预防"]
+

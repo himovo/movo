@@ -1,0 +1,309 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "${ROOT_DIR}"
+DOCKER_BIN="${DOCKER_BIN:-docker}"
+
+case "${1:-}" in
+  --lang)
+    if [[ -z "${2:-}" ]]; then
+      printf 'Error: --lang requires zh-CN or en.\n' >&2
+      exit 2
+    fi
+    MOVO_LANG="$2"
+    shift 2
+    ;;
+  --lang=*)
+    MOVO_LANG="${1#*=}"
+    shift
+    ;;
+esac
+
+# shellcheck source=deploy/cli/i18n.sh
+source "${ROOT_DIR}/deploy/cli/i18n.sh"
+movo_detect_locale
+# shellcheck source=deploy/cli/dsh-version.sh
+source "${ROOT_DIR}/deploy/cli/dsh-version.sh"
+# shellcheck source=deploy/cli/images.sh
+source "${ROOT_DIR}/deploy/cli/images.sh"
+# shellcheck source=deploy/cli/backup.sh
+source "${ROOT_DIR}/deploy/cli/backup.sh"
+
+print_logo() {
+  printf '\n'
+  printf '  ███╗   ███╗ ██████╗ ██╗   ██╗ ██████╗\n'
+  printf '  ████╗ ████║██╔═══██╗██║   ██║██╔═══██╗\n'
+  printf '  ██╔████╔██║██║   ██║██║   ██║██║   ██║\n'
+  printf '  ██║╚██╔╝██║██║   ██║╚██╗ ██╔╝██║   ██║\n'
+  printf '  ██║ ╚═╝ ██║╚██████╔╝ ╚████╔╝ ╚██████╔╝\n'
+  printf '  ╚═╝     ╚═╝ ╚═════╝   ╚═══╝   ╚═════╝\n'
+  printf '              SELF-HOSTED\n\n'
+}
+
+require_docker() {
+  local docker_desktop_bin="/Applications/Docker.app/Contents/Resources/bin"
+  if [[ -d "${docker_desktop_bin}" ]]; then
+    case ":${PATH}:" in
+      *":${docker_desktop_bin}:"*) ;;
+      *) export PATH="${docker_desktop_bin}:${PATH}" ;;
+    esac
+  fi
+  if ! command -v "${DOCKER_BIN}" >/dev/null 2>&1; then
+    if [[ -x "${docker_desktop_bin}/docker" ]]; then
+      DOCKER_BIN="${docker_desktop_bin}/docker"
+    fi
+  fi
+  if ! command -v "${DOCKER_BIN}" >/dev/null 2>&1; then
+    movo_msg docker_missing >&2
+    exit 1
+  fi
+  if ! "${DOCKER_BIN}" compose version >/dev/null 2>&1; then
+    movo_msg compose_missing >&2
+    exit 1
+  fi
+  if ! "${DOCKER_BIN}" info >/dev/null 2>&1; then
+    movo_msg docker_stopped >&2
+    exit 1
+  fi
+}
+
+retire_legacy_compose_project() {
+  if [[ "${MOVO_MIGRATE_LEGACY_PROJECT:-false}" != "true" ]]; then
+    return 0
+  fi
+  local legacy_containers=""
+  legacy_containers="$("${DOCKER_BIN}" compose -p askai ps -q 2>/dev/null || true)"
+  if [[ -n "${legacy_containers}" ]]; then
+    movo_msg migrating_project
+    "${DOCKER_BIN}" compose -p askai down --remove-orphans
+  fi
+}
+
+refresh_gateway_resolution() {
+  local gateway_id=""
+  gateway_id="$(movo_compose ps -q gateway 2>/dev/null || true)"
+  if [[ -z "${gateway_id}" ]]; then
+    return 0
+  fi
+  # The stock Nginx image resolves Compose service names when it starts.
+  # Rebuilt upstream containers may receive new IPs while gateway is kept,
+  # so restart this stateless proxy before probing deployment readiness.
+  movo_compose restart gateway
+}
+
+dotenv_value() {
+  local key="$1"
+  local env_file="${ROOT_DIR}/.env"
+  local line=""
+  if [[ -f "${env_file}" ]]; then
+    line="$(grep -E "^[[:space:]]*${key}=" "${env_file}" | tail -n 1 || true)"
+  fi
+  line="${line#*=}"
+  line="${line%$'\r'}"
+  line="${line#\"}"
+  line="${line%\"}"
+  line="${line#\'}"
+  line="${line%\'}"
+  printf '%s' "${line}"
+}
+
+deployment_urls() {
+  local configured_port configured_base
+  configured_port="${MOVO_PORT:-$(dotenv_value MOVO_PORT)}"
+  if [[ -z "${configured_port}" ]]; then
+    configured_port="${ASKAI_PORT:-$(dotenv_value ASKAI_PORT)}"
+  fi
+  configured_base="${PUBLIC_BASE_URL:-$(dotenv_value PUBLIC_BASE_URL)}"
+  MOVO_PORT="${configured_port:-3000}"
+  export MOVO_PORT
+  MOVO_LOCAL_BASE="http://127.0.0.1:${MOVO_PORT}"
+  MOVO_PUBLIC_BASE="${configured_base%/}"
+  if [[ -z "${MOVO_PUBLIC_BASE}" ]]; then
+    MOVO_PUBLIC_BASE="http://localhost:${MOVO_PORT}"
+  fi
+}
+
+status_is_ready() {
+  local status_url="${MOVO_LOCAL_BASE}/admin-api/api/setup/status"
+  local response=""
+  if command -v curl >/dev/null 2>&1; then
+    response="$(curl -fsS --max-time 5 "${status_url}" 2>/dev/null || true)"
+  elif command -v wget >/dev/null 2>&1; then
+    response="$(wget -qO- -T 5 "${status_url}" 2>/dev/null || true)"
+  else
+    response="$(movo_compose exec -T gateway wget -qO- \
+      http://admin-api:8100/api/setup/status 2>/dev/null || true)"
+  fi
+  [[ "${response}" == *'"ready":true'* ]]
+}
+
+wait_until_ready() {
+  local attempt
+  movo_msg waiting
+  for attempt in $(seq 1 90); do
+    if status_is_ready; then
+      movo_msg done
+      return 0
+    fi
+    printf '.'
+    sleep 2
+  done
+  movo_msg timeout >&2
+  return 1
+}
+
+show_ready_message() {
+  movo_msg ready_title
+  printf '  %s/admin/setup\n\n' "${MOVO_PUBLIC_BASE}"
+}
+
+command_up() {
+  print_logo
+  require_docker
+  deployment_urls
+  if movo_has_build_flag "$@"; then
+    movo_configure_images true
+  else
+    movo_configure_images false
+  fi
+  retire_legacy_compose_project
+  movo_msg starting
+  if movo_has_build_flag "$@"; then
+    movo_print_dsh_build_target
+  fi
+  if ! movo_compose up -d "$@"; then
+    movo_msg start_failed >&2
+    movo_compose ps >&2 || true
+    movo_msg logs_hint >&2
+    return 1
+  fi
+  refresh_gateway_resolution
+  wait_until_ready
+  movo_print_running_dsh_version
+  show_ready_message
+}
+
+command_build() {
+  print_logo
+  require_docker
+  movo_configure_images true
+  movo_msg building
+  movo_print_dsh_build_target
+  movo_compose build "$@"
+}
+
+command_update() {
+  print_logo
+  require_docker
+  deployment_urls
+  movo_configure_images false
+  if [[ "${MOVO_USING_LOCAL_IMAGES:-false}" == "true" ]]; then
+    movo_msg update_local_only >&2
+    return 2
+  fi
+  movo_msg updating
+  MOVO_PULL_POLICY=always
+  export MOVO_PULL_POLICY
+  movo_compose pull
+  movo_compose up -d
+  refresh_gateway_resolution
+  wait_until_ready
+  movo_print_running_dsh_version
+  show_ready_message
+}
+
+command="${1:-up}"
+if [[ $# -gt 0 ]]; then
+  shift
+fi
+
+case "${command}" in
+  up)
+    command_up "$@"
+    ;;
+  build)
+    command_build "$@"
+    ;;
+  update)
+    command_update
+    ;;
+  backup)
+    require_docker
+    deployment_urls
+    movo_configure_images false
+    movo_backup "${1:-}"
+    ;;
+  restore)
+    require_docker
+    if [[ -z "${1:-}" ]]; then
+      movo_usage >&2
+      exit 2
+    fi
+    restore_confirmed=false
+    for argument in "${@:2}"; do
+      [[ "${argument}" == "--yes" ]] && restore_confirmed=true
+    done
+    deployment_urls
+    movo_configure_images false
+    movo_restore "$1" "${restore_confirmed}"
+    ;;
+  status)
+    require_docker
+    movo_compose ps
+    ;;
+  logs)
+    require_docker
+    movo_compose logs --tail=200 "$@"
+    ;;
+  restart)
+    print_logo
+    require_docker
+    deployment_urls
+    movo_compose restart
+    wait_until_ready
+    show_ready_message
+    ;;
+  down)
+    require_docker
+    remove_volumes=false
+    confirmed=false
+    compose_down_args=()
+    for argument in "$@"; do
+      case "${argument}" in
+        -v|--volumes) remove_volumes=true ;;
+        --yes) confirmed=true ;;
+        *) compose_down_args+=("${argument}") ;;
+      esac
+    done
+    if [[ "${remove_volumes}" == "true" ]]; then
+      compose_down_args+=(--volumes)
+      if [[ "${confirmed}" != "true" ]]; then
+        confirmation=""
+        if [[ -t 0 ]]; then
+          movo_msg remove_confirm
+          read -r confirmation
+        fi
+        if [[ "${confirmation}" != "MOVO" ]]; then
+          movo_msg remove_aborted >&2
+          exit 2
+        fi
+      fi
+    fi
+    movo_compose down "${compose_down_args[@]}"
+    retire_legacy_compose_project
+    if [[ "${remove_volumes}" == "true" ]]; then
+      movo_msg stopped_removed
+    else
+      movo_msg stopped
+    fi
+    ;;
+  help|-h|--help)
+    movo_usage
+    ;;
+  *)
+    movo_msg unknown "${command}" >&2
+    movo_usage >&2
+    exit 2
+    ;;
+esac

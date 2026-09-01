@@ -1,0 +1,226 @@
+{
+  "template_id": "content_solution_check_grid",
+  "family": "content",
+  "name": "Solution Check Grid",
+  "purpose": "Solution overview with a large headline and a 2x2 grid of rounded benefit cards using approval-style icons.",
+  "selection_summary": "Use for solution pages that need four equal-weight benefits presented as clean reassurance cards.",
+  "best_for": [
+    "solution overviews",
+    "benefit pages",
+    "AI value proposition summaries"
+  ],
+  "avoid_when": [
+    "the page requires charts or evidence metrics",
+    "benefits are not equally weighted"
+  ],
+  "recommended_item_range": "1 eyebrow + 1 headline + 1 paragraph + 4 benefit cards",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 60
+    },
+    {
+      "slot_id": "subtitle_or_context",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 92
+    },
+    {
+      "slot_id": "benefit_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 4,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 29
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 26,
+          "max_chars_latin": 71
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 29
+    }
+  ],
+  "layout_rules": [
+    "Benefits should feel modular and easy to scan.",
+    "Use approval-style icons to reinforce positive outcomes."
+  ],
+  "background_policy": "light_gradient_with_subtle_grid",
+  "preview_content": {
+    "eyebrow": "",
+    "title": "Closing the communication gap with reliable automation",
+    "subtitle_or_context": "Summarize the solution in one sentence, then support it with four balanced benefit cards.",
+    "benefit_cards": [
+      {
+        "icon": "check",
+        "title": "Faster response times",
+        "body": "Always-on replies that keep customers engaged."
+      },
+      {
+        "icon": "check",
+        "title": "24/7 availability",
+        "body": "Support remains active across time zones and volume spikes."
+      },
+      {
+        "icon": "check",
+        "title": "Higher accuracy",
+        "body": "Context-aware reasoning keeps answers consistent."
+      },
+      {
+        "icon": "check",
+        "title": "Seamless automation",
+        "body": "Routine work moves out of queues and into workflows."
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "eyebrow": {
+        "x": 118,
+        "y": 110,
+        "w": 240,
+        "h": 42
+      },
+      "title": {
+        "x": 116,
+        "y": 154,
+        "w": 1160,
+        "h": 116
+      },
+      "subtitle": {
+        "x": 118,
+        "y": 286,
+        "w": 960,
+        "h": 84
+      },
+      "cards_backdrop": {
+        "x": 92,
+        "y": 430,
+        "w": 1234,
+        "h": 364
+      },
+      "cards": {
+        "x": 118,
+        "y": 462,
+        "w": 1180,
+        "h": 300
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "eyebrow",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 700,
+              "color": "surface_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "subtitle",
+            "content_key": "subtitle_or_context",
+            "z_index": 2,
+            "style": {
+              "font_size": 22,
+              "font_weight": 500,
+              "line_height": 1.45,
+              "color": "text_secondary"
+            }
+          },
+          {
+            "kind": "panel",
+            "box": "cards_backdrop",
+            "z_index": 1,
+            "style": {
+              "fill": "content_band_surface",
+              "radius": 34,
+              "opacity": 0.62
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "cards",
+            "content_key": "benefit_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 2,
+              "gap": 28,
+              "content_layout": "icon_left",
+              "content_align": "center",
+              "content_gap": 18,
+              "card_border_color": "border_strong",
+              "card_shadow": "shadow_soft",
+              "card_radius": 28,
+              "card_padding": 24,
+              "icon_wrap": 58,
+              "icon_fill": "accent_soft",
+              "icon_color": "surface_accent",
+              "title_font_size": 22,
+              "body_font_size": 18,
+              "text_gap": 6,
+              "card_fills": [
+                "content_card_surface_a",
+                "content_card_surface_b",
+                "content_card_surface_b",
+                "content_card_surface_a"
+              ]
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

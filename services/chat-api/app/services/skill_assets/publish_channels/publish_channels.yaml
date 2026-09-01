@@ -1,0 +1,85 @@
+channels:
+  - channel: generic
+    aliases:
+      - generic
+      - 通用
+    draft_post_action: publish
+    default_applicable_scenarios: Use this skill in the intended target scenarios.
+    template_tags:
+      - article
+      - compose
+      - content
+
+  - channel: wechat
+    aliases:
+      - wechat
+      - weixin
+      - wechat_official
+      - 微信
+      - 微信公众
+      - 微信公众号
+      - 公众号
+      - 企业公众号
+    draft_post_action: publish:wechat_draft
+    default_required_elements:
+      - strong opening
+      - scannable structure
+      - clear takeaway
+    default_forbidden_elements:
+      - overly academic tone
+      - dense jargon without explanation
+    default_style_hints:
+      - practical
+    default_applicable_scenarios: Use for publishable WeChat official account articles aimed at readable, audience-facing communication.
+    delivery_forbidden:
+      - forbid_horizontal_rules
+    template_tags:
+      - wechat
+      - article
+      - content
+
+  - channel: xiaohongshu
+    aliases:
+      - xiaohongshu
+      - rednote
+      - 小红书
+    draft_post_action: publish:xiaohongshu_draft
+    # Stable image-note publish route. Landing-page navigations
+    # (homepage / /login / /new/home) get rewritten to this. A URL
+    # explicitly supplied by the user in the task goal always wins.
+    publish_url: "https://creator.xiaohongshu.com/publish/publish?from=menu&target=article"
+    template_tags:
+      - xiaohongshu
+      - article
+      - content
+
+  - channel: zhihu
+    aliases:
+      - zhihu
+      - 知乎
+    draft_post_action: publish
+    template_tags:
+      - zhihu
+      - article
+      - content
+
+  - channel: email
+    aliases:
+      - email
+      - 邮件
+      - 邮箱
+      - mail
+    draft_post_action: publish
+
+  - channel: knowledge_base
+    aliases:
+      - knowledge_base
+      - knowledge base
+      - 知识库
+    draft_post_action: publish
+
+  - channel: other
+    aliases:
+      - other
+      - 其他
+    draft_post_action: publish

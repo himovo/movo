@@ -1,0 +1,11 @@
+# Verified on local macOS x86_64 + Python 3.10.
+# Newer Docling releases require docling-parse>=6, which may need local C++ builds
+# on this environment. Keep this optional dependency set pinned for repeatable dev setup.
+numpy==1.26.4
+docling==2.73.1
+docling-core==2.92.0
+docling-ibm-models==3.14.0
+docling-parse==4.7.2
+transformers==4.57.6
+onnxruntime==1.22.1
+opencv-python==4.10.0.84

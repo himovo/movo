@@ -1,0 +1,159 @@
+{
+  "template_id": "content_thank_you_dark_minimal",
+  "family": "content",
+  "name": "Thank You Dark Minimal",
+  "purpose": "Minimal dark closing slide with a centered oversized thank-you message, one supporting line, a simple inline contact row, and a bottom-right deck pill.",
+  "selection_summary": "Use when the presentation should close on a calm, premium dark frame with almost no extra decoration.",
+  "best_for": [
+    "dark deck closings",
+    "minimal thank-you pages",
+    "premium investor deck endings"
+  ],
+  "avoid_when": [
+    "a photo or illustration should appear",
+    "the closing page needs multiple CTA blocks"
+  ],
+  "recommended_item_range": "1 thank-you + 1 support line + 1 inline contact row",
+  "preferred_slide_roles": [
+    "closing",
+    "thank_you",
+    "contact"
+  ],
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "subtitle_or_context",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 86
+    },
+    {
+      "slot_id": "contact_line",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 61
+    },
+    {
+      "slot_id": "deck_label",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 17
+    }
+  ],
+  "layout_rules": [
+    "Keep everything centered except the deck pill.",
+    "The contact line should remain compact and quiet beneath the support line."
+  ],
+  "background_policy": "dark_gradient",
+  "preview_content": {
+    "title": "Thank you.",
+    "subtitle_or_context": "Thank you for taking the time to read this. Your attention and engagement mean a lot.",
+    "contact_line": "hello@example.com | +1 (555) 555-0123 | example.com",
+    "deck_label": "Pitch deck"
+  },
+  "executable": {
+    "geometry": {
+      "title": {
+        "x": 410,
+        "y": 280,
+        "w": 782,
+        "h": 126
+      },
+      "subtitle": {
+        "x": 472,
+        "y": 468,
+        "w": 656,
+        "h": 84
+      },
+      "contacts": {
+        "x": 392,
+        "y": 590,
+        "w": 820,
+        "h": 40
+      },
+      "deck_pill": {
+        "x": 1230,
+        "y": 772,
+        "w": 280,
+        "h": 64
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 0.98,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "subtitle",
+            "content_key": "subtitle_or_context",
+            "z_index": 2,
+            "style": {
+              "font_size": 22,
+              "font_weight": 500,
+              "line_height": 1.42,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "contacts",
+            "content_key": "contact_line",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 500,
+              "line_height": 1.3,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "pill",
+            "box": "deck_pill",
+            "content_key": "deck_label",
+            "z_index": 2,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 999,
+              "font_size": 18,
+              "font_weight": 700,
+              "color": "text_on_accent",
+              "text_align": "center"
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

@@ -1,0 +1,177 @@
+{
+  "template_id": "content_thank_you_split_photo_cta",
+  "family": "content",
+  "name": "Thank You Split Photo CTA",
+  "purpose": "Blue left message panel with a large thank-you, inline contact line, a pill-style website CTA, and a full-height photo placeholder on the right.",
+  "selection_summary": "Use when the closing slide should feel energetic and human, combining contact info with a strong visual photo panel.",
+  "best_for": [
+    "photo-led closing slides",
+    "thank-you with website CTA",
+    "warm human endings"
+  ],
+  "avoid_when": [
+    "no photo should be shown",
+    "the page must stay purely minimal"
+  ],
+  "recommended_item_range": "1 thank-you + 1 inline contact row + 1 website CTA + 1 photo",
+  "preferred_slide_roles": [
+    "closing",
+    "thank_you",
+    "contact"
+  ],
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "contact_line",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 61
+    },
+    {
+      "slot_id": "cta_label",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 24
+    },
+    {
+      "slot_id": "hero_visual",
+      "component_type": "generic_diagram",
+      "region": "canvas",
+      "style_role": "surface_secondary"
+    }
+  ],
+  "layout_rules": [
+    "The blue left panel should carry the message and CTA.",
+    "The right panel should be a full-height image placeholder."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "title": "Thank you.",
+    "contact_line": "hello@example.com | +1 (555) 555-0123 | example.com",
+    "cta_label": "Visit example.com",
+    "hero_visual": ""
+  },
+  "executable": {
+    "geometry": {
+      "left_bg": {
+        "x": 0,
+        "y": 0,
+        "w": 1014,
+        "h": 900
+      },
+      "image": {
+        "x": 1014,
+        "y": 0,
+        "w": 586,
+        "h": 900
+      },
+      "title": {
+        "x": 128,
+        "y": 338,
+        "w": 700,
+        "h": 142
+      },
+      "contacts": {
+        "x": 128,
+        "y": 542,
+        "w": 716,
+        "h": 44
+      },
+      "cta": {
+        "x": 128,
+        "y": 760,
+        "w": 360,
+        "h": 66
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "panel",
+            "box": "left_bg",
+            "z_index": 1,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 0
+            }
+          },
+          {
+            "kind": "image",
+            "box": "image",
+            "content_key": "hero_visual",
+            "label": "Closing Photo",
+            "z_index": 2,
+            "style": {
+              "radius": 0,
+              "fill": "surface_muted",
+              "icon_name": "users",
+              "icon_size": 96,
+              "label_size": 24
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 0.98,
+              "color": "text_on_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "contacts",
+            "content_key": "contact_line",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 500,
+              "line_height": 1.3,
+              "color": "text_on_accent"
+            }
+          },
+          {
+            "kind": "pill",
+            "box": "cta",
+            "content_key": "cta_label",
+            "z_index": 2,
+            "style": {
+              "fill": "surface_primary",
+              "radius": 999,
+              "font_size": 18,
+              "font_weight": 600,
+              "color": "text_secondary",
+              "text_align": "left",
+              "padding": {
+                "top": 0,
+                "right": 24,
+                "bottom": 0,
+                "left": 28
+              }
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

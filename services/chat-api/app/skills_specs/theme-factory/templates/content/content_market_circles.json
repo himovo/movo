@@ -1,0 +1,173 @@
+{
+  "template_id": "content_market_circles",
+  "family": "content",
+  "name": "Market Circle Ladder",
+  "purpose": "Market opportunity page with a left-aligned title and three graduated circular market markers above supporting labels.",
+  "selection_summary": "Use when TAM, SAM, and SOM should feel simple, spacious, and visually tiered.",
+  "best_for": [
+    "market opportunity framing",
+    "TAM SAM SOM pages",
+    "simple market sizing"
+  ],
+  "avoid_when": [
+    "a chart is required",
+    "there are more than three market tiers"
+  ],
+  "recommended_item_range": "1 eyebrow + 1 headline + 3 circular market markers",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 25
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 50
+    },
+    {
+      "slot_id": "market_points",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 3,
+      "item_fields": [
+        {
+          "field_name": "value",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 28,
+          "max_chars_latin": 64
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 28
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 28,
+          "max_chars_latin": 74
+        },
+        {
+          "field_name": "size",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 28
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 28
+    }
+  ],
+  "layout_rules": [
+    "Use three circles with visibly different diameters.",
+    "Keep explanatory text directly beneath each circle."
+  ],
+  "background_policy": "light_gradient_with_subtle_grid",
+  "preview_content": {
+    "eyebrow": "Market Opportunity",
+    "title": "Unlocking a multi-layer market opportunity",
+    "market_points": [
+      {
+        "value": "$20B",
+        "title": "TAM",
+        "body": "Total addressable demand across AI-enabled support services.",
+        "size": 216
+      },
+      {
+        "value": "$5B",
+        "title": "SAM",
+        "body": "Serviceable demand in core automation workflows.",
+        "size": 144
+      },
+      {
+        "value": "$1B",
+        "title": "SOM",
+        "body": "Attainable share over the next operating window.",
+        "size": 122
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "eyebrow": {
+        "x": 126,
+        "y": 82,
+        "w": 340,
+        "h": 42
+      },
+      "title": {
+        "x": 126,
+        "y": 128,
+        "w": 760,
+        "h": 128
+      },
+      "circles": {
+        "x": 126,
+        "y": 348,
+        "w": 1320,
+        "h": 380
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "eyebrow",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 700,
+              "color": "surface_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "metric_circles",
+            "box": "circles",
+            "content_key": "market_points",
+            "z_index": 2,
+            "style": {
+              "gap": 46,
+              "circle_fill": "accent_gradient",
+              "circle_shadow": "shadow_soft",
+              "value_font_size": 34,
+              "title_font_size": 28,
+              "body_font_size": 18
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

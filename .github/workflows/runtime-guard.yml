@@ -1,0 +1,86 @@
+name: Runtime Guard
+
+on:
+  pull_request:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  web-build-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            apps/user-web/package-lock.json
+            apps/admin-web/package-lock.json
+      - name: Build user web
+        working-directory: apps/user-web
+        run: npm ci && npm run typecheck && npm run build
+      - name: Build admin web
+        working-directory: apps/admin-web
+        run: npm ci --legacy-peer-deps && npm run build
+
+  runtime-boundary-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "10.14.0"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.19.0"
+          cache: pnpm
+          cache-dependency-path: services/chat-api/dsh/runtime-host/pnpm-lock.yaml
+      - name: Install guard dependencies
+        run: python -m pip install PyYAML
+      - name: Compile Python
+        run: python -m compileall -q services/chat-api/app services/chat-api/scripts services/admin-api/app services/document-parser/app
+      - name: Open-source hygiene guard
+        run: python scripts/check_open_source_hygiene.py
+      - name: DSH Legacy Runtime Boundary Guard
+        run: python services/chat-api/scripts/check_dsh_legacy_runtime_boundary.py
+      - name: DSH Native Code Boundary Guard
+        run: python services/chat-api/scripts/check_dsh_native_code_boundary.py
+      - name: DSH Supply Chain Guard
+        run: python services/chat-api/scripts/check_dsh_supply_chain.py
+      - name: DSH Upgrade Contract Guard
+        run: python services/chat-api/scripts/check_dsh_upgrade_contract.py
+      - name: Install Runtime Host dependencies
+        working-directory: services/chat-api/dsh/runtime-host
+        run: pnpm install --frozen-lockfile --registry=https://registry.npmjs.org
+      - name: Runtime Host contract suite
+        working-directory: services/chat-api/dsh/runtime-host
+        run: pnpm test
+
+  community-release-guard:
+    runs-on: ubuntu-latest
+    env:
+      MOVO_IMAGE_PREFIX: ghcr.io/example/movo
+      MOVO_VERSION: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install focused test dependencies
+        run: python -m pip install -r services/admin-api/requirements.txt pytest
+      - name: Verify Community Edition entitlements and credentials
+        run: |
+          PYTHONPATH=services/admin-api python -m pytest -q \
+            services/admin-api/tests/test_product_edition.py \
+            services/admin-api/tests/test_employee_credentials.py \
+            services/admin-api/tests/test_setup_repository_lock.py
+          PYTHONPATH=services/chat-api python -m pytest -q \
+            services/chat-api/tests/core/test_product_edition.py
+      - name: Validate prebuilt-image Compose
+        run: docker compose config --quiet
+      - name: Validate source-build Compose
+        run: docker compose -f docker-compose.yml -f docker-compose.build.yml config --quiet

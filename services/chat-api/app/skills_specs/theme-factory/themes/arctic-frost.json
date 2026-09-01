@@ -1,0 +1,240 @@
+{
+  "id": "arctic-frost",
+  "name": "Arctic Frost",
+  "description": "A cool and crisp winter-inspired theme that conveys clarity, precision, and professionalism.",
+  "mode": "light",
+  "palette": {
+    "bg_base": "#fafcff",
+    "bg_elevated": "#edf4fb",
+    "surface_base": "#ffffff",
+    "surface_alt": "#dfeaf7",
+    "surface_accent": "#4a6fa5",
+    "text_primary": "#18324a",
+    "text_secondary": "#52667d",
+    "text_on_accent": "#f8fafc",
+    "border_subtle": "rgba(74,111,165,0.16)",
+    "border_strong": "rgba(74,111,165,0.30)"
+  },
+  "gradients": {
+    "canvas_gradient": "linear-gradient(180deg, #ffffff 0%, #f5f9fe 28%, #e8f1fb 68%, #f1f7fd 100%)",
+    "accent_gradient": "linear-gradient(135deg, #4a6fa5 0%, #7db5e8 100%)",
+    "hero_gradient": "radial-gradient(circle at 82% 18%, rgba(74,111,165,0.20) 0%, rgba(125,181,232,0.12) 20%, rgba(212,228,247,0.08) 34%, rgba(255,255,255,0) 52%)"
+  },
+  "shape": {
+    "radius_sm": "12",
+    "radius_md": "18",
+    "radius_lg": "26",
+    "radius_chip": "999"
+  },
+  "elevation": {
+    "shadow_none": "none",
+    "shadow_soft": "0 10px 24px rgba(74,111,165,0.10)",
+    "shadow_strong": "0 18px 38px rgba(74,111,165,0.16)"
+  },
+  "stroke": {
+    "line_subtle": "rgba(74,111,165,0.16)",
+    "line_accent": "rgba(74,111,165,0.38)"
+  },
+  "typography": {
+    "header_font": "DejaVu Sans Bold",
+    "body_font": "DejaVu Sans",
+    "title": {
+      "color": "text_primary",
+      "font_size": "48",
+      "section_font_size": "34",
+      "font_weight": "800",
+      "line_height": "1.22",
+      "section_line_height": "1.18",
+      "section_color": "text_primary",
+      "background": "glass_surface",
+      "border_color": "line_subtle",
+      "radius": "radius_md",
+      "padding": "18"
+    },
+    "subtitle": {
+      "color": "text_secondary",
+      "font_size": "18",
+      "font_weight": "500",
+      "line_height": "1.34",
+      "background": "",
+      "border_color": "",
+      "radius": "",
+      "padding": ""
+    }
+  },
+  "best_used_for": [
+    "Healthcare presentations",
+    "Technology solutions",
+    "Clean tech",
+    "Pharmaceutical content"
+  ],
+  "page_policy": {
+    "cover": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "panel": "surface_inverse",
+      "accent": "accent_fill"
+    },
+    "agenda": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "panel": "surface_primary",
+      "number": "accent_fill",
+      "background": "canvas_gradient",
+      "line": "line_subtle",
+      "card": "surface_primary",
+      "pill": "surface_primary",
+      "pill_number": "surface_primary",
+      "grid_background": "canvas_gradient",
+      "grid_line": "line_subtle",
+      "grid_card": "surface_primary"
+    },
+    "content": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "panel": "surface_primary",
+      "diagram_panel": "surface_secondary"
+    },
+    "comparison": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "header": "accent_fill",
+      "body": "surface_primary"
+    },
+    "summary": {
+      "background_policy": "light_gradient",
+      "card": "surface_primary",
+      "statement": "surface_muted"
+    },
+    "progress": {
+      "background_policy": "light_gradient",
+      "stage": "accent_fill",
+      "notes": "surface_primary"
+    }
+  },
+  "semantic_tokens": {
+    "surface_primary": "#ffffff",
+    "surface_secondary": "#dfeaf7",
+    "surface_tertiary": "#cfddec",
+    "surface_inverse": "#18324a",
+    "surface_muted": "rgba(74,111,165,0.06)",
+    "accent_fill": "#4a6fa5",
+    "accent_soft": "rgba(74,111,165,0.10)",
+    "accent_line": "rgba(74,111,165,0.38)",
+    "glass_surface": "rgba(255,255,255,0.74)",
+    "content_card_surface_a": "linear-gradient(180deg, #ffffff 0%, #f4f8fd 100%)",
+    "content_card_surface_b": "linear-gradient(180deg, #f6fbff 0%, #e7f0fa 100%)",
+    "content_band_surface": "linear-gradient(180deg, rgba(125,181,232,0.18) 0%, rgba(74,111,165,0.12) 100%)",
+    "table_header_surface": "linear-gradient(180deg, rgba(223,234,247,0.96) 0%, rgba(207,221,236,0.92) 100%)"
+  },
+  "template_overrides": {
+    "agenda_orbit_branches": {
+      "agenda": {
+        "grid_card": "surface_inverse"
+      }
+    },
+    "cover_overview": {
+      "typography": {
+        "subtitle": {
+          "color": "#18324a",
+          "background": "rgba(223,234,247,0.88)",
+          "border_color": "line_accent",
+          "radius": "radius_lg",
+          "padding": "10"
+        }
+      }
+    },
+    "cover_relationship_hub": {
+      "cover": {
+        "mode": "bubble_field",
+        "background_layers": [
+          "hero_gradient",
+          "bubbles",
+          "vignette"
+        ],
+        "bubble_opacity": "1",
+        "bubble_color": "rgba(74,111,165,0.28)",
+        "arrow_bg": "#ffffff",
+        "arrow_color": "#4a6fa5",
+        "arrow_border_color": "rgba(74,111,165,0.20)",
+        "arrow_shadow": "0 12px 24px rgba(74,111,165,0.16)",
+        "bubbles": [
+          {
+            "left": "68%",
+            "top": "-14%",
+            "width": "250px",
+            "height": "250px",
+            "color": "rgba(125,181,232,0.30)",
+            "opacity": "1"
+          },
+          {
+            "left": "39%",
+            "top": "25%",
+            "width": "260px",
+            "height": "260px",
+            "color": "rgba(74,111,165,0.18)",
+            "opacity": "1"
+          },
+          {
+            "left": "67%",
+            "top": "25%",
+            "width": "260px",
+            "height": "260px",
+            "color": "rgba(125,181,232,0.20)",
+            "opacity": "1"
+          },
+          {
+            "left": "8%",
+            "bottom": "-18%",
+            "width": "290px",
+            "height": "290px",
+            "color": "rgba(74,111,165,0.12)",
+            "opacity": "1"
+          },
+          {
+            "left": "38%",
+            "bottom": "-20%",
+            "width": "310px",
+            "height": "310px",
+            "color": "rgba(125,181,232,0.16)",
+            "opacity": "1"
+          },
+          {
+            "right": "8%",
+            "bottom": "-18%",
+            "width": "290px",
+            "height": "290px",
+            "color": "rgba(74,111,165,0.14)",
+            "opacity": "1"
+          }
+        ]
+      },
+      "typography": {
+        "title": {
+          "color": "#18324a",
+          "font_size": "48",
+          "line_height": "1.02",
+          "background": "",
+          "border_color": "",
+          "padding": ""
+        },
+        "subtitle": {
+          "color": "#52667d",
+          "font_size": "20",
+          "line_height": "1.2",
+          "background": "",
+          "border_color": "",
+          "radius": "",
+          "padding": ""
+        }
+      }
+    },
+    "cover_split_hero": {
+      "typography": {
+        "title": {
+          "color": "text_primary",
+          "background": "",
+          "border_color": "",
+          "radius": "",
+          "padding": ""
+        }
+      }
+    }
+  }
+}

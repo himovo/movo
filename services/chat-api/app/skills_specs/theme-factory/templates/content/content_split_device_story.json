@@ -1,0 +1,149 @@
+{
+  "template_id": "content_split_device_story",
+  "family": "content",
+  "name": "Split Device Story",
+  "purpose": "Asymmetric narrative layout with a large device mockup on one side and an editorial headline stack on the other.",
+  "selection_summary": "Use when one product visual or screen placeholder should dominate one half of the page while copy leads the other.",
+  "best_for": [
+    "product explainer slides",
+    "AI assistant showcases",
+    "mobile-first product stories"
+  ],
+  "avoid_when": [
+    "no visual placeholder is available",
+    "the page needs more than one supporting card"
+  ],
+  "recommended_item_range": "1 image placeholder + 1 eyebrow + 1 headline + 1 paragraph",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "hero_visual",
+      "component_type": "generic_diagram",
+      "region": "canvas",
+      "style_role": "surface_secondary"
+    },
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 20
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 58
+    },
+    {
+      "slot_id": "subtitle_or_context",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 112
+    }
+  ],
+  "layout_rules": [
+    "The device block should remain visually dominant.",
+    "Copy stays right-aligned and vertically centered."
+  ],
+  "background_policy": "light_gradient_with_subtle_grid",
+  "preview_content": {
+    "hero_visual": "",
+    "eyebrow": "Product Story",
+    "title": "An assistant interface that feels immediate and human",
+    "subtitle_or_context": "Pair a tall visual placeholder with a large narrative headline and one short paragraph describing the user value."
+  },
+  "executable": {
+    "geometry": {
+      "image": {
+        "x": 72,
+        "y": 84,
+        "w": 640,
+        "h": 724
+      },
+      "eyebrow": {
+        "x": 832,
+        "y": 156,
+        "w": 420,
+        "h": 44
+      },
+      "title": {
+        "x": 842,
+        "y": 308,
+        "w": 580,
+        "h": 208
+      },
+      "subtitle": {
+        "x": 846,
+        "y": 534,
+        "w": 510,
+        "h": 126
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "image",
+            "box": "image",
+            "content_key": "hero_visual",
+            "label": "Device Placeholder",
+            "z_index": 2,
+            "style": {
+              "radius": 40,
+              "fill": "transparent",
+              "border_color": "transparent",
+              "icon_name": "chat",
+              "icon_size": 94,
+              "label_size": 24
+            }
+          },
+          {
+            "kind": "text",
+            "box": "eyebrow",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 700,
+              "color": "surface_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.03,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "subtitle",
+            "content_key": "subtitle_or_context",
+            "z_index": 2,
+            "style": {
+              "font_size": 22,
+              "font_weight": 500,
+              "line_height": 1.45,
+              "color": "text_secondary"
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

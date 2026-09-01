@@ -1,0 +1,240 @@
+{
+  "id": "forest-canopy",
+  "name": "Forest Canopy",
+  "description": "A natural and grounded theme featuring earth tones inspired by dense forest environments.",
+  "mode": "light",
+  "palette": {
+    "bg_base": "#faf9f6",
+    "bg_elevated": "#f1f0ea",
+    "surface_base": "#fffefb",
+    "surface_alt": "#eef1e8",
+    "surface_accent": "#2d4a2b",
+    "text_primary": "#223321",
+    "text_secondary": "#5d6957",
+    "text_on_accent": "#f8fafc",
+    "border_subtle": "rgba(45,74,43,0.16)",
+    "border_strong": "rgba(45,74,43,0.30)"
+  },
+  "gradients": {
+    "canvas_gradient": "linear-gradient(180deg, #fffefb 0%, #f1f0ea 100%)",
+    "accent_gradient": "linear-gradient(135deg, #2d4a2b 0%, #7d8471 100%)",
+    "hero_gradient": "radial-gradient(circle at 80% 22%, rgba(125,132,113,0.14) 0%, rgba(164,172,134,0.10) 24%, rgba(255,255,255,0) 44%)"
+  },
+  "shape": {
+    "radius_sm": "12",
+    "radius_md": "18",
+    "radius_lg": "26",
+    "radius_chip": "999"
+  },
+  "elevation": {
+    "shadow_none": "none",
+    "shadow_soft": "0 10px 24px rgba(45,74,43,0.10)",
+    "shadow_strong": "0 18px 38px rgba(45,74,43,0.16)"
+  },
+  "stroke": {
+    "line_subtle": "rgba(45,74,43,0.16)",
+    "line_accent": "rgba(164,172,134,0.38)"
+  },
+  "typography": {
+    "header_font": "FreeSerif Bold",
+    "body_font": "FreeSans",
+    "title": {
+      "color": "text_primary",
+      "font_size": "48",
+      "section_font_size": "34",
+      "font_weight": "800",
+      "line_height": "1.22",
+      "section_line_height": "1.18",
+      "section_color": "text_primary",
+      "background": "glass_surface",
+      "border_color": "line_subtle",
+      "radius": "radius_md",
+      "padding": "18"
+    },
+    "subtitle": {
+      "color": "text_secondary",
+      "font_size": "18",
+      "font_weight": "500",
+      "line_height": "1.34",
+      "background": "",
+      "border_color": "",
+      "radius": "",
+      "padding": ""
+    }
+  },
+  "best_used_for": [
+    "Environmental presentations",
+    "Sustainability reports",
+    "Wellness content",
+    "Organic products"
+  ],
+  "page_policy": {
+    "cover": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "panel": "surface_inverse",
+      "accent": "accent_fill"
+    },
+    "agenda": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "panel": "surface_primary",
+      "number": "accent_fill",
+      "background": "canvas_gradient",
+      "line": "line_subtle",
+      "card": "surface_primary",
+      "pill": "surface_primary",
+      "pill_number": "surface_primary",
+      "grid_background": "canvas_gradient",
+      "grid_line": "line_subtle",
+      "grid_card": "surface_primary"
+    },
+    "content": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "panel": "surface_primary",
+      "diagram_panel": "surface_secondary"
+    },
+    "comparison": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "header": "accent_fill",
+      "body": "surface_primary"
+    },
+    "summary": {
+      "background_policy": "light_gradient",
+      "card": "surface_primary",
+      "statement": "surface_muted"
+    },
+    "progress": {
+      "background_policy": "light_gradient",
+      "stage": "accent_fill",
+      "notes": "surface_primary"
+    }
+  },
+  "semantic_tokens": {
+    "surface_primary": "#fffefb",
+    "surface_secondary": "#eef1e8",
+    "surface_tertiary": "#dde3d4",
+    "surface_inverse": "#223321",
+    "surface_muted": "rgba(45,74,43,0.06)",
+    "accent_fill": "#2d4a2b",
+    "accent_soft": "rgba(164,172,134,0.10)",
+    "accent_line": "rgba(164,172,134,0.38)",
+    "glass_surface": "rgba(255,254,251,0.74)",
+    "content_card_surface_a": "linear-gradient(180deg, #fffefc 0%, #f6f5f0 100%)",
+    "content_card_surface_b": "linear-gradient(180deg, #f7f6f1 0%, #e8ece0 100%)",
+    "content_band_surface": "linear-gradient(180deg, rgba(164,172,134,0.18) 0%, rgba(45,74,43,0.10) 100%)",
+    "table_header_surface": "linear-gradient(180deg, rgba(241,240,234,0.96) 0%, rgba(221,227,212,0.92) 100%)"
+  },
+  "template_overrides": {
+    "agenda_orbit_branches": {
+      "agenda": {
+        "grid_card": "surface_inverse"
+      }
+    },
+    "cover_overview": {
+      "typography": {
+        "subtitle": {
+          "color": "#223321",
+          "background": "rgba(238,241,232,0.90)",
+          "border_color": "line_accent",
+          "radius": "radius_lg",
+          "padding": "10"
+        }
+      }
+    },
+    "cover_relationship_hub": {
+      "cover": {
+        "mode": "bubble_field",
+        "background_layers": [
+          "hero_gradient",
+          "bubbles",
+          "vignette"
+        ],
+        "bubble_opacity": "1",
+        "bubble_color": "rgba(125,132,113,0.24)",
+        "arrow_bg": "#fffefb",
+        "arrow_color": "#2d4a2b",
+        "arrow_border_color": "rgba(45,74,43,0.18)",
+        "arrow_shadow": "0 12px 24px rgba(45,74,43,0.15)",
+        "bubbles": [
+          {
+            "left": "67%",
+            "top": "-14%",
+            "width": "250px",
+            "height": "250px",
+            "color": "rgba(164,172,134,0.24)",
+            "opacity": "1"
+          },
+          {
+            "left": "39%",
+            "top": "25%",
+            "width": "265px",
+            "height": "265px",
+            "color": "rgba(45,74,43,0.14)",
+            "opacity": "1"
+          },
+          {
+            "left": "66%",
+            "top": "25%",
+            "width": "265px",
+            "height": "265px",
+            "color": "rgba(164,172,134,0.18)",
+            "opacity": "1"
+          },
+          {
+            "left": "8%",
+            "bottom": "-18%",
+            "width": "300px",
+            "height": "300px",
+            "color": "rgba(45,74,43,0.10)",
+            "opacity": "1"
+          },
+          {
+            "left": "38%",
+            "bottom": "-20%",
+            "width": "320px",
+            "height": "320px",
+            "color": "rgba(125,132,113,0.14)",
+            "opacity": "1"
+          },
+          {
+            "right": "8%",
+            "bottom": "-18%",
+            "width": "300px",
+            "height": "300px",
+            "color": "rgba(164,172,134,0.14)",
+            "opacity": "1"
+          }
+        ]
+      },
+      "typography": {
+        "title": {
+          "color": "#223321",
+          "font_size": "48",
+          "line_height": "1.02",
+          "background": "",
+          "border_color": "",
+          "padding": ""
+        },
+        "subtitle": {
+          "color": "#5d6957",
+          "font_size": "20",
+          "line_height": "1.2",
+          "background": "",
+          "border_color": "",
+          "radius": "",
+          "padding": ""
+        }
+      }
+    },
+    "cover_split_hero": {
+      "typography": {
+        "title": {
+          "color": "text_primary",
+          "background": "",
+          "border_color": "",
+          "radius": "",
+          "padding": ""
+        }
+      }
+    }
+  }
+}

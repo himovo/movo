@@ -1,0 +1,13 @@
+structure:
+  required_sections:
+    - Conclusion
+    - Evidence
+    - Risks
+data:
+  must_include_fields:
+    - Data source
+    - Date range
+  freshness_days: 365
+style:
+  tone: professional
+  language: en

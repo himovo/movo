@@ -1,0 +1,91 @@
+{
+  "template_id": "agenda_flow",
+  "family": "agenda",
+  "name": "Agenda Side Index",
+  "purpose": "Editorial agenda with a title wall on the left and a numbered section index on the right.",
+  "selection_summary": "Use for five-or-fewer agenda chapters when the page should feel like a clean pitch-deck opener.",
+  "best_for": [
+    "4 to 5 agenda sections",
+    "pitch decks",
+    "clean introductory pages"
+  ],
+  "avoid_when": [
+    "agenda has more than 5 sections",
+    "agenda needs grouped chapters"
+  ],
+  "preferred_visual_forms": [
+    "side_index",
+    "editorial_list"
+  ],
+  "preferred_slide_roles": [
+    "agenda",
+    "orientation"
+  ],
+  "preferred_density_targets": [
+    "medium"
+  ],
+  "recommended_item_range": "4 to 5 sections, one line per section",
+  "layout_regions": [
+    "left_panel",
+    "right_panel"
+  ],
+  "supported_components": [
+    "title",
+    "agenda_list"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "left_panel",
+      "style_role": "section_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "agenda_main",
+      "component_type": "agenda_list",
+      "region": "right_panel",
+      "style_role": "surface_primary",
+      "max_items": 5
+    }
+  ],
+  "layout_rules": [
+    "Left side holds the agenda title and breathing room.",
+    "Right side holds a numbered list with one concise label per section."
+  ],
+  "executable": {
+    "geometry": {
+      "title": {
+        "x": 120,
+        "y": 250,
+        "w": 300,
+        "h": 180
+      },
+      "agenda": {
+        "x": 470,
+        "y": 150,
+        "w": 920,
+        "h": 560
+      }
+    },
+    "agenda": {
+      "mode": "side_index",
+      "max_items": 5,
+      "layout": {
+        "list_padding_top": 8,
+        "row_padding_y": 20,
+        "number_column_width": 96,
+        "content_gap_x": 18
+      },
+      "style": {
+        "show_shell": false,
+        "number_font_size": 50,
+        "title_font_size": 18,
+        "desc_font_size": 12,
+        "divider_width": 0
+      }
+    },
+    "title_style": "section_title"
+  }
+}

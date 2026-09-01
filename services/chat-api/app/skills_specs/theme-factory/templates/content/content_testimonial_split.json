@@ -1,0 +1,174 @@
+{
+  "template_id": "content_testimonial_split",
+  "family": "content",
+  "name": "Split Testimonial Story",
+  "purpose": "Dark split testimonial layout with a quote block on the left and a large customer image placeholder on the right.",
+  "selection_summary": "Use when a testimonial should feel more editorial and personal than a centered quote slide.",
+  "best_for": [
+    "customer stories",
+    "testimonial slides with portrait imagery",
+    "proof pages in dark decks"
+  ],
+  "avoid_when": [
+    "no portrait image is available",
+    "a simple centered quote would be stronger"
+  ],
+  "recommended_item_range": "1 quote + 1 name + 1 role + 1 portrait image",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "quote_text",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 110
+    },
+    {
+      "slot_id": "speaker_name",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 40
+    },
+    {
+      "slot_id": "speaker_role",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 40
+    },
+    {
+      "slot_id": "hero_visual",
+      "component_type": "generic_diagram",
+      "region": "canvas",
+      "style_role": "surface_secondary"
+    }
+  ],
+  "layout_rules": [
+    "Keep the quote block narrow and editorial.",
+    "The portrait placeholder should fill the right half vertically."
+  ],
+  "background_policy": "dark_gradient",
+  "preview_content": {
+    "title": "Customer story",
+    "quote_text": "\"Our support team became faster, calmer, and more consistent once adaptive AI took over the repetitive queue.\"",
+    "speaker_name": "William Miller",
+    "speaker_role": "CEO, NeuralWave Solutions",
+    "hero_visual": ""
+  },
+  "executable": {
+    "geometry": {
+      "title": {
+        "x": 120,
+        "y": 172,
+        "w": 440,
+        "h": 72
+      },
+      "quote": {
+        "x": 120,
+        "y": 330,
+        "w": 560,
+        "h": 256
+      },
+      "name": {
+        "x": 120,
+        "y": 642,
+        "w": 340,
+        "h": 46
+      },
+      "role": {
+        "x": 120,
+        "y": 694,
+        "w": 360,
+        "h": 36
+      },
+      "image": {
+        "x": 942,
+        "y": 0,
+        "w": 658,
+        "h": 900
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 58,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "quote",
+            "content_key": "quote_text",
+            "z_index": 2,
+            "style": {
+              "font_size": 34,
+              "font_weight": 500,
+              "line_height": 1.5,
+              "color": "text_secondary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "name",
+            "content_key": "speaker_name",
+            "z_index": 2,
+            "style": {
+              "font_size": 28,
+              "font_weight": 800,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "role",
+            "content_key": "speaker_role",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 500,
+              "color": "text_secondary"
+            }
+          },
+          {
+            "kind": "image",
+            "box": "image",
+            "content_key": "hero_visual",
+            "label": "Portrait Placeholder",
+            "z_index": 2,
+            "style": {
+              "radius": 0,
+              "fill": "surface_secondary",
+              "icon_name": "users",
+              "icon_size": 96,
+              "label_size": 24
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

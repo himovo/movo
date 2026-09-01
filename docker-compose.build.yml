@@ -1,0 +1,54 @@
+services:
+  dsh-runtime-host:
+    pull_policy: build
+    build:
+      context: ./services/chat-api/dsh/runtime-host
+      dockerfile: Dockerfile
+
+  chat-api:
+    pull_policy: build
+    build:
+      context: ./services/chat-api
+      dockerfile: Dockerfile
+      args:
+        INSTALL_SYSTEM_DEPS_AT_BUILD: "true"
+        INSTALL_PLAYWRIGHT_AT_BUILD: "true"
+        PLAYWRIGHT_WITH_DEPS: "true"
+
+  admin-api:
+    pull_policy: build
+    build:
+      context: ./services/admin-api
+      dockerfile: Dockerfile
+
+  document-api:
+    pull_policy: build
+    build: &document-build
+      context: ./services/document-parser
+      dockerfile: Dockerfile
+      args:
+        INSTALL_SYSTEM_DEPS_AT_BUILD: "true"
+        INSTALL_PYTHON_DEPS_AT_BUILD: "true"
+        INSTALL_DOCLING_MODELS_AT_BUILD: "true"
+        PYTORCH_ACCELERATOR: cpu
+
+  document-worker:
+    pull_policy: build
+    build: *document-build
+
+  user-web:
+    pull_policy: build
+    build:
+      context: ./apps/user-web
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_ADMIN_WEB_URL: /admin/
+
+  admin-web:
+    pull_policy: build
+    build:
+      context: ./apps/admin-web
+      dockerfile: Dockerfile
+      args:
+        VITE_BASE_PATH: /admin/
+        VITE_ADMIN_API_BASE_URL: /admin-api

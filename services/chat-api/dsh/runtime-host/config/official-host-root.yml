@@ -1,0 +1,4 @@
+# ASKAI's reusable DSH Host has no hand-maintained plugin tree. The effective
+# tree is the official @deepseek-ai/dsh-base bundle plus a versioned ASKAI
+# overlay, applied by src/official-host/composition.mjs.
+[]

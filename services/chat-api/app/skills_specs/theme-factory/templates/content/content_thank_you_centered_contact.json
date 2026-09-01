@@ -1,0 +1,200 @@
+{
+  "template_id": "content_thank_you_centered_contact",
+  "family": "content",
+  "name": "Thank You Centered Contact",
+  "purpose": "Centered closing slide with a dominant thank-you message, one short supporting line, a top-right deck pill, and three contact methods aligned along the bottom.",
+  "selection_summary": "Use for a clean closing page where gratitude is central and contact details should stay light but visible.",
+  "best_for": [
+    "thank-you slides",
+    "closing contact pages",
+    "clean pitch-deck endings"
+  ],
+  "avoid_when": [
+    "a hero image should be included",
+    "the closing page must feel dark and dramatic"
+  ],
+  "recommended_item_range": "1 hero thank-you + 1 support line + 3 contact items",
+  "preferred_slide_roles": [
+    "closing",
+    "thank_you",
+    "contact"
+  ],
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "deck_label",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 17
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "subtitle_or_context",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 44
+    },
+    {
+      "slot_id": "contact_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 3,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 10,
+          "max_chars_latin": 27
+        }
+      ],
+      "max_chars_cjk": 10,
+      "max_chars_latin": 27
+    }
+  ],
+  "layout_rules": [
+    "The thank-you headline should dominate the center.",
+    "Contact items should stay evenly distributed along the bottom edge."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "deck_label": "Pitch deck",
+    "title": "Thank you.",
+    "subtitle_or_context": "Your next AI journey starts here.",
+    "contact_cards": [
+      {
+        "icon": "chat",
+        "title": "hello@example.com"
+      },
+      {
+        "icon": "clock",
+        "title": "+1 (555) 555-0123"
+      },
+      {
+        "icon": "spark",
+        "title": "example.com"
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "deck_pill": {
+        "x": 1198,
+        "y": 84,
+        "w": 282,
+        "h": 64
+      },
+      "title": {
+        "x": 414,
+        "y": 316,
+        "w": 774,
+        "h": 136
+      },
+      "subtitle": {
+        "x": 508,
+        "y": 482,
+        "w": 584,
+        "h": 56
+      },
+      "contacts": {
+        "x": 120,
+        "y": 744,
+        "w": 1360,
+        "h": 76
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "pill",
+            "box": "deck_pill",
+            "content_key": "deck_label",
+            "z_index": 2,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 999,
+              "font_size": 18,
+              "font_weight": 700,
+              "color": "text_on_accent",
+              "text_align": "center"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 0.98,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "subtitle",
+            "content_key": "subtitle_or_context",
+            "z_index": 2,
+            "style": {
+              "font_size": 26,
+              "font_weight": 700,
+              "line_height": 1.24,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "contacts",
+            "content_key": "contact_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 3,
+              "gap": 28,
+              "content_layout": "icon_left",
+              "content_align": "center",
+              "content_gap": 14,
+              "card_fill": "transparent",
+              "card_border_color": "transparent",
+              "card_shadow": "none",
+              "card_padding": 0,
+              "icon_wrap": 40,
+              "icon_fill": "surface_primary",
+              "icon_color": "surface_accent",
+              "title_font_size": 18,
+              "title_color": "text_primary",
+              "body_font_size": 0,
+              "title_font_weight": 700
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

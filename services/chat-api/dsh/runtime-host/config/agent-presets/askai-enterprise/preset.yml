@@ -1,0 +1,3 @@
+name: MOVO 企业助手
+description: 使用 MOVO 企业工具且不暴露本地代码、文件系统或 Shell 能力的普通会话。
+order: 1

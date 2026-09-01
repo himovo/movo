@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#app {
+  background: #ffffff;
+}
+
+html.theme-dark,
+html.theme-dark body,
+html.theme-dark #app {
+  background: #111827;
+}
+
+html.theme-dark .app-shell,
+html.theme-dark .app-main,
+html.theme-dark .bg-white {
+  background-color: #111827 !important;
+}
+
+html.theme-dark .app-shell > aside,
+html.theme-dark .bg-\[\#f8fafc\] {
+  background-color: #0b1220 !important;
+}
+
+html.theme-dark .bg-white\/50,
+html.theme-dark .bg-white\/95 {
+  background-color: rgba(17, 24, 39, 0.92) !important;
+}
+
+html.theme-dark .bg-gray-50,
+html.theme-dark .bg-slate-50 {
+  background-color: #182131 !important;
+}
+
+html.theme-dark .bg-gray-100,
+html.theme-dark .bg-slate-100,
+html.theme-dark .bg-gray-200,
+html.theme-dark .bg-slate-200 {
+  background-color: #253044 !important;
+}
+
+html.theme-dark .bg-blue-50,
+html.theme-dark .bg-blue-100 {
+  background-color: rgba(37, 99, 235, 0.18) !important;
+}
+
+html.theme-dark .text-gray-900,
+html.theme-dark .text-slate-900,
+html.theme-dark .text-gray-800,
+html.theme-dark .text-slate-800 {
+  color: #f1f5f9 !important;
+}
+
+html.theme-dark .text-gray-700,
+html.theme-dark .text-slate-700,
+html.theme-dark .text-gray-600,
+html.theme-dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+html.theme-dark .text-gray-500,
+html.theme-dark .text-slate-500,
+html.theme-dark .text-gray-400,
+html.theme-dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .text-blue-700,
+html.theme-dark .text-blue-600,
+html.theme-dark .text-blue-500 {
+  color: #60a5fa !important;
+}
+
+html.theme-dark .border-gray-100,
+html.theme-dark .border-gray-200,
+html.theme-dark .border-gray-300,
+html.theme-dark .border-slate-100,
+html.theme-dark .border-slate-200,
+html.theme-dark .border-slate-300 {
+  border-color: #334155 !important;
+}
+
+html.theme-dark .prose {
+  --tw-prose-body: #cbd5e1;
+  --tw-prose-headings: #f1f5f9;
+  --tw-prose-lead: #94a3b8;
+  --tw-prose-links: #60a5fa;
+  --tw-prose-bold: #f8fafc;
+  --tw-prose-counters: #94a3b8;
+  --tw-prose-bullets: #64748b;
+  --tw-prose-hr: #334155;
+  --tw-prose-quotes: #e2e8f0;
+  --tw-prose-quote-borders: #475569;
+  --tw-prose-captions: #94a3b8;
+  --tw-prose-code: #f8fafc;
+  --tw-prose-pre-code: #e2e8f0;
+  --tw-prose-pre-bg: #0f172a;
+  --tw-prose-th-borders: #475569;
+  --tw-prose-td-borders: #334155;
+}
+
+html.theme-dark input,
+html.theme-dark textarea {
+  color-scheme: dark;
+}
+
+/* Global motion kill-switch. When concurrent infinite animations cause
+   rendering pressure, users / settings can toggle the
+   ``reduce-motion`` class on <html> or <body> to pause every infinite
+   animation instantly. Per-component CSS also respects the standard
+   ``prefers-reduced-motion: reduce`` media query. */
+:where(html.reduce-motion, body.reduce-motion) *,
+:where(html.reduce-motion, body.reduce-motion) *::before,
+:where(html.reduce-motion, body.reduce-motion) *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}

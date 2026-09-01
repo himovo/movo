@@ -1,0 +1,188 @@
+{
+  "template_id": "content_market_pie_legend",
+  "family": "content",
+  "name": "Market Pie Legend",
+  "purpose": "Market landscape page with a large pie chart on the left and oversized legend values on the right.",
+  "selection_summary": "Use when market tiers should be compared proportionally with a direct legend rather than a table.",
+  "best_for": [
+    "market share framing",
+    "portfolio mix pages",
+    "TAM SAM SOM visualization"
+  ],
+  "avoid_when": [
+    "precise time-series data matters more than share",
+    "there are more than three segments"
+  ],
+  "recommended_item_range": "1 eyebrow + 1 headline + 1 pie chart + 3 legend entries",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 25
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 39
+    },
+    {
+      "slot_id": "chart_data",
+      "component_type": "generic_diagram",
+      "region": "canvas",
+      "style_role": "surface_primary"
+    },
+    {
+      "slot_id": "legend_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 3,
+      "item_fields": [
+        {
+          "field_name": "meta",
+          "field_type": "meta",
+          "required": true,
+          "max_chars_cjk": 6,
+          "max_chars_latin": 8
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 37
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 37
+    }
+  ],
+  "layout_rules": [
+    "The pie chart should be oversized and soft-edged.",
+    "Legend entries should read as large numeric markers."
+  ],
+  "background_policy": "light_gradient_with_subtle_grid",
+  "preview_content": {
+    "eyebrow": "Market Opportunity",
+    "title": "The AI support market landscape",
+    "chart_data": "",
+    "legend_cards": [
+      {
+        "meta": "$50B",
+        "title": "Total Addressable Market"
+      },
+      {
+        "meta": "$15B",
+        "title": "Serviceable Available Market"
+      },
+      {
+        "meta": "$3B",
+        "title": "Serviceable Obtainable Market"
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "eyebrow": {
+        "x": 126,
+        "y": 74,
+        "w": 320,
+        "h": 42
+      },
+      "title": {
+        "x": 126,
+        "y": 118,
+        "w": 760,
+        "h": 118
+      },
+      "chart": {
+        "x": 86,
+        "y": 242,
+        "w": 700,
+        "h": 620
+      },
+      "legend": {
+        "x": 860,
+        "y": 300,
+        "w": 520,
+        "h": 390
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "eyebrow",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 700,
+              "color": "surface_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "image",
+            "box": "chart",
+            "content_key": "chart_data",
+            "label": "Pie Chart Placeholder",
+            "z_index": 2,
+            "style": {
+              "radius": 999,
+              "fill": "surface_primary",
+              "border_color": "border_subtle",
+              "placeholder_fill": "surface_muted",
+              "icon_name": "growth",
+              "icon_size": 110,
+              "label_size": 22,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "legend",
+            "content_key": "legend_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 1,
+              "gap": 30,
+              "card_fill": "transparent",
+              "card_border_color": "transparent",
+              "card_shadow": "none",
+              "card_padding": 0,
+              "icon_wrap": 0,
+              "meta_font_size": 34,
+              "meta_color": "text_primary",
+              "title_font_size": 24,
+              "body_font_size": 0
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

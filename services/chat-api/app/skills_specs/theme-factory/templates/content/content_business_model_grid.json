@@ -1,0 +1,170 @@
+{
+  "template_id": "content_business_model_grid",
+  "family": "content",
+  "name": "Business Model Grid",
+  "purpose": "2x2 business model grid using icon-led cards with descriptive labels and short monetization lines.",
+  "selection_summary": "Use when four monetization paths or business model blocks should be presented with equal visual weight and a simple icon anchor.",
+  "best_for": [
+    "business model pages",
+    "revenue stream overviews",
+    "go-to-market monetization slides"
+  ],
+  "avoid_when": [
+    "a pricing table is more appropriate",
+    "there are fewer than three revenue streams"
+  ],
+  "recommended_item_range": "1 headline + 4 icon-led business model cards",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 40
+    },
+    {
+      "slot_id": "model_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 4,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 29
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 26,
+          "max_chars_latin": 67
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 29
+    }
+  ],
+  "layout_rules": [
+    "Use a balanced 2x2 grid.",
+    "Each card should place a compact icon above the business model title."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "title": "How the business creates revenue",
+    "model_cards": [
+      {
+        "icon": "clock",
+        "title": "Subscription model",
+        "body": "Recurring plans for teams and recurring workflows."
+      },
+      {
+        "icon": "chat",
+        "title": "Pay-per-use API",
+        "body": "Usage-based charges for each completed interaction."
+      },
+      {
+        "icon": "brain",
+        "title": "Enterprise licensing",
+        "body": "Custom deployments for regulated or high-scale teams."
+      },
+      {
+        "icon": "users",
+        "title": "Partner programs",
+        "body": "Channel, referral, and affiliate growth motions."
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "title": {
+        "x": 420,
+        "y": 94,
+        "w": 760,
+        "h": 108
+      },
+      "cards_backdrop": {
+        "x": 92,
+        "y": 222,
+        "w": 1416,
+        "h": 552
+      },
+      "cards": {
+        "x": 122,
+        "y": 248,
+        "w": 1350,
+        "h": 500
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "panel",
+            "box": "cards_backdrop",
+            "z_index": 1,
+            "style": {
+              "fill": "content_band_surface",
+              "radius": 40,
+              "opacity": 0.62
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "cards",
+            "content_key": "model_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 2,
+              "gap": 34,
+              "card_border_color": "border_strong",
+              "card_shadow": "shadow_soft",
+              "card_radius": 28,
+              "card_padding": 22,
+              "icon_wrap": 54,
+              "icon_fill": "accent_soft",
+              "icon_color": "surface_accent",
+              "title_font_size": 22,
+              "body_font_size": 18,
+              "card_fills": [
+                "content_card_surface_a",
+                "content_card_surface_b",
+                "content_card_surface_b",
+                "content_card_surface_a"
+              ]
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

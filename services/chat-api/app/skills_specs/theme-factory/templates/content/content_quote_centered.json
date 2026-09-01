@@ -1,0 +1,150 @@
+{
+  "template_id": "content_quote_centered",
+  "family": "content",
+  "name": "Centered Testimonial Quote",
+  "purpose": "Centered testimonial page with a circular avatar, oversized quote, and speaker attribution beneath.",
+  "selection_summary": "Use when one customer quote should dominate the entire page and act as a proof-point centerpiece.",
+  "best_for": [
+    "testimonials",
+    "customer proof quotes",
+    "trust-building slides"
+  ],
+  "avoid_when": [
+    "more than one quote is needed",
+    "a side-by-side customer story would be stronger"
+  ],
+  "recommended_item_range": "1 avatar + 1 quote + 1 name + 1 role",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "hero_visual",
+      "component_type": "generic_diagram",
+      "region": "canvas",
+      "style_role": "surface_secondary"
+    },
+    {
+      "slot_id": "quote_text",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 96
+    },
+    {
+      "slot_id": "speaker_name",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 40
+    },
+    {
+      "slot_id": "speaker_role",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 40
+    }
+  ],
+  "layout_rules": [
+    "The quote should be the only dominant text block.",
+    "Avatar stays centered and small relative to the statement."
+  ],
+  "background_policy": "light_gradient_with_subtle_grid",
+  "preview_content": {
+    "hero_visual": "",
+    "quote_text": "\"The system reduced response time by 60% and made support feel dramatically more consistent.\"",
+    "speaker_name": "William Miller",
+    "speaker_role": "CEO, NeuralWave Solutions"
+  },
+  "executable": {
+    "geometry": {
+      "avatar": {
+        "x": 688,
+        "y": 64,
+        "w": 224,
+        "h": 224
+      },
+      "quote": {
+        "x": 246,
+        "y": 332,
+        "w": 1108,
+        "h": 240
+      },
+      "name": {
+        "x": 580,
+        "y": 690,
+        "w": 440,
+        "h": 44
+      },
+      "role": {
+        "x": 516,
+        "y": 736,
+        "w": 568,
+        "h": 36
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "image",
+            "box": "avatar",
+            "content_key": "hero_visual",
+            "label": "Avatar",
+            "z_index": 2,
+            "style": {
+              "radius": 999,
+              "fill": "surface_muted",
+              "icon_name": "users",
+              "icon_size": 84,
+              "label_size": 0
+            }
+          },
+          {
+            "kind": "text",
+            "box": "quote",
+            "content_key": "quote_text",
+            "z_index": 2,
+            "style": {
+              "font_size": 66,
+              "font_weight": 800,
+              "line_height": 1.08,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "name",
+            "content_key": "speaker_name",
+            "z_index": 2,
+            "style": {
+              "font_size": 26,
+              "font_weight": 800,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "role",
+            "content_key": "speaker_role",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 500,
+              "text_align": "center",
+              "color": "text_secondary"
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

@@ -1,0 +1,75 @@
+# MOVO DSH dependency lock policy (format 1)
+# Generated during migration step 1 on 2026-08-15.
+# This file records approved direct artifacts. Step 2 must create pnpm-lock.yaml
+# and verify every transitive package against the same release train.
+
+[upstream]
+repository = "https://github.com/deepseek-ai/deepseek-harness"
+reviewed_commit = "0a53fb55bea101816fa226bb964ae2bed71c343b"
+reviewed_commit_root_version = "0.1.2-alpha.2"
+default_branch = "master"
+deploy_from_branch = false
+allow_floating_versions = false
+
+# npm metadata does not expose a verified source commit mapping for the
+# installable release train, so source-to-package provenance remains explicitly
+# unverified until DeepSeek publishes that mapping.
+[release_train]
+version = "0.1.2-alpha.2"
+source_mapping = "unverified-by-upstream"
+policy = "all @deepseek-ai/dsh and @deepseek-ai/dsh-* packages must resolve exactly to 0.1.2-alpha.2"
+
+[[artifact]]
+name = "@deepseek-ai/dsh"
+version = "0.1.2-alpha.2"
+registry = "https://registry.npmjs.org"
+tarball = "https://registry.npmjs.org/@deepseek-ai/dsh/-/dsh-0.1.2-alpha.2.tgz"
+integrity = "sha512-4TvTC5kRKlgtSU2UTBv+cID9a2Z+6+m6mpvjXWJfVzuTkflCff6s4MsQpFJTCmwFh/k7zNWe7qFXcLYMV/5VvA=="
+shasum = "2652fc9a1bafae85c69da581178b4060a065a40a"
+
+[[artifact]]
+name = "@deepseek-ai/cordis"
+version = "4.0.2"
+registry = "https://registry.npmjs.org"
+integrity = "sha512-asOnXP1TzFSFQlHb1iegDZp0z/8WD1c7YNrwJR/Tx2bzNuMXfcekE/I67Iv6SQXeLB4csxqCngzQKANP7gdw0g=="
+shasum = "ddffbc3b366dd71fe5f0a61c483cbe0c72df5103"
+
+[[artifact]]
+name = "@deepseek-ai/cordis-plugin-loader"
+version = "1.0.3"
+registry = "https://registry.npmjs.org"
+integrity = "sha512-YNcHiH7TRFrgnRbQU7qdS1spABUFFHg04QpB9DdboPEjgKLTFfeEAvr6Y7qll3/nGgqywDQdk1tYshqKO0p1WQ=="
+shasum = "1170e40ca55f5326a316cee23a2de361fa05a291"
+
+[[artifact]]
+name = "@deepseek-ai/cordis-plugin-include"
+version = "1.0.7"
+registry = "https://registry.npmjs.org"
+integrity = "sha512-bZ4S1YuOmwOeE97HnslQ6ggVQbaWz4GejJ8OcY4P/DIyc1Qhu/3Szt1XSw6c/pd37kRkxxJXGwt4cmCxWSBBuw=="
+shasum = "931a143e5edbd9d94b736287de8a287c5197b6e6"
+
+[[artifact]]
+name = "@deepseek-ai/cordis-plugin-hmr"
+version = "1.0.17"
+registry = "https://registry.npmjs.org"
+integrity = "sha512-o1BooaJpwd+C80Tn5+B48MGqrfNZydlfRVQjmCrrULA4nCmlMqBKjDF2FmcZoNP+L2uX9m/6DdGKVtFpQRQVUQ=="
+shasum = "a1b5a1dd7499c595e3c9c97ecfaae1fbfff74208"
+
+[[artifact]]
+name = "@deepseek-ai/cordis-plugin-timer"
+version = "1.1.4"
+registry = "https://registry.npmjs.org"
+integrity = "sha512-GhxOiU+TF2BbNBKlV2N24zvfv2Kh7RxkFW1hjML6s+DOb+y2zomzbeC5zHIIjsc/rpRwbKpDNucPGSwkH0ChXw=="
+shasum = "8b5506a0392079833ea0e49138d0a95cf8e4f97d"
+
+[license_evidence]
+license = "MIT"
+license_sha256 = "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be"
+third_party_notices_sha256 = "61f68731049dbea19ba91ad8cf363dd2778c5f7b1f9a63496a6a62c1129eefee"
+
+[step_2_requirements]
+generate_pnpm_lock = true
+verify_release_train = true
+verify_integrities = true
+generate_sbom = true
+reject_unlisted_direct_dependencies = true

@@ -1,0 +1,245 @@
+{
+  "id": "ocean-depths",
+  "name": "Ocean Depths",
+  "description": "A refined maritime-inspired theme with improved contrast, cleaner layering, and elegant blue-cyan highlights while preserving the original calm ocean identity.",
+  "mode": "dark",
+  "palette": {
+    "bg_base": "#0a1a1f",
+    "bg_elevated": "#0f2228",
+    "surface_base": "#122a32",
+    "surface_alt": "#17363f",
+    "surface_accent": "#3ba6a6",
+    "text_primary": "#f1f5f9",
+    "text_secondary": "#94a3b8",
+    "text_on_accent": "#ffffff",
+    "border_subtle": "rgba(148,163,184,0.16)",
+    "border_strong": "rgba(148,163,184,0.30)"
+  },
+  "gradients": {
+    "canvas_gradient": "linear-gradient(180deg, #1a3d47 0%, #0f2a32 50%, #0a1a1f 100%)",
+    "accent_gradient": "linear-gradient(135deg, #3ba6a6 0%, #60a5fa 100%)",
+    "hero_gradient": "radial-gradient(circle at 75% 20%, rgba(59,166,166,0.22) 0%, rgba(96,165,250,0.12) 25%, rgba(10,26,31,0) 50%)"
+  },
+  "shape": {
+    "radius_sm": "10",
+    "radius_md": "16",
+    "radius_lg": "24",
+    "radius_chip": "999"
+  },
+  "elevation": {
+    "shadow_none": "none",
+    "shadow_soft": "0 10px 24px rgba(0,0,0,0.18)",
+    "shadow_strong": "0 20px 50px rgba(0,0,0,0.28)"
+  },
+  "stroke": {
+    "line_subtle": "rgba(148,163,184,0.16)",
+    "line_accent": "rgba(96,165,250,0.50)"
+  },
+  "typography": {
+    "header_font": "DejaVu Sans Bold",
+    "body_font": "DejaVu Sans",
+    "title": {
+      "color": "text_primary",
+      "font_size": "48",
+      "section_font_size": "34",
+      "font_weight": "800",
+      "line_height": "1.25",
+      "section_line_height": "1.18",
+      "section_color": "text_primary",
+      "background": "glass_surface",
+      "border_color": "line_subtle",
+      "radius": "radius_md",
+      "padding": "18"
+    },
+    "subtitle": {
+      "color": "text_secondary",
+      "font_size": "18",
+      "font_weight": "500",
+      "line_height": "1.38",
+      "background": "",
+      "border_color": "",
+      "radius": "",
+      "padding": ""
+    }
+  },
+  "template_overrides": {
+    "agenda_orbit_branches": {
+      "agenda": {
+        "grid_card": "surface_inverse",
+        "grid_card_border": "",
+        "grid_card_shadow": "",
+        "grid_card_blur": ""
+      }
+    },
+    "cover_overview": {
+      "typography": {
+        "subtitle": {
+          "color": "#ffffff",
+          "background": "surface_secondary",
+          "border_color": "line_accent",
+          "radius": "radius_lg",
+          "padding": "10"
+        }
+      }
+    },
+    "cover_relationship_hub": {
+      "cover": {
+        "mode": "bubble_field",
+        "background_layers": [
+          "hero_gradient",
+          "bubbles",
+          "vignette"
+        ],
+        "bubble_opacity": "1",
+        "bubble_color": "rgba(103,232,249,0.9)",
+        "arrow_bg": "#ffffff",
+        "arrow_color": "#2f7df6",
+        "arrow_border_color": "rgba(96,165,250,0.18)",
+        "arrow_shadow": "0 12px 24px rgba(4,17,29,0.24)",
+        "bubbles": [
+          {
+            "left": "67%",
+            "top": "-16%",
+            "width": "260px",
+            "height": "260px",
+            "color": "rgba(255,255,255,0.16)",
+            "opacity": "0.2"
+          },
+          {
+            "left": "38%",
+            "top": "24%",
+            "width": "280px",
+            "height": "280px",
+            "color": "rgba(255,255,255,0.16)",
+            "opacity": "0.13"
+          },
+          {
+            "left": "66%",
+            "top": "24%",
+            "width": "280px",
+            "height": "280px",
+            "color": "rgba(255,255,255,0.16)",
+            "opacity": "0.2"
+          },
+          {
+            "left": "8%",
+            "bottom": "-18%",
+            "width": "300px",
+            "height": "300px",
+            "color": "rgba(255,255,255,0.12)",
+            "opacity": "0.16"
+          },
+          {
+            "left": "36%",
+            "bottom": "-18%",
+            "width": "320px",
+            "height": "320px",
+            "color": "rgba(255,255,255,0.16)",
+            "opacity": "0.23"
+          },
+          {
+            "right": "8%",
+            "bottom": "-18%",
+            "width": "300px",
+            "height": "300px",
+            "color": "rgba(255,255,255,0.19)",
+            "opacity": "0.3"
+          }
+        ]
+      },
+      "typography": {
+        "title": {
+          "color": "#ffffff",
+          "font_size": "48",
+          "line_height": "1.02",
+          "background": "",
+          "border_color": "",
+          "padding": ""
+        },
+        "subtitle": {
+          "color": "#eaf6ff",
+          "font_size": "20",
+          "line_height": "1.2",
+          "background": "",
+          "border_color": "",
+          "radius": "",
+          "padding": ""
+        }
+      }
+    }
+  },
+  "best_used_for": [
+    "Corporate presentations",
+    "Financial reports",
+    "Professional consulting decks",
+    "Trust-building content",
+    "Technology strategy presentations"
+  ],
+  "semantic_tokens": {
+    "surface_primary": "#122a32",
+    "surface_secondary": "#17363f",
+    "surface_tertiary": "#1c4147",
+    "surface_inverse": "#f1f5f9",
+    "surface_muted": "rgba(59,166,166,0.06)",
+    "accent_fill": "#3ba6a6",
+    "accent_soft": "rgba(59,166,166,0.12)",
+    "accent_line": "rgba(59,166,166,0.50)",
+    "glass_surface": "rgba(18,42,50,0.72)",
+    "content_card_surface_a": "linear-gradient(180deg, #17363f 0%, #122a32 100%)",
+    "content_card_surface_b": "linear-gradient(180deg, #1c4147 0%, #17363f 100%)",
+    "content_band_surface": "linear-gradient(180deg, rgba(59,166,166,0.24) 0%, rgba(96,165,250,0.14) 100%)",
+    "table_header_surface": "linear-gradient(180deg, rgba(23,54,63,0.94) 0%, rgba(28,65,71,0.90) 100%)"
+  },
+  "page_policy": {
+    "cover": {
+      "background_policy": "dark_gradient_with_light_glow",
+      "panel": "glass_surface",
+      "accent": "accent_gradient"
+    },
+    "agenda": {
+      "background_policy": "dark_gradient_with_subtle_grid",
+      "panel": "surface_primary",
+      "number": "accent_fill",
+      "background": "canvas_gradient",
+      "line": "line_subtle",
+      "card": "surface_primary",
+      "pill": "surface_primary",
+      "pill_number": "surface_primary",
+      "grid_background": "canvas_gradient",
+      "grid_line": "line_subtle",
+      "grid_card": "surface_primary"
+    },
+    "content": {
+      "background_policy": "dark_gradient",
+      "panel": "surface_primary",
+      "diagram_panel": "surface_secondary",
+      "highlight": "accent_line"
+    },
+    "comparison": {
+      "background_policy": "dark_gradient",
+      "header": "accent_gradient",
+      "body": "surface_primary"
+    },
+    "summary": {
+      "background_policy": "dark_gradient",
+      "card": "surface_secondary",
+      "statement": "accent_soft"
+    },
+    "progress": {
+      "background_policy": "dark_gradient",
+      "stage": "accent_fill",
+      "notes": "surface_primary"
+    },
+    "cover_split_hero": {
+      "typography": {
+        "title": {
+          "color": "text_primary",
+          "background": "",
+          "border_color": "",
+          "radius": "",
+          "padding": ""
+        }
+      }
+    }
+  }
+}

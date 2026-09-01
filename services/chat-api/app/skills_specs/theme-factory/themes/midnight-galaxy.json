@@ -1,0 +1,240 @@
+{
+  "id": "midnight-galaxy",
+  "name": "Midnight Galaxy",
+  "description": "A dramatic and cosmic theme with deep purples and mystical tones for impactful presentations.",
+  "mode": "dark",
+  "palette": {
+    "bg_base": "#120f1d",
+    "bg_elevated": "#1b1630",
+    "surface_base": "#241d3e",
+    "surface_alt": "#343068",
+    "surface_accent": "#7c4dff",
+    "text_primary": "#f8f7ff",
+    "text_secondary": "#d6cdef",
+    "text_on_accent": "#f8f7ff",
+    "border_subtle": "rgba(164,144,194,0.18)",
+    "border_strong": "rgba(164,144,194,0.32)"
+  },
+  "gradients": {
+    "canvas_gradient": "linear-gradient(180deg, #1b1630 0%, #120f1d 100%)",
+    "accent_gradient": "linear-gradient(135deg, #7c4dff 0%, #22d3ee 100%)",
+    "hero_gradient": "radial-gradient(circle at 80% 18%, rgba(124,77,255,0.18) 0%, rgba(34,211,238,0.08) 24%, rgba(18,15,29,0) 46%)"
+  },
+  "shape": {
+    "radius_sm": "12",
+    "radius_md": "18",
+    "radius_lg": "28",
+    "radius_chip": "999"
+  },
+  "elevation": {
+    "shadow_none": "none",
+    "shadow_soft": "0 12px 28px rgba(0,0,0,0.18)",
+    "shadow_strong": "0 20px 44px rgba(0,0,0,0.26)"
+  },
+  "stroke": {
+    "line_subtle": "rgba(164,144,194,0.18)",
+    "line_accent": "rgba(124,77,255,0.48)"
+  },
+  "typography": {
+    "header_font": "FreeSans Bold",
+    "body_font": "FreeSans",
+    "title": {
+      "color": "text_primary",
+      "font_size": "48",
+      "section_font_size": "34",
+      "font_weight": "800",
+      "line_height": "1.25",
+      "section_line_height": "1.18",
+      "section_color": "text_primary",
+      "background": "glass_surface",
+      "border_color": "line_subtle",
+      "radius": "radius_md",
+      "padding": "18"
+    },
+    "subtitle": {
+      "color": "text_secondary",
+      "font_size": "18",
+      "font_weight": "500",
+      "line_height": "1.32",
+      "background": "",
+      "border_color": "",
+      "radius": "",
+      "padding": ""
+    }
+  },
+  "best_used_for": [
+    "Entertainment industry",
+    "Gaming presentations",
+    "Luxury brands",
+    "Creative agencies"
+  ],
+  "page_policy": {
+    "cover": {
+      "background_policy": "dark_gradient_with_subtle_grid",
+      "panel": "surface_inverse",
+      "accent": "accent_fill"
+    },
+    "agenda": {
+      "background_policy": "dark_gradient_with_subtle_grid",
+      "panel": "surface_primary",
+      "number": "accent_fill",
+      "background": "canvas_gradient",
+      "line": "line_subtle",
+      "card": "surface_primary",
+      "pill": "surface_primary",
+      "pill_number": "surface_primary",
+      "grid_background": "canvas_gradient",
+      "grid_line": "line_subtle",
+      "grid_card": "surface_primary"
+    },
+    "content": {
+      "background_policy": "dark_gradient",
+      "panel": "surface_primary",
+      "diagram_panel": "surface_secondary"
+    },
+    "comparison": {
+      "background_policy": "dark_gradient",
+      "header": "accent_fill",
+      "body": "surface_primary"
+    },
+    "summary": {
+      "background_policy": "dark_gradient",
+      "card": "surface_primary",
+      "statement": "surface_muted"
+    },
+    "progress": {
+      "background_policy": "dark_gradient",
+      "stage": "accent_fill",
+      "notes": "surface_primary"
+    }
+  },
+  "semantic_tokens": {
+    "surface_primary": "#241d3e",
+    "surface_secondary": "#343068",
+    "surface_tertiary": "#453f7d",
+    "surface_inverse": "#f8f7ff",
+    "surface_muted": "rgba(124,77,255,0.06)",
+    "accent_fill": "#7c4dff",
+    "accent_soft": "rgba(34,211,238,0.10)",
+    "accent_line": "rgba(124,77,255,0.48)",
+    "glass_surface": "rgba(36,29,62,0.72)",
+    "content_card_surface_a": "linear-gradient(180deg, #2c2350 0%, #221c3d 100%)",
+    "content_card_surface_b": "linear-gradient(180deg, #3a3470 0%, #29244c 100%)",
+    "content_band_surface": "linear-gradient(180deg, rgba(124,77,255,0.26) 0%, rgba(34,211,238,0.16) 100%)",
+    "table_header_surface": "linear-gradient(180deg, rgba(52,48,104,0.94) 0%, rgba(69,63,125,0.90) 100%)"
+  },
+  "template_overrides": {
+    "agenda_orbit_branches": {
+      "agenda": {
+        "grid_card": "surface_inverse"
+      }
+    },
+    "cover_overview": {
+      "typography": {
+        "subtitle": {
+          "color": "#f8f7ff",
+          "background": "rgba(52,48,104,0.78)",
+          "border_color": "line_accent",
+          "radius": "radius_lg",
+          "padding": "10"
+        }
+      }
+    },
+    "cover_relationship_hub": {
+      "cover": {
+        "mode": "bubble_field",
+        "background_layers": [
+          "hero_gradient",
+          "bubbles",
+          "vignette"
+        ],
+        "bubble_opacity": "1",
+        "bubble_color": "rgba(124,77,255,0.30)",
+        "arrow_bg": "#f8f7ff",
+        "arrow_color": "#7c4dff",
+        "arrow_border_color": "rgba(248,247,255,0.18)",
+        "arrow_shadow": "0 12px 24px rgba(0,0,0,0.24)",
+        "bubbles": [
+          {
+            "left": "67%",
+            "top": "-16%",
+            "width": "260px",
+            "height": "260px",
+            "color": "rgba(248,247,255,0.16)",
+            "opacity": "0.8"
+          },
+          {
+            "left": "39%",
+            "top": "24%",
+            "width": "280px",
+            "height": "280px",
+            "color": "rgba(124,77,255,0.16)",
+            "opacity": "0.8"
+          },
+          {
+            "left": "66%",
+            "top": "24%",
+            "width": "280px",
+            "height": "280px",
+            "color": "rgba(34,211,238,0.14)",
+            "opacity": "0.85"
+          },
+          {
+            "left": "8%",
+            "bottom": "-18%",
+            "width": "300px",
+            "height": "300px",
+            "color": "rgba(248,247,255,0.10)",
+            "opacity": "0.7"
+          },
+          {
+            "left": "36%",
+            "bottom": "-18%",
+            "width": "320px",
+            "height": "320px",
+            "color": "rgba(124,77,255,0.14)",
+            "opacity": "0.9"
+          },
+          {
+            "right": "8%",
+            "bottom": "-18%",
+            "width": "300px",
+            "height": "300px",
+            "color": "rgba(34,211,238,0.12)",
+            "opacity": "0.9"
+          }
+        ]
+      },
+      "typography": {
+        "title": {
+          "color": "#f8f7ff",
+          "font_size": "48",
+          "line_height": "1.02",
+          "background": "",
+          "border_color": "",
+          "padding": ""
+        },
+        "subtitle": {
+          "color": "#d6cdef",
+          "font_size": "20",
+          "line_height": "1.2",
+          "background": "",
+          "border_color": "",
+          "radius": "",
+          "padding": ""
+        }
+      }
+    },
+    "cover_split_hero": {
+      "typography": {
+        "title": {
+          "color": "text_primary",
+          "background": "",
+          "border_color": "",
+          "radius": "",
+          "padding": ""
+        }
+      }
+    }
+  }
+}

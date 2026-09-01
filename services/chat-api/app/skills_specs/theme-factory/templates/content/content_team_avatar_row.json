@@ -1,0 +1,200 @@
+{
+  "template_id": "content_team_avatar_row",
+  "family": "content",
+  "name": "Leadership Avatar Row",
+  "purpose": "Centered team slide with a pill eyebrow, large headline, and a five-person avatar row with role chips and short descriptors.",
+  "selection_summary": "Use when a leadership or core team should be introduced in one evenly balanced row.",
+  "best_for": [
+    "team intros",
+    "leadership slides",
+    "advisory board snapshots"
+  ],
+  "avoid_when": [
+    "only one or two people need focus",
+    "detailed biographies are required"
+  ],
+  "recommended_item_range": "1 eyebrow + 1 headline + 5 team profiles",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 33
+    },
+    {
+      "slot_id": "team_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 5,
+      "item_fields": [
+        {
+          "field_name": "image",
+          "field_type": "image",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 10,
+          "max_chars_latin": 23
+        },
+        {
+          "field_name": "meta",
+          "field_type": "meta",
+          "required": true,
+          "max_chars_cjk": 6,
+          "max_chars_latin": 20
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 18,
+          "max_chars_latin": 59
+        }
+      ],
+      "max_chars_cjk": 10,
+      "max_chars_latin": 23
+    }
+  ],
+  "layout_rules": [
+    "All five profiles should align on one row.",
+    "Avatar circles and role pills should remain visually consistent."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "eyebrow": "Our team",
+    "title": "Meet the leadership team",
+    "team_cards": [
+      {
+        "image": "",
+        "title": "David Kim",
+        "meta": "Head of product",
+        "body": "Product strategy, UX, and product vision."
+      },
+      {
+        "image": "",
+        "title": "Sarah Martinez",
+        "meta": "CTO and co-founder",
+        "body": "AI innovation and machine learning systems."
+      },
+      {
+        "image": "",
+        "title": "John Reynolds",
+        "meta": "CEO and co-founder",
+        "body": "Vision, strategy, and commercial direction."
+      },
+      {
+        "image": "",
+        "title": "Rachel Adams",
+        "meta": "Head of marketing",
+        "body": "Brand, demand generation, and growth."
+      },
+      {
+        "image": "",
+        "title": "Michael Torres",
+        "meta": "Lead AI engineer",
+        "body": "Deep learning, NLP, and platform quality."
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "pill": {
+        "x": 650,
+        "y": 104,
+        "w": 304,
+        "h": 62
+      },
+      "title": {
+        "x": 446,
+        "y": 192,
+        "w": 720,
+        "h": 164
+      },
+      "cards": {
+        "x": 112,
+        "y": 392,
+        "w": 1376,
+        "h": 350
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "pill",
+            "box": "pill",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 999,
+              "font_size": 18,
+              "font_weight": 700,
+              "color": "text_on_accent",
+              "text_align": "center"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "cards",
+            "content_key": "team_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 5,
+              "gap": 22,
+              "card_fill": "transparent",
+              "card_border_color": "transparent",
+              "card_shadow": "none",
+              "card_padding": 0,
+              "media_height": 112,
+              "media_radius": 999,
+              "media_placeholder_fill": "surface_muted",
+              "media_placeholder_border_color": "border_subtle",
+              "media_placeholder_icon": "users",
+              "media_placeholder_icon_size": 78,
+              "media_placeholder_label": false,
+              "title_font_size": 22,
+              "meta_font_size": 14,
+              "meta_color": "surface_accent",
+              "body_font_size": 14
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

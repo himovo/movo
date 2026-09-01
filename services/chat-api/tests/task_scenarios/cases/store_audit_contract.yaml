@@ -1,0 +1,24 @@
+id: store_audit_contract
+prompt: 帮我排查所有门店的巡检记录，找出严重风险并生成整改报告。
+output_spec:
+  route_kind: task
+expect:
+  status: completed
+  graph:
+    required_capabilities:
+      - external.invoke_tool
+      - control.map_each
+      - control.branch
+      - generation.compose_report
+  tools:
+    - name: get_store_audit_tasks
+      count: 1
+    - name: get_store_audit_task_detail
+      min_count: 2
+  output:
+    required_facts:
+      - 上海浦东店
+      - critical
+  forbidden:
+    events:
+      - graph.failed

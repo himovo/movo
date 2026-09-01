@@ -1,0 +1,177 @@
+{
+  "template_id": "content_intro_grid_statement",
+  "family": "content",
+  "name": "Grid Intro Statement",
+  "purpose": "Centered intro statement with a restrained grid field and small footer metadata anchors.",
+  "selection_summary": "Use for opening content pages that need one dominant headline, one supporting sentence, and light navigation cues.",
+  "best_for": [
+    "chapter introductions",
+    "strategy statements",
+    "clean editorial content openers"
+  ],
+  "avoid_when": [
+    "the page needs a media block",
+    "the slide requires multiple supporting cards"
+  ],
+  "recommended_item_range": "1 eyebrow + 1 headline + 1 supporting paragraph + 2 footer meta labels",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 20
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 52
+    },
+    {
+      "slot_id": "subtitle_or_context",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 100
+    },
+    {
+      "slot_id": "footer_left",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 40
+    },
+    {
+      "slot_id": "footer_right",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 40
+    }
+  ],
+  "layout_rules": [
+    "Keep the headline centered and dominant.",
+    "Footer metadata should stay light and peripheral."
+  ],
+  "background_policy": "light_gradient_with_subtle_grid",
+  "preview_content": {
+    "eyebrow": "Introduction",
+    "title": "Shaping the next era of intelligent operations",
+    "subtitle_or_context": "A concise opening statement for a content section, framed by a soft grid and calm editorial spacing.",
+    "footer_left": "01  Overview",
+    "footer_right": "Content Deck"
+  },
+  "executable": {
+    "geometry": {
+      "eyebrow": {
+        "x": 620,
+        "y": 138,
+        "w": 360,
+        "h": 48
+      },
+      "title": {
+        "x": 220,
+        "y": 270,
+        "w": 1160,
+        "h": 170
+      },
+      "subtitle": {
+        "x": 310,
+        "y": 458,
+        "w": 980,
+        "h": 96
+      },
+      "footer_left": {
+        "x": 120,
+        "y": 756,
+        "w": 260,
+        "h": 48
+      },
+      "footer_right": {
+        "x": 1220,
+        "y": 756,
+        "w": 220,
+        "h": 48
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "eyebrow",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 700,
+              "text_align": "center",
+              "color": "surface_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.02,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "subtitle",
+            "content_key": "subtitle_or_context",
+            "z_index": 2,
+            "style": {
+              "font_size": 22,
+              "font_weight": 500,
+              "line_height": 1.45,
+              "text_align": "center",
+              "color": "text_secondary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "footer_left",
+            "content_key": "footer_left",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 600,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "footer_right",
+            "content_key": "footer_right",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 500,
+              "text_align": "right",
+              "color": "text_secondary"
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

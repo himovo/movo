@@ -1,0 +1,240 @@
+{
+  "id": "botanical-garden",
+  "name": "Botanical Garden",
+  "description": "A fresh and organic theme featuring vibrant garden-inspired colors for lively presentations.",
+  "mode": "light",
+  "palette": {
+    "bg_base": "#f7f5ef",
+    "bg_elevated": "#f2eee4",
+    "surface_base": "#fffdf8",
+    "surface_alt": "#eef3e8",
+    "surface_accent": "#4a7c59",
+    "text_primary": "#24352d",
+    "text_secondary": "#51655a",
+    "text_on_accent": "#f8fafc",
+    "border_subtle": "rgba(74,124,89,0.16)",
+    "border_strong": "rgba(74,124,89,0.30)"
+  },
+  "gradients": {
+    "canvas_gradient": "linear-gradient(180deg, #fffdf8 0%, #f2eee4 100%)",
+    "accent_gradient": "linear-gradient(135deg, #4a7c59 0%, #f9a620 100%)",
+    "hero_gradient": "radial-gradient(circle at 80% 20%, rgba(249,166,32,0.14) 0%, rgba(74,124,89,0.08) 24%, rgba(255,255,255,0) 44%)"
+  },
+  "shape": {
+    "radius_sm": "12",
+    "radius_md": "18",
+    "radius_lg": "26",
+    "radius_chip": "999"
+  },
+  "elevation": {
+    "shadow_none": "none",
+    "shadow_soft": "0 10px 24px rgba(74,124,89,0.10)",
+    "shadow_strong": "0 18px 38px rgba(74,124,89,0.16)"
+  },
+  "stroke": {
+    "line_subtle": "rgba(74,124,89,0.16)",
+    "line_accent": "rgba(183,71,42,0.36)"
+  },
+  "typography": {
+    "header_font": "DejaVu Serif Bold",
+    "body_font": "DejaVu Sans",
+    "title": {
+      "color": "text_primary",
+      "font_size": "48",
+      "section_font_size": "34",
+      "font_weight": "800",
+      "line_height": "1.22",
+      "section_line_height": "1.18",
+      "section_color": "text_primary",
+      "background": "glass_surface",
+      "border_color": "line_subtle",
+      "radius": "radius_md",
+      "padding": "18"
+    },
+    "subtitle": {
+      "color": "text_secondary",
+      "font_size": "18",
+      "font_weight": "500",
+      "line_height": "1.34",
+      "background": "",
+      "border_color": "",
+      "radius": "",
+      "padding": ""
+    }
+  },
+  "best_used_for": [
+    "Garden centers",
+    "Food presentations",
+    "Natural products",
+    "Botanical brands"
+  ],
+  "page_policy": {
+    "cover": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "panel": "surface_inverse",
+      "accent": "accent_fill"
+    },
+    "agenda": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "panel": "surface_primary",
+      "number": "accent_fill",
+      "background": "canvas_gradient",
+      "line": "line_subtle",
+      "card": "surface_primary",
+      "pill": "surface_primary",
+      "pill_number": "surface_primary",
+      "grid_background": "canvas_gradient",
+      "grid_line": "line_subtle",
+      "grid_card": "surface_primary"
+    },
+    "content": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "panel": "surface_primary",
+      "diagram_panel": "surface_secondary"
+    },
+    "comparison": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "header": "accent_fill",
+      "body": "surface_primary"
+    },
+    "summary": {
+      "background_policy": "light_gradient",
+      "card": "surface_primary",
+      "statement": "surface_muted"
+    },
+    "progress": {
+      "background_policy": "light_gradient",
+      "stage": "accent_fill",
+      "notes": "surface_primary"
+    }
+  },
+  "semantic_tokens": {
+    "surface_primary": "#fffdf8",
+    "surface_secondary": "#eef3e8",
+    "surface_tertiary": "#dde8d2",
+    "surface_inverse": "#24352d",
+    "surface_muted": "rgba(74,124,89,0.06)",
+    "accent_fill": "#4a7c59",
+    "accent_soft": "rgba(74,124,89,0.10)",
+    "accent_line": "rgba(183,71,42,0.36)",
+    "glass_surface": "rgba(255,253,248,0.74)",
+    "content_card_surface_a": "linear-gradient(180deg, #fffefb 0%, #f7f4ec 100%)",
+    "content_card_surface_b": "linear-gradient(180deg, #f8f4ea 0%, #ece5d8 100%)",
+    "content_band_surface": "linear-gradient(180deg, rgba(249,166,32,0.16) 0%, rgba(74,124,89,0.12) 100%)",
+    "table_header_surface": "linear-gradient(180deg, rgba(242,238,228,0.96) 0%, rgba(221,232,210,0.92) 100%)"
+  },
+  "template_overrides": {
+    "agenda_orbit_branches": {
+      "agenda": {
+        "grid_card": "surface_inverse"
+      }
+    },
+    "cover_overview": {
+      "typography": {
+        "subtitle": {
+          "color": "#24352d",
+          "background": "rgba(238,243,232,0.90)",
+          "border_color": "line_accent",
+          "radius": "radius_lg",
+          "padding": "10"
+        }
+      }
+    },
+    "cover_relationship_hub": {
+      "cover": {
+        "mode": "bubble_field",
+        "background_layers": [
+          "hero_gradient",
+          "bubbles",
+          "vignette"
+        ],
+        "bubble_opacity": "1",
+        "bubble_color": "rgba(74,124,89,0.24)",
+        "arrow_bg": "#fffdf8",
+        "arrow_color": "#4a7c59",
+        "arrow_border_color": "rgba(74,124,89,0.20)",
+        "arrow_shadow": "0 12px 24px rgba(74,124,89,0.15)",
+        "bubbles": [
+          {
+            "left": "67%",
+            "top": "-14%",
+            "width": "250px",
+            "height": "250px",
+            "color": "rgba(249,166,32,0.28)",
+            "opacity": "1"
+          },
+          {
+            "left": "39%",
+            "top": "25%",
+            "width": "270px",
+            "height": "270px",
+            "color": "rgba(74,124,89,0.18)",
+            "opacity": "1"
+          },
+          {
+            "left": "66%",
+            "top": "25%",
+            "width": "270px",
+            "height": "270px",
+            "color": "rgba(249,166,32,0.18)",
+            "opacity": "1"
+          },
+          {
+            "left": "8%",
+            "bottom": "-18%",
+            "width": "300px",
+            "height": "300px",
+            "color": "rgba(74,124,89,0.12)",
+            "opacity": "1"
+          },
+          {
+            "left": "38%",
+            "bottom": "-20%",
+            "width": "320px",
+            "height": "320px",
+            "color": "rgba(249,166,32,0.14)",
+            "opacity": "1"
+          },
+          {
+            "right": "8%",
+            "bottom": "-18%",
+            "width": "300px",
+            "height": "300px",
+            "color": "rgba(74,124,89,0.14)",
+            "opacity": "1"
+          }
+        ]
+      },
+      "typography": {
+        "title": {
+          "color": "#24352d",
+          "font_size": "48",
+          "line_height": "1.02",
+          "background": "",
+          "border_color": "",
+          "padding": ""
+        },
+        "subtitle": {
+          "color": "#51655a",
+          "font_size": "20",
+          "line_height": "1.2",
+          "background": "",
+          "border_color": "",
+          "radius": "",
+          "padding": ""
+        }
+      }
+    },
+    "cover_split_hero": {
+      "typography": {
+        "title": {
+          "color": "text_primary",
+          "background": "",
+          "border_color": "",
+          "radius": "",
+          "padding": ""
+        }
+      }
+    }
+  }
+}

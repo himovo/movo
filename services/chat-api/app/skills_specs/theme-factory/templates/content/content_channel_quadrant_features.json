@@ -1,0 +1,177 @@
+{
+  "template_id": "content_channel_quadrant_features",
+  "family": "content",
+  "name": "Channel Quadrant Features",
+  "purpose": "Left editorial statement block with a right-bottom two-by-two grid of channel features and soft icon circles.",
+  "selection_summary": "Use when four go-to-market channels should be presented as equally weighted feature tiles under a large opening statement.",
+  "best_for": [
+    "channel mix overviews",
+    "marketing tactics pages",
+    "four-part acquisition strategy"
+  ],
+  "avoid_when": [
+    "one channel needs much more emphasis",
+    "the page should be dark-themed"
+  ],
+  "recommended_item_range": "1 eyebrow + 1 headline + 4 feature tiles",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 40
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 44
+    },
+    {
+      "slot_id": "feature_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 4,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 25
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 26,
+          "max_chars_latin": 62
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 25
+    }
+  ],
+  "layout_rules": [
+    "The left side should remain open and text-led.",
+    "The four channel tiles should sit in a strict 2x2 grid."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "eyebrow": "Go to market",
+    "title": "Reach leads across multiple channels",
+    "feature_cards": [
+      {
+        "icon": "chat",
+        "title": "Email marketing",
+        "body": "Engage leads with targeted campaigns."
+      },
+      {
+        "icon": "growth",
+        "title": "Paid ads",
+        "body": "Expand reach and attract high-intent customers."
+      },
+      {
+        "icon": "spark",
+        "title": "SEO and content",
+        "body": "Improve search rankings and organic traffic."
+      },
+      {
+        "icon": "users",
+        "title": "Referral program",
+        "body": "Incentivize word-of-mouth growth."
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "pill": {
+        "x": 144,
+        "y": 82,
+        "w": 430,
+        "h": 72
+      },
+      "title": {
+        "x": 142,
+        "y": 184,
+        "w": 560,
+        "h": 292
+      },
+      "cards": {
+        "x": 150,
+        "y": 474,
+        "w": 1186,
+        "h": 286
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "pill",
+            "box": "pill",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 999,
+              "font_size": 16,
+              "font_weight": 700,
+              "line_height": 1.3,
+              "color": "text_on_accent",
+              "text_align": "center"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.02,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "cards",
+            "content_key": "feature_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 2,
+              "gap": 34,
+              "card_fill": "transparent",
+              "card_border_color": "transparent",
+              "card_shadow": "none",
+              "card_padding": 0,
+              "icon_wrap": 58,
+              "icon_fill": "surface_primary",
+              "icon_color": "surface_accent",
+              "title_font_size": 22,
+              "body_font_size": 16
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

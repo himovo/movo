@@ -1,0 +1,202 @@
+{
+  "template_id": "content_gtm_channel_image_split",
+  "family": "content",
+  "name": "GTM Channel Image Split",
+  "purpose": "Large left image placeholder paired with a right editorial content column and three stacked channel rows.",
+  "selection_summary": "Use when one human-centered image should set the tone while three distribution channels are explained in a clean stacked list.",
+  "best_for": [
+    "go-to-market channels",
+    "marketing mix slides",
+    "image-led channel strategy"
+  ],
+  "avoid_when": [
+    "no image is available",
+    "more than three channels must fit"
+  ],
+  "recommended_item_range": "1 image + 1 eyebrow + 1 headline + 3 channel rows",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "hero_visual",
+      "component_type": "generic_diagram",
+      "region": "canvas",
+      "style_role": "surface_secondary"
+    },
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 18
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 44
+    },
+    {
+      "slot_id": "channel_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 3,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 28
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 28,
+          "max_chars_latin": 64
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 28
+    }
+  ],
+  "layout_rules": [
+    "The image should anchor the full left half.",
+    "Channel rows should read top-to-bottom with icon-led hierarchy."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "hero_visual": "",
+    "eyebrow": "Go to market",
+    "title": "Reach leads across multiple channels",
+    "channel_cards": [
+      {
+        "icon": "chat",
+        "title": "Email marketing",
+        "body": "Engage leads with targeted, automated campaigns."
+      },
+      {
+        "icon": "spark",
+        "title": "SEO and content",
+        "body": "Improve search rankings and drive organic traffic."
+      },
+      {
+        "icon": "growth",
+        "title": "Paid ads",
+        "body": "Expand reach and attract high-intent customers."
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "image": {
+        "x": 44,
+        "y": 42,
+        "w": 726,
+        "h": 796
+      },
+      "pill": {
+        "x": 836,
+        "y": 98,
+        "w": 298,
+        "h": 64
+      },
+      "title": {
+        "x": 844,
+        "y": 212,
+        "w": 600,
+        "h": 208
+      },
+      "cards": {
+        "x": 846,
+        "y": 474,
+        "w": 620,
+        "h": 326
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "image",
+            "box": "image",
+            "content_key": "hero_visual",
+            "label": "Campaign Image",
+            "z_index": 2,
+            "style": {
+              "radius": 18,
+              "fill": "surface_muted",
+              "icon_name": "users",
+              "icon_size": 96,
+              "label_size": 24
+            }
+          },
+          {
+            "kind": "pill",
+            "box": "pill",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 999,
+              "font_size": 18,
+              "font_weight": 700,
+              "color": "text_on_accent",
+              "text_align": "center"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.02,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "cards",
+            "content_key": "channel_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 1,
+              "gap": 22,
+              "card_fill": "transparent",
+              "card_border_color": "transparent",
+              "card_shadow": "none",
+              "card_padding": 0,
+              "icon_wrap": 60,
+              "icon_fill": "surface_primary",
+              "icon_color": "surface_accent",
+              "content_layout": "icon_left",
+              "content_gap": 18,
+              "content_align": "center",
+              "text_gap": 4,
+              "title_font_size": 22,
+              "body_font_size": 16
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

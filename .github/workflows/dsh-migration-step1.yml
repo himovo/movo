@@ -1,0 +1,116 @@
+name: DSH Runtime Guard
+
+on:
+  pull_request:
+    paths:
+      - "services/chat-api/app/dsh_runtime/**"
+      - "services/chat-api/dsh/**"
+      - "services/chat-api/tests/dsh_runtime/**"
+      - "services/chat-api/scripts/check_dsh_supply_chain.py"
+      - "services/chat-api/scripts/check_dsh_native_code_boundary.py"
+      - "services/chat-api/scripts/check_dsh_upgrade_contract.py"
+      - "services/chat-api/scripts/evaluate_dsh_candidate.py"
+      - "services/chat-api/scripts/generate_dsh_sbom.py"
+      - "services/chat-api/scripts/verify_dsh_rollback_resume.py"
+      - "services/chat-api/scripts/dsh_upgrade/**"
+      - "services/chat-api/dsh/compatibility-matrix.yaml"
+      - "services/chat-api/scripts/benchmark_dsh_gateway.py"
+      - "services/chat-api/app/main.py"
+      - "docs/dsh-*"
+      - "apps/user-web/**"
+      - ".github/workflows/dsh-migration-step1.yml"
+      - ".github/workflows/dsh-upgrade-candidate.yml"
+  push:
+    branches: [main]
+
+jobs:
+  contract-and-supply-chain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: services/chat-api/requirements.txt
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "10.14.0"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.19.0"
+          cache: pnpm
+          cache-dependency-path: services/chat-api/dsh/runtime-host/pnpm-lock.yaml
+      - name: Install boundary test dependencies
+        run: python -m pip install -r services/chat-api/requirements.txt "pytest>=8,<9" "pyyaml==6.0.2"
+      - name: Install pinned DSH Runtime Host
+        working-directory: services/chat-api/dsh/runtime-host
+        run: pnpm install --frozen-lockfile --registry=https://registry.npmjs.org
+      - name: Compile DSH boundary
+        run: python -m compileall services/chat-api/app/dsh_runtime services/chat-api/scripts/check_dsh_supply_chain.py services/chat-api/scripts/check_dsh_native_code_boundary.py services/chat-api/scripts/check_dsh_upgrade_contract.py services/chat-api/scripts/generate_dsh_sbom.py
+      - name: Guard retired ASKAI Code boundary
+        run: python services/chat-api/scripts/check_dsh_native_code_boundary.py
+      - name: Admit bundled DSH upgrade contract
+        run: python services/chat-api/scripts/check_dsh_upgrade_contract.py
+      - name: Test versioned contracts and runtime boundary
+        working-directory: services/chat-api
+        run: python -m pytest tests/dsh_runtime -q
+      - name: Test native Runtime Host modules
+        working-directory: services/chat-api/dsh/runtime-host
+        run: pnpm test
+      - name: Verify rollback-train Session resumes on the active Host
+        run: python services/chat-api/scripts/verify_dsh_rollback_resume.py
+      - name: Verify pinned artifact and license
+        working-directory: services/chat-api
+        run: |
+          curl --fail --location --silent --show-error \
+            --output /tmp/dsh-0.1.2-alpha.2.tgz \
+            https://registry.npmjs.org/@deepseek-ai/dsh/-/dsh-0.1.2-alpha.2.tgz
+          python scripts/check_dsh_supply_chain.py --artifact /tmp/dsh-0.1.2-alpha.2.tgz
+      - name: Reject copied or patched upstream core
+        run: |
+          test ! -d services/chat-api/dsh/packages
+          test ! -d services/chat-api/dsh/apps
+          test ! -d services/chat-api/dsh/vendor
+
+  native-code-platform-matrix:
+    name: Native Code / ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # The Community Runtime Host is shipped as a Linux container. macOS is
+        # retained for contributor parity; Windows Desktop is distributed
+        # separately and does not expose the DSH `bash` tool used by this suite.
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "10.14.0"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.19.0"
+          cache: pnpm
+          cache-dependency-path: services/chat-api/dsh/runtime-host/pnpm-lock.yaml
+      - name: Install pinned DSH Runtime Host
+        working-directory: services/chat-api/dsh/runtime-host
+        run: pnpm install --frozen-lockfile --registry=https://registry.npmjs.org
+      - name: Verify official DSH Code composition and command semantics
+        working-directory: services/chat-api/dsh/runtime-host
+        run: pnpm test
+
+  web-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.19.0"
+      - name: Install and test Web capability boundary
+        working-directory: apps/user-web
+        run: |
+          npm ci
+          npm run test:code-platform
+          npm run test:execution-v3
+          npm run build

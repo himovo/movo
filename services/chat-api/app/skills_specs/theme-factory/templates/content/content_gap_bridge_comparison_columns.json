@@ -1,0 +1,283 @@
+{
+  "template_id": "content_gap_bridge_comparison_columns",
+  "family": "content",
+  "name": "Gap Bridge Comparison Columns",
+  "purpose": "Narrative-left comparison slide with a rounded evidence card containing two vertical columns for legacy weaknesses versus modern strengths.",
+  "selection_summary": "Use when the page should clearly frame competitor weaknesses against the product's advantages in a single side-by-side card.",
+  "best_for": [
+    "problem-solution contrast",
+    "competitive differentiation",
+    "product positioning pages"
+  ],
+  "avoid_when": [
+    "more than two contrasted states are needed",
+    "the content should be shown as a formal matrix"
+  ],
+  "recommended_item_range": "1 headline block + 2 comparison columns with 4 rows",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 45
+    },
+    {
+      "slot_id": "subtitle_or_context",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 91
+    },
+    {
+      "slot_id": "left_label",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "surface_muted",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 24
+    },
+    {
+      "slot_id": "right_label",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 19
+    },
+    {
+      "slot_id": "left_column",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_muted",
+      "max_items": 4,
+      "item_fields": [
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 37
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 37
+    },
+    {
+      "slot_id": "right_column",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 4,
+      "item_fields": [
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 37
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 37
+    }
+  ],
+  "layout_rules": [
+    "The comparison card should dominate the right half.",
+    "Each row should align across both columns."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "title": "Bridging the gaps in AI chat technology",
+    "subtitle_or_context": "Enhance AI conversations with smarter, more efficient, and cost-effective solutions.",
+    "left_label": "Traditional tools",
+    "right_label": "Our approach",
+    "left_column": [
+      {
+        "title": "Poor context awareness"
+      },
+      {
+        "title": "High operational costs"
+      },
+      {
+        "title": "Limited integrations"
+      },
+      {
+        "title": "Limited customization options"
+      }
+    ],
+    "right_column": [
+      {
+        "title": "Advanced NLP engine"
+      },
+      {
+        "title": "Affordable subscription plans"
+      },
+      {
+        "title": "Seamless API connections"
+      },
+      {
+        "title": "Flexible and scalable AI models"
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "title": {
+        "x": 126,
+        "y": 332,
+        "w": 560,
+        "h": 236
+      },
+      "subtitle": {
+        "x": 126,
+        "y": 620,
+        "w": 560,
+        "h": 92
+      },
+      "card": {
+        "x": 856,
+        "y": 118,
+        "w": 654,
+        "h": 542
+      },
+      "left_head": {
+        "x": 930,
+        "y": 196,
+        "w": 214,
+        "h": 58
+      },
+      "right_head": {
+        "x": 1180,
+        "y": 196,
+        "w": 248,
+        "h": 58
+      },
+      "left_cards": {
+        "x": 924,
+        "y": 286,
+        "w": 220,
+        "h": 322
+      },
+      "right_cards": {
+        "x": 1182,
+        "y": 286,
+        "w": 246,
+        "h": 322
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.02,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "subtitle",
+            "content_key": "subtitle_or_context",
+            "z_index": 2,
+            "style": {
+              "font_size": 22,
+              "font_weight": 500,
+              "line_height": 1.45,
+              "color": "text_secondary"
+            }
+          },
+          {
+            "kind": "panel",
+            "box": "card",
+            "z_index": 1,
+            "style": {
+              "fill": "surface_primary",
+              "radius": 34,
+              "shadow": "shadow_soft"
+            }
+          },
+          {
+            "kind": "pill",
+            "box": "left_head",
+            "content_key": "left_label",
+            "z_index": 2,
+            "style": {
+              "fill": "surface_muted",
+              "radius": 999,
+              "font_size": 18,
+              "font_weight": 700,
+              "color": "surface_accent",
+              "text_align": "center"
+            }
+          },
+          {
+            "kind": "pill",
+            "box": "right_head",
+            "content_key": "right_label",
+            "z_index": 2,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 999,
+              "font_size": 18,
+              "font_weight": 700,
+              "color": "text_on_accent",
+              "text_align": "center"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "left_cards",
+            "content_key": "left_column",
+            "z_index": 2,
+            "style": {
+              "columns": 1,
+              "gap": 12,
+              "card_fill": "surface_muted",
+              "card_border_color": "transparent",
+              "card_shadow": "none",
+              "card_radius": 18,
+              "card_padding": 16,
+              "title_font_size": 14,
+              "body_font_size": 0,
+              "title_font_weight": 600,
+              "title_color": "text_primary"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "right_cards",
+            "content_key": "right_column",
+            "z_index": 2,
+            "style": {
+              "columns": 1,
+              "gap": 12,
+              "card_fill": "transparent",
+              "card_border_color": "border_subtle",
+              "card_shadow": "none",
+              "card_radius": 18,
+              "card_padding": 16,
+              "title_font_size": 14,
+              "body_font_size": 0,
+              "title_font_weight": 600,
+              "title_color": "text_primary"
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

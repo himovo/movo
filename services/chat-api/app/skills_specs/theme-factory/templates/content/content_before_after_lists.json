@@ -1,0 +1,275 @@
+{
+  "template_id": "content_before_after_lists",
+  "family": "content",
+  "name": "Before After Lists",
+  "purpose": "Two-column comparison with stacked list pills for before vs. after states and a large bottom headline.",
+  "selection_summary": "Use when two opposing states need to be contrasted through short list items rather than a formal table.",
+  "best_for": [
+    "before and after framing",
+    "status quo vs. future state",
+    "problem to solution narratives"
+  ],
+  "avoid_when": [
+    "more than two states must be shown",
+    "a detailed comparison matrix is required"
+  ],
+  "recommended_item_range": "2 fixed comparison labels + 2 short lists + 1 bottom headline",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "left_label",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "surface_muted",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "right_label",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "before_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 2,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 28
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 28,
+          "max_chars_latin": 64
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "after_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 2,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 30
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 28,
+          "max_chars_latin": 67
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 30
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 57
+    }
+  ],
+  "layout_rules": [
+    "Keep the before and after groups visually balanced.",
+    "The left and right labels are fixed comparison markers, not dynamic subtitle content.",
+    "Reserve the bottom third for the large takeaway headline."
+  ],
+  "background_policy": "light_gradient_with_subtle_grid",
+  "preview_content": {
+    "left_label": "Before",
+    "right_label": "After",
+    "title": "How intelligent support changes the operating model",
+    "before_cards": [
+      {
+        "icon": "clock",
+        "title": "Long wait times",
+        "body": "Queues stay manual and customers wait for answers."
+      },
+      {
+        "icon": "bot",
+        "title": "Rigid automation",
+        "body": "Bots struggle when requests stop matching scripts."
+      }
+    ],
+    "after_cards": [
+      {
+        "icon": "spark",
+        "title": "Instant replies",
+        "body": "Priority issues get immediate, guided responses."
+      },
+      {
+        "icon": "chat",
+        "title": "Context-aware support",
+        "body": "The assistant responds with better reasoning and tone."
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "left_label": {
+        "x": 126,
+        "y": 94,
+        "w": 288,
+        "h": 62
+      },
+      "right_label": {
+        "x": 928,
+        "y": 94,
+        "w": 288,
+        "h": 62
+      },
+      "left_cards": {
+        "x": 124,
+        "y": 222,
+        "w": 556,
+        "h": 268
+      },
+      "right_cards": {
+        "x": 920,
+        "y": 222,
+        "w": 556,
+        "h": 268
+      },
+      "title": {
+        "x": 124,
+        "y": 676,
+        "w": 1120,
+        "h": 114
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "pill",
+            "box": "left_label",
+            "content_key": "left_label",
+            "z_index": 2,
+            "style": {
+              "fill": "surface_muted",
+              "radius": 999,
+              "font_size": 18,
+              "font_weight": 700,
+              "color": "text_primary",
+              "text_align": "center"
+            }
+          },
+          {
+            "kind": "pill",
+            "box": "right_label",
+            "content_key": "right_label",
+            "z_index": 2,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 999,
+              "font_size": 18,
+              "font_weight": 700,
+              "color": "text_on_accent",
+              "text_align": "center"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "left_cards",
+            "content_key": "before_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 1,
+              "gap": 22,
+              "card_fill": "surface_secondary",
+              "card_border_color": "border_strong",
+              "card_shadow": "shadow_soft",
+              "card_radius": 999,
+              "card_padding": 22,
+              "icon_wrap": 54,
+              "content_layout": "icon_left",
+              "content_gap": 18,
+              "content_align": "center",
+              "text_gap": 6,
+              "title_font_size": 22,
+              "body_font_size": 18
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "right_cards",
+            "content_key": "after_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 1,
+              "gap": 22,
+              "card_fill": "accent_gradient",
+              "card_border_color": "accent_fill",
+              "card_shadow": "shadow_soft",
+              "card_radius": 999,
+              "card_padding": 22,
+              "icon_wrap": 54,
+              "content_layout": "icon_left",
+              "content_gap": 18,
+              "content_align": "center",
+              "text_gap": 6,
+              "title_color": "text_on_accent",
+              "body_color": "text_on_accent",
+              "icon_fill": "surface_primary",
+              "icon_color": "accent_text",
+              "title_font_size": 22,
+              "body_font_size": 18
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "color": "text_primary"
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

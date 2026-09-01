@@ -1,0 +1,21 @@
+# ASKAI's ordinary enterprise preset intentionally owns no local coding tools.
+# Enterprise tools are registered by the ASKAI Tool Gateway on the host plane;
+# this scoped row only supplies the ASKAI persona. Code sessions select DSH's
+# shipped `code` preset instead of copying any of its composition here.
+- id: askai-enterprise-persona
+  name: '../../../src/official-host/enterprise-preset-plugin.mjs'
+
+# ASKAI replaces the host Web provider with its governed search gateway. The
+# official Web Host moves only this model-facing tool behind each preset, so the
+# enterprise preset must mount it in its own scope as well.
+- id: tool-web
+  name: '@deepseek-ai/dsh-tool-web'
+  config:
+    fetch: false
+    searchTimeoutMs: 60000
+
+# ASKAI-managed workflow and ordinary Skills are supplied through a Runtime
+# Profile provider. This is DSH's native loader/catalog tool; ASKAI does not
+# copy Skill content into the generic system prompt.
+- id: tool-skill
+  name: '@deepseek-ai/dsh-tool-skill'

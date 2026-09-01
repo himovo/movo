@@ -1,0 +1,159 @@
+{
+  "template_id": "content_founder_portrait_triptych",
+  "family": "content",
+  "name": "Founder Portrait Triptych",
+  "purpose": "Large top title with three oversized portrait placeholders and compact caption cards anchored beneath each portrait.",
+  "selection_summary": "Use when three founders or leaders should be introduced as primary visual figures rather than small avatars.",
+  "best_for": [
+    "founder intros",
+    "leadership portraits",
+    "human-centered team storytelling"
+  ],
+  "avoid_when": [
+    "many people must fit",
+    "a compact team row would be clearer"
+  ],
+  "recommended_item_range": "1 headline + 3 large portraits + 3 caption cards",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 39
+    },
+    {
+      "slot_id": "portrait_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 3,
+      "item_fields": [
+        {
+          "field_name": "image",
+          "field_type": "image",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 10,
+          "max_chars_latin": 23
+        },
+        {
+          "field_name": "meta",
+          "field_type": "meta",
+          "required": true,
+          "max_chars_cjk": 6,
+          "max_chars_latin": 20
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 22,
+          "max_chars_latin": 82
+        }
+      ],
+      "max_chars_cjk": 10,
+      "max_chars_latin": 23
+    }
+  ],
+  "layout_rules": [
+    "Portraits should dominate the upper two-thirds.",
+    "Caption cards should sit directly beneath each portrait."
+  ],
+  "background_policy": "light_gradient_with_subtle_grid",
+  "preview_content": {
+    "title": "Visionaries behind the company",
+    "portrait_cards": [
+      {
+        "image": "",
+        "title": "Sarah Martinez",
+        "meta": "CTO and co-founder",
+        "body": "Leads AI development to create smarter, more human-like conversations."
+      },
+      {
+        "image": "",
+        "title": "John Reynolds",
+        "meta": "CEO and co-founder",
+        "body": "Drives vision and strategy to redefine AI-powered interactions."
+      },
+      {
+        "image": "",
+        "title": "David Kim",
+        "meta": "Head of product",
+        "body": "Designs products that elevate AI-driven communication."
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "title": {
+        "x": 356,
+        "y": 88,
+        "w": 900,
+        "h": 90
+      },
+      "cards": {
+        "x": 172,
+        "y": 214,
+        "w": 1260,
+        "h": 590
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "cards",
+            "content_key": "portrait_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 3,
+              "gap": 42,
+              "card_fill": "transparent",
+              "card_border_color": "transparent",
+              "card_shadow": "none",
+              "card_padding": 0,
+              "media_height": 332,
+              "media_radius": 28,
+              "media_placeholder_fill": "surface_muted",
+              "media_placeholder_icon": "users",
+              "media_placeholder_icon_size": 86,
+              "media_placeholder_label": false,
+              "media_placeholder_border_color": "border_subtle",
+              "title_font_size": 22,
+              "meta_font_size": 14,
+              "meta_color": "surface_accent",
+              "body_font_size": 14
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

@@ -1,0 +1,180 @@
+{
+  "template_id": "content_thank_you_blue_banner",
+  "family": "content",
+  "name": "Thank You Blue Banner",
+  "purpose": "Closing slide with a large blue hero banner on top, a big white thank-you headline, a supporting paragraph beneath, and two contact cards anchored in the lower area.",
+  "selection_summary": "Use when the closing slide should feel bright, optimistic, and brand-forward without using a photo.",
+  "best_for": [
+    "brand-led closing slides",
+    "thank-you pages with compact contact methods",
+    "light decks needing a bold closing top band"
+  ],
+  "avoid_when": [
+    "a full image panel is needed",
+    "the ending should remain minimal and quiet"
+  ],
+  "recommended_item_range": "1 hero thank-you + 1 supporting paragraph + 2 contact cards",
+  "preferred_slide_roles": [
+    "closing",
+    "thank_you",
+    "contact"
+  ],
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "subtitle_or_context",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 86
+    },
+    {
+      "slot_id": "contact_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 2,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 27
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 27
+    }
+  ],
+  "layout_rules": [
+    "The top banner should occupy the full width and carry the hero message.",
+    "Contact cards should sit near the lower-left area and remain compact."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "title": "Thank you.",
+    "subtitle_or_context": "Thank you for taking the time to read this. Your attention and engagement mean a lot.",
+    "contact_cards": [
+      {
+        "icon": "chat",
+        "title": "hello@example.com"
+      },
+      {
+        "icon": "clock",
+        "title": "+1 (555) 555-0123"
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "banner": {
+        "x": 0,
+        "y": 0,
+        "w": 1600,
+        "h": 414
+      },
+      "title": {
+        "x": 122,
+        "y": 174,
+        "w": 900,
+        "h": 150
+      },
+      "subtitle": {
+        "x": 124,
+        "y": 470,
+        "w": 760,
+        "h": 110
+      },
+      "contacts": {
+        "x": 122,
+        "y": 666,
+        "w": 680,
+        "h": 90
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "panel",
+            "box": "banner",
+            "z_index": 1,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 0
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 0.98,
+              "color": "text_on_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "subtitle",
+            "content_key": "subtitle_or_context",
+            "z_index": 2,
+            "style": {
+              "font_size": 24,
+              "font_weight": 500,
+              "line_height": 1.42,
+              "color": "text_secondary"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "contacts",
+            "content_key": "contact_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 2,
+              "gap": 24,
+              "content_layout": "icon_left",
+              "content_align": "center",
+              "content_gap": 14,
+              "card_fill": "surface_primary",
+              "card_border_color": "border_subtle",
+              "card_shadow": "shadow_soft",
+              "card_radius": 18,
+              "card_padding": 18,
+              "icon_wrap": 38,
+              "icon_fill": "accent_soft",
+              "icon_color": "surface_accent",
+              "title_font_size": 18,
+              "body_font_size": 0,
+              "title_font_weight": 600
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

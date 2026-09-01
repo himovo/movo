@@ -1,0 +1,220 @@
+{
+  "template_id": "content_showcase_blue_cards",
+  "family": "content",
+  "name": "Blue Showcase Cards",
+  "purpose": "Full blue hero background with centered headline and three white showcase cards for product surfaces or feature themes.",
+  "selection_summary": "Use when a bright solution slide needs a premium hero background and three visual showcase modules.",
+  "best_for": [
+    "product showcase pages",
+    "three-capability overviews",
+    "visual feature tours"
+  ],
+  "avoid_when": [
+    "the theme should stay neutral",
+    "there are more than three showcase items"
+  ],
+  "recommended_item_range": "1 eyebrow + 1 headline + 1 paragraph + 3 showcase cards",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 41
+    },
+    {
+      "slot_id": "subtitle_or_context",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 98
+    },
+    {
+      "slot_id": "showcase_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_inverse",
+      "max_items": 3,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 8,
+          "max_chars_latin": 20
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 10,
+          "max_chars_latin": 31
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 28,
+          "max_chars_latin": 72
+        }
+      ],
+      "max_chars_cjk": 28,
+      "max_chars_latin": 72
+    }
+  ],
+  "layout_rules": [
+    "Use a full accent background panel.",
+    "Each card should contain one icon, one concise title, and one short description."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "eyebrow": "",
+    "title": "An end-to-end assistant workflow",
+    "subtitle_or_context": "Frame the page as one integrated solution, then highlight three visible product surfaces below.",
+    "showcase_cards": [
+      {
+        "icon": "message-square",
+        "title": "Smart Conversations",
+        "body": "Handle customer questions, routing, and follow-up with one responsive assistant layer."
+      },
+      {
+        "icon": "plug",
+        "title": "Seamless Integration",
+        "body": "Connect CRM, ticketing, and internal systems so every workflow stays in sync."
+      },
+      {
+        "icon": "sliders-horizontal",
+        "title": "Operational Management",
+        "body": "Monitor usage, tune automations, and keep governance visible across the team."
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "bg": {
+        "x": 0,
+        "y": 0,
+        "w": 1600,
+        "h": 900
+      },
+      "eyebrow": {
+        "x": 120,
+        "y": 82,
+        "w": 280,
+        "h": 42
+      },
+      "title": {
+        "x": 302,
+        "y": 148,
+        "w": 996,
+        "h": 110
+      },
+      "subtitle": {
+        "x": 288,
+        "y": 282,
+        "w": 1024,
+        "h": 86
+      },
+      "cards": {
+        "x": 124,
+        "y": 508,
+        "w": 1352,
+        "h": 268
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "panel",
+            "box": "bg",
+            "z_index": 1,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 0
+            }
+          },
+          {
+            "kind": "text",
+            "box": "eyebrow",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 500,
+              "text_align": "center",
+              "color": "text_on_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.02,
+              "text_align": "center",
+              "color": "text_on_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "subtitle",
+            "content_key": "subtitle_or_context",
+            "z_index": 2,
+            "style": {
+              "font_size": 22,
+              "font_weight": 500,
+              "line_height": 1.45,
+              "text_align": "center",
+              "color": "text_on_accent"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "cards",
+            "content_key": "showcase_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 3,
+              "gap": 34,
+              "card_fill": "surface_inverse",
+              "card_border_color": "transparent",
+              "card_shadow": "shadow_soft",
+              "card_radius": 26,
+              "card_padding": 26,
+              "content_layout": "icon_top",
+              "content_align": "center",
+              "icon_wrap": 68,
+              "icon_fill": "surface_muted",
+              "icon_color": "surface_accent",
+              "content_gap": 18,
+              "title_font_size": 18,
+              "title_color": "bg_base",
+              "body_font_size": 14,
+              "body_color": "text_secondary",
+              "text_gap": 10
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "deck_id": "image_native_visual_poc",
+  "title": "AI Native PPT Visual PoC",
+  "slides": [
+    {
+      "id": "cover",
+      "type": "cover",
+      "visual_prompt": "premium executive technology presentation cover, cinematic but clean, deep graphite background, cool cyan light trails, glassmorphism panels, subtle data grid, elegant icons, high-end consulting deck style",
+      "text_slots": [
+        {
+          "id": "title",
+          "role": "title",
+          "text": "AI Native Presentation Engine",
+          "x": 0.08,
+          "y": 0.21,
+          "w": 0.78,
+          "h": 0.18,
+          "font_size": 40,
+          "font_weight": "bold",
+          "color": "#ffffff",
+          "align": "left"
+        },
+        {
+          "id": "subtitle",
+          "role": "subtitle",
+          "text": "Generate beautiful slides first, then recover editability",
+          "x": 0.08,
+          "y": 0.43,
+          "w": 0.56,
+          "h": 0.09,
+          "font_size": 20,
+          "font_weight": "regular",
+          "color": "#c7d2fe",
+          "align": "left"
+        },
+        {
+          "id": "footer",
+          "role": "caption",
+          "text": "Proof of Concept / 2026",
+          "x": 0.08,
+          "y": 0.84,
+          "w": 0.32,
+          "h": 0.05,
+          "font_size": 12,
+          "font_weight": "regular",
+          "color": "#a5b4fc",
+          "align": "left"
+        }
+      ],
+      "chart_slots": []
+    },
+    {
+      "id": "metrics",
+      "type": "metrics_chart",
+      "visual_prompt": "premium AI analytics slide, dark background with refined cyan and emerald accents, translucent KPI cards, thin line chart frame, polished executive dashboard but not generic, realistic lighting, crisp hierarchy",
+      "text_slots": [
+        {
+          "id": "title",
+          "role": "title",
+          "text": "Editable Content Without Sacrificing Visual Quality",
+          "x": 0.06,
+          "y": 0.07,
+          "w": 0.88,
+          "h": 0.08,
+          "font_size": 26,
+          "font_weight": "bold",
+          "color": "#ffffff",
+          "align": "left"
+        },
+        {
+          "id": "metric_1",
+          "role": "metric",
+          "text": "72% faster layout iteration",
+          "x": 0.08,
+          "y": 0.24,
+          "w": 0.25,
+          "h": 0.1,
+          "font_size": 18,
+          "font_weight": "bold",
+          "color": "#67e8f9",
+          "align": "left"
+        },
+        {
+          "id": "metric_2",
+          "role": "metric",
+          "text": "4.3x richer visual detail",
+          "x": 0.38,
+          "y": 0.24,
+          "w": 0.24,
+          "h": 0.1,
+          "font_size": 18,
+          "font_weight": "bold",
+          "color": "#86efac",
+          "align": "left"
+        },
+        {
+          "id": "metric_3",
+          "role": "metric",
+          "text": "100% editable core text",
+          "x": 0.68,
+          "y": 0.24,
+          "w": 0.24,
+          "h": 0.1,
+          "font_size": 18,
+          "font_weight": "bold",
+          "color": "#fef08a",
+          "align": "left"
+        }
+      ],
+      "chart_slots": [
+        {
+          "id": "chart_main",
+          "type": "bar",
+          "title": "Design Quality Score",
+          "x": 0.1,
+          "y": 0.48,
+          "w": 0.78,
+          "h": 0.34,
+          "labels": ["Template", "HTML", "Image-native"],
+          "values": [58, 74, 91]
+        }
+      ]
+    },
+    {
+      "id": "workflow",
+      "type": "process",
+      "visual_prompt": "premium process slide for AI presentation generation, luminous background, three connected workflow stages, polished icons, elegant vector-like shapes, refined shadows, modern product strategy deck",
+      "text_slots": [
+        {
+          "id": "title",
+          "role": "title",
+          "text": "Three-Step Image-Native Workflow",
+          "x": 0.06,
+          "y": 0.08,
+          "w": 0.72,
+          "h": 0.08,
+          "font_size": 28,
+          "font_weight": "bold",
+          "color": "#ffffff",
+          "align": "left"
+        },
+        {
+          "id": "step_1",
+          "role": "body",
+          "text": "1. Generate visual draft A",
+          "x": 0.1,
+          "y": 0.35,
+          "w": 0.24,
+          "h": 0.1,
+          "font_size": 16,
+          "font_weight": "bold",
+          "color": "#ffffff",
+          "align": "center"
+        },
+        {
+          "id": "step_2",
+          "role": "body",
+          "text": "2. Remove only text to get B",
+          "x": 0.39,
+          "y": 0.35,
+          "w": 0.25,
+          "h": 0.1,
+          "font_size": 16,
+          "font_weight": "bold",
+          "color": "#ffffff",
+          "align": "center"
+        },
+        {
+          "id": "step_3",
+          "role": "body",
+          "text": "3. Overlay editable PPT objects",
+          "x": 0.67,
+          "y": 0.35,
+          "w": 0.27,
+          "h": 0.1,
+          "font_size": 16,
+          "font_weight": "bold",
+          "color": "#ffffff",
+          "align": "center"
+        }
+      ],
+      "chart_slots": []
+    }
+  ]
+}

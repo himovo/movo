@@ -1,0 +1,262 @@
+{
+  "template_id": "content_gtm_icon_stage_cards",
+  "family": "content",
+  "name": "GTM Icon Stage Cards",
+  "purpose": "Horizontal launch-growth-scale composition with three large icon stage cards connected by a central line and anchored by a bottom headline plus summary copy.",
+  "selection_summary": "Use when three market-entry stages should feel iconic and poster-like rather than text-heavy.",
+  "best_for": [
+    "three-stage GTM pages",
+    "launch-growth-scale framing",
+    "poster-like strategy slides"
+  ],
+  "avoid_when": [
+    "the narrative needs long descriptions",
+    "more than three stages are required"
+  ],
+  "recommended_item_range": "3 stage icons + 1 headline + 1 short summary paragraph",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "stage_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 3,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "meta",
+          "field_type": "meta",
+          "required": true,
+          "max_chars_cjk": 6,
+          "max_chars_latin": 8
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 28
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 37
+    },
+    {
+      "slot_id": "subtitle_or_context",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 102
+    }
+  ],
+  "layout_rules": [
+    "The three stages should sit on a single connected track.",
+    "Stage labels should stay concise and uppercase."
+  ],
+  "background_policy": "light_gradient_with_subtle_grid",
+  "preview_content": {
+    "stage_cards": [
+      {
+        "icon": "clock",
+        "meta": "2025",
+        "title": "Launch"
+      },
+      {
+        "icon": "growth",
+        "meta": "2026",
+        "title": "Growth"
+      },
+      {
+        "icon": "users",
+        "meta": "2027",
+        "title": "Scale"
+      }
+    ],
+    "title": "Executing a scalable GTM plan",
+    "subtitle_or_context": "Optimize market entry by moving from launch to growth and then scale with a clean three-stage roadmap."
+  },
+  "executable": {
+    "geometry": {
+      "cards": {
+        "x": 178,
+        "y": 124,
+        "w": 1244,
+        "h": 430
+      },
+      "title": {
+        "x": 126,
+        "y": 676,
+        "w": 716,
+        "h": 92
+      },
+      "subtitle": {
+        "x": 1068,
+        "y": 672,
+        "w": 340,
+        "h": 98
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "stage_track_cards",
+            "box": "cards",
+            "content_key": "stage_cards",
+            "z_index": 2,
+            "style": {
+              "line_box": {
+                "x": 146,
+                "y": 126,
+                "w": 952,
+                "h": 6
+              },
+              "card_fill": "rgba(219,234,254,0.94)",
+              "card_border_color": "rgba(255,255,255,0.96)",
+              "card_shadow": "0 16px 36px rgba(15,23,42,0.12)",
+              "card_radius": 30,
+              "card_padding": 18,
+              "line_color": "surface_accent",
+              "pill_fill": "accent_gradient",
+              "pill_color": "text_on_accent",
+              "meta_font_size": 18,
+              "meta_font_weight": 700,
+              "media_radius": 22,
+              "media_fill": "rgba(191,219,254,0.70)",
+              "media_icon_color": "surface_accent",
+              "media_icon_size": 118,
+              "stage_font_size": 18,
+              "stage_font_weight": 800,
+              "stage_letter_spacing": 1.2,
+              "stage_color": "surface_accent",
+              "item_layouts": [
+                {
+                  "pill_box": {
+                    "x": 62,
+                    "y": 72,
+                    "w": 124,
+                    "h": 56
+                  },
+                  "card_box": {
+                    "x": 0,
+                    "y": 100,
+                    "w": 248,
+                    "h": 222
+                  },
+                  "media_box": {
+                    "x": 18,
+                    "y": 18,
+                    "w": 196,
+                    "h": 166
+                  },
+                  "label_box": {
+                    "x": 0,
+                    "y": 342,
+                    "w": 248,
+                    "h": 28
+                  }
+                },
+                {
+                  "pill_box": {
+                    "x": 560,
+                    "y": 72,
+                    "w": 124,
+                    "h": 56
+                  },
+                  "card_box": {
+                    "x": 498,
+                    "y": 100,
+                    "w": 248,
+                    "h": 222
+                  },
+                  "media_box": {
+                    "x": 18,
+                    "y": 18,
+                    "w": 196,
+                    "h": 166
+                  },
+                  "label_box": {
+                    "x": 498,
+                    "y": 342,
+                    "w": 248,
+                    "h": 28
+                  }
+                },
+                {
+                  "pill_box": {
+                    "x": 1058,
+                    "y": 72,
+                    "w": 124,
+                    "h": 56
+                  },
+                  "card_box": {
+                    "x": 996,
+                    "y": 100,
+                    "w": 248,
+                    "h": 222
+                  },
+                  "media_box": {
+                    "x": 18,
+                    "y": 18,
+                    "w": 196,
+                    "h": 166
+                  },
+                  "label_box": {
+                    "x": 996,
+                    "y": 342,
+                    "w": 248,
+                    "h": 28
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "subtitle",
+            "content_key": "subtitle_or_context",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 500,
+              "line_height": 1.45,
+              "color": "text_secondary"
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

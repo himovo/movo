@@ -1,0 +1,54 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /apps/user-web
+    schedule:
+      interval: weekly
+  - package-ecosystem: pip
+    directory: /services/chat-api
+    schedule:
+      interval: weekly
+  - package-ecosystem: pip
+    directory: /services/admin-api
+    schedule:
+      interval: weekly
+  - package-ecosystem: pip
+    directory: /services/document-parser
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /apps/admin-web
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /services/chat-api/dsh/runtime-host
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /apps/user-web
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /apps/admin-web
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /services/chat-api
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /services/admin-api
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /services/document-parser
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /services/chat-api/dsh/runtime-host
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

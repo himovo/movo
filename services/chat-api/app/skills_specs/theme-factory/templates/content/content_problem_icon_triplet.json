@@ -1,0 +1,174 @@
+{
+  "template_id": "content_problem_icon_triplet",
+  "family": "content",
+  "name": "Problem Icon Triplet",
+  "purpose": "Problem-framing page with a large centered headline and three evenly spaced issue cards with icons.",
+  "selection_summary": "Use when the page needs one dominant problem statement and exactly three supporting pain points.",
+  "best_for": [
+    "problem framing",
+    "pain point summaries",
+    "three-point risk overviews"
+  ],
+  "avoid_when": [
+    "more than three issues need explanation",
+    "the slide should be data-table driven"
+  ],
+  "recommended_item_range": "1 eyebrow + 1 headline + 3 issue cards",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 52
+    },
+    {
+      "slot_id": "issue_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 3,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 10,
+          "max_chars_latin": 25
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 22,
+          "max_chars_latin": 76
+        }
+      ],
+      "max_chars_cjk": 10,
+      "max_chars_latin": 25
+    }
+  ],
+  "layout_rules": [
+    "Keep the headline visually heavier than the card row.",
+    "Icons should sit above each issue title."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "eyebrow": "Problem",
+    "title": "The hidden cost of fragmented customer support",
+    "issue_cards": [
+      {
+        "icon": "growth",
+        "title": "Lost revenue",
+        "body": "Slow service quality leaks pipeline value and weakens retention."
+      },
+      {
+        "icon": "clock",
+        "title": "Delayed response",
+        "body": "Users expect instant help, but teams still answer in hours."
+      },
+      {
+        "icon": "bot",
+        "title": "Ineffective bots",
+        "body": "Rigid systems fail when real intent becomes more complex."
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "eyebrow": {
+        "x": 682,
+        "y": 96,
+        "w": 236,
+        "h": 42
+      },
+      "title": {
+        "x": 168,
+        "y": 146,
+        "w": 1260,
+        "h": 176
+      },
+      "cards": {
+        "x": 120,
+        "y": 430,
+        "w": 1360,
+        "h": 320
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "eyebrow",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 700,
+              "text_align": "center",
+              "color": "surface_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 0.98,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "cards",
+            "content_key": "issue_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 3,
+              "gap": 38,
+              "card_fill": "surface_muted",
+              "card_border_color": "border_subtle",
+              "card_shadow": "shadow_soft",
+              "card_radius": 28,
+              "card_padding": 26,
+              "card_gap": 18,
+              "icon_wrap": 74,
+              "icon_fill": "surface_primary",
+              "icon_color": "surface_accent",
+              "title_font_size": 28,
+              "body_font_size": 18,
+              "body_line_height": 1.4,
+              "body_color": "text_secondary"
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+    "name": "movo-user-web",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "build:test": "vite build --mode test",
+        "build:prod": "vite build --mode production",
+        "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+        "test:execution-v3": "esbuild tests/execution-v3-store.test.ts --bundle --platform=node --format=esm --outfile=/tmp/askai-execution-v3-test.mjs && node /tmp/askai-execution-v3-test.mjs",
+        "test:session-ordering": "esbuild tests/session-ordering.test.ts --bundle --platform=node --format=esm --outfile=/tmp/askai-session-ordering-test.mjs && node /tmp/askai-session-ordering-test.mjs",
+        "test:user-bound-projects": "esbuild tests/user-bound-projects.test.ts --bundle --platform=node --format=esm --outfile=/tmp/askai-user-bound-projects-test.mjs && node /tmp/askai-user-bound-projects-test.mjs",
+        "test:code-platform": "esbuild tests/code-platform-contract.test.ts --bundle --platform=node --format=esm --outfile=/tmp/askai-code-platform-test.mjs && node /tmp/askai-code-platform-test.mjs",
+        "preview": "vite preview"
+    },
+    "dependencies": {
+        "@codemirror/commands": "^6.10.4",
+        "@codemirror/lang-python": "^6.2.1",
+        "@codemirror/state": "^6.7.0",
+        "@codemirror/view": "^6.43.3",
+        "@vicons/ionicons5": "^0.13.0",
+        "@xterm/addon-fit": "^0.11.0",
+        "@xterm/xterm": "^6.0.0",
+        "axios": "^1.6.0",
+        "codemirror": "^6.0.2",
+        "fabric": "^6.9.1",
+        "highlight.js": "^11.11.1",
+        "naive-ui": "^2.44.1",
+        "pdfjs-dist": "^5.6.205",
+        "vue": "^3.4.0"
+    },
+    "devDependencies": {
+        "@vitejs/plugin-vue": "^5.0.0",
+        "autoprefixer": "^10.4.17",
+        "postcss": "^8.4.35",
+        "tailwindcss": "^3.4.1",
+        "typescript": "5.6.3",
+        "vite": "^5.1.0",
+        "vue-tsc": "2.1.10"
+    }
+}
