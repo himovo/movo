@@ -1,0 +1,171 @@
+{
+  "template_id": "content_barrier_icon_triptych_centered",
+  "family": "content",
+  "name": "Barrier Icon Triptych Centered",
+  "purpose": "Centered barrier slide with a large top statement and three evenly spaced icon-led challenge columns.",
+  "selection_summary": "Use when three structural barriers should be communicated cleanly with equal visual weight and minimal decoration.",
+  "best_for": [
+    "market entry barriers",
+    "risk framing",
+    "three-pillar challenge slides"
+  ],
+  "avoid_when": [
+    "evidence metrics need to be shown",
+    "more than three barriers must fit"
+  ],
+  "recommended_item_range": "1 eyebrow + 1 headline + 3 challenge columns",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 46
+    },
+    {
+      "slot_id": "barrier_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 3,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 10,
+          "max_chars_latin": 30
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 22,
+          "max_chars_latin": 63
+        }
+      ],
+      "max_chars_cjk": 10,
+      "max_chars_latin": 30
+    }
+  ],
+  "layout_rules": [
+    "Keep the top statement dominant and centered.",
+    "The three columns should remain balanced with icon-first emphasis."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "eyebrow": "Barriers",
+    "title": "Why others struggle to enter this market",
+    "barrier_cards": [
+      {
+        "icon": "bot",
+        "title": "Data requirements",
+        "body": "AI models require massive training data."
+      },
+      {
+        "icon": "growth",
+        "title": "Tech development",
+        "body": "Years of R&D are needed to build efficient systems."
+      },
+      {
+        "icon": "check",
+        "title": "Regulatory challenges",
+        "body": "Compliance and AI ethics raise the threshold."
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "eyebrow": {
+        "x": 644,
+        "y": 118,
+        "w": 320,
+        "h": 42
+      },
+      "title": {
+        "x": 214,
+        "y": 170,
+        "w": 1170,
+        "h": 224
+      },
+      "cards": {
+        "x": 110,
+        "y": 470,
+        "w": 1380,
+        "h": 250
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "eyebrow",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 700,
+              "text_align": "center",
+              "color": "surface_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "cards",
+            "content_key": "barrier_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 3,
+              "gap": 70,
+              "card_fill": "transparent",
+              "card_border_color": "transparent",
+              "card_shadow": "none",
+              "card_padding": 0,
+              "icon_wrap": 70,
+              "icon_fill": "surface_primary",
+              "icon_color": "surface_accent",
+              "title_font_size": 26,
+              "body_font_size": 18,
+              "title_font_weight": 800
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

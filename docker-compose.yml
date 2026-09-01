@@ -1,0 +1,375 @@
+name: movo
+
+x-python-healthcheck: &python-healthcheck
+  interval: 10s
+  timeout: 5s
+  retries: 20
+  start_period: 30s
+
+services:
+  bootstrap:
+    image: alpine:3.21
+    restart: "no"
+    environment:
+      MOVO_PORT: ${MOVO_PORT:-${ASKAI_PORT:-3000}}
+    volumes:
+      - deployment-secrets:/run/askai-secrets
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        umask 077
+        secret_file=/run/askai-secrets/runtime.env
+        random_hex() { head -c 48 /dev/urandom | od -An -tx1 | tr -d ' \n'; }
+        if [ ! -s "$$secret_file" ]; then
+          admin_secret="$$(random_hex)"
+          admin_backend_service_token="$$(random_hex)"
+          document_service_token="$$(random_hex)"
+          document_callback_token="$$(random_hex)"
+          temp_file="$${secret_file}.tmp"
+          {
+            echo "END_USER_AUTH_SECRET=$$(random_hex)"
+            echo "ASKAI_ADMIN_JWT_SECRET=$$admin_secret"
+            echo "ADMIN_BACKEND_SERVICE_TOKEN=$$admin_backend_service_token"
+            echo "ASKAI_ADMIN_BACKEND_SERVICE_TOKEN=$$admin_backend_service_token"
+            echo "MODEL_CONFIG_SECRET=$$admin_secret"
+            echo "DSH_MODEL_GATEWAY_SIGNING_SECRET=$$(random_hex)"
+            echo "DSH_RUNTIME_HOST_TOKEN=$$(random_hex)"
+            echo "DOCUMENT_PROCESSING_SERVICE_TOKEN=$$document_service_token"
+            echo "ASKAI_ADMIN_DOCUMENT_PROCESSING_SERVICE_TOKEN=$$document_service_token"
+            echo "MOVO_DOC_PROCESSING_SERVICE_TOKEN=$$document_service_token"
+            echo "ASKAI_ADMIN_DOCUMENT_PROCESSING_CALLBACK_TOKEN=$$document_callback_token"
+            echo "MOVO_DOC_PROCESSING_CALLBACK_TOKEN=$$document_callback_token"
+            echo "MOVO_DOC_PROCESSING_ADMIN_JWT_SECRET=$$admin_secret"
+          } > "$$temp_file"
+          mv "$$temp_file" "$$secret_file"
+        fi
+        if ! grep -q '^DSH_RUNTIME_HOST_TOKEN=' "$$secret_file"; then
+          temp_file="$${secret_file}.tmp"
+          cp "$$secret_file" "$$temp_file"
+          echo "DSH_RUNTIME_HOST_TOKEN=$$(random_hex)" >> "$$temp_file"
+          mv "$$temp_file" "$$secret_file"
+        fi
+        if ! grep -q '^ADMIN_BACKEND_SERVICE_TOKEN=' "$$secret_file"; then
+          admin_backend_service_token="$$(random_hex)"
+          {
+            echo "ADMIN_BACKEND_SERVICE_TOKEN=$$admin_backend_service_token"
+            echo "ASKAI_ADMIN_BACKEND_SERVICE_TOKEN=$$admin_backend_service_token"
+          } >> "$$secret_file"
+        elif ! grep -q '^ASKAI_ADMIN_BACKEND_SERVICE_TOKEN=' "$$secret_file"; then
+          admin_backend_service_token="$$(sed -n 's/^ADMIN_BACKEND_SERVICE_TOKEN=//p' "$$secret_file" | head -n 1)"
+          echo "ASKAI_ADMIN_BACKEND_SERVICE_TOKEN=$$admin_backend_service_token" >> "$$secret_file"
+        fi
+        echo "MOVO deployment secrets are ready."
+        echo "After services become healthy, open http://localhost:$${MOVO_PORT:-3000}/admin/setup"
+
+  mongo:
+    image: mongo:6.0.20
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  redis:
+    image: redis:7.4.2-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  weaviate:
+    image: semitechnologies/weaviate:1.25.7
+    restart: unless-stopped
+    environment:
+      QUERY_DEFAULTS_LIMIT: "25"
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: /var/lib/weaviate
+      DEFAULT_VECTORIZER_MODULE: none
+      CLUSTER_HOSTNAME: node1
+      DISABLE_TELEMETRY: "true"
+    volumes:
+      - weaviate-data:/var/lib/weaviate
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:8080/v1/.well-known/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  dsh-runtime-host:
+    build:
+      context: ./services/chat-api/dsh/runtime-host
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    volumes:
+      - deployment-secrets:/run/askai-secrets:ro
+      - dsh-runtime-data:/data/dsh-runtime
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+    networks:
+      - backend
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          set -a; . /run/askai-secrets/runtime.env; set +a;
+          node -e "fetch('http://127.0.0.1:8101/health',{headers:{authorization:'Bearer '+process.env.DSH_RUNTIME_HOST_TOKEN}}).then(r=>{if(!r.ok)process.exit(1);return r.json()}).then(v=>{if(v.ok!==true||v.kernel!=='dsh')process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  chat-api:
+    build:
+      context: ./services/chat-api
+      dockerfile: Dockerfile
+      args:
+        INSTALL_SYSTEM_DEPS_AT_BUILD: "true"
+        INSTALL_PLAYWRIGHT_AT_BUILD: "true"
+        PLAYWRIGHT_WITH_DEPS: "true"
+    restart: unless-stopped
+    environment:
+      OPENAI_API_KEY: ""
+      MONGODB_URI: mongodb://mongo:27017
+      MONGODB_DB: gragentic
+      ALLOWED_ORIGINS: http://localhost:${MOVO_PORT:-${ASKAI_PORT:-3000}}
+      STORAGE_BACKEND: local
+      LOCAL_STORAGE_PATH: /app/storage
+      FILE_PUBLIC_PATH_PREFIX: /askai-api/api/files
+      BACKEND_INTERNAL_BASE_URL: http://chat-api:8000
+      DOCUMENT_PROCESSING_BASE_URL: http://document-api:8200
+      KNOWLEDGE_LOCAL_STORAGE_DIR: /data/knowledge-documents
+      TOKEN_USAGE_PUSH_ENABLED: "false"
+      AUTO_INSTALL_SYSTEM_DEPS_ON_START: "false"
+      AUTO_INSTALL_PLAYWRIGHT_ON_START: "false"
+      REQUEST_DEBUG_SNAPSHOT_ENABLED: "false"
+      DSH_RUNTIME_HOST_URL: http://dsh-runtime-host:8101
+      DSH_TOOL_GATEWAY_URL: http://chat-api:8000/internal/dsh/tools
+      DSH_MODEL_GATEWAY_URL: http://chat-api:8000/internal/dsh/model/generate
+    volumes:
+      - deployment-secrets:/run/askai-secrets:ro
+      - askai-storage:/app/storage
+      - knowledge-storage:/data/knowledge-documents
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+      mongo:
+        condition: service_healthy
+      document-api:
+        condition: service_healthy
+      dsh-runtime-host:
+        condition: service_healthy
+    networks:
+      - public
+      - backend
+    healthcheck:
+      <<: *python-healthcheck
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=3).read()"]
+
+  admin-api:
+    build:
+      context: ./services/admin-api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      ASKAI_ADMIN_APP_ENV: production
+      ASKAI_ADMIN_MONGODB_URI: mongodb://mongo:27017
+      ASKAI_ADMIN_MONGODB_DB: gragentic
+      ASKAI_ADMIN_BOOTSTRAP_ADMIN_ENABLED: "false"
+      ASKAI_ADMIN_BACKEND_BASE_URL: http://chat-api:8000
+      ASKAI_ADMIN_PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      ASKAI_ADMIN_REDIS_URL: redis://redis:6379/0
+      ASKAI_ADMIN_WEAVIATE_ENDPOINT: http://weaviate:8080
+      ASKAI_ADMIN_DOCUMENT_PROCESSING_BASE_URL: http://document-api:8200
+      ASKAI_ADMIN_ADMIN_API_PUBLIC_BASE_URL: http://admin-api:8100
+      ASKAI_ADMIN_USER_PORTAL_BASE_URL: http://localhost:${MOVO_PORT:-${ASKAI_PORT:-3000}}
+      ASKAI_ADMIN_KNOWLEDGE_STORAGE_TYPE: local
+      ASKAI_ADMIN_KNOWLEDGE_LOCAL_STORAGE_DIR: /data/knowledge-documents
+      ASKAI_ADMIN_ADMIN_STATIC_DIR: /data/admin-static
+      ASKAI_ADMIN_CORS_ORIGINS: '["http://localhost:${MOVO_PORT:-${ASKAI_PORT:-3000}}"]'
+    volumes:
+      - deployment-secrets:/run/askai-secrets:ro
+      - knowledge-storage:/data/knowledge-documents
+      - admin-static:/data/admin-static
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+      mongo:
+        condition: service_healthy
+      document-api:
+        condition: service_healthy
+    networks:
+      - public
+      - backend
+    healthcheck:
+      <<: *python-healthcheck
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/health', timeout=3).read()"]
+
+  document-api:
+    build:
+      context: ./services/document-parser
+      dockerfile: Dockerfile
+      args:
+        INSTALL_SYSTEM_DEPS_AT_BUILD: "true"
+        INSTALL_PYTHON_DEPS_AT_BUILD: "true"
+        INSTALL_DOCLING_MODELS_AT_BUILD: "true"
+        PYTORCH_ACCELERATOR: cpu
+    restart: unless-stopped
+    command: ["api"]
+    environment: &document-environment
+      MOVO_DOC_PROCESSING_APP_ENV: production
+      MOVO_DOC_PROCESSING_LOCAL_STORAGE_DIR: /data/knowledge-documents
+      MOVO_DOC_PROCESSING_REDIS_URL: redis://redis:6379/0
+      MOVO_DOC_PROCESSING_MONGODB_URI: mongodb://mongo:27017
+      MOVO_DOC_PROCESSING_MONGODB_DB: gragentic
+      MOVO_DOC_PROCESSING_WEAVIATE_ENDPOINT: http://weaviate:8080
+      MOVO_DOC_PROCESSING_WEAVIATE_COLLECTION_NAME: AskAIKnowledgeChunks
+      MOVO_DOC_PROCESSING_WEAVIATE_DISTANCE_METRIC: cosine
+      MOVO_DOC_PROCESSING_AZURE_EMBEDDING_ENDPOINT: ${AZURE_EMBEDDING_ENDPOINT:-}
+      MOVO_DOC_PROCESSING_AZURE_EMBEDDING_DEPLOYMENT_NAME: ${AZURE_EMBEDDING_DEPLOYMENT_NAME:-text_embedding}
+      MOVO_DOC_PROCESSING_AZURE_EMBEDDING_API_VERSION: ${AZURE_EMBEDDING_API_VERSION:-2025-04-01-preview}
+      MOVO_DOC_PROCESSING_AZURE_EMBEDDING_API_KEY: ${AZURE_EMBEDDING_API_KEY:-}
+      MOVO_DOC_PROCESSING_DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+    volumes:
+      - deployment-secrets:/run/askai-secrets:ro
+      - knowledge-storage:/data/knowledge-documents
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      weaviate:
+        condition: service_healthy
+    networks:
+      - public
+      - backend
+    healthcheck:
+      <<: *python-healthcheck
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8200/api/health', timeout=3).read()"]
+
+  document-worker:
+    build:
+      context: ./services/document-parser
+      dockerfile: Dockerfile
+      args:
+        INSTALL_SYSTEM_DEPS_AT_BUILD: "true"
+        INSTALL_PYTHON_DEPS_AT_BUILD: "true"
+        INSTALL_DOCLING_MODELS_AT_BUILD: "true"
+        PYTORCH_ACCELERATOR: cpu
+    restart: unless-stopped
+    command: ["worker"]
+    environment: *document-environment
+    volumes:
+      - deployment-secrets:/run/askai-secrets:ro
+      - knowledge-storage:/data/knowledge-documents
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      weaviate:
+        condition: service_healthy
+    networks:
+      - public
+      - backend
+
+  user-web:
+    build:
+      context: ./apps/user-web
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_ADMIN_WEB_URL: /admin/
+    restart: unless-stopped
+    networks:
+      - public
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  admin-web:
+    build:
+      context: ./apps/admin-web
+      dockerfile: Dockerfile
+      args:
+        VITE_BASE_PATH: /admin/
+        VITE_ADMIN_API_BASE_URL: /admin-api
+    restart: unless-stopped
+    networks:
+      - public
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  gateway:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${MOVO_PORT:-${ASKAI_PORT:-3000}}:80"
+    volumes:
+      - ./deploy/docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      chat-api:
+        condition: service_healthy
+      admin-api:
+        condition: service_healthy
+      user-web:
+        condition: service_healthy
+      admin-web:
+        condition: service_healthy
+    networks:
+      - public
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+networks:
+  public:
+  backend:
+    internal: true
+
+volumes:
+  # Keep the historical physical names so upgrading the public Compose project
+  # name does not detach an existing installation from its persisted data.
+  deployment-secrets:
+    name: askai_deployment-secrets
+  mongo-data:
+    name: askai_mongo-data
+  redis-data:
+    name: askai_redis-data
+  weaviate-data:
+    name: askai_weaviate-data
+  dsh-runtime-data:
+    name: askai_dsh-runtime-data
+  askai-storage:
+    name: askai_askai-storage
+  knowledge-storage:
+    name: askai_knowledge-storage
+  admin-static:
+    name: askai_admin-static

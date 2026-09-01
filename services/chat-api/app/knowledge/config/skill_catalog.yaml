@@ -1,0 +1,82 @@
+skills:
+  - skill_id: work_report
+    display_name: 工作汇报
+    aliases: ["周报", "月报", "季报", "工作汇报"]
+    default_mode: report
+  - skill_id: ppt_content_outline
+    display_name: PPT内容稿
+    aliases: ["ppt内容", "演示稿", "汇报ppt"]
+    default_mode: brief
+  - skill_id: business_email
+    display_name: 商务邮件
+    aliases: ["商务邮件", "邮件草稿", "邮件回复"]
+    default_mode: article
+  - skill_id: meeting_minutes
+    display_name: 会议纪要
+    aliases: ["会议纪要", "会议记录"]
+    default_mode: brief
+  - skill_id: work_plan
+    display_name: 工作计划
+    aliases: ["工作计划", "计划书"]
+    default_mode: proposal
+  - skill_id: project_proposal
+    display_name: 项目方案
+    aliases: ["项目方案", "项目提案"]
+    default_mode: proposal
+  - skill_id: business_proposal
+    display_name: 商业方案
+    aliases: ["商业方案", "商务方案"]
+    default_mode: proposal
+  - skill_id: research_report
+    display_name: 调研报告
+    aliases: ["调研报告", "研究报告", "研报"]
+    default_mode: report
+  - skill_id: analysis_report
+    display_name: 分析报告
+    aliases: ["分析报告", "复盘报告", "复盘"]
+    default_mode: report
+  - skill_id: prd_document
+    display_name: PRD
+    aliases: ["prd", "需求文档", "产品需求"]
+    default_mode: spec
+  - skill_id: okr_kpi_doc
+    display_name: OKR/KPI 文档
+    aliases: ["okr", "kpi", "目标考核"]
+    default_mode: spec
+  - skill_id: policy_process_doc
+    display_name: 制度流程文档
+    aliases: ["制度", "流程文档", "流程规范"]
+    default_mode: spec
+  - skill_id: job_description_doc
+    display_name: 岗位职责
+    aliases: ["岗位职责", "jd", "职位描述"]
+    default_mode: spec
+  - skill_id: training_material
+    display_name: 培训材料
+    aliases: ["培训材料", "培训讲义"]
+    default_mode: tutorial
+  - skill_id: sop_document
+    display_name: SOP 文档
+    aliases: ["sop", "操作手册", "作业指导书"]
+    default_mode: tutorial
+  - skill_id: comparison_report
+    display_name: 对比分析
+    aliases: ["对比分析", "横向对比", "比较报告"]
+    default_mode: comparison
+  - skill_id: feasibility_report
+    display_name: 可行性分析
+    aliases: ["可行性分析", "可行性报告"]
+    default_mode: report
+  - skill_id: risk_assessment_doc
+    display_name: 风险评估
+    aliases: ["风险评估", "风险报告"]
+    default_mode: report
+  - skill_id: promotion_intro_doc
+    display_name: 宣传介绍
+    aliases: ["宣传介绍", "推广文案", "公众号文章"]
+    default_mode: article
+  - skill_id: cooperation_proposal
+    display_name: 合作提案
+    aliases: ["合作提案", "合作方案"]
+    default_mode: proposal
+

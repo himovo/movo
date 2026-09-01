@@ -1,0 +1,240 @@
+{
+  "template_id": "content_process_cards_band",
+  "family": "content",
+  "name": "Process Cards Over Band",
+  "purpose": "Four-step process cards floating over a horizontal lower band with a centered supporting statement beneath.",
+  "selection_summary": "Use when a compact, equal-step transformation flow needs to sit above one summarizing statement.",
+  "best_for": [
+    "process summaries",
+    "transformation flows",
+    "AI workflow overviews"
+  ],
+  "avoid_when": [
+    "steps need detailed explanatory text",
+    "a timeline chart would be clearer"
+  ],
+  "recommended_item_range": "1 eyebrow + 1 headline + 4 process cards + 1 summary line",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 22
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 39
+    },
+    {
+      "slot_id": "process_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 4,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 10,
+          "max_chars_latin": 29
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 18,
+          "max_chars_latin": 58
+        }
+      ],
+      "max_chars_cjk": 10,
+      "max_chars_latin": 29
+    },
+    {
+      "slot_id": "subtitle_or_context",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 98
+    }
+  ],
+  "layout_rules": [
+    "The four cards should sit in one row above the lower band.",
+    "Use the supporting statement as a centered explanatory footer."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "eyebrow": "Transformation",
+    "title": "From friction to fluent support",
+    "subtitle_or_context": "Show the system flow as four equally weighted steps, then summarize the operating benefit below.",
+    "process_cards": [
+      {
+        "icon": "brain",
+        "title": "Intent captured",
+        "body": "Incoming signals are classified instantly."
+      },
+      {
+        "icon": "chat",
+        "title": "Responses drafted",
+        "body": "Context-aware answers are generated."
+      },
+      {
+        "icon": "bulb",
+        "title": "Actions personalized",
+        "body": "Recommendations adapt to the request."
+      },
+      {
+        "icon": "growth",
+        "title": "Learning continues",
+        "body": "Quality improves through feedback loops."
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "eyebrow": {
+        "x": 706,
+        "y": 110,
+        "w": 200,
+        "h": 42
+      },
+      "title": {
+        "x": 164,
+        "y": 148,
+        "w": 1270,
+        "h": 118
+      },
+      "cards_backdrop": {
+        "x": 92,
+        "y": 328,
+        "w": 1416,
+        "h": 304
+      },
+      "band": {
+        "x": 0,
+        "y": 520,
+        "w": 1600,
+        "h": 180
+      },
+      "cards": {
+        "x": 128,
+        "y": 360,
+        "w": 1340,
+        "h": 250
+      },
+      "subtitle": {
+        "x": 420,
+        "y": 650,
+        "w": 760,
+        "h": 112
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "panel",
+            "box": "band",
+            "z_index": 1,
+            "style": {
+              "fill": "content_band_surface",
+              "radius": 0
+            }
+          },
+          {
+            "kind": "panel",
+            "box": "cards_backdrop",
+            "z_index": 2,
+            "style": {
+              "fill": "content_card_surface_a",
+              "radius": 34,
+              "opacity": 0.7
+            }
+          },
+          {
+            "kind": "text",
+            "box": "eyebrow",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 700,
+              "text_align": "center",
+              "color": "surface_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.02,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "cards",
+            "content_key": "process_cards",
+            "z_index": 3,
+            "style": {
+              "columns": 4,
+              "gap": 22,
+              "card_border_color": "border_strong",
+              "card_shadow": "shadow_soft",
+              "card_radius": 24,
+              "card_padding": 24,
+              "icon_wrap": 56,
+              "icon_fill": "accent_soft",
+              "icon_color": "surface_accent",
+              "title_font_size": 20,
+              "body_font_size": 16,
+              "card_fills": [
+                "content_card_surface_a",
+                "content_card_surface_b",
+                "content_card_surface_b",
+                "content_card_surface_a"
+              ]
+            }
+          },
+          {
+            "kind": "text",
+            "box": "subtitle",
+            "content_key": "subtitle_or_context",
+            "z_index": 2,
+            "style": {
+              "font_size": 20,
+              "font_weight": 500,
+              "line_height": 1.45,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

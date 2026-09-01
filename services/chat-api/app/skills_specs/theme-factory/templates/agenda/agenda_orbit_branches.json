@@ -1,0 +1,113 @@
+{
+  "template_id": "agenda_orbit_branches",
+  "family": "agenda",
+  "name": "Agenda Grid Nine",
+  "purpose": "Full-canvas agenda grid that places up to nine numbered sections in a 3x3 matrix.",
+  "selection_summary": "Use when the deck must preview many chapters at once and the agenda can behave like a visual index wall.",
+  "best_for": [
+    "7 to 9 agenda sections",
+    "big blue strategy or pitch decks",
+    "visual index walls"
+  ],
+  "avoid_when": [
+    "agenda labels are long",
+    "the page should feel text-light and minimal"
+  ],
+  "preferred_visual_forms": [
+    "grid",
+    "matrix",
+    "nine_grid"
+  ],
+  "preferred_slide_roles": [
+    "agenda",
+    "overview"
+  ],
+  "preferred_density_targets": [
+    "high"
+  ],
+  "recommended_item_range": "7 to 9 sections in a 3x3 matrix",
+  "layout_regions": [
+    "main_visual",
+    "bottom_bar"
+  ],
+  "supported_components": [
+    "title",
+    "agenda_list"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "bottom_bar",
+      "style_role": "section_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "agenda_main",
+      "component_type": "agenda_list",
+      "region": "main_visual",
+      "style_role": "surface_primary",
+      "max_items": 9
+    }
+  ],
+  "layout_rules": [
+    "Use a 3x3 grid with large step numbers and short supporting subtitles.",
+    "Title lives in the lower-left corner inside the same composition."
+  ],
+  "executable": {
+    "geometry": {
+      "title": {
+        "x": 110,
+        "y": 740,
+        "w": 340,
+        "h": 90
+      },
+      "agenda": {
+        "x": 0,
+        "y": 0,
+        "w": 1600,
+        "h": 900
+      }
+    },
+    "agenda": {
+      "mode": "grid_nine",
+      "max_items": 9,
+      "layout": {
+        "outer_padding": {
+          "top": 72,
+          "right": 88,
+          "bottom": 118,
+          "left": 88
+        },
+        "grid_bounds": {
+          "left": 250,
+          "right": 90,
+          "top": 120,
+          "bottom": 150
+        },
+        "grid_gap_x": 48,
+        "grid_gap_y": 34,
+        "title_position": {
+          "left": 94,
+          "bottom": 72
+        }
+      },
+      "style": {
+        "show_shell": false,
+        "title_font_size": 28,
+        "card_radius": 24,
+        "card_padding": {
+          "top": 22,
+          "right": 18,
+          "bottom": 22,
+          "left": 18
+        },
+        "number_font_size": 38,
+        "item_title_font_size": 18,
+        "item_desc_font_size": 12
+      }
+    },
+    "title_style": "section_title"
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "template_id": "content_revenue_bar_drivers_split",
+  "family": "content",
+  "name": "Revenue Bar Drivers Split",
+  "purpose": "Performance slide with a left three-bar revenue chart and a right stack of driver cards explaining the growth inputs.",
+  "selection_summary": "Use when revenue growth should be paired with the specific business drivers behind it.",
+  "best_for": [
+    "growth analysis",
+    "revenue drivers",
+    "board update slides"
+  ],
+  "avoid_when": [
+    "many years or series must be charted",
+    "a table would be clearer than cards"
+  ],
+  "recommended_item_range": "1 headline + 3 bars + 3 driver cards",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 38
+    },
+    {
+      "slot_id": "chart_visual",
+      "component_type": "generic_diagram",
+      "region": "canvas",
+      "style_role": "surface_primary"
+    },
+    {
+      "slot_id": "driver_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 3,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 35
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 28,
+          "max_chars_latin": 72
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 35
+    }
+  ],
+  "layout_rules": [
+    "Keep the left visual as a simple chart placeholder or chart graphic.",
+    "Driver cards should align vertically on the right and stay concise."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "title": "Revenue scaling year over year",
+    "chart_visual": "",
+    "driver_cards": [
+      {
+        "icon": "spark",
+        "title": "Increase in enterprise deals",
+        "body": "Larger contracts raise average deal size from $50K to $200K."
+      },
+      {
+        "icon": "growth",
+        "title": "Expansion into new markets",
+        "body": "Regional launches widen the pipeline and diversify revenue."
+      },
+      {
+        "icon": "check",
+        "title": "Premium tier introduction",
+        "body": "New packaging improves monetization per active customer."
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "title": {
+        "x": 522,
+        "y": 74,
+        "w": 750,
+        "h": 130
+      },
+      "chart": {
+        "x": 150,
+        "y": 250,
+        "w": 630,
+        "h": 500
+      },
+      "drivers": {
+        "x": 848,
+        "y": 252,
+        "w": 612,
+        "h": 486
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 64,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "image",
+            "box": "chart",
+            "content_key": "chart_visual",
+            "label": "Bar Chart Placeholder",
+            "z_index": 2,
+            "style": {
+              "radius": 24,
+              "fill": "surface_primary",
+              "border_color": "border_subtle",
+              "placeholder_fill": "surface_muted",
+              "icon_name": "growth",
+              "icon_size": 108,
+              "label_size": 22,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "drivers",
+            "content_key": "driver_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 1,
+              "gap": 20,
+              "content_layout": "icon_left",
+              "content_align": "center",
+              "content_gap": 16,
+              "card_fill": "surface_primary",
+              "card_border_color": "border_subtle",
+              "card_shadow": "shadow_soft",
+              "card_radius": 24,
+              "card_padding": 22,
+              "icon_wrap": 44,
+              "icon_fill": "accent_soft",
+              "icon_color": "surface_accent",
+              "title_font_size": 20,
+              "body_font_size": 16,
+              "text_gap": 6
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

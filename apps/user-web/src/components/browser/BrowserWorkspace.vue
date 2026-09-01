@@ -1,0 +1,95 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import ElectronBrowserSurface from './ElectronBrowserSurface.vue'
+import DesktopToolTabBar from '../desktop/DesktopToolTabBar.vue'
+import type { DesktopToolTab, DesktopToolTabKind } from '../desktop/desktopToolTabs'
+import { capabilities } from '../../platform'
+import { useDesktopToolPanelSize } from '../../composables/desktop/useDesktopToolPanelSize'
+import { useEmbeddedBrowserState } from '../../composables/browser/embeddedBrowserState'
+import { t } from '../../composables/i18n'
+
+const props = defineProps<{
+  active: boolean
+  open: boolean
+  sessionId?: string
+  userId?: string
+  mainId?: string
+  enabled?: boolean
+  tabs?: DesktopToolTab[]
+  activeTool?: DesktopToolTabKind | null
+  availableTools?: DesktopToolTabKind[]
+  locale?: 'zh' | 'en'
+}>()
+const emit = defineEmits<{
+  (event: 'update:open', value: boolean): void
+  (event: 'select-tab', kind: DesktopToolTabKind): void
+  (event: 'close-tab', kind: DesktopToolTabKind): void
+  (event: 'open-tab', kind: DesktopToolTabKind): void
+}>()
+const panel = useDesktopToolPanelSize()
+const embeddedState = useEmbeddedBrowserState()
+const sessionMatches = computed(() => Boolean(
+  props.sessionId
+  && embeddedState.value.session_id === props.sessionId,
+))
+const useElectron = computed(() => capabilities.embeddedBrowser
+  && props.active
+  && embeddedState.value.active
+  && sessionMatches.value)
+const hasPreview = computed(() => useElectron.value)
+const panelOpen = computed(() => props.enabled !== false && props.active && props.open && props.activeTool === 'browser' && hasPreview.value)
+
+</script>
+
+<template>
+  <div class="browser-workspace" :class="{ dragging: panel.dragging.value }">
+    <div class="chat-pane"><slot /></div>
+    <template v-if="panelOpen">
+      <div
+        class="split-handle"
+        role="separator"
+        :aria-label="t('调整对话和浏览器宽度')"
+        aria-orientation="vertical"
+        tabindex="0"
+        @pointerdown="panel.beginDrag"
+        @keydown="panel.adjustByKeyboard"
+      ><span></span></div>
+      <aside class="browser-pane" :style="{ width: panel.width.value }">
+        <DesktopToolTabBar
+          :tabs="tabs || []"
+          :active="activeTool"
+          :available="availableTools || []"
+          :locale="locale"
+          @select="emit('select-tab', $event)"
+          @close="emit('close-tab', $event)"
+          @open="emit('open-tab', $event)"
+          @close-panel="emit('update:open', false)"
+        />
+        <ElectronBrowserSurface
+          :session-id="sessionId"
+          :user-id="userId"
+          :main-id="mainId"
+          :show-panel-close="false"
+        />
+      </aside>
+    </template>
+  </div>
+</template>
+
+<style scoped>
+.browser-workspace { position: relative; display: flex; width: 100%; height: 100%; min-width: 0; overflow: hidden; background: white; }
+.browser-workspace.dragging { user-select: none; cursor: col-resize; }
+.chat-pane, .browser-pane { height: 100%; min-width: 0; }
+.chat-pane { flex:1; }
+.browser-pane { display:flex; max-width:82vw; flex:none; flex-direction:column; border-left: 1px solid #cbd5e1; background: #0f172a; }
+.browser-pane :deep(.electron-browser) { min-height:0; flex:1; }
+.split-handle { position: relative; z-index: 20; width: 7px; flex: 0 0 7px; cursor: col-resize; background: #f8fafc; outline: none; }
+.split-handle span { position: absolute; top: 50%; left: 2px; width: 3px; height: 36px; transform: translateY(-50%); border-radius: 2px; background: #cbd5e1; }
+.split-handle:hover span, .split-handle:focus-visible span { background: #2563eb; }
+@media (max-width: 900px) {
+  .browser-workspace { display: block; }
+  .chat-pane { width: 100% !important; }
+  .split-handle { display: none; }
+  .browser-pane { position: absolute; inset: 0; z-index: 30; width: 100% !important; }
+}
+</style>

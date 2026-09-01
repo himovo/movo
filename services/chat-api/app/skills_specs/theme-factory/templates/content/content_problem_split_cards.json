@@ -1,0 +1,228 @@
+{
+  "template_id": "content_problem_split_cards",
+  "family": "content",
+  "name": "Problem Split Stat Cards",
+  "purpose": "Large left-side problem statement paired with stacked stat cards floating over a vertical accent band.",
+  "selection_summary": "Use when the page needs one forceful problem claim on the left and two proof-point cards on the right.",
+  "best_for": [
+    "problem statements with proof",
+    "executive pain summaries",
+    "customer support failure framing"
+  ],
+  "avoid_when": [
+    "three or more proof cards are required",
+    "the slide needs charts instead of evidence cards"
+  ],
+  "recommended_item_range": "1 badge + 1 headline + 1 paragraph + 2 stacked evidence cards",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 18
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 51
+    },
+    {
+      "slot_id": "subtitle_or_context",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 97
+    },
+    {
+      "slot_id": "evidence_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 2,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 51
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 28,
+          "max_chars_latin": 78
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 51
+    }
+  ],
+  "layout_rules": [
+    "Preserve a strong white left field against the accent band on the right.",
+    "The evidence cards must overlap the band for depth."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "eyebrow": "The problem",
+    "title": "Service quality breaks when complexity rises",
+    "subtitle_or_context": "Anchor the narrative with one forceful statement, then support it with two compact proof cards.",
+    "evidence_cards": [
+      {
+        "icon": "users",
+        "title": "60% of users churn after one bad experience",
+        "body": "Poor support leaves a fast and visible trust gap."
+      },
+      {
+        "icon": "bot",
+        "title": "Legacy chatbots miss intent on nuanced requests",
+        "body": "Template-driven systems fail once requests stop being repetitive."
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "statement_plate": {
+        "x": 88,
+        "y": 88,
+        "w": 690,
+        "h": 700
+      },
+      "band": {
+        "x": 1104,
+        "y": 0,
+        "w": 496,
+        "h": 900
+      },
+      "pill": {
+        "x": 134,
+        "y": 112,
+        "w": 286,
+        "h": 64
+      },
+      "title": {
+        "x": 132,
+        "y": 202,
+        "w": 616,
+        "h": 380
+      },
+      "subtitle": {
+        "x": 132,
+        "y": 642,
+        "w": 500,
+        "h": 118
+      },
+      "cards": {
+        "x": 892,
+        "y": 290,
+        "w": 576,
+        "h": 384
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "panel",
+            "box": "statement_plate",
+            "z_index": 1,
+            "style": {
+              "fill": "content_card_surface_a",
+              "radius": 42,
+              "opacity": 0.78
+            }
+          },
+          {
+            "kind": "panel",
+            "box": "band",
+            "z_index": 1,
+            "style": {
+              "fill": "content_band_surface",
+              "radius": 0
+            }
+          },
+          {
+            "kind": "pill",
+            "box": "pill",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 999,
+              "font_size": 20,
+              "font_weight": 700,
+              "color": "text_on_accent",
+              "text_align": "center"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 0.98,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "subtitle",
+            "content_key": "subtitle_or_context",
+            "z_index": 2,
+            "style": {
+              "font_size": 22,
+              "font_weight": 500,
+              "line_height": 1.45,
+              "color": "text_secondary"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "cards",
+            "content_key": "evidence_cards",
+            "z_index": 3,
+            "style": {
+              "columns": 1,
+              "gap": 26,
+              "card_border_color": "border_strong",
+              "card_shadow": "shadow_soft",
+              "card_radius": 26,
+              "card_padding": 28,
+              "icon_wrap": 66,
+              "title_font_size": 24,
+              "body_font_size": 18,
+              "card_fills": [
+                "content_card_surface_a",
+                "content_card_surface_b",
+                "content_card_surface_b",
+                "content_card_surface_a"
+              ]
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

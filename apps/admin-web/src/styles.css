@@ -1,0 +1,175 @@
+:root {
+  color-scheme: light;
+  font-family: "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(54, 106, 255, 0.14), transparent 32%),
+    linear-gradient(180deg, #f6f8ff 0%, #edf2ff 100%);
+  color: #16213d;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+html.dark {
+  color-scheme: dark;
+  background:
+    radial-gradient(circle at top left, rgba(54, 106, 255, 0.12), transparent 30%),
+    linear-gradient(180deg, #0b1020 0%, #0f1117 100%);
+  color: #e5e7eb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100vh;
+  margin: 0;
+}
+
+body {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+html.dark body {
+  background: #0f1117;
+  color: #e5e7eb;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+html.dark .app-shell {
+  background: #0f1117;
+}
+
+.page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* Shared compact actions for admin data tables. */
+.action-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.action-link {
+  border: 1px solid #d8e2ff;
+  border-radius: 6px;
+  background: #f4f7ff;
+  color: #366aff;
+  cursor: pointer;
+  padding: 2px 10px;
+  font-size: 12px;
+  line-height: 20px;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.action-link:hover:not(:disabled) {
+  border-color: #adc2ff;
+  background: #eaf0ff;
+}
+
+.action-link.danger {
+  border-color: #ffd5de;
+  background: #fff6f8;
+  color: #d03050;
+}
+
+.action-link:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.page-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.span-12 {
+  grid-column: span 12;
+}
+
+.span-8 {
+  grid-column: span 8;
+}
+
+.span-6 {
+  grid-column: span 6;
+}
+
+.span-4 {
+  grid-column: span 4;
+}
+
+.span-3 {
+  grid-column: span 3;
+}
+
+.shell-card-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.section-muted {
+  color: #5f736d;
+  font-size: 13px;
+}
+
+html.dark .section-muted,
+html.dark .stat-footnote {
+  color: #9ca3af;
+}
+
+.stat-footnote {
+  color: #5f736d;
+  font-size: 12px;
+}
+
+/* Unify Naive UI multi-select tags across pages. */
+.n-base-selection .n-base-selection-tag-wrapper .n-tag {
+  border-radius: 999px !important;
+  border: 1px solid #c8d7ff !important;
+  background-color: #eaf0ff !important;
+  color: #2248b8 !important;
+  font-weight: 600;
+  padding: 0 10px !important;
+}
+
+.n-base-selection .n-base-selection-tag-wrapper .n-tag .n-tag__content {
+  color: inherit;
+}
+
+.n-base-selection .n-base-selection-tag-wrapper .n-tag .n-tag__border {
+  display: none;
+}
+
+.n-base-selection .n-base-selection-tag-wrapper .n-tag .n-tag__close {
+  color: #4f6fd6 !important;
+  border-radius: 999px !important;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.n-base-selection .n-base-selection-tag-wrapper .n-tag .n-tag__close:hover {
+  background-color: rgba(54, 106, 255, 0.14) !important;
+  color: #2349b7 !important;
+}
+
+html.dark .n-base-selection .n-base-selection-tag-wrapper .n-tag {
+  border-color: rgba(96, 165, 250, 0.35) !important;
+  background-color: rgba(37, 99, 235, 0.18) !important;
+  color: #bfdbfe !important;
+}

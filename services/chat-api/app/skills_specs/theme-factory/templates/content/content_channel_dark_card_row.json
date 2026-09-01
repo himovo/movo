@@ -1,0 +1,151 @@
+{
+  "template_id": "content_channel_dark_card_row",
+  "family": "content",
+  "name": "Dark Channel Card Row",
+  "purpose": "Dark content slide with a centered title and a single row of four deep-surface channel cards using icons and short explanations.",
+  "selection_summary": "Use when acquisition channels should be shown on a dark background as equal-weight cards.",
+  "best_for": [
+    "dark GTM channel slides",
+    "four-channel marketing mixes",
+    "acquisition summaries"
+  ],
+  "avoid_when": [
+    "the deck should stay light",
+    "one channel needs stronger emphasis than the others"
+  ],
+  "recommended_item_range": "1 headline + 4 channel cards",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 51
+    },
+    {
+      "slot_id": "channel_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_secondary",
+      "max_items": 4,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 10,
+          "max_chars_latin": 25
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 18,
+          "max_chars_latin": 71
+        }
+      ],
+      "max_chars_cjk": 10,
+      "max_chars_latin": 25
+    }
+  ],
+  "layout_rules": [
+    "All four cards should fit on one row.",
+    "Use bright icon accents against a deep dark background."
+  ],
+  "background_policy": "dark_gradient",
+  "preview_content": {
+    "title": "Reaching customers across multiple channels",
+    "channel_cards": [
+      {
+        "icon": "chat",
+        "title": "Email marketing",
+        "body": "Engage customers with personalized emails and automation."
+      },
+      {
+        "icon": "spark",
+        "title": "SEO and content",
+        "body": "Improve visibility with optimized content and keywords."
+      },
+      {
+        "icon": "growth",
+        "title": "Paid ads",
+        "body": "Maximize ROI with targeted acquisition campaigns."
+      },
+      {
+        "icon": "users",
+        "title": "Referral program",
+        "body": "Grow through customer advocacy and referrals."
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "title": {
+        "x": 338,
+        "y": 112,
+        "w": 924,
+        "h": 176
+      },
+      "cards": {
+        "x": 118,
+        "y": 392,
+        "w": 1364,
+        "h": 304
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "cards",
+            "content_key": "channel_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 4,
+              "gap": 24,
+              "card_fill": "surface_secondary",
+              "card_border_color": "border_strong",
+              "card_shadow": "shadow_soft",
+              "card_radius": 18,
+              "card_padding": 24,
+              "icon_wrap": 56,
+              "icon_fill": "surface_primary",
+              "icon_color": "surface_accent",
+              "title_font_size": 22,
+              "body_font_size": 16,
+              "title_color": "text_primary",
+              "body_color": "text_secondary"
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

@@ -1,0 +1,309 @@
+{
+  "template_id": "content_journey_year_nodes",
+  "family": "content",
+  "name": "Journey Year Nodes",
+  "purpose": "Five-point horizontal journey timeline with evenly spaced year nodes connected by one line and concise explanatory captions beneath.",
+  "selection_summary": "Use when a company's journey should be shown as five chronological steps across one clean horizontal track.",
+  "best_for": [
+    "company journey",
+    "milestone timelines",
+    "what is next framing"
+  ],
+  "avoid_when": [
+    "events need long detail",
+    "the slide should compare two different paths"
+  ],
+  "recommended_item_range": "1 headline + 5 year nodes",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 36
+    },
+    {
+      "slot_id": "journey_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 5,
+      "item_fields": [
+        {
+          "field_name": "meta",
+          "field_type": "meta",
+          "required": true,
+          "max_chars_cjk": 6,
+          "max_chars_latin": 8
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 28
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 28,
+          "max_chars_latin": 67
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 28
+    }
+  ],
+  "layout_rules": [
+    "The headline should sit above the center of the line.",
+    "All year nodes should be equal in diameter and evenly distributed."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "title": "Our journey and what is ahead",
+    "journey_cards": [
+      {
+        "meta": "2022",
+        "title": "2022",
+        "body": "Initial concept and prototype development."
+      },
+      {
+        "meta": "2023",
+        "title": "2023",
+        "body": "Beta launch and first enterprise customers onboarded."
+      },
+      {
+        "meta": "2024",
+        "title": "2024",
+        "body": "Product-market fit achieved and expansion started."
+      },
+      {
+        "meta": "2025",
+        "title": "2025",
+        "body": "AI analytics and predictive insights rollout."
+      },
+      {
+        "meta": "2026",
+        "title": "2026",
+        "body": "$100M ARR and IPO preparation."
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "title_glow": {
+        "x": 470,
+        "y": 42,
+        "w": 670,
+        "h": 248
+      },
+      "title": {
+        "x": 544,
+        "y": 82,
+        "w": 520,
+        "h": 138
+      },
+      "nodes": {
+        "x": 142,
+        "y": 272,
+        "w": 1338,
+        "h": 360
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "panel",
+            "box": "title_glow",
+            "z_index": 1,
+            "style": {
+              "fill": "accent_soft",
+              "opacity": 0.55,
+              "radius": 999
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "year_nodes_track",
+            "box": "nodes",
+            "content_key": "journey_cards",
+            "z_index": 2,
+            "style": {
+              "line_box": {
+                "x": 101,
+                "y": 105,
+                "w": 1136,
+                "h": 6
+              },
+              "line_color": "surface_accent",
+              "node_fill": "accent_gradient",
+              "halo_fill": "accent_soft",
+              "node_shadow": "shadow_soft",
+              "year_font_size": 18,
+              "year_font_weight": 700,
+              "year_color": "text_on_accent",
+              "title_font_size": 20,
+              "title_font_weight": 800,
+              "body_font_size": 16,
+              "body_line_height": 1.36,
+              "title_color": "text_primary",
+              "body_color": "text_secondary",
+              "item_layouts": [
+                {
+                  "halo_box": {
+                    "x": 45,
+                    "y": 52,
+                    "w": 112,
+                    "h": 112
+                  },
+                  "node_box": {
+                    "x": 56,
+                    "y": 63,
+                    "w": 90,
+                    "h": 90
+                  },
+                  "title_box": {
+                    "x": 0,
+                    "y": 176,
+                    "w": 202,
+                    "h": 28
+                  },
+                  "body_box": {
+                    "x": 0,
+                    "y": 208,
+                    "w": 202,
+                    "h": 72
+                  }
+                },
+                {
+                  "halo_box": {
+                    "x": 313,
+                    "y": 52,
+                    "w": 112,
+                    "h": 112
+                  },
+                  "node_box": {
+                    "x": 324,
+                    "y": 63,
+                    "w": 90,
+                    "h": 90
+                  },
+                  "title_box": {
+                    "x": 268,
+                    "y": 176,
+                    "w": 202,
+                    "h": 28
+                  },
+                  "body_box": {
+                    "x": 268,
+                    "y": 208,
+                    "w": 202,
+                    "h": 72
+                  }
+                },
+                {
+                  "halo_box": {
+                    "x": 581,
+                    "y": 52,
+                    "w": 112,
+                    "h": 112
+                  },
+                  "node_box": {
+                    "x": 592,
+                    "y": 63,
+                    "w": 90,
+                    "h": 90
+                  },
+                  "title_box": {
+                    "x": 536,
+                    "y": 176,
+                    "w": 202,
+                    "h": 28
+                  },
+                  "body_box": {
+                    "x": 536,
+                    "y": 208,
+                    "w": 202,
+                    "h": 72
+                  }
+                },
+                {
+                  "halo_box": {
+                    "x": 849,
+                    "y": 52,
+                    "w": 112,
+                    "h": 112
+                  },
+                  "node_box": {
+                    "x": 860,
+                    "y": 63,
+                    "w": 90,
+                    "h": 90
+                  },
+                  "title_box": {
+                    "x": 804,
+                    "y": 176,
+                    "w": 202,
+                    "h": 28
+                  },
+                  "body_box": {
+                    "x": 804,
+                    "y": 208,
+                    "w": 202,
+                    "h": 72
+                  }
+                },
+                {
+                  "halo_box": {
+                    "x": 1117,
+                    "y": 52,
+                    "w": 112,
+                    "h": 112
+                  },
+                  "node_box": {
+                    "x": 1128,
+                    "y": 63,
+                    "w": 90,
+                    "h": 90
+                  },
+                  "title_box": {
+                    "x": 1072,
+                    "y": 176,
+                    "w": 202,
+                    "h": 28
+                  },
+                  "body_box": {
+                    "x": 1072,
+                    "y": 208,
+                    "w": 202,
+                    "h": 72
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

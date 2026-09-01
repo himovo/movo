@@ -1,0 +1,288 @@
+{
+  "template_id": "content_gtm_dark_timeline_split",
+  "family": "content",
+  "name": "Dark GTM Timeline Split",
+  "purpose": "Dark split slide with a left narrative stack and a right vertical milestone timeline using year pills and one-line stage summaries.",
+  "selection_summary": "Use when a multi-year GTM plan should feel executive, dark, and strongly sequenced.",
+  "best_for": [
+    "dark strategy decks",
+    "multi-year GTM planning",
+    "executive roadmap slides"
+  ],
+  "avoid_when": [
+    "the theme should stay light",
+    "the timeline requires many detailed sub-bullets"
+  ],
+  "recommended_item_range": "1 headline + 3 left narrative blocks + 4 timeline milestones",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 37
+    },
+    {
+      "slot_id": "left_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_secondary",
+      "max_items": 3,
+      "item_fields": [
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 28
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 28,
+          "max_chars_latin": 70
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "timeline_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_secondary",
+      "max_items": 4,
+      "item_fields": [
+        {
+          "field_name": "meta",
+          "field_type": "meta",
+          "required": true,
+          "max_chars_cjk": 6,
+          "max_chars_latin": 8
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 42
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 42
+    }
+  ],
+  "layout_rules": [
+    "The left side should stay narrative and spacious.",
+    "The right side should use a strong vertical rail with evenly spaced milestone markers."
+  ],
+  "background_policy": "dark_clean",
+  "preview_content": {
+    "title": "Executing a scalable GTM plan",
+    "left_cards": [
+      {
+        "title": "Ideal customer",
+        "body": "Define the audience, location, pain points, and needs."
+      },
+      {
+        "title": "Acquisition",
+        "body": "Outline key channels, funnel design, and CAC assumptions."
+      },
+      {
+        "title": "Scale",
+        "body": "Show how expansion into new markets will compound growth."
+      }
+    ],
+    "timeline_cards": [
+      {
+        "meta": "2025",
+        "title": "Beta launch and early adopters"
+      },
+      {
+        "meta": "2026",
+        "title": "Paid ads and influencer partnerships"
+      },
+      {
+        "meta": "2027",
+        "title": "Enterprise sales and expansion"
+      },
+      {
+        "meta": "2028",
+        "title": "International growth"
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "title": {
+        "x": 126,
+        "y": 132,
+        "w": 520,
+        "h": 170
+      },
+      "left_cards": {
+        "x": 126,
+        "y": 392,
+        "w": 440,
+        "h": 372
+      },
+      "timeline": {
+        "x": 948,
+        "y": 108,
+        "w": 476,
+        "h": 676
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "left_cards",
+            "content_key": "left_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 1,
+              "gap": 28,
+              "card_fill": "transparent",
+              "card_border_color": "transparent",
+              "card_shadow": "none",
+              "card_padding": 0,
+              "title_font_size": 24,
+              "body_font_size": 15,
+              "body_line_height": 1.42,
+              "text_gap": 6,
+              "title_color": "text_primary",
+              "body_color": "text_secondary"
+            }
+          },
+          {
+            "kind": "timeline_list",
+            "box": "timeline",
+            "content_key": "timeline_cards",
+            "z_index": 2,
+            "style": {
+              "line_box": {
+                "x": 40,
+                "y": 8,
+                "w": 3,
+                "h": 660
+              },
+              "line_color": "surface_accent",
+              "dot_fill": "surface_primary",
+              "pill_radius": 999,
+              "pill_fill": "accent_gradient",
+              "pill_color": "text_on_accent",
+              "meta_font_size": 18,
+              "meta_font_weight": 700,
+              "title_font_size": 21,
+              "title_font_weight": 500,
+              "title_color": "text_primary",
+              "item_layouts": [
+                {
+                  "dot_box": {
+                    "x": 32,
+                    "y": 28,
+                    "w": 18,
+                    "h": 18
+                  },
+                  "pill_box": {
+                    "x": 88,
+                    "y": 10,
+                    "w": 108,
+                    "h": 42
+                  },
+                  "title_box": {
+                    "x": 88,
+                    "y": 68,
+                    "w": 330,
+                    "h": 34
+                  }
+                },
+                {
+                  "dot_box": {
+                    "x": 32,
+                    "y": 170,
+                    "w": 18,
+                    "h": 18
+                  },
+                  "pill_box": {
+                    "x": 88,
+                    "y": 152,
+                    "w": 108,
+                    "h": 42
+                  },
+                  "title_box": {
+                    "x": 88,
+                    "y": 210,
+                    "w": 330,
+                    "h": 34
+                  }
+                },
+                {
+                  "dot_box": {
+                    "x": 32,
+                    "y": 312,
+                    "w": 18,
+                    "h": 18
+                  },
+                  "pill_box": {
+                    "x": 88,
+                    "y": 294,
+                    "w": 108,
+                    "h": 42
+                  },
+                  "title_box": {
+                    "x": 88,
+                    "y": 352,
+                    "w": 330,
+                    "h": 34
+                  }
+                },
+                {
+                  "dot_box": {
+                    "x": 32,
+                    "y": 454,
+                    "w": 18,
+                    "h": 18
+                  },
+                  "pill_box": {
+                    "x": 88,
+                    "y": 436,
+                    "w": 108,
+                    "h": 42
+                  },
+                  "title_box": {
+                    "x": 88,
+                    "y": 494,
+                    "w": 330,
+                    "h": 34
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

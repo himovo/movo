@@ -1,0 +1,147 @@
+{
+  "template_id": "content_competitor_logo_grid_portrait",
+  "family": "content",
+  "name": "Competitor Grid With Portrait",
+  "purpose": "Half-and-half layout with a four-card competitor badge grid on the left and a full-height portrait placeholder on the right.",
+  "selection_summary": "Use when the comparison should feel human and editorial, pairing brand icons with a dominant portrait image.",
+  "best_for": [
+    "competitor landscape pages",
+    "brand comparison with customer context",
+    "portrait-led market slides"
+  ],
+  "avoid_when": [
+    "no portrait visual is available",
+    "the slide needs detailed tabular evidence"
+  ],
+  "recommended_item_range": "4 badge cards + 1 portrait placeholder",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "badge_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 4,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 24
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 26,
+          "max_chars_latin": 56
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 24
+    },
+    {
+      "slot_id": "hero_visual",
+      "component_type": "generic_diagram",
+      "region": "canvas",
+      "style_role": "surface_secondary"
+    }
+  ],
+  "layout_rules": [
+    "The left grid should be compact and brand-like.",
+    "The right portrait should fill the full image panel."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "badge_cards": [
+      {
+        "icon": "spark",
+        "title": "Competitor 1",
+        "body": "Artificial intelligence"
+      },
+      {
+        "icon": "brain",
+        "title": "Our product",
+        "body": "Adaptive technology"
+      },
+      {
+        "icon": "growth",
+        "title": "Competitor 2",
+        "body": "Technology suite"
+      },
+      {
+        "icon": "clock",
+        "title": "Competitor 3",
+        "body": "Legacy automation"
+      }
+    ],
+    "hero_visual": ""
+  },
+  "executable": {
+    "geometry": {
+      "grid": {
+        "x": 122,
+        "y": 210,
+        "w": 612,
+        "h": 480
+      },
+      "image": {
+        "x": 900,
+        "y": 0,
+        "w": 700,
+        "h": 900
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "cards",
+            "box": "grid",
+            "content_key": "badge_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 2,
+              "gap": 38,
+              "card_fill": "transparent",
+              "card_border_color": "transparent",
+              "card_shadow": "none",
+              "card_padding": 6,
+              "icon_wrap": 106,
+              "icon_fill": "surface_muted",
+              "icon_color": "surface_accent",
+              "title_font_size": 28,
+              "body_font_size": 16
+            }
+          },
+          {
+            "kind": "image",
+            "box": "image",
+            "content_key": "hero_visual",
+            "label": "Portrait Placeholder",
+            "z_index": 2,
+            "style": {
+              "radius": 0,
+              "fill": "surface_secondary",
+              "icon_name": "users",
+              "icon_size": 96,
+              "label_size": 24
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "movo-admin-api"
+version = "0.1.0"
+description = "Control plane API for the MOVO admin system"
+authors = ["MOVO Team"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.115.0"
+uvicorn = { extras = ["standard"], version = "^0.30.0" }
+pydantic = "^2.9.0"
+pydantic-settings = "^2.5.0"
+motor = "2.5.1"
+pymongo = "3.12.3"
+python-multipart = "^0.0.9"
+oss2 = "^2.18.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

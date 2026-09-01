@@ -1,0 +1,262 @@
+{
+  "template_id": "content_year_pill_horizontal_timeline",
+  "family": "content",
+  "name": "Year Pill Horizontal Timeline",
+  "purpose": "Light roadmap slide with a top-left framing line, a thin horizontal connector, and four floating year pills with milestone descriptions beneath.",
+  "selection_summary": "Use when a multi-year plan should be shown as a light editorial timeline with year chips rather than large circles.",
+  "best_for": [
+    "roadmaps",
+    "GTM sequencing",
+    "4-year rollout plans"
+  ],
+  "avoid_when": [
+    "milestones require many subpoints",
+    "the page should feel dense and analytical"
+  ],
+  "recommended_item_range": "1 eyebrow + 1 headline + 4 year milestones",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 26
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 37
+    },
+    {
+      "slot_id": "milestone_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 4,
+      "item_fields": [
+        {
+          "field_name": "meta",
+          "field_type": "meta",
+          "required": true,
+          "max_chars_cjk": 6,
+          "max_chars_latin": 8
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 42
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 28,
+          "max_chars_latin": 70
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 42
+    }
+  ],
+  "layout_rules": [
+    "Use one thin horizontal line that runs through the center of the year pills.",
+    "Descriptions should sit directly beneath each milestone."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "eyebrow": "Go to market strategy",
+    "title": "Executing a scalable GTM plan",
+    "milestone_cards": [
+      {
+        "meta": "2025",
+        "title": "Beta launch and early adopters",
+        "body": "Engage early adopters for feedback-driven improvements."
+      },
+      {
+        "meta": "2026",
+        "title": "Paid ads and influencer partnerships",
+        "body": "Collaborations accelerate traction and awareness."
+      },
+      {
+        "meta": "2027",
+        "title": "Enterprise sales and expansion",
+        "body": "Scale operations for wider market penetration."
+      },
+      {
+        "meta": "2028",
+        "title": "International growth",
+        "body": "Localized strategies drive adoption worldwide."
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "eyebrow": {
+        "x": 126,
+        "y": 116,
+        "w": 320,
+        "h": 42
+      },
+      "title": {
+        "x": 124,
+        "y": 150,
+        "w": 900,
+        "h": 96
+      },
+      "timeline": {
+        "x": 136,
+        "y": 338,
+        "w": 1308,
+        "h": 320
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "eyebrow",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 500,
+              "color": "text_secondary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "horizontal_pill_timeline",
+            "box": "timeline",
+            "content_key": "milestone_cards",
+            "z_index": 2,
+            "style": {
+              "line_box": {
+                "x": 0,
+                "y": 82,
+                "w": 1308,
+                "h": 4
+              },
+              "line_color": "surface_accent",
+              "pill_radius": 999,
+              "pill_fill": "accent_gradient",
+              "pill_color": "text_on_accent",
+              "meta_font_size": 16,
+              "meta_font_weight": 700,
+              "title_font_size": 17,
+              "title_font_weight": 700,
+              "body_font_size": 15,
+              "body_font_weight": 500,
+              "title_line_height": 1.24,
+              "body_line_height": 1.34,
+              "item_layouts": [
+                {
+                  "pill_box": {
+                    "x": 6,
+                    "y": 52,
+                    "w": 146,
+                    "h": 58
+                  },
+                  "title_box": {
+                    "x": -8,
+                    "y": 132,
+                    "w": 176,
+                    "h": 60
+                  },
+                  "body_box": {
+                    "x": -22,
+                    "y": 196,
+                    "w": 206,
+                    "h": 88
+                  }
+                },
+                {
+                  "pill_box": {
+                    "x": 390,
+                    "y": 52,
+                    "w": 146,
+                    "h": 58
+                  },
+                  "title_box": {
+                    "x": 366,
+                    "y": 132,
+                    "w": 194,
+                    "h": 60
+                  },
+                  "body_box": {
+                    "x": 346,
+                    "y": 196,
+                    "w": 234,
+                    "h": 88
+                  }
+                },
+                {
+                  "pill_box": {
+                    "x": 776,
+                    "y": 52,
+                    "w": 146,
+                    "h": 58
+                  },
+                  "title_box": {
+                    "x": 748,
+                    "y": 132,
+                    "w": 202,
+                    "h": 60
+                  },
+                  "body_box": {
+                    "x": 726,
+                    "y": 196,
+                    "w": 246,
+                    "h": 88
+                  }
+                },
+                {
+                  "pill_box": {
+                    "x": 1158,
+                    "y": 52,
+                    "w": 146,
+                    "h": 58
+                  },
+                  "title_box": {
+                    "x": 1132,
+                    "y": 132,
+                    "w": 198,
+                    "h": 60
+                  },
+                  "body_box": {
+                    "x": 1108,
+                    "y": 196,
+                    "w": 244,
+                    "h": 88
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

@@ -1,0 +1,201 @@
+{
+  "template_id": "content_solution_dark_feature_cards",
+  "family": "content",
+  "name": "Dark Feature Card Row",
+  "purpose": "Dark solution page with a strong top headline and a single row of four feature cards beneath.",
+  "selection_summary": "Use when a dark deck needs a clean one-row capability summary with compact cards and strong contrast.",
+  "best_for": [
+    "dark-themed solution pages",
+    "capability summaries",
+    "four-part feature overviews"
+  ],
+  "avoid_when": [
+    "the page should remain light",
+    "cards need images instead of icons"
+  ],
+  "recommended_item_range": "1 eyebrow + 1 headline + 1 paragraph + 4 feature cards",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 47
+    },
+    {
+      "slot_id": "subtitle_or_context",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 115
+    },
+    {
+      "slot_id": "feature_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_secondary",
+      "max_items": 4,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 10,
+          "max_chars_latin": 29
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 18,
+          "max_chars_latin": 52
+        }
+      ],
+      "max_chars_cjk": 10,
+      "max_chars_latin": 29
+    }
+  ],
+  "layout_rules": [
+    "All four cards should fit one row.",
+    "Use bright blue accents sparingly within a predominantly dark page."
+  ],
+  "background_policy": "dark_gradient",
+  "preview_content": {
+    "eyebrow": "",
+    "title": "How adaptive AI changes the service model",
+    "subtitle_or_context": "Introduce the solution with one concise narrative line, then let four feature cards carry the detailed proof points.",
+    "feature_cards": [
+      {
+        "icon": "brain",
+        "title": "Intent identified",
+        "body": "Understands nuanced requests early."
+      },
+      {
+        "icon": "chat",
+        "title": "Context responses",
+        "body": "Generates more relevant replies."
+      },
+      {
+        "icon": "bulb",
+        "title": "Personalized actions",
+        "body": "Tailors outcomes to each case."
+      },
+      {
+        "icon": "growth",
+        "title": "Continuous learning",
+        "body": "Improves quality over time."
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "eyebrow": {
+        "x": 118,
+        "y": 92,
+        "w": 220,
+        "h": 40
+      },
+      "title": {
+        "x": 120,
+        "y": 144,
+        "w": 900,
+        "h": 112
+      },
+      "subtitle": {
+        "x": 120,
+        "y": 268,
+        "w": 860,
+        "h": 72
+      },
+      "cards": {
+        "x": 118,
+        "y": 432,
+        "w": 1362,
+        "h": 288
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "eyebrow",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 700,
+              "color": "surface_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "subtitle",
+            "content_key": "subtitle_or_context",
+            "z_index": 2,
+            "style": {
+              "font_size": 22,
+              "font_weight": 500,
+              "line_height": 1.4,
+              "color": "text_secondary"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "cards",
+            "content_key": "feature_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 4,
+              "gap": 28,
+              "card_fill": "surface_secondary",
+              "card_border_color": "border_strong",
+              "card_shadow": "shadow_soft",
+              "card_radius": 20,
+              "card_padding": 22,
+              "icon_wrap": 54,
+              "icon_fill": "surface_primary",
+              "icon_color": "surface_accent",
+              "title_font_size": 20,
+              "body_font_size": 16
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

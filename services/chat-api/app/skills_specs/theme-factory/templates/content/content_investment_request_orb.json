@@ -1,0 +1,202 @@
+{
+  "template_id": "content_investment_request_orb",
+  "family": "content",
+  "name": "Investment Request Orb",
+  "purpose": "Minimal ask slide anchored by one giant central circular orb containing the stage label, funding amount, and short ask statement.",
+  "selection_summary": "Use when one investment ask or headline metric should dominate the entire slide.",
+  "best_for": [
+    "fundraising ask slides",
+    "single-metric emphasis",
+    "round-number request pages"
+  ],
+  "avoid_when": [
+    "multiple metrics must fit",
+    "supporting details need more space"
+  ],
+  "recommended_item_range": "1 stage pill + 1 dominant amount + 1 short request statement",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "stage_label",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "ask_value",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "ask_statement",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 85
+    },
+    {
+      "slot_id": "footer_left",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 40
+    }
+  ],
+  "layout_rules": [
+    "The orb should occupy the visual center and dominate the page.",
+    "Supporting copy must remain short and inside the circle."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "stage_label": "Stage 1",
+    "ask_value": "$5M",
+    "ask_statement": "We are seeking $5M to accelerate the mission of delivering adaptive AI solutions.",
+    "footer_left": "Investment request"
+  },
+  "executable": {
+    "geometry": {
+      "orb_halo": {
+        "x": 378,
+        "y": 44,
+        "w": 820,
+        "h": 820
+      },
+      "orb": {
+        "x": 408,
+        "y": 74,
+        "w": 760,
+        "h": 760
+      },
+      "orb_gloss": {
+        "x": 408,
+        "y": 74,
+        "w": 760,
+        "h": 760
+      },
+      "stage": {
+        "x": 676,
+        "y": 214,
+        "w": 224,
+        "h": 58
+      },
+      "value": {
+        "x": 520,
+        "y": 334,
+        "w": 540,
+        "h": 170
+      },
+      "statement": {
+        "x": 568,
+        "y": 586,
+        "w": 436,
+        "h": 82
+      },
+      "footer_left": {
+        "x": 120,
+        "y": 816,
+        "w": 260,
+        "h": 34
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "panel",
+            "box": "orb_halo",
+            "z_index": 1,
+            "style": {
+              "fill": "accent_soft",
+              "opacity": 0.9,
+              "radius": 999,
+              "shadow": "shadow_soft"
+            }
+          },
+          {
+            "kind": "panel",
+            "box": "orb",
+            "z_index": 2,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 999,
+              "shadow": "shadow_strong"
+            }
+          },
+          {
+            "kind": "panel",
+            "box": "orb_gloss",
+            "z_index": 3,
+            "style": {
+              "fill": "radial-gradient(circle at 50% 18%, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.12) 14%, rgba(255,255,255,0) 34%)",
+              "radius": 999
+            }
+          },
+          {
+            "kind": "pill",
+            "box": "stage",
+            "content_key": "stage_label",
+            "z_index": 4,
+            "style": {
+              "fill": "glass_surface",
+              "border_color": "border_strong",
+              "radius": 999,
+              "font_size": 18,
+              "font_weight": 700,
+              "color": "text_on_accent",
+              "text_align": "center",
+              "shadow": "shadow_soft"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "value",
+            "content_key": "ask_value",
+            "z_index": 4,
+            "style": {
+              "font_size": 146,
+              "font_weight": 800,
+              "line_height": 1,
+              "text_align": "center",
+              "color": "text_on_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "statement",
+            "content_key": "ask_statement",
+            "z_index": 4,
+            "style": {
+              "font_size": 18,
+              "font_weight": 600,
+              "line_height": 1.4,
+              "text_align": "center",
+              "color": "text_on_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "footer_left",
+            "content_key": "footer_left",
+            "z_index": 2,
+            "style": {
+              "font_size": 16,
+              "font_weight": 500,
+              "color": "text_secondary"
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

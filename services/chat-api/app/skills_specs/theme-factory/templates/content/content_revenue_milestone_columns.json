@@ -1,0 +1,331 @@
+{
+  "template_id": "content_revenue_milestone_columns",
+  "family": "content",
+  "name": "Revenue Milestone Columns",
+  "purpose": "Introductory growth slide with a left narrative block and three oversized milestone columns that scale upward across the page.",
+  "selection_summary": "Use when revenue growth should read as three clear annual milestones with large numeric emphasis rather than a dense chart.",
+  "best_for": [
+    "revenue momentum",
+    "annual milestone storytelling",
+    "fundraising traction pages"
+  ],
+  "avoid_when": [
+    "many years must be plotted",
+    "the slide needs precise axis-based analytics"
+  ],
+  "recommended_item_range": "1 eyebrow + 1 headline + 1 paragraph + 3 milestone columns",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 18
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 35
+    },
+    {
+      "slot_id": "subtitle_or_context",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 59
+    },
+    {
+      "slot_id": "year_1",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "value_1",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 40
+    },
+    {
+      "slot_id": "year_2",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "value_2",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 40
+    },
+    {
+      "slot_id": "year_3",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "value_3",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 40
+    }
+  ],
+  "layout_rules": [
+    "Keep the left narrative light and let the three columns carry the visual weight.",
+    "Column heights should step up clearly from left to right."
+  ],
+  "background_policy": "light_gradient_with_subtle_grid",
+  "preview_content": {
+    "eyebrow": "Our numbers",
+    "title": "Revenue growth milestones",
+    "subtitle_or_context": "Revenue is scaling rapidly as adoption increases.",
+    "year_1": "2023",
+    "value_1": "$100K",
+    "year_2": "2024",
+    "value_2": "$1M",
+    "year_3": "2025",
+    "value_3": "$5M"
+  },
+  "executable": {
+    "geometry": {
+      "pill": {
+        "x": 84,
+        "y": 78,
+        "w": 328,
+        "h": 66
+      },
+      "title": {
+        "x": 118,
+        "y": 174,
+        "w": 560,
+        "h": 170
+      },
+      "subtitle": {
+        "x": 120,
+        "y": 364,
+        "w": 530,
+        "h": 72
+      },
+      "bar_1": {
+        "x": 170,
+        "y": 596,
+        "w": 314,
+        "h": 260
+      },
+      "bar_2": {
+        "x": 646,
+        "y": 446,
+        "w": 318,
+        "h": 410
+      },
+      "bar_3": {
+        "x": 1130,
+        "y": 264,
+        "w": 314,
+        "h": 592
+      },
+      "year_1": {
+        "x": 210,
+        "y": 624,
+        "w": 120,
+        "h": 40
+      },
+      "value_1": {
+        "x": 210,
+        "y": 706,
+        "w": 220,
+        "h": 80
+      },
+      "year_2": {
+        "x": 688,
+        "y": 476,
+        "w": 120,
+        "h": 40
+      },
+      "value_2": {
+        "x": 688,
+        "y": 566,
+        "w": 220,
+        "h": 88
+      },
+      "year_3": {
+        "x": 1172,
+        "y": 296,
+        "w": 120,
+        "h": 40
+      },
+      "value_3": {
+        "x": 1172,
+        "y": 396,
+        "w": 220,
+        "h": 88
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "pill",
+            "box": "pill",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "fill": "surface_secondary",
+              "radius": 999,
+              "font_size": 18,
+              "font_weight": 700,
+              "color": "text_on_accent",
+              "text_align": "center"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.02,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "subtitle",
+            "content_key": "subtitle_or_context",
+            "z_index": 2,
+            "style": {
+              "font_size": 21,
+              "font_weight": 500,
+              "line_height": 1.42,
+              "color": "text_secondary"
+            }
+          },
+          {
+            "kind": "panel",
+            "box": "bar_1",
+            "z_index": 1,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 28,
+              "shadow": "shadow_soft"
+            }
+          },
+          {
+            "kind": "panel",
+            "box": "bar_2",
+            "z_index": 1,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 28,
+              "shadow": "shadow_soft"
+            }
+          },
+          {
+            "kind": "panel",
+            "box": "bar_3",
+            "z_index": 1,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 28,
+              "shadow": "shadow_soft"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "year_1",
+            "content_key": "year_1",
+            "z_index": 2,
+            "style": {
+              "font_size": 20,
+              "font_weight": 700,
+              "color": "text_on_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "value_1",
+            "content_key": "value_1",
+            "z_index": 2,
+            "style": {
+              "font_size": 62,
+              "font_weight": 800,
+              "line_height": 1,
+              "color": "text_on_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "year_2",
+            "content_key": "year_2",
+            "z_index": 2,
+            "style": {
+              "font_size": 20,
+              "font_weight": 700,
+              "color": "text_on_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "value_2",
+            "content_key": "value_2",
+            "z_index": 2,
+            "style": {
+              "font_size": 62,
+              "font_weight": 800,
+              "line_height": 1,
+              "color": "text_on_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "year_3",
+            "content_key": "year_3",
+            "z_index": 2,
+            "style": {
+              "font_size": 20,
+              "font_weight": 700,
+              "color": "text_on_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "value_3",
+            "content_key": "value_3",
+            "z_index": 2,
+            "style": {
+              "font_size": 62,
+              "font_weight": 800,
+              "line_height": 1,
+              "color": "text_on_accent"
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

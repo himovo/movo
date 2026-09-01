@@ -1,0 +1,382 @@
+{
+  "template_id": "content_pricing_split_plans",
+  "family": "content",
+  "name": "Pricing Split Plans",
+  "purpose": "Centered pricing page with one eyebrow, one large headline, and three plan cards arranged side by side with an emphasized middle tier.",
+  "selection_summary": "Use when three pricing tiers should be presented as a clean pricing table with one featured plan in the center.",
+  "best_for": [
+    "pricing pages",
+    "plan tier overviews",
+    "commercial packaging slides"
+  ],
+  "avoid_when": [
+    "the slide needs dense feature comparison tables",
+    "there are more than three core plans"
+  ],
+  "recommended_item_range": "1 eyebrow + 1 headline + 3 plan cards",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 18
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 43
+    },
+    {
+      "slot_id": "plan_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 3,
+      "item_fields": [
+        {
+          "field_name": "kicker",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 28
+        },
+        {
+          "field_name": "price",
+          "field_type": "meta",
+          "required": false,
+          "max_chars_cjk": 6,
+          "max_chars_latin": 8
+        },
+        {
+          "field_name": "unit",
+          "field_type": "text",
+          "required": false,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 28
+        },
+        {
+          "field_name": "features",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 64
+        },
+        {
+          "field_name": "badge",
+          "field_type": "text",
+          "required": false,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 28
+        },
+        {
+          "field_name": "featured",
+          "field_type": "text",
+          "required": false,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 28
+        },
+        {
+          "field_name": "subtitle",
+          "field_type": "body",
+          "required": false,
+          "max_chars_cjk": 28,
+          "max_chars_latin": 64
+        }
+      ]
+    }
+  ],
+  "layout_rules": [
+    "Keep the eyebrow and title centered above the pricing cards.",
+    "Use the center card as the visually featured tier.",
+    "Each card should keep pricing, optional badge, and features clearly separated."
+  ],
+  "background_policy": "dark_clean",
+  "preview_content": {
+    "eyebrow": "Our Pricing",
+    "title": "Flexible pricing for every business",
+    "plan_cards": [
+      {
+        "kicker": "Freemium",
+        "price": "$29",
+        "unit": "/mon",
+        "features": [
+          "AI chat + basic automation",
+          "Up to 1,000 conversations/month",
+          "Basic NLP capabilities",
+          "Email support",
+          "Single chatbot instance",
+          "Standard response time"
+        ]
+      },
+      {
+        "kicker": "Pro",
+        "price": "$99",
+        "unit": "/mon",
+        "badge": "Popular",
+        "featured": true,
+        "features": [
+          "Advanced AI + analytics",
+          "Unlimited conversations",
+          "Advanced NLP & sentiment analysis",
+          "Multi-user support (up to 50 users)",
+          "Multiple chatbot instances",
+          "API access",
+          "Priority support"
+        ]
+      },
+      {
+        "kicker": "Enterprise",
+        "subtitle": "Custom pricing and billing terms",
+        "features": [
+          "White-label AI solution",
+          "Custom AI chatbots",
+          "Full enterprise integrations",
+          "Dedicated AI training",
+          "Unlimited team members",
+          "Custom data security options",
+          "24/7 Priority Support",
+          "Dedicated account manager"
+        ]
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "eyebrow": {
+        "x": 660,
+        "y": 118,
+        "w": 280,
+        "h": 40
+      },
+      "title": {
+        "x": 300,
+        "y": 176,
+        "w": 1000,
+        "h": 88
+      },
+      "plans": {
+        "x": 250,
+        "y": 336,
+        "w": 1100,
+        "h": 454
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "eyebrow",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 700,
+              "line_height": 1.2,
+              "text_align": "center",
+              "color": "surface_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 64,
+              "font_weight": 800,
+              "line_height": 1.08,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "pricing_plan_grid",
+            "box": "plans",
+            "content_key": "plan_cards",
+            "z_index": 2,
+            "style": {
+              "card_radius": 28,
+              "card_fill": "surface_primary",
+              "card_color": "text_primary",
+              "body_color": "text_secondary",
+              "card_border_color": "border_subtle",
+              "card_shadow": "shadow_soft",
+              "featured_fill": "accent_gradient",
+              "featured_color": "text_on_accent",
+              "featured_body_color": "text_on_accent",
+              "featured_muted_color": "text_on_accent",
+              "featured_shadow": "shadow_strong",
+              "featured_border_color": false,
+              "kicker_font_size": 16,
+              "kicker_font_weight": 600,
+              "price_font_size": 54,
+              "price_font_weight": 800,
+              "unit_font_size": 18,
+              "unit_font_weight": 500,
+              "title_font_size": 18,
+              "title_font_weight": 700,
+              "subtitle_font_size": 14,
+              "subtitle_font_weight": 500,
+              "subtitle_offset_y": 34,
+              "badge_radius": 999,
+              "badge_fill": "surface_primary",
+              "badge_color": "surface_accent",
+              "badge_font_size": 14,
+              "badge_font_weight": 700,
+              "rule_color": "border_subtle",
+              "featured_rule_color": "surface_primary",
+              "check_wrap": 18,
+              "check_icon_size": 12,
+              "check_gap": 12,
+              "check_fill": "surface_primary",
+              "check_color": "surface_accent",
+              "feature_font_size": 15,
+              "feature_font_weight": 500,
+              "feature_line_height": 1.32,
+              "feature_gap": 10,
+              "item_layouts": [
+                {
+                  "card_box": {
+                    "x": 0,
+                    "y": 18,
+                    "w": 348,
+                    "h": 360
+                  },
+                  "kicker_box": {
+                    "x": 28,
+                    "y": 40,
+                    "w": 120,
+                    "h": 20
+                  },
+                  "price_box": {
+                    "x": 28,
+                    "y": 70,
+                    "w": 110,
+                    "h": 56
+                  },
+                  "unit_box": {
+                    "x": 148,
+                    "y": 88,
+                    "w": 70,
+                    "h": 20
+                  },
+                  "title_box": {
+                    "x": 28,
+                    "y": 22,
+                    "w": 220,
+                    "h": 28
+                  },
+                  "rule_box": {
+                    "x": 24,
+                    "y": 132,
+                    "w": 300,
+                    "h": 1
+                  },
+                  "features_box": {
+                    "x": 24,
+                    "y": 160,
+                    "w": 292,
+                    "h": 170
+                  }
+                },
+                {
+                  "card_box": {
+                    "x": 372,
+                    "y": 0,
+                    "w": 348,
+                    "h": 408
+                  },
+                  "kicker_box": {
+                    "x": 400,
+                    "y": 28,
+                    "w": 120,
+                    "h": 20
+                  },
+                  "price_box": {
+                    "x": 400,
+                    "y": 58,
+                    "w": 110,
+                    "h": 56
+                  },
+                  "unit_box": {
+                    "x": 520,
+                    "y": 76,
+                    "w": 70,
+                    "h": 20
+                  },
+                  "title_box": {
+                    "x": 400,
+                    "y": 18,
+                    "w": 140,
+                    "h": 28
+                  },
+                  "badge_box": {
+                    "x": 590,
+                    "y": 28,
+                    "w": 98,
+                    "h": 38
+                  },
+                  "rule_box": {
+                    "x": 396,
+                    "y": 126,
+                    "w": 300,
+                    "h": 1
+                  },
+                  "features_box": {
+                    "x": 396,
+                    "y": 154,
+                    "w": 292,
+                    "h": 220
+                  }
+                },
+                {
+                  "card_box": {
+                    "x": 744,
+                    "y": 18,
+                    "w": 348,
+                    "h": 372
+                  },
+                  "kicker_box": {
+                    "x": 772,
+                    "y": 40,
+                    "w": 120,
+                    "h": 20
+                  },
+                  "title_box": {
+                    "x": 772,
+                    "y": 40,
+                    "w": 180,
+                    "h": 28
+                  },
+                  "subtitle_box": {
+                    "x": 772,
+                    "y": 68,
+                    "w": 260,
+                    "h": 48
+                  },
+                  "features_box": {
+                    "x": 768,
+                    "y": 148,
+                    "w": 300,
+                    "h": 220
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

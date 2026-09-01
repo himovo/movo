@@ -1,0 +1,168 @@
+{
+  "template_id": "content_funnel_bars",
+  "family": "content",
+  "name": "Funnel Conversion Bars",
+  "purpose": "Split layout with a large conversion headline on the left and descending funnel bars on the right.",
+  "selection_summary": "Use when the story is primarily a funnel or conversion narrative with four progressively narrower stages.",
+  "best_for": [
+    "conversion funnels",
+    "growth narratives",
+    "free-to-paid journeys"
+  ],
+  "avoid_when": [
+    "a numeric table is required",
+    "there are many more than four funnel steps"
+  ],
+  "recommended_item_range": "1 headline + 1 paragraph + 4 funnel stages",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 47
+    },
+    {
+      "slot_id": "subtitle_or_context",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 109
+    },
+    {
+      "slot_id": "funnel_steps",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 4,
+      "item_fields": [
+        {
+          "field_name": "label",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 28
+        },
+        {
+          "field_name": "value",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 28,
+          "max_chars_latin": 64
+        },
+        {
+          "field_name": "width",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 28
+        }
+      ]
+    }
+  ],
+  "layout_rules": [
+    "The bar stack should visually narrow as the funnel progresses.",
+    "Left-side copy should remain large and uncluttered."
+  ],
+  "background_policy": "light_gradient_with_subtle_grid",
+  "preview_content": {
+    "title": "Turning free users into paying customers",
+    "subtitle_or_context": "Pair the growth narrative with a clean four-stage funnel that communicates narrowing intent and conversion.",
+    "funnel_steps": [
+      {
+        "label": "Trial signups",
+        "value": "12.4k",
+        "width": "100%"
+      },
+      {
+        "label": "Feature engagement",
+        "value": "10.8k",
+        "width": "86%"
+      },
+      {
+        "label": "Premium upsell",
+        "value": "9.6k",
+        "width": "72%"
+      },
+      {
+        "label": "Paid conversion",
+        "value": "4.1k",
+        "width": "56%"
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "title": {
+        "x": 120,
+        "y": 188,
+        "w": 560,
+        "h": 282
+      },
+      "subtitle": {
+        "x": 120,
+        "y": 608,
+        "w": 588,
+        "h": 114
+      },
+      "bars": {
+        "x": 924,
+        "y": 138,
+        "w": 620,
+        "h": 560
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.02,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "subtitle",
+            "content_key": "subtitle_or_context",
+            "z_index": 2,
+            "style": {
+              "font_size": 22,
+              "font_weight": 500,
+              "line_height": 1.45,
+              "color": "text_secondary"
+            }
+          },
+          {
+            "kind": "bars",
+            "box": "bars",
+            "content_key": "funnel_steps",
+            "z_index": 2,
+            "style": {
+              "bar_fill": "accent_gradient",
+              "color": "text_on_accent",
+              "bar_radius": 18,
+              "bar_padding_y": 24,
+              "bar_padding_x": 40,
+              "bar_font_size": 24,
+              "gap": 26
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

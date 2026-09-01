@@ -1,0 +1,210 @@
+{
+  "template_id": "content_dark_split_pills",
+  "family": "content",
+  "name": "Dark Split Pill Narrative",
+  "purpose": "Dark split layout with a dense left narrative block and four oversized rounded pills stacked on the right.",
+  "selection_summary": "Use when a dark slide needs one strategic argument on the left and four standout supporting claims on the right.",
+  "best_for": [
+    "competitive differentiation",
+    "dark-theme solution narratives",
+    "executive proof-point pages"
+  ],
+  "avoid_when": [
+    "the theme should stay light",
+    "supporting claims need paragraphs instead of labels"
+  ],
+  "recommended_item_range": "1 eyebrow + 1 headline + 1 paragraph + 4 pill items",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 56
+    },
+    {
+      "slot_id": "subtitle_or_context",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 100
+    },
+    {
+      "slot_id": "pill_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_secondary",
+      "max_items": 4,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 45
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 45
+    }
+  ],
+  "layout_rules": [
+    "A strong vertical divide should separate narrative and proof.",
+    "Each pill should read as one clear supporting claim."
+  ],
+  "background_policy": "dark_gradient",
+  "preview_content": {
+    "eyebrow": "Solution",
+    "title": "Why adaptive AI support outperforms static systems",
+    "subtitle_or_context": "Use the left column for the argument and the right stack for short, high-confidence support claims.",
+    "pill_cards": [
+      {
+        "icon": "spark",
+        "title": "Instant AI-guided replies"
+      },
+      {
+        "icon": "chat",
+        "title": "Context-aware conversational handling"
+      },
+      {
+        "icon": "bulb",
+        "title": "Personalized recommendations"
+      },
+      {
+        "icon": "growth",
+        "title": "Continuous quality improvement"
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "divider": {
+        "x": 772,
+        "y": 0,
+        "w": 1,
+        "h": 900
+      },
+      "eyebrow": {
+        "x": 128,
+        "y": 390,
+        "w": 220,
+        "h": 40
+      },
+      "title": {
+        "x": 126,
+        "y": 438,
+        "w": 520,
+        "h": 232
+      },
+      "subtitle": {
+        "x": 128,
+        "y": 706,
+        "w": 508,
+        "h": 110
+      },
+      "cards": {
+        "x": 900,
+        "y": 80,
+        "w": 560,
+        "h": 640
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "panel",
+            "box": "divider",
+            "z_index": 1,
+            "style": {
+              "fill": "border_subtle",
+              "radius": 0
+            }
+          },
+          {
+            "kind": "text",
+            "box": "eyebrow",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 700,
+              "color": "surface_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "subtitle",
+            "content_key": "subtitle_or_context",
+            "z_index": 2,
+            "style": {
+              "font_size": 20,
+              "font_weight": 500,
+              "line_height": 1.45,
+              "color": "text_secondary"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "cards",
+            "content_key": "pill_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 1,
+              "gap": 18,
+              "card_fill": "surface_secondary",
+              "card_border_color": "border_strong",
+              "card_shadow": "shadow_soft",
+              "card_radius": 999,
+              "card_padding": 20,
+              "icon_wrap": 62,
+              "content_layout": "icon_left",
+              "content_gap": 18,
+              "content_align": "center",
+              "text_gap": 0,
+              "icon_fill": "surface_primary",
+              "icon_color": "surface_accent",
+              "title_font_size": 22,
+              "body_font_size": 0,
+              "title_color": "text_primary"
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

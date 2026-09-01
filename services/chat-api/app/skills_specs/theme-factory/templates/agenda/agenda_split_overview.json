@@ -1,0 +1,93 @@
+{
+  "template_id": "agenda_split_overview",
+  "family": "agenda",
+  "name": "Chapter Columns Agenda",
+  "purpose": "Three chapter columns that group many agenda items into broader sections.",
+  "selection_summary": "Use when the agenda has 9 to 15 items and should be clustered into 3 chapter previews.",
+  "best_for": [
+    "9 to 15 agenda items",
+    "grouped chapter previews",
+    "investor and strategy decks"
+  ],
+  "avoid_when": [
+    "agenda has fewer than 7 items",
+    "each item needs its own dedicated row"
+  ],
+  "preferred_visual_forms": [
+    "chapter_columns",
+    "column_groups"
+  ],
+  "preferred_slide_roles": [
+    "agenda",
+    "overview"
+  ],
+  "preferred_density_targets": [
+    "high"
+  ],
+  "recommended_item_range": "3 chapters, up to 5 items per chapter",
+  "layout_regions": [
+    "header",
+    "center_content_area"
+  ],
+  "supported_components": [
+    "title",
+    "agenda_list"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "header",
+      "style_role": "section_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "agenda_main",
+      "component_type": "agenda_list",
+      "region": "center_content_area",
+      "style_role": "surface_primary",
+      "max_items": 15
+    }
+  ],
+  "layout_rules": [
+    "Render 3 numbered chapter columns.",
+    "First row in each column is the chapter headline; the rest become supporting bullet-like agenda items."
+  ],
+  "executable": {
+    "geometry": {
+      "title": {
+        "x": 110,
+        "y": 80,
+        "w": 440,
+        "h": 100
+      },
+      "agenda": {
+        "x": 110,
+        "y": 250,
+        "w": 1380,
+        "h": 430
+      }
+    },
+    "agenda": {
+      "mode": "chapter_columns",
+      "chapter_count": 3,
+      "max_items": 15,
+      "items_per_chapter": 5,
+      "layout": {
+        "column_gap": 56,
+        "head_padding_top": 10,
+        "column_item_gap": 12,
+        "compact_item_threshold": 6
+      },
+      "style": {
+        "show_shell": false,
+        "number_font_size": 42,
+        "title_font_size": 18,
+        "item_font_size": 13,
+        "divider_width": 1
+      }
+    },
+    "title_style": "section_title"
+  }
+}

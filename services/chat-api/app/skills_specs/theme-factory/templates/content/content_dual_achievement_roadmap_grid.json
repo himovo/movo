@@ -1,0 +1,325 @@
+{
+  "template_id": "content_dual_achievement_roadmap_grid",
+  "family": "content",
+  "name": "Dual Achievement Roadmap Grid",
+  "purpose": "Wide top statement with two labeled halves beneath, each containing a balanced 2x2 grid of cards for past achievements versus future roadmap items.",
+  "selection_summary": "Use when the slide should contrast what has already been achieved against what comes next in a clean symmetric layout.",
+  "best_for": [
+    "past vs future framing",
+    "milestone recaps",
+    "roadmap transition slides"
+  ],
+  "avoid_when": [
+    "the two sides are not equally weighted",
+    "a timeline would be more natural"
+  ],
+  "recommended_item_range": "1 headline + 2 section labels + 8 cards",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 48
+    },
+    {
+      "slot_id": "left_label",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 24
+    },
+    {
+      "slot_id": "right_label",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 21
+    },
+    {
+      "slot_id": "left_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 4,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 28
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 26,
+          "max_chars_latin": 56
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "right_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 4,
+      "item_fields": [
+        {
+          "field_name": "icon",
+          "field_type": "icon",
+          "required": false,
+          "max_chars_cjk": 0,
+          "max_chars_latin": 0
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 29
+        },
+        {
+          "field_name": "body",
+          "field_type": "body",
+          "required": true,
+          "max_chars_cjk": 26,
+          "max_chars_latin": 56
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 29
+    }
+  ],
+  "layout_rules": [
+    "The two halves should be symmetric and equally weighted.",
+    "Use icon color differences to distinguish past completion from future roadmap."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "title": "What we have achieved and where we are going",
+    "left_label": "Past achievements",
+    "right_label": "Future roadmap",
+    "left_cards": [
+      {
+        "icon": "check",
+        "title": "MVP launched",
+        "body": "10K+ users onboarded."
+      },
+      {
+        "icon": "check",
+        "title": "AI accuracy improved",
+        "body": "Performance reached 92%."
+      },
+      {
+        "icon": "check",
+        "title": "Series A secured",
+        "body": "Raised $8M in growth capital."
+      },
+      {
+        "icon": "check",
+        "title": "Team expanded",
+        "body": "Engineering scaled to 25 people."
+      }
+    ],
+    "right_cards": [
+      {
+        "icon": "spark",
+        "title": "Workflow automations",
+        "body": "New orchestration launch planned."
+      },
+      {
+        "icon": "spark",
+        "title": "$20M ARR target",
+        "body": "2025 commercial target."
+      },
+      {
+        "icon": "spark",
+        "title": "Global expansion",
+        "body": "15+ countries in the next phase."
+      },
+      {
+        "icon": "spark",
+        "title": "Enhanced ML",
+        "body": "New capabilities and reasoning upgrades."
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "title": {
+        "x": 144,
+        "y": 70,
+        "w": 1310,
+        "h": 90
+      },
+      "left_panel": {
+        "x": 82,
+        "y": 176,
+        "w": 684,
+        "h": 514
+      },
+      "right_panel": {
+        "x": 834,
+        "y": 176,
+        "w": 684,
+        "h": 514
+      },
+      "left_label": {
+        "x": 264,
+        "y": 200,
+        "w": 360,
+        "h": 50
+      },
+      "right_label": {
+        "x": 1020,
+        "y": 200,
+        "w": 360,
+        "h": 50
+      },
+      "left_cards": {
+        "x": 104,
+        "y": 300,
+        "w": 640,
+        "h": 364
+      },
+      "right_cards": {
+        "x": 856,
+        "y": 300,
+        "w": 640,
+        "h": 364
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.04,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "panel",
+            "box": "left_panel",
+            "z_index": 1,
+            "style": {
+              "fill": "content_card_surface_a",
+              "radius": 30,
+              "opacity": 0.7
+            }
+          },
+          {
+            "kind": "panel",
+            "box": "right_panel",
+            "z_index": 1,
+            "style": {
+              "fill": "content_band_surface",
+              "radius": 30,
+              "opacity": 0.62
+            }
+          },
+          {
+            "kind": "text",
+            "box": "left_label",
+            "content_key": "left_label",
+            "z_index": 2,
+            "style": {
+              "font_size": 26,
+              "font_weight": 800,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "right_label",
+            "content_key": "right_label",
+            "z_index": 2,
+            "style": {
+              "font_size": 26,
+              "font_weight": 800,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "left_cards",
+            "content_key": "left_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 2,
+              "gap": 22,
+              "card_border_color": "border_strong",
+              "card_shadow": "shadow_soft",
+              "card_radius": 22,
+              "card_padding": 20,
+              "icon_wrap": 42,
+              "icon_fill": "accent_soft",
+              "icon_color": "#31c45d",
+              "title_font_size": 20,
+              "body_font_size": 16,
+              "card_fills": [
+                "content_card_surface_a",
+                "content_card_surface_b",
+                "content_card_surface_b",
+                "content_card_surface_a"
+              ]
+            }
+          },
+          {
+            "kind": "cards",
+            "box": "right_cards",
+            "content_key": "right_cards",
+            "z_index": 2,
+            "style": {
+              "columns": 2,
+              "gap": 22,
+              "card_border_color": "border_strong",
+              "card_shadow": "shadow_soft",
+              "card_radius": 22,
+              "card_padding": 20,
+              "icon_wrap": 42,
+              "icon_fill": "accent_soft",
+              "icon_color": "surface_accent",
+              "title_font_size": 20,
+              "body_font_size": 16,
+              "card_fills": [
+                "content_card_surface_a",
+                "content_card_surface_b",
+                "content_card_surface_b",
+                "content_card_surface_a"
+              ]
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

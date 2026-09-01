@@ -1,0 +1,143 @@
+{
+  "template_id": "content_intro_badge_card",
+  "family": "content",
+  "name": "Intro Badge Card",
+  "purpose": "Centered introductory card with a floating pill label, oversized single-word headline, and short body copy.",
+  "selection_summary": "Use for chapter lead-ins where the page should feel framed and focused, with one clean content card in the center.",
+  "best_for": [
+    "chapter title slides",
+    "single-idea introductions",
+    "editorial emphasis pages"
+  ],
+  "avoid_when": [
+    "multiple support blocks are needed",
+    "a side-by-side composition would be clearer"
+  ],
+  "recommended_item_range": "1 pill + 1 headline + 1 supporting paragraph",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 20
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "subtitle_or_context",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 99
+    }
+  ],
+  "layout_rules": [
+    "The center card should remain isolated and dominant.",
+    "Treat the eyebrow as a floating pill, not plain text."
+  ],
+  "background_policy": "light_gradient_with_subtle_grid",
+  "preview_content": {
+    "eyebrow": "Introduction",
+    "title": "Innovation",
+    "subtitle_or_context": "A focused intro panel for a new section, keeping the headline oversized and the explanation brief."
+  },
+  "executable": {
+    "geometry": {
+      "card": {
+        "x": 294,
+        "y": 152,
+        "w": 1012,
+        "h": 512
+      },
+      "pill": {
+        "x": 652,
+        "y": 194,
+        "w": 296,
+        "h": 66
+      },
+      "title": {
+        "x": 430,
+        "y": 286,
+        "w": 740,
+        "h": 142
+      },
+      "subtitle": {
+        "x": 512,
+        "y": 450,
+        "w": 576,
+        "h": 112
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "panel",
+            "box": "card",
+            "z_index": 1,
+            "style": {
+              "fill": "surface_primary",
+              "border_color": "border_subtle",
+              "radius": 30,
+              "shadow": "shadow_soft"
+            }
+          },
+          {
+            "kind": "pill",
+            "box": "pill",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 999,
+              "font_size": 20,
+              "font_weight": 700,
+              "color": "text_on_accent",
+              "text_align": "center"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 0.98,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "subtitle",
+            "content_key": "subtitle_or_context",
+            "z_index": 2,
+            "style": {
+              "font_size": 22,
+              "font_weight": 500,
+              "line_height": 1.45,
+              "text_align": "center",
+              "color": "text_secondary"
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

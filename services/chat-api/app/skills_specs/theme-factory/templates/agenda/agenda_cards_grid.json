@@ -1,0 +1,93 @@
+{
+  "template_id": "agenda_cards_grid",
+  "family": "agenda",
+  "name": "Agenda Compact Grid",
+  "purpose": "Compact 2x3 agenda grid for up to six sections with strong numbering and short labels.",
+  "selection_summary": "Use for 4 to 6 sections when the agenda should feel modular and balanced without long prose.",
+  "best_for": [
+    "4 to 6 agenda sections",
+    "balanced overview pages",
+    "modular decks"
+  ],
+  "avoid_when": [
+    "agenda has more than 6 sections",
+    "a list layout would be clearer"
+  ],
+  "preferred_visual_forms": [
+    "cards",
+    "panel_grid",
+    "compact_grid"
+  ],
+  "preferred_slide_roles": [
+    "agenda",
+    "overview"
+  ],
+  "preferred_density_targets": [
+    "medium"
+  ],
+  "recommended_item_range": "4 to 6 sections in a 2x3 grid",
+  "layout_regions": [
+    "header",
+    "center_content_area"
+  ],
+  "supported_components": [
+    "title",
+    "agenda_list"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "header",
+      "style_role": "section_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "agenda_main",
+      "component_type": "agenda_list",
+      "region": "center_content_area",
+      "style_role": "surface_primary",
+      "max_items": 6
+    }
+  ],
+  "layout_rules": [
+    "Agenda sections should render as a clean 2x3 numbered card grid.",
+    "Each item should stay concise so the grid remains balanced."
+  ],
+  "executable": {
+    "geometry": {
+      "title": {
+        "x": 90,
+        "y": 90,
+        "w": 420,
+        "h": 100
+      },
+      "agenda": {
+        "x": 120,
+        "y": 240,
+        "w": 1240,
+        "h": 420
+      }
+    },
+    "agenda": {
+      "mode": "compact_grid",
+      "max_items": 6,
+      "columns": 3,
+      "layout": {
+        "columns": 3,
+        "grid_gap": 24
+      },
+      "style": {
+        "show_shell": false,
+        "card_min_height": 148,
+        "card_padding": 22,
+        "card_radius": 22,
+        "number_font_size": 50,
+        "title_font_size": 18,
+        "desc_font_size": 12
+      }
+    },
+    "title_style": "section_title"
+  }
+}

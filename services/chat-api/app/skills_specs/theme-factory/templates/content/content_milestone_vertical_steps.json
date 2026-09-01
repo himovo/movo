@@ -1,0 +1,252 @@
+{
+  "template_id": "content_milestone_vertical_steps",
+  "family": "content",
+  "name": "Vertical Milestone Steps",
+  "purpose": "Left title wall with a right-side vertical year rail and four elongated milestone capsules connected into one continuous journey.",
+  "selection_summary": "Use when milestone history should read as a vertical progression with one headline and four dated steps.",
+  "best_for": [
+    "company journey",
+    "historical milestones",
+    "founding-to-scale narratives"
+  ],
+  "avoid_when": [
+    "many more than four events are needed",
+    "a horizontal timeline would be clearer"
+  ],
+  "recommended_item_range": "1 headline + 4 vertical milestone capsules",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 37
+    },
+    {
+      "slot_id": "milestone_cards",
+      "component_type": "bullet_list",
+      "region": "canvas",
+      "style_role": "surface_primary",
+      "max_items": 4,
+      "item_fields": [
+        {
+          "field_name": "meta",
+          "field_type": "meta",
+          "required": true,
+          "max_chars_cjk": 6,
+          "max_chars_latin": 8
+        },
+        {
+          "field_name": "title",
+          "field_type": "text",
+          "required": true,
+          "max_chars_cjk": 12,
+          "max_chars_latin": 56
+        }
+      ],
+      "max_chars_cjk": 12,
+      "max_chars_latin": 56
+    }
+  ],
+  "layout_rules": [
+    "The vertical connector should remain centered behind the year nodes.",
+    "Each milestone capsule should align horizontally with its year marker."
+  ],
+  "background_policy": "light_gradient_with_subtle_grid",
+  "preview_content": {
+    "title": "From concept to market leader",
+    "milestone_cards": [
+      {
+        "meta": "2022",
+        "title": "Founded the company and built the MVP"
+      },
+      {
+        "meta": "2023",
+        "title": "Raised seed funding and launched beta"
+      },
+      {
+        "meta": "2024",
+        "title": "Secured 500+ paying customers and Series A"
+      },
+      {
+        "meta": "2025",
+        "title": "International expansion and AI-enhanced automation"
+      }
+    ]
+  },
+  "executable": {
+    "geometry": {
+      "title": {
+        "x": 62,
+        "y": 106,
+        "w": 438,
+        "h": 176
+      },
+      "track": {
+        "x": 694,
+        "y": 80,
+        "w": 744,
+        "h": 744
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.02,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "milestone_vertical_track",
+            "box": "track",
+            "content_key": "milestone_cards",
+            "z_index": 2,
+            "style": {
+              "line_box": {
+                "x": 64,
+                "y": 22,
+                "w": 6,
+                "h": 676
+              },
+              "line_color": "surface_accent",
+              "halo_fill": "surface_primary",
+              "halo_shadow": "shadow_soft",
+              "node_fill": "accent_gradient",
+              "node_color": "text_on_accent",
+              "node_shadow": "shadow_soft",
+              "card_fill": "surface_primary",
+              "card_border_color": "border_subtle",
+              "card_shadow": "shadow_soft",
+              "card_radius": 999,
+              "meta_font_size": 18,
+              "meta_font_weight": 800,
+              "title_font_size": 22,
+              "title_font_weight": 700,
+              "title_color": "text_primary",
+              "item_layouts": [
+                {
+                  "halo_box": {
+                    "x": 10,
+                    "y": 0,
+                    "w": 108,
+                    "h": 108
+                  },
+                  "node_box": {
+                    "x": 18,
+                    "y": 8,
+                    "w": 92,
+                    "h": 92
+                  },
+                  "card_box": {
+                    "x": 26,
+                    "y": 10,
+                    "w": 602,
+                    "h": 78
+                  },
+                  "title_box": {
+                    "x": 138,
+                    "y": 29,
+                    "w": 470,
+                    "h": 34
+                  }
+                },
+                {
+                  "halo_box": {
+                    "x": 10,
+                    "y": 172,
+                    "w": 108,
+                    "h": 108
+                  },
+                  "node_box": {
+                    "x": 18,
+                    "y": 180,
+                    "w": 92,
+                    "h": 92
+                  },
+                  "card_box": {
+                    "x": 26,
+                    "y": 182,
+                    "w": 690,
+                    "h": 78
+                  },
+                  "title_box": {
+                    "x": 138,
+                    "y": 201,
+                    "w": 548,
+                    "h": 34
+                  }
+                },
+                {
+                  "halo_box": {
+                    "x": 10,
+                    "y": 344,
+                    "w": 108,
+                    "h": 108
+                  },
+                  "node_box": {
+                    "x": 18,
+                    "y": 352,
+                    "w": 92,
+                    "h": 92
+                  },
+                  "card_box": {
+                    "x": 26,
+                    "y": 354,
+                    "w": 762,
+                    "h": 78
+                  },
+                  "title_box": {
+                    "x": 138,
+                    "y": 373,
+                    "w": 620,
+                    "h": 34
+                  }
+                },
+                {
+                  "halo_box": {
+                    "x": 10,
+                    "y": 516,
+                    "w": 108,
+                    "h": 108
+                  },
+                  "node_box": {
+                    "x": 18,
+                    "y": 524,
+                    "w": 92,
+                    "h": 92
+                  },
+                  "card_box": {
+                    "x": 26,
+                    "y": 526,
+                    "w": 778,
+                    "h": 78
+                  },
+                  "title_box": {
+                    "x": 138,
+                    "y": 545,
+                    "w": 636,
+                    "h": 34
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

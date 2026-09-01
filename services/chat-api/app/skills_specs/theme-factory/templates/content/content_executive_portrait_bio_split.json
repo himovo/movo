@@ -1,0 +1,148 @@
+{
+  "template_id": "content_executive_portrait_bio_split",
+  "family": "content",
+  "name": "Executive Portrait Bio Split",
+  "purpose": "Portrait-left executive testimonial layout with a right title stack and a single long testimonial paragraph.",
+  "selection_summary": "Use when one executive or customer spokesperson should be introduced through a portrait and one attributed statement block.",
+  "best_for": [
+    "executive endorsements",
+    "customer proof with named speaker",
+    "leader spotlight slides"
+  ],
+  "avoid_when": [
+    "the quote should dominate more than the portrait",
+    "multiple people must fit"
+  ],
+  "recommended_item_range": "1 portrait + 1 role label + 1 name + 1 testimonial paragraph",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "hero_visual",
+      "component_type": "generic_diagram",
+      "region": "canvas",
+      "style_role": "surface_secondary"
+    },
+    {
+      "slot_id": "eyebrow",
+      "component_type": "subtitle",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 29
+    },
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 28
+    },
+    {
+      "slot_id": "quote_text",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 18,
+      "max_chars_latin": 120
+    }
+  ],
+  "layout_rules": [
+    "The portrait should be tall and primary on the left.",
+    "The right side should keep the role, name, and statement in one coherent stack."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "hero_visual": "",
+    "eyebrow": "Chief executive officer",
+    "title": "Karl Johnson",
+    "quote_text": "The platform completely redefined our operations, automated key processes, reduced manual workload, and improved customer experience. It became a practical engine for scaling smarter."
+  },
+  "executable": {
+    "geometry": {
+      "image": {
+        "x": 102,
+        "y": 96,
+        "w": 532,
+        "h": 646
+      },
+      "eyebrow": {
+        "x": 904,
+        "y": 100,
+        "w": 360,
+        "h": 44
+      },
+      "title": {
+        "x": 906,
+        "y": 154,
+        "w": 470,
+        "h": 74
+      },
+      "quote": {
+        "x": 910,
+        "y": 320,
+        "w": 520,
+        "h": 354
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "image",
+            "box": "image",
+            "content_key": "hero_visual",
+            "label": "Executive Portrait",
+            "z_index": 2,
+            "style": {
+              "radius": 14,
+              "fill": "surface_muted",
+              "icon_name": "users",
+              "icon_size": 96,
+              "label_size": 24
+            }
+          },
+          {
+            "kind": "text",
+            "box": "eyebrow",
+            "content_key": "eyebrow",
+            "z_index": 2,
+            "style": {
+              "font_size": 18,
+              "font_weight": 700,
+              "color": "surface_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 64,
+              "font_weight": 800,
+              "line_height": 1.02,
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "quote",
+            "content_key": "quote_text",
+            "z_index": 2,
+            "style": {
+              "font_size": 22,
+              "font_weight": 500,
+              "line_height": 1.6,
+              "color": "text_secondary"
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

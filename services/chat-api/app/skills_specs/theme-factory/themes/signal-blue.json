@@ -1,0 +1,240 @@
+{
+  "id": "signal-blue",
+  "name": "Signal Blue",
+  "description": "A crisp, high-clarity blue theme built around #366AFF, designed for strategy, product, and technology decks that need confident contrast without drifting into generic corporate navy.",
+  "mode": "dark",
+  "palette": {
+    "bg_base": "#08111F",
+    "bg_elevated": "#0E1A2F",
+    "surface_base": "#12233D",
+    "surface_alt": "#193257",
+    "surface_accent": "#366AFF",
+    "text_primary": "#F5F9FF",
+    "text_secondary": "#C5D3EB",
+    "text_on_accent": "#F8FBFF",
+    "border_subtle": "rgba(92,146,255,0.18)",
+    "border_strong": "rgba(92,146,255,0.34)"
+  },
+  "gradients": {
+    "canvas_gradient": "linear-gradient(180deg, #10203A 0%, #08111F 100%)",
+    "accent_gradient": "linear-gradient(135deg, #366AFF 0%, #59C3FF 100%)",
+    "hero_gradient": "radial-gradient(circle at 80% 18%, rgba(89,195,255,0.18) 0%, rgba(54,106,255,0.10) 24%, rgba(8,17,31,0) 46%)"
+  },
+  "shape": {
+    "radius_sm": "12",
+    "radius_md": "18",
+    "radius_lg": "26",
+    "radius_chip": "999"
+  },
+  "elevation": {
+    "shadow_none": "none",
+    "shadow_soft": "0 12px 28px rgba(0,0,0,0.20)",
+    "shadow_strong": "0 20px 44px rgba(0,0,0,0.28)"
+  },
+  "stroke": {
+    "line_subtle": "rgba(92,146,255,0.18)",
+    "line_accent": "rgba(89,195,255,0.48)"
+  },
+  "typography": {
+    "header_font": "DejaVu Sans Bold",
+    "body_font": "DejaVu Sans",
+    "title": {
+      "color": "text_primary",
+      "font_size": "48",
+      "section_font_size": "34",
+      "font_weight": "800",
+      "line_height": "1.25",
+      "section_line_height": "1.18",
+      "section_color": "text_primary",
+      "background": "",
+      "border_color": "",
+      "radius": "",
+      "padding": ""
+    },
+    "subtitle": {
+      "color": "text_secondary",
+      "font_size": "18",
+      "font_weight": "500",
+      "line_height": "1.32",
+      "background": "",
+      "border_color": "",
+      "radius": "",
+      "padding": ""
+    }
+  },
+  "best_used_for": [
+    "AI product strategy",
+    "enterprise technology roadmaps",
+    "platform architecture decks",
+    "modern consulting presentations"
+  ],
+  "page_policy": {
+    "cover": {
+      "background_policy": "dark_gradient_with_subtle_grid",
+      "panel": "surface_inverse",
+      "accent": "accent_fill"
+    },
+    "agenda": {
+      "background_policy": "dark_gradient_with_subtle_grid",
+      "panel": "surface_primary",
+      "number": "accent_fill",
+      "background": "canvas_gradient",
+      "line": "line_subtle",
+      "card": "surface_primary",
+      "pill": "surface_primary",
+      "pill_number": "surface_primary",
+      "grid_background": "canvas_gradient",
+      "grid_line": "line_subtle",
+      "grid_card": "surface_primary"
+    },
+    "content": {
+      "background_policy": "dark_gradient",
+      "panel": "surface_primary",
+      "diagram_panel": "surface_secondary"
+    },
+    "comparison": {
+      "background_policy": "dark_gradient",
+      "header": "accent_fill",
+      "body": "surface_primary"
+    },
+    "summary": {
+      "background_policy": "dark_gradient",
+      "card": "surface_primary",
+      "statement": "surface_muted"
+    },
+    "progress": {
+      "background_policy": "dark_gradient",
+      "stage": "accent_fill",
+      "notes": "surface_primary"
+    }
+  },
+  "semantic_tokens": {
+    "surface_primary": "#12233D",
+    "surface_secondary": "#193257",
+    "surface_tertiary": "#234376",
+    "surface_inverse": "#F5F9FF",
+    "surface_muted": "rgba(89,195,255,0.08)",
+    "accent_fill": "#366AFF",
+    "accent_soft": "rgba(89,195,255,0.12)",
+    "accent_line": "rgba(89,195,255,0.48)",
+    "glass_surface": "rgba(18,35,61,0.74)",
+    "content_card_surface_a": "linear-gradient(180deg, #183051 0%, #12233D 100%)",
+    "content_card_surface_b": "linear-gradient(180deg, #234376 0%, #193257 100%)",
+    "content_band_surface": "linear-gradient(180deg, rgba(54,106,255,0.24) 0%, rgba(89,195,255,0.16) 100%)",
+    "table_header_surface": "linear-gradient(180deg, rgba(25,50,87,0.94) 0%, rgba(35,67,118,0.90) 100%)"
+  },
+  "template_overrides": {
+    "agenda_orbit_branches": {
+      "agenda": {
+        "grid_card": "surface_inverse"
+      }
+    },
+    "cover_overview": {
+      "typography": {
+        "subtitle": {
+          "color": "#F5F9FF",
+          "background": "rgba(25,50,87,0.80)",
+          "border_color": "line_accent",
+          "radius": "radius_lg",
+          "padding": "10"
+        }
+      }
+    },
+    "cover_relationship_hub": {
+      "cover": {
+        "mode": "bubble_field",
+        "background_layers": [
+          "hero_gradient",
+          "bubbles",
+          "vignette"
+        ],
+        "bubble_opacity": "1",
+        "bubble_color": "rgba(89,195,255,0.24)",
+        "arrow_bg": "#FFFFFF",
+        "arrow_color": "#366AFF",
+        "arrow_border_color": "rgba(89,195,255,0.20)",
+        "arrow_shadow": "0 12px 24px rgba(0,0,0,0.22)",
+        "bubbles": [
+          {
+            "left": "67%",
+            "top": "-16%",
+            "width": "260px",
+            "height": "260px",
+            "color": "rgba(89,195,255,0.18)",
+            "opacity": "0.9"
+          },
+          {
+            "left": "39%",
+            "top": "24%",
+            "width": "280px",
+            "height": "280px",
+            "color": "rgba(54,106,255,0.14)",
+            "opacity": "0.82"
+          },
+          {
+            "left": "66%",
+            "top": "24%",
+            "width": "280px",
+            "height": "280px",
+            "color": "rgba(89,195,255,0.14)",
+            "opacity": "0.92"
+          },
+          {
+            "left": "8%",
+            "bottom": "-18%",
+            "width": "300px",
+            "height": "300px",
+            "color": "rgba(245,249,255,0.08)",
+            "opacity": "0.72"
+          },
+          {
+            "left": "36%",
+            "bottom": "-18%",
+            "width": "320px",
+            "height": "320px",
+            "color": "rgba(54,106,255,0.12)",
+            "opacity": "0.9"
+          },
+          {
+            "right": "8%",
+            "bottom": "-18%",
+            "width": "300px",
+            "height": "300px",
+            "color": "rgba(89,195,255,0.14)",
+            "opacity": "0.96"
+          }
+        ]
+      },
+      "typography": {
+        "title": {
+          "color": "#F5F9FF",
+          "font_size": "48",
+          "line_height": "1.02",
+          "background": "",
+          "border_color": "",
+          "padding": ""
+        },
+        "subtitle": {
+          "color": "#C5D3EB",
+          "font_size": "20",
+          "line_height": "1.2",
+          "background": "",
+          "border_color": "",
+          "radius": "",
+          "padding": ""
+        }
+      }
+    },
+    "cover_split_hero": {
+      "typography": {
+        "title": {
+          "color": "text_primary",
+          "background": "",
+          "border_color": "",
+          "radius": "",
+          "padding": ""
+        }
+      }
+    }
+  }
+}

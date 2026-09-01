@@ -1,0 +1,41 @@
+name: DSH Upgrade Candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate:
+        description: Exact DSH version or npm dist-tag
+        required: true
+        default: latest
+  schedule:
+    - cron: "23 3 * * 1"
+
+jobs:
+  isolated-candidate-evaluation:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "11.19.0"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.19.0"
+      - name: Install active Runtime Host
+        working-directory: services/chat-api/dsh/runtime-host
+        run: pnpm install --frozen-lockfile --registry=https://registry.npmjs.org
+      - name: Evaluate isolated candidate
+        run: >-
+          python services/chat-api/scripts/evaluate_dsh_candidate.py
+          "${{ inputs.candidate || 'latest' }}"
+          --output artifacts/dsh-upgrade
+      - name: Upload evaluation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsh-upgrade-evaluation
+          path: artifacts/dsh-upgrade
+          if-no-files-found: error

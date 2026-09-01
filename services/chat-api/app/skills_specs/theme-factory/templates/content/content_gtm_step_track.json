@@ -1,0 +1,381 @@
+{
+  "template_id": "content_gtm_step_track",
+  "family": "content",
+  "name": "GTM Step Track",
+  "purpose": "Large central statement with a horizontal three-step track using numbered circular milestones connected by one thin line.",
+  "selection_summary": "Use when a go-to-market plan should read as three clean stages on a single timeline without extra chart furniture.",
+  "best_for": [
+    "go-to-market sequencing",
+    "three-step plans",
+    "roadmap summary slides"
+  ],
+  "avoid_when": [
+    "more than three major steps are needed",
+    "supporting detail is extensive"
+  ],
+  "recommended_item_range": "1 headline + 3 milestone nodes + 2 footer metadata labels",
+  "layout_regions": [
+    "canvas"
+  ],
+  "slots": [
+    {
+      "slot_id": "title",
+      "component_type": "title",
+      "region": "canvas",
+      "style_role": "hero_title",
+      "max_chars_cjk": 14,
+      "max_chars_latin": 38
+    },
+    {
+      "slot_id": "step_1_num",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "step_1_title",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "step_1_body",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 32
+    },
+    {
+      "slot_id": "step_2_num",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "step_2_title",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "step_2_body",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 32
+    },
+    {
+      "slot_id": "step_3_num",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "step_3_title",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 16
+    },
+    {
+      "slot_id": "step_3_body",
+      "component_type": "statement",
+      "region": "canvas",
+      "style_role": "subtitle",
+      "max_chars_cjk": 8,
+      "max_chars_latin": 32
+    }
+  ],
+  "layout_rules": [
+    "The connector line should stay visually thin and calm.",
+    "All three nodes should be equal in visual importance."
+  ],
+  "background_policy": "light_gradient",
+  "preview_content": {
+    "title": "Step by step go-to-market plan",
+    "step_1_num": "01",
+    "step_1_title": "Launch",
+    "step_1_body": "Beta testing, early adopters, and key partnerships.",
+    "step_2_num": "02",
+    "step_2_title": "Growth",
+    "step_2_body": "Paid acquisition, SEO, outbound outreach, and hiring.",
+    "step_3_num": "03",
+    "step_3_title": "Scale",
+    "step_3_body": "Global expansion, enterprise sales, and diversification."
+  },
+  "executable": {
+    "geometry": {
+      "title": {
+        "x": 346,
+        "y": 140,
+        "w": 920,
+        "h": 120
+      },
+      "line": {
+        "x": 210,
+        "y": 466,
+        "w": 1180,
+        "h": 6
+      },
+      "dot_1": {
+        "x": 210,
+        "y": 404,
+        "w": 126,
+        "h": 126
+      },
+      "dot_2": {
+        "x": 736,
+        "y": 404,
+        "w": 126,
+        "h": 126
+      },
+      "dot_3": {
+        "x": 1260,
+        "y": 404,
+        "w": 126,
+        "h": 126
+      },
+      "step_1_num": {
+        "x": 232,
+        "y": 440,
+        "w": 84,
+        "h": 58
+      },
+      "step_2_num": {
+        "x": 758,
+        "y": 440,
+        "w": 84,
+        "h": 58
+      },
+      "step_3_num": {
+        "x": 1282,
+        "y": 440,
+        "w": 84,
+        "h": 58
+      },
+      "step_1_title": {
+        "x": 170,
+        "y": 566,
+        "w": 200,
+        "h": 40
+      },
+      "step_1_body": {
+        "x": 132,
+        "y": 614,
+        "w": 278,
+        "h": 82
+      },
+      "step_2_title": {
+        "x": 696,
+        "y": 566,
+        "w": 200,
+        "h": 40
+      },
+      "step_2_body": {
+        "x": 646,
+        "y": 614,
+        "w": 316,
+        "h": 82
+      },
+      "step_3_title": {
+        "x": 1222,
+        "y": 566,
+        "w": 200,
+        "h": 40
+      },
+      "step_3_body": {
+        "x": 1166,
+        "y": 614,
+        "w": 308,
+        "h": 82
+      }
+    },
+    "content": {
+      "mode": "schema_canvas",
+      "layout": {
+        "elements": [
+          {
+            "kind": "text",
+            "box": "title",
+            "content_key": "title",
+            "z_index": 2,
+            "style": {
+              "font_size": 48,
+              "font_weight": 800,
+              "line_height": 1.06,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "panel",
+            "box": "line",
+            "z_index": 1,
+            "style": {
+              "fill": "surface_accent",
+              "radius": 999
+            }
+          },
+          {
+            "kind": "panel",
+            "box": "dot_1",
+            "z_index": 1,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 999,
+              "shadow": "shadow_soft"
+            }
+          },
+          {
+            "kind": "panel",
+            "box": "dot_2",
+            "z_index": 1,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 999,
+              "shadow": "shadow_soft"
+            }
+          },
+          {
+            "kind": "panel",
+            "box": "dot_3",
+            "z_index": 1,
+            "style": {
+              "fill": "accent_gradient",
+              "radius": 999,
+              "shadow": "shadow_soft"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "step_1_num",
+            "content_key": "step_1_num",
+            "z_index": 2,
+            "style": {
+              "font_size": 34,
+              "font_weight": 800,
+              "text_align": "center",
+              "vertical_align": "center",
+              "color": "text_on_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "step_2_num",
+            "content_key": "step_2_num",
+            "z_index": 2,
+            "style": {
+              "font_size": 34,
+              "font_weight": 800,
+              "text_align": "center",
+              "vertical_align": "center",
+              "color": "text_on_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "step_3_num",
+            "content_key": "step_3_num",
+            "z_index": 2,
+            "style": {
+              "font_size": 34,
+              "font_weight": 800,
+              "text_align": "center",
+              "vertical_align": "center",
+              "color": "text_on_accent"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "step_1_title",
+            "content_key": "step_1_title",
+            "z_index": 2,
+            "style": {
+              "font_size": 24,
+              "font_weight": 800,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "step_1_body",
+            "content_key": "step_1_body",
+            "z_index": 2,
+            "style": {
+              "font_size": 16,
+              "font_weight": 500,
+              "line_height": 1.42,
+              "text_align": "center",
+              "color": "text_secondary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "step_2_title",
+            "content_key": "step_2_title",
+            "z_index": 2,
+            "style": {
+              "font_size": 24,
+              "font_weight": 800,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "step_2_body",
+            "content_key": "step_2_body",
+            "z_index": 2,
+            "style": {
+              "font_size": 16,
+              "font_weight": 500,
+              "line_height": 1.42,
+              "text_align": "center",
+              "color": "text_secondary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "step_3_title",
+            "content_key": "step_3_title",
+            "z_index": 2,
+            "style": {
+              "font_size": 24,
+              "font_weight": 800,
+              "text_align": "center",
+              "color": "text_primary"
+            }
+          },
+          {
+            "kind": "text",
+            "box": "step_3_body",
+            "content_key": "step_3_body",
+            "z_index": 2,
+            "style": {
+              "font_size": 16,
+              "font_weight": 500,
+              "line_height": 1.42,
+              "text_align": "center",
+              "color": "text_secondary"
+            }
+          }
+        ]
+      },
+      "style": {}
+    }
+  }
+}

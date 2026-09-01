@@ -1,0 +1,240 @@
+{
+  "id": "modern-minimalist",
+  "name": "Modern Minimalist",
+  "description": "A clean and contemporary theme with a sophisticated grayscale palette for maximum versatility.",
+  "mode": "light",
+  "palette": {
+    "bg_base": "#f8fafc",
+    "bg_elevated": "#eef2f5",
+    "surface_base": "#ffffff",
+    "surface_alt": "#e5eaef",
+    "surface_accent": "#36454f",
+    "text_primary": "#111827",
+    "text_secondary": "#475569",
+    "text_on_accent": "#f8fafc",
+    "border_subtle": "rgba(54,69,79,0.14)",
+    "border_strong": "rgba(54,69,79,0.28)"
+  },
+  "gradients": {
+    "canvas_gradient": "linear-gradient(180deg, #ffffff 0%, #eef2f5 100%)",
+    "accent_gradient": "linear-gradient(135deg, #36454f 0%, #708090 100%)",
+    "hero_gradient": "radial-gradient(circle at 82% 18%, rgba(112,128,144,0.14) 0%, rgba(211,211,211,0.10) 24%, rgba(255,255,255,0) 44%)"
+  },
+  "shape": {
+    "radius_sm": "10",
+    "radius_md": "16",
+    "radius_lg": "24",
+    "radius_chip": "999"
+  },
+  "elevation": {
+    "shadow_none": "none",
+    "shadow_soft": "0 10px 22px rgba(15,23,42,0.08)",
+    "shadow_strong": "0 18px 34px rgba(15,23,42,0.12)"
+  },
+  "stroke": {
+    "line_subtle": "rgba(54,69,79,0.14)",
+    "line_accent": "rgba(112,128,144,0.34)"
+  },
+  "typography": {
+    "header_font": "DejaVu Sans Bold",
+    "body_font": "DejaVu Sans",
+    "title": {
+      "color": "text_primary",
+      "font_size": "48",
+      "section_font_size": "34",
+      "font_weight": "800",
+      "line_height": "1.2",
+      "section_line_height": "1.16",
+      "section_color": "text_primary",
+      "background": "glass_surface",
+      "border_color": "line_subtle",
+      "radius": "radius_md",
+      "padding": "18"
+    },
+    "subtitle": {
+      "color": "text_secondary",
+      "font_size": "18",
+      "font_weight": "500",
+      "line_height": "1.32",
+      "background": "",
+      "border_color": "",
+      "radius": "",
+      "padding": ""
+    }
+  },
+  "best_used_for": [
+    "Tech presentations",
+    "Architecture portfolios",
+    "Modern business proposals",
+    "Data visualization"
+  ],
+  "page_policy": {
+    "cover": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "panel": "surface_inverse",
+      "accent": "accent_fill"
+    },
+    "agenda": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "panel": "surface_primary",
+      "number": "accent_fill",
+      "background": "canvas_gradient",
+      "line": "line_subtle",
+      "card": "surface_primary",
+      "pill": "surface_primary",
+      "pill_number": "surface_primary",
+      "grid_background": "canvas_gradient",
+      "grid_line": "line_subtle",
+      "grid_card": "surface_primary"
+    },
+    "content": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "panel": "surface_primary",
+      "diagram_panel": "surface_secondary"
+    },
+    "comparison": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "header": "accent_fill",
+      "body": "surface_primary"
+    },
+    "summary": {
+      "background_policy": "light_gradient",
+      "card": "surface_primary",
+      "statement": "surface_muted"
+    },
+    "progress": {
+      "background_policy": "light_gradient",
+      "stage": "accent_fill",
+      "notes": "surface_primary"
+    }
+  },
+  "semantic_tokens": {
+    "surface_primary": "#ffffff",
+    "surface_secondary": "#e5eaef",
+    "surface_tertiary": "#d5dde4",
+    "surface_inverse": "#111827",
+    "surface_muted": "rgba(54,69,79,0.05)",
+    "accent_fill": "#36454f",
+    "accent_soft": "rgba(112,128,144,0.10)",
+    "accent_line": "rgba(112,128,144,0.34)",
+    "glass_surface": "rgba(255,255,255,0.76)",
+    "content_card_surface_a": "linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%)",
+    "content_card_surface_b": "linear-gradient(180deg, #f8fafc 0%, #e5eaef 100%)",
+    "content_band_surface": "linear-gradient(180deg, rgba(112,128,144,0.16) 0%, rgba(54,69,79,0.10) 100%)",
+    "table_header_surface": "linear-gradient(180deg, rgba(238,242,245,0.96) 0%, rgba(213,221,228,0.92) 100%)"
+  },
+  "template_overrides": {
+    "agenda_orbit_branches": {
+      "agenda": {
+        "grid_card": "surface_inverse"
+      }
+    },
+    "cover_overview": {
+      "typography": {
+        "subtitle": {
+          "color": "#111827",
+          "background": "rgba(229,234,239,0.84)",
+          "border_color": "line_accent",
+          "radius": "radius_lg",
+          "padding": "10"
+        }
+      }
+    },
+    "cover_relationship_hub": {
+      "cover": {
+        "mode": "bubble_field",
+        "background_layers": [
+          "hero_gradient",
+          "bubbles",
+          "vignette"
+        ],
+        "bubble_opacity": "1",
+        "bubble_color": "rgba(112,128,144,0.22)",
+        "arrow_bg": "#ffffff",
+        "arrow_color": "#36454f",
+        "arrow_border_color": "rgba(54,69,79,0.16)",
+        "arrow_shadow": "0 12px 24px rgba(15,23,42,0.12)",
+        "bubbles": [
+          {
+            "left": "67%",
+            "top": "-14%",
+            "width": "250px",
+            "height": "250px",
+            "color": "rgba(112,128,144,0.22)",
+            "opacity": "1"
+          },
+          {
+            "left": "39%",
+            "top": "25%",
+            "width": "260px",
+            "height": "260px",
+            "color": "rgba(84,98,110,0.12)",
+            "opacity": "1"
+          },
+          {
+            "left": "66%",
+            "top": "25%",
+            "width": "260px",
+            "height": "260px",
+            "color": "rgba(211,211,211,0.18)",
+            "opacity": "1"
+          },
+          {
+            "left": "8%",
+            "bottom": "-18%",
+            "width": "290px",
+            "height": "290px",
+            "color": "rgba(84,98,110,0.08)",
+            "opacity": "1"
+          },
+          {
+            "left": "38%",
+            "bottom": "-20%",
+            "width": "310px",
+            "height": "310px",
+            "color": "rgba(112,128,144,0.12)",
+            "opacity": "1"
+          },
+          {
+            "right": "8%",
+            "bottom": "-18%",
+            "width": "290px",
+            "height": "290px",
+            "color": "rgba(211,211,211,0.16)",
+            "opacity": "1"
+          }
+        ]
+      },
+      "typography": {
+        "title": {
+          "color": "#111827",
+          "font_size": "48",
+          "line_height": "1.02",
+          "background": "",
+          "border_color": "",
+          "padding": ""
+        },
+        "subtitle": {
+          "color": "#475569",
+          "font_size": "20",
+          "line_height": "1.2",
+          "background": "",
+          "border_color": "",
+          "radius": "",
+          "padding": ""
+        }
+      }
+    },
+    "cover_split_hero": {
+      "typography": {
+        "title": {
+          "color": "text_primary",
+          "background": "",
+          "border_color": "",
+          "radius": "",
+          "padding": ""
+        }
+      }
+    }
+  }
+}

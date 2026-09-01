@@ -1,0 +1,240 @@
+{
+  "id": "signal-blue-light",
+  "name": "Signal Blue Light",
+  "description": "A bright, high-clarity light theme built around #366AFF, designed for product, strategy, and technology decks that want confident blue emphasis without a dark canvas.",
+  "mode": "light",
+  "palette": {
+    "bg_base": "#f7faff",
+    "bg_elevated": "#eaf1ff",
+    "surface_base": "#ffffff",
+    "surface_alt": "#dce8ff",
+    "surface_accent": "#366AFF",
+    "text_primary": "#18324a",
+    "text_secondary": "#5b6f89",
+    "text_on_accent": "#f8fbff",
+    "border_subtle": "rgba(54,106,255,0.16)",
+    "border_strong": "rgba(54,106,255,0.30)"
+  },
+  "gradients": {
+    "canvas_gradient": "linear-gradient(180deg, #ffffff 0%, #f2f7ff 28%, #e7f0ff 70%, #f6f9ff 100%)",
+    "accent_gradient": "linear-gradient(135deg, #366AFF 0%, #59C3FF 100%)",
+    "hero_gradient": "radial-gradient(circle at 80% 18%, rgba(89,195,255,0.18) 0%, rgba(54,106,255,0.12) 24%, rgba(247,250,255,0) 50%)"
+  },
+  "shape": {
+    "radius_sm": "12",
+    "radius_md": "18",
+    "radius_lg": "26",
+    "radius_chip": "999"
+  },
+  "elevation": {
+    "shadow_none": "none",
+    "shadow_soft": "0 12px 28px rgba(54,106,255,0.10)",
+    "shadow_strong": "0 20px 42px rgba(54,106,255,0.16)"
+  },
+  "stroke": {
+    "line_subtle": "rgba(54,106,255,0.16)",
+    "line_accent": "rgba(89,195,255,0.42)"
+  },
+  "typography": {
+    "header_font": "DejaVu Sans Bold",
+    "body_font": "DejaVu Sans",
+    "title": {
+      "color": "text_primary",
+      "font_size": "48",
+      "section_font_size": "34",
+      "font_weight": "800",
+      "line_height": "1.22",
+      "section_line_height": "1.18",
+      "section_color": "text_primary",
+      "background": "",
+      "border_color": "",
+      "radius": "",
+      "padding": ""
+    },
+    "subtitle": {
+      "color": "text_secondary",
+      "font_size": "18",
+      "font_weight": "500",
+      "line_height": "1.34",
+      "background": "",
+      "border_color": "",
+      "radius": "",
+      "padding": ""
+    }
+  },
+  "best_used_for": [
+    "product strategy decks",
+    "technology capability overviews",
+    "modern consulting presentations",
+    "executive update decks"
+  ],
+  "page_policy": {
+    "cover": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "panel": "surface_inverse",
+      "accent": "accent_fill"
+    },
+    "agenda": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "panel": "surface_primary",
+      "number": "accent_fill",
+      "background": "canvas_gradient",
+      "line": "line_subtle",
+      "card": "surface_primary",
+      "pill": "surface_primary",
+      "pill_number": "surface_primary",
+      "grid_background": "canvas_gradient",
+      "grid_line": "line_subtle",
+      "grid_card": "surface_primary"
+    },
+    "content": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "panel": "surface_primary",
+      "diagram_panel": "surface_secondary"
+    },
+    "comparison": {
+      "background_policy": "light_gradient_with_subtle_grid",
+      "header": "accent_fill",
+      "body": "surface_primary"
+    },
+    "summary": {
+      "background_policy": "light_gradient",
+      "card": "surface_primary",
+      "statement": "surface_muted"
+    },
+    "progress": {
+      "background_policy": "light_gradient",
+      "stage": "accent_fill",
+      "notes": "surface_primary"
+    }
+  },
+  "semantic_tokens": {
+    "surface_primary": "#ffffff",
+    "surface_secondary": "#dce8ff",
+    "surface_tertiary": "#c7d9ff",
+    "surface_inverse": "#18324a",
+    "surface_muted": "rgba(54,106,255,0.07)",
+    "accent_fill": "#366AFF",
+    "accent_soft": "rgba(89,195,255,0.12)",
+    "accent_line": "rgba(89,195,255,0.42)",
+    "glass_surface": "rgba(255,255,255,0.74)",
+    "content_card_surface_a": "linear-gradient(180deg, #ffffff 0%, #f3f7ff 100%)",
+    "content_card_surface_b": "linear-gradient(180deg, #f6f9ff 0%, #e6efff 100%)",
+    "content_band_surface": "linear-gradient(180deg, rgba(54,106,255,0.18) 0%, rgba(89,195,255,0.12) 100%)",
+    "table_header_surface": "linear-gradient(180deg, rgba(220,232,255,0.96) 0%, rgba(199,217,255,0.92) 100%)"
+  },
+  "template_overrides": {
+    "agenda_orbit_branches": {
+      "agenda": {
+        "grid_card": "surface_inverse"
+      }
+    },
+    "cover_overview": {
+      "typography": {
+        "subtitle": {
+          "color": "#18324a",
+          "background": "rgba(220,232,255,0.88)",
+          "border_color": "line_accent",
+          "radius": "radius_lg",
+          "padding": "10"
+        }
+      }
+    },
+    "cover_relationship_hub": {
+      "cover": {
+        "mode": "bubble_field",
+        "background_layers": [
+          "hero_gradient",
+          "bubbles",
+          "vignette"
+        ],
+        "bubble_opacity": "1",
+        "bubble_color": "rgba(89,195,255,0.24)",
+        "arrow_bg": "#ffffff",
+        "arrow_color": "#366AFF",
+        "arrow_border_color": "rgba(54,106,255,0.18)",
+        "arrow_shadow": "0 12px 24px rgba(54,106,255,0.14)",
+        "bubbles": [
+          {
+            "left": "67%",
+            "top": "-16%",
+            "width": "260px",
+            "height": "260px",
+            "color": "rgba(89,195,255,0.22)",
+            "opacity": "0.95"
+          },
+          {
+            "left": "39%",
+            "top": "24%",
+            "width": "280px",
+            "height": "280px",
+            "color": "rgba(54,106,255,0.14)",
+            "opacity": "0.88"
+          },
+          {
+            "left": "66%",
+            "top": "24%",
+            "width": "280px",
+            "height": "280px",
+            "color": "rgba(89,195,255,0.16)",
+            "opacity": "0.92"
+          },
+          {
+            "left": "8%",
+            "bottom": "-18%",
+            "width": "300px",
+            "height": "300px",
+            "color": "rgba(54,106,255,0.10)",
+            "opacity": "0.78"
+          },
+          {
+            "left": "36%",
+            "bottom": "-18%",
+            "width": "320px",
+            "height": "320px",
+            "color": "rgba(89,195,255,0.12)",
+            "opacity": "0.82"
+          },
+          {
+            "right": "8%",
+            "bottom": "-18%",
+            "width": "300px",
+            "height": "300px",
+            "color": "rgba(54,106,255,0.12)",
+            "opacity": "0.84"
+          }
+        ]
+      },
+      "typography": {
+        "title": {
+          "color": "#18324a",
+          "font_size": "48",
+          "line_height": "1.02",
+          "background": "",
+          "border_color": "",
+          "padding": ""
+        },
+        "subtitle": {
+          "color": "#5b6f89",
+          "font_size": "20",
+          "line_height": "1.2",
+          "background": "",
+          "border_color": "",
+          "radius": "",
+          "padding": ""
+        }
+      }
+    },
+    "cover_split_hero": {
+      "typography": {
+        "title": {
+          "color": "text_primary",
+          "background": "",
+          "border_color": "",
+          "radius": "",
+          "padding": ""
+        }
+      }
+    }
+  }
+}

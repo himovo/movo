@@ -1,0 +1,11 @@
+structure:
+  required_sections:
+    - Summary
+    - Sources
+data:
+  must_include_fields:
+    - Source URL
+    - Date
+style:
+  tone: neutral
+  language: en
