@@ -89,6 +89,12 @@ IMAGES = (
         build_args="VITE_BASE_PATH=/admin/\nVITE_ADMIN_API_BASE_URL=/admin-api",
         inputs=("apps/admin-web/**",),
     ),
+    ImageDefinition(
+        suffix="gateway",
+        context="deploy/docker",
+        dockerfile="deploy/docker/gateway.Dockerfile",
+        inputs=("deploy/docker/gateway.Dockerfile",),
+    ),
 )
 
 # A release mechanism change invalidates the planner itself, so the next release

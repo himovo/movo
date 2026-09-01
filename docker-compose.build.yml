@@ -52,3 +52,9 @@ services:
       args:
         VITE_BASE_PATH: /admin/
         VITE_ADMIN_API_BASE_URL: /admin-api
+
+  gateway:
+    pull_policy: build
+    build:
+      context: ./deploy/docker
+      dockerfile: gateway.Dockerfile

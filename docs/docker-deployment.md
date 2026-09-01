@@ -10,7 +10,7 @@ cd movo
 ./movo up
 ```
 
-`./movo` derives the image prefix from the GitHub `origin` remote and pulls six
+`./movo` derives the image prefix from the GitHub `origin` remote and pulls seven
 MOVO images from `ghcr.io/owner/repository-*`. Set `MOVO_VERSION` in `.env` to
 the same release tag. Release archives without an origin remote must also set:
 

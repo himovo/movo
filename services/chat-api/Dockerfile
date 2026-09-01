@@ -32,7 +32,8 @@ COPY requirements.txt /tmp/requirements.txt
 
 RUN python -m pip install --progress-bar off --upgrade pip setuptools wheel \
     && python -m pip install --progress-bar off -r /tmp/requirements.txt \
-    && find /usr/local/lib/python3.10/ensurepip/_bundled -name 'setuptools-*.whl' -delete
+    && python -m pip uninstall --yes pip wheel \
+    && find /usr/local/lib/python3.10/ensurepip/_bundled -type f -delete
 
 ARG INSTALL_PLAYWRIGHT_AT_BUILD=false
 ARG PLAYWRIGHT_WITH_DEPS=false

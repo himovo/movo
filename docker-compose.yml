@@ -300,7 +300,8 @@ services:
       retries: 20
 
   gateway:
-    image: nginx:1.29.8-alpine
+    image: ${MOVO_IMAGE_PREFIX:-movo}-gateway:${MOVO_VERSION:-latest}
+    pull_policy: ${MOVO_PULL_POLICY:-missing}
     restart: unless-stopped
     ports:
       - "${MOVO_PORT:-${ASKAI_PORT:-3000}}:80"

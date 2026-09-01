@@ -12,7 +12,8 @@ WORKDIR /app
 COPY requirements.txt /tmp/requirements.txt
 RUN python -m pip install --upgrade pip setuptools wheel \
     && python -m pip install -r /tmp/requirements.txt \
-    && find /usr/local/lib/python3.10/ensurepip/_bundled -name 'setuptools-*.whl' -delete
+    && python -m pip uninstall --yes pip wheel \
+    && find /usr/local/lib/python3.10/ensurepip/_bundled -type f -delete
 
 COPY app /app/app
 COPY entrypoint.sh /app/entrypoint.sh

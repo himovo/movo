@@ -26,6 +26,10 @@ class ContainerReleasePlanTests(unittest.TestCase):
         changed, _ = select_images(["services/chat-api/dsh/runtime-host/src/host.mjs"])
         self.assertEqual(["dsh-runtime-host"], self.suffixes(changed))
 
+    def test_gateway_image_change_only_rebuilds_gateway(self):
+        changed, _ = select_images(["deploy/docker/gateway.Dockerfile"])
+        self.assertEqual(["gateway"], self.suffixes(changed))
+
     def test_chat_runtime_change_rebuilds_chat_api(self):
         changed, _ = select_images(["services/chat-api/app/runtime/runner.py"])
         self.assertEqual(["chat-api"], self.suffixes(changed))

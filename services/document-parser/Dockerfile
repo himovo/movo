@@ -63,7 +63,8 @@ RUN if [ "${INSTALL_PYTHON_DEPS_AT_BUILD}" = "true" ]; then \
         esac \
         && python -m pip install --progress-bar off -r /tmp/requirements.txt \
         && python -m pip install --progress-bar off --prefer-binary -r /tmp/requirements-docling.txt \
-        && find /usr/local/lib/python3.10/ensurepip/_bundled -name 'setuptools-*.whl' -delete; \
+        && python -m pip uninstall --yes pip wheel \
+        && find /usr/local/lib/python3.10/ensurepip/_bundled -type f -delete; \
     else \
         echo "Skip Python dependencies in build stage (INSTALL_PYTHON_DEPS_AT_BUILD=false)"; \
     fi \

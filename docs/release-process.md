@@ -29,7 +29,7 @@ image tags. Do not publish a release while an item in
    the previous image tag.
 6. Create and push the signed tag only after those checks pass.
 
-The tag workflow publishes six image families, creates build provenance and
+The tag workflow publishes seven image families, creates build provenance and
 SBOM attestations, and rejects images with known fixable high or critical
 vulnerabilities. Prerelease tags never update `latest`.
 
