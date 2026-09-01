@@ -10,7 +10,7 @@ python = "^3.10"
 # runtime dependency source used by Docker and deployment.
 fastapi = "^0.109.0"
 firecrawl-py = ">=4.6.0"
-uvicorn = {extras = ["standard"], version = "^0.27.0"}
+uvicorn = {extras = ["standard"], version = ">=0.27,<0.53"}
 pydantic = "^2.6.0"
 pydantic-settings = "^2.1.0"
 httpx = "^0.26.0"
