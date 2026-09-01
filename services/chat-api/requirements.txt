@@ -31,7 +31,7 @@ pillow==12.0.0
 playwright==1.56.0
 pydantic==2.11.7
 pydantic_core==2.33.2
-pyee==13.0.0
+pyee==13.0.1
 python-dateutil==2.9.0.post0
 python-docx==1.1.2
 pytz==2025.2
