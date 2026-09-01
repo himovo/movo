@@ -2,6 +2,12 @@ name: Container Release
 
 on:
   workflow_dispatch:
+    inputs:
+      force_rebuild_all:
+        description: Rebuild every image instead of reusing unchanged images
+        type: boolean
+        required: false
+        default: false
   push:
     tags:
       - "v*"
@@ -22,6 +28,8 @@ jobs:
           python-version: "3.11"
       - name: Validate publication boundary
         run: python scripts/check_open_source_hygiene.py
+      - name: Validate selective container release planner
+        run: python scripts/release/test_plan_container_release.py
       - name: Validate Compose variants
         env:
           MOVO_IMAGE_PREFIX: ghcr.io/example/movo
@@ -30,46 +38,60 @@ jobs:
           docker compose config --quiet
           docker compose -f docker-compose.yml -f docker-compose.build.yml config --quiet
 
-  publish:
+  plan-release:
     needs: validate-release
+    runs-on: ubuntu-latest
+    outputs:
+      base_ref: ${{ steps.plan.outputs.base_ref }}
+      changed: ${{ steps.plan.outputs.changed }}
+      changed_count: ${{ steps.plan.outputs.changed_count }}
+      unchanged: ${{ steps.plan.outputs.unchanged }}
+      unchanged_count: ${{ steps.plan.outputs.unchanged_count }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Find the previous published version
+        id: base
+        shell: bash
+        run: |
+          base_ref=""
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            base_ref="$(git describe --tags --abbrev=0 "${GITHUB_SHA}^" 2>/dev/null || true)"
+          else
+            base_ref="$(git describe --tags --abbrev=0 HEAD 2>/dev/null || true)"
+          fi
+          echo "ref=${base_ref}" >> "$GITHUB_OUTPUT"
+      - name: Calculate image build plan
+        id: plan
+        env:
+          BASE_REF: ${{ steps.base.outputs.ref }}
+          FORCE_REBUILD_ALL: ${{ inputs.force_rebuild_all || 'false' }}
+        shell: bash
+        run: |
+          args=(--head-ref "$GITHUB_SHA")
+          if [[ -n "$BASE_REF" ]]; then
+            args+=(--base-ref "$BASE_REF")
+          fi
+          if [[ "$FORCE_REBUILD_ALL" == "true" ]]; then
+            args+=(--force-all)
+          fi
+          python scripts/release/plan_container_release.py "${args[@]}" > "$RUNNER_TEMP/container-plan.json"
+          cat "$RUNNER_TEMP/container-plan.json"
+          echo "base_ref=$(jq -r '.base_ref' "$RUNNER_TEMP/container-plan.json")" >> "$GITHUB_OUTPUT"
+          echo "changed=$(jq -c '.changed' "$RUNNER_TEMP/container-plan.json")" >> "$GITHUB_OUTPUT"
+          echo "changed_count=$(jq -r '.changed | length' "$RUNNER_TEMP/container-plan.json")" >> "$GITHUB_OUTPUT"
+          echo "unchanged=$(jq -c '.unchanged' "$RUNNER_TEMP/container-plan.json")" >> "$GITHUB_OUTPUT"
+          echo "unchanged_count=$(jq -r '.unchanged | length' "$RUNNER_TEMP/container-plan.json")" >> "$GITHUB_OUTPUT"
+
+  publish-changed:
+    needs: plan-release
+    if: needs.plan-release.outputs.changed_count != '0'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - suffix: dsh-runtime-host
-            context: services/chat-api/dsh/runtime-host
-            dockerfile: services/chat-api/dsh/runtime-host/Dockerfile
-            build_args: ""
-          - suffix: chat-api
-            context: services/chat-api
-            dockerfile: services/chat-api/Dockerfile
-            build_args: |
-              INSTALL_SYSTEM_DEPS_AT_BUILD=true
-              INSTALL_PLAYWRIGHT_AT_BUILD=true
-              PLAYWRIGHT_WITH_DEPS=true
-          - suffix: admin-api
-            context: services/admin-api
-            dockerfile: services/admin-api/Dockerfile
-            build_args: ""
-          - suffix: document-parser
-            context: services/document-parser
-            dockerfile: services/document-parser/Dockerfile
-            build_args: |
-              INSTALL_SYSTEM_DEPS_AT_BUILD=true
-              INSTALL_PYTHON_DEPS_AT_BUILD=true
-              INSTALL_DOCLING_MODELS_AT_BUILD=true
-              PYTORCH_ACCELERATOR=cpu
-          - suffix: user-web
-            context: apps/user-web
-            dockerfile: apps/user-web/Dockerfile.prod
-            build_args: VITE_ADMIN_WEB_URL=/admin/
-          - suffix: admin-web
-            context: apps/admin-web
-            dockerfile: apps/admin-web/Dockerfile
-            build_args: |
-              VITE_BASE_PATH=/admin/
-              VITE_ADMIN_API_BASE_URL=/admin-api
+        include: ${{ fromJSON(needs.plan-release.outputs.changed) }}
     steps:
       - uses: actions/checkout@v4
       - name: Normalize image name
@@ -123,3 +145,37 @@ jobs:
           exit-code: "1"
           ignore-unfixed: true
           severity: CRITICAL,HIGH
+
+  reuse-unchanged:
+    needs: plan-release
+    if: github.event_name == 'push' && needs.plan-release.outputs.unchanged_count != '0'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan-release.outputs.unchanged) }}
+    steps:
+      - name: Normalize image name
+        id: image
+        shell: bash
+        run: |
+          repository="${GITHUB_REPOSITORY,,}"
+          echo "name=ghcr.io/${repository}-${{ matrix.suffix }}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Reuse the previous image without rebuilding
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+          BASE_REF: ${{ needs.plan-release.outputs.base_ref }}
+        shell: bash
+        run: |
+          short_sha="${GITHUB_SHA:0:7}"
+          tags=(--tag "${IMAGE_NAME}:${GITHUB_REF_NAME}" --tag "${IMAGE_NAME}:sha-${short_sha}")
+          if [[ "$GITHUB_REF_NAME" != *-* ]]; then
+            tags+=(--tag "${IMAGE_NAME}:latest")
+          fi
+          docker buildx imagetools create "${tags[@]}" "${IMAGE_NAME}:${BASE_REF}"
