@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import importlib.util
-import json
 import sys
 from collections import Counter
 from pathlib import Path
@@ -46,17 +45,5 @@ def test_allowance_is_a_counted_ceiling(tmp_path: Path) -> None:
     ]
 
 
-def test_retired_boundary_rejects_restoring_a_baseline_allowance(tmp_path: Path) -> None:
-    baseline = tmp_path / "baseline.json"
-    baseline.write_text(json.dumps({
-        "schema_version": "askai.dsh-native-code-retired.v2",
-        "allowed_occurrences": [
-            {"path": "src/bridge.py", "token": "code_task", "max_count": 1},
-        ],
-    }), encoding="utf-8")
-    try:
-        MODULE.load_allowance(baseline)
-    except ValueError as error:
-        assert "must remain empty" in str(error)
-    else:
-        raise AssertionError("retired boundary accepted a production allowance")
+def test_retired_boundary_has_no_allowance_loader() -> None:
+    assert not hasattr(MODULE, "load_allowance")

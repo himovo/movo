@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
-;(globalThis as any).navigator = { language: 'zh-CN', languages: ['zh-CN'] }
+Object.defineProperty(globalThis, 'navigator', {
+  configurable: true,
+  value: { language: 'zh-CN', languages: ['zh-CN'] },
+})
 ;(globalThis as any).localStorage = {
   getItem: () => null, setItem: () => undefined, removeItem: () => undefined,
 }
@@ -107,7 +110,7 @@ const chatComposer = readFileSync('src/components/chat/ChatComposer.vue', 'utf8'
 const chatWindow = readFileSync('src/components/ChatWindow.vue', 'utf8')
 const assistantMarkdown = readFileSync('src/components/chat/AssistantMarkdown.vue', 'utf8')
 const appShell = readFileSync('src/App.vue', 'utf8')
-const billingModal = readFileSync('src/components/BillingModal.vue', 'utf8')
+const communityProduct = readFileSync('src/product/community.ts', 'utf8')
 assert.match(desktopChrome, /<WorkspaceContextPicker/)
 assert.match(desktopChrome, /<BranchContextPicker/)
 assert.match(desktopChrome, /chatActions && codeAvailable && showWorkspaceContext/)
@@ -133,7 +136,7 @@ assert.match(appShell, /!supportsLocalCodeProjects \|\| !session\.code_project\?
 assert.match(appShell, /canUseCode && supportsLocalCodeProjects && projectHistoryGroups\.length/)
 assert.match(appShell, /v-if="canAccessAdmin\(tenant\)"/)
 assert.match(appShell, /:can-access-admin="isEnterpriseSpace && userProfile\?\.canAccessAdmin === true"/)
-assert.match(billingModal, /v-if="billingData && canAccessAdmin"/)
+assert.doesNotMatch(communityProduct, /billingModal/)
 assert.match(chatWindow, /:allow-knowledge="allowKnowledge"/)
 assert.match(chatWindow, /:allow-skills="allowSkills"/)
 
