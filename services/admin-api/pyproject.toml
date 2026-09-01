@@ -6,7 +6,7 @@ authors = ["MOVO Team"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-fastapi = "^0.115.0"
+fastapi = ">=0.115,<0.142"
 uvicorn = { extras = ["standard"], version = "^0.30.0" }
 pydantic = "^2.9.0"
 pydantic-settings = "^2.5.0"
