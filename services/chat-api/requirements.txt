@@ -1,7 +1,7 @@
 # Canonical backend runtime dependency source.
 # Docker production builds install from this file.
 annotated-types==0.7.0
-anyio==4.12.0
+anyio==4.14.2
 aiofiles==23.2.1
 motor==2.5.1
 pymongo==3.12.3
