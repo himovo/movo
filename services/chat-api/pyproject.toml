@@ -8,7 +8,7 @@ authors = ["MOVO Team"]
 python = "^3.10"
 # Compatibility metadata only. backend/requirements.txt is the canonical
 # runtime dependency source used by Docker and deployment.
-fastapi = "^0.109.0"
+fastapi = ">=0.109,<0.142"
 firecrawl-py = ">=4.6.0"
 uvicorn = {extras = ["standard"], version = "^0.27.0"}
 pydantic = "^2.6.0"
