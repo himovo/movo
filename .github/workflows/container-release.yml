@@ -16,7 +16,7 @@ jobs:
   validate-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -71,7 +71,7 @@ jobs:
               VITE_BASE_PATH=/admin/
               VITE_ADMIN_API_BASE_URL=/admin-api
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Normalize image name
         id: image
         shell: bash
