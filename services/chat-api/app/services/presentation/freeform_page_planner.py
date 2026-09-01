@@ -23,7 +23,6 @@ from app.services.presentation.contracts import (
     FreeformPageBlueprint,
     PageBrief,
     PageGenerationContext,
-    PageRepairReport,
 )
 from app.services.presentation.renderable_normalizer import RenderableAstNormalizer
 from app.services.presentation.layout_protocol import (
@@ -54,6 +53,8 @@ from app.services.presentation.generative_design import DeckVisualDirector, Deck
 from app.services.presentation.generative_design.composition_grammar import fallback_deck_visual_plan
 from app.services.presentation.generative_design.page_payload import build_page_composition_payload
 from app.services.presentation.generative_design.prompts import build_page_composition_prompt
+from app.services.presentation.execution.freeform_pages import FreeformPageExecutionCoordinator
+from app.services.presentation.execution.session import PresentationExecutionSession
 
 logger = logging.getLogger(__name__)
 
@@ -763,6 +764,7 @@ class FreeformPagePlanner:
         lock_blocks: bool = True,
         layout_attempt: int = 0,
         deck_visual_plan: DeckVisualPlan | None = None,
+        prior_page_summaries: List[Dict[str, Any]] | None = None,
     ) -> FreeformPageBlueprint:
         brief_by_id = {str(item.page_id or "").strip(): item for item in list(deck_brief.page_briefs or [])}
         generation_context = PageGenerationContext(
@@ -770,7 +772,11 @@ class FreeformPagePlanner:
             current_page=page_brief,
             previous_page=previous_page,
             next_page=next_page,
-            prior_page_summaries=self._prior_page_summaries(prior_pages, brief_by_id),
+            prior_page_summaries=(
+                list(prior_page_summaries)
+                if prior_page_summaries is not None
+                else self._prior_page_summaries(prior_pages, brief_by_id)
+            ),
         )
         logger.info(
             "presentation_page_rule_strategy page_id=%s mode=movo_assigned archetype=%s",
@@ -961,6 +967,7 @@ class FreeformPagePlanner:
         story_plan: StoryDeckPlan,
         request_context: Dict[str, Any] | None = None,
         progress_callback: Optional[Callable[[Dict[str, Any]], Awaitable[None] | None]] = None,
+        execution_session: PresentationExecutionSession | None = None,
     ) -> FreeformDeckBlueprint:
         messages = list((request_context or {}).get("messages") or [])
         output_spec = dict((request_context or {}).get("output_spec") or {})
@@ -979,49 +986,61 @@ class FreeformPagePlanner:
             user_generation_guidance=generation_guidance,
             user_message_context=user_message_context,
         )
-        deck_brief = await self._build_deck_brief(
-            story_plan=story_plan,
-            constraint_bundle=constraint_bundle,
-            user_message_context=user_message_context,
-        )
-        deck_brief = self._resolve_deck_theme(deck_brief, constraint_bundle=constraint_bundle)
-        deck_brief = self._layout_planner.assign(deck_brief, story_plan)
+        restored_planning = dict(execution_session.planning) if execution_session is not None else {}
+        try:
+            deck_brief = DeckBrief.model_validate(restored_planning["deck_brief"])
+            deck_visual_plan = DeckVisualPlan.model_validate(restored_planning["deck_visual_plan"])
+            logger.info(
+                "presentation_planning_checkpoint_restored job_id=%s",
+                execution_session.job_id if execution_session is not None else "",
+            )
+        except Exception:
+            await self._emit_progress(
+                progress_callback,
+                {
+                    "stage": "deck_planning",
+                    "status": "running",
+                    "kind": "analyze",
+                    "message": "正在规划PPT结构",
+                },
+            )
+            deck_brief = await self._build_deck_brief(
+                story_plan=story_plan,
+                constraint_bundle=constraint_bundle,
+                user_message_context=user_message_context,
+            )
+            deck_brief = self._resolve_deck_theme(deck_brief, constraint_bundle=constraint_bundle)
+            deck_brief = self._layout_planner.assign(deck_brief, story_plan)
+            await self._emit_progress(
+                progress_callback,
+                {
+                    "stage": "visual_direction",
+                    "status": "running",
+                    "kind": "analyze",
+                    "message": "正在规划PPT视觉语言",
+                },
+            )
+            deck_visual_plan = await self._visual_director.plan(
+                deck_brief=deck_brief,
+                story_plan=story_plan,
+            )
+            deck_brief = self._visual_director.apply_layout_recommendations(
+                deck_brief=deck_brief,
+                visual_plan=deck_visual_plan,
+            )
+            if execution_session is not None:
+                await execution_session.checkpoint_planning({
+                    "deck_brief": deck_brief.model_dump(),
+                    "deck_visual_plan": deck_visual_plan.model_dump(),
+                })
         logger.info(
             "presentation_deck_brief_ready deck_id=%s page_count=%s",
             str(deck_brief.deck_id or "").strip(),
             len(list(deck_brief.page_briefs or [])),
         )
-        await self._emit_progress(
-            progress_callback,
-            {
-                "stage": "deck_planning",
-                "status": "running",
-                "kind": "analyze",
-                "message": "正在规划PPT结构",
-            },
-        )
-        await self._emit_progress(
-            progress_callback,
-            {
-                "stage": "visual_direction",
-                "status": "running",
-                "kind": "analyze",
-                "message": "正在规划PPT视觉语言",
-            },
-        )
-        deck_visual_plan = await self._visual_director.plan(
-            deck_brief=deck_brief,
-            story_plan=story_plan,
-        )
-        deck_brief = self._visual_director.apply_layout_recommendations(
-            deck_brief=deck_brief,
-            visual_plan=deck_visual_plan,
-        )
 
-        built_pages: List[FreeformPageBlueprint] = []
-        repair_reports: List[PageRepairReport] = []
         page_briefs_list = list(deck_brief.page_briefs or [])
-        for idx, page_brief in enumerate(page_briefs_list):
+        async def generate_page(idx: int, page_brief: PageBrief) -> FreeformPageBlueprint:
             page_label = self._progress_page_label(page_brief, idx + 1)
             page_description = self._progress_page_description(page_brief, page_label)
             progress_message = f"正在生成第{idx + 1}页：{page_label}"
@@ -1049,25 +1068,28 @@ class FreeformPagePlanner:
                 page_brief=page_brief,
                 previous_page=previous_brief,
                 next_page=next_brief,
-                prior_pages=built_pages,
+                prior_pages=[],
                 deck_visual_plan=deck_visual_plan,
+                prior_page_summaries=FreeformPageExecutionCoordinator.planned_prior_context(
+                    page_briefs_list,
+                    idx,
+                ),
             )
-            report = PageRepairReport(
-                page_id=page.page_id,
-                issues=[],
-                accepted=True,
-                attempt_count=1,
-                issue_score_before=0,
-                issue_score_after=0,
-            )
-            built_pages.append(page)
-            repair_reports.append(report)
             logger.info(
                 "presentation_page_ready page_id=%s layout_type=%s block_count=%s",
                 str(page.page_id or "").strip(),
                 str(page.layout_type or "").strip(),
                 len(list(page.blocks or [])),
             )
+            return page
+
+        built_pages, repair_reports = await FreeformPageExecutionCoordinator(
+            concurrency=3
+        ).build(
+            page_briefs=page_briefs_list,
+            session=execution_session,
+            generate=generate_page,
+        )
 
         # Deck-level coherence review and per-page repair loops have been
         # removed: the LLM's first-shot pages are trusted as-is.

@@ -32,6 +32,7 @@ from app.enterprise_capabilities.delivery import AuthoritativeDeliveryRepository
 from app.enterprise_capabilities.runtime import InternalCapabilityCatalog, InternalCapabilityService
 from app.enterprise_capabilities.runtime.adapters import build_default_registry
 from app.governance.position_policy import MongoEmployeePolicyResolver
+from app.services.presentation.execution import PresentationJobRepository
 
 
 class DshRuntimeApplication:
@@ -77,6 +78,7 @@ class DshRuntimeApplication:
         events = KernelEventRepository(db)
         turn_events = TurnEventRegistry(events)
         tool_repository = EnterpriseToolRepository()
+        presentation_jobs = PresentationJobRepository()
         internal_catalog = InternalCapabilityCatalog()
         employee_policy = MongoEmployeePolicyResolver()
         internal_capabilities = InternalCapabilityService(build_default_registry())
@@ -85,6 +87,8 @@ class DshRuntimeApplication:
         await bindings.ensure_indexes()
         await events.ensure_indexes()
         await tool_repository.ensure_indexes()
+        await presentation_jobs.ensure_indexes()
+        await presentation_jobs.recover_running()
         execution_evidence = ExecutionEvidenceRepository()
         authoritative_deliveries = AuthoritativeDeliveryRepository()
         await authoritative_deliveries.ensure_indexes()
@@ -96,6 +100,7 @@ class DshRuntimeApplication:
             execution_evidence=execution_evidence,
             authoritative_deliveries=authoritative_deliveries,
             employee_policy=employee_policy,
+            presentation_jobs=presentation_jobs,
         )
         publisher = RuntimeProfilePublisher(
             ModelProfileCompiler(

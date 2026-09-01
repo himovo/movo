@@ -1,7 +1,8 @@
-"""Thin DSH adapter over ASKAI's tested, editable presentation pipeline."""
+"""Thin DSH adapter over MOVO's durable, editable presentation pipeline."""
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any, Callable
 
 from app.enterprise_capabilities.runtime.contracts import CapabilityExecutionContext
@@ -25,13 +26,23 @@ from app.services.conversation_evidence_service import (
 from .contracts import normalize_presentation_arguments
 from .evidence import presentation_tool_observations
 from .progress import PresentationTimelineProjector
+from .job_coordinator import PresentationJobCoordinator
 
 
 class PresentationCreationCapability:
     """Own the internal Blueprint; expose only a business brief to DSH."""
 
-    def __init__(self, pipeline_factory: Callable[[dict[str, Any]], Any] = build_presentation_pipeline) -> None:
+    def __init__(
+        self,
+        pipeline_factory: Callable[[dict[str, Any]], Any] = build_presentation_pipeline,
+        job_coordinator: PresentationJobCoordinator | None = None,
+    ) -> None:
         self._pipeline_factory = pipeline_factory
+        self._job_coordinator = (
+            job_coordinator
+            if job_coordinator is not None
+            else (PresentationJobCoordinator() if pipeline_factory is build_presentation_pipeline else None)
+        )
 
     async def run(
         self,
@@ -120,6 +131,16 @@ class PresentationCreationCapability:
         generation_mode: str,
     ) -> dict[str, Any]:
         output_spec = self._output_spec(args, context, generation_mode=generation_mode)
+        execution_session = None
+        if self._job_coordinator is not None:
+            opened = await self._job_coordinator.open(
+                arguments=args,
+                context=context,
+                generation_mode=generation_mode,
+            )
+            if opened.terminal_result is not None:
+                return opened.terminal_result
+            execution_session = opened.session
         projector = PresentationTimelineProjector(
             action_id=context.action_id,
             message_id=context.message_id,
@@ -130,11 +151,25 @@ class PresentationCreationCapability:
             if row is not None:
                 await context.publish_progress(row)
 
-        result = await self._pipeline_factory(output_spec).build(
-            messages=[{"role": "user", "content": self._pipeline_request(args, context)}],
-            output_spec=output_spec,
-            progress_callback=publish_progress,
-        )
+        try:
+            build_arguments: dict[str, Any] = {
+                "messages": [{"role": "user", "content": self._pipeline_request(args, context)}],
+                "output_spec": output_spec,
+                "progress_callback": publish_progress,
+            }
+            if execution_session is not None:
+                build_arguments["execution_session"] = execution_session
+            result = await self._pipeline_factory(output_spec).build(**build_arguments)
+        except asyncio.CancelledError:
+            if execution_session is not None and self._job_coordinator is not None:
+                await asyncio.shield(
+                    self._job_coordinator.interrupt(execution_session, "presentation execution interrupted")
+                )
+            raise
+        except Exception as exc:
+            if execution_session is not None and self._job_coordinator is not None:
+                await self._job_coordinator.fail(execution_session, str(exc))
+            raise
         bundle = self._dict(result.get("preview_bundle"))
         document = self._dict(result.get("document_payload"))
         slide_count = int(bundle.get("slide_count") or 0)
@@ -150,6 +185,8 @@ class PresentationCreationCapability:
         if not str(html_preview.get("object_path") or "").strip():
             reasons.append("html_preview_missing")
         if reasons:
+            if execution_session is not None and self._job_coordinator is not None:
+                await self._job_coordinator.interrupt(execution_session, ", ".join(reasons))
             return self._rejected(
                 ", ".join(reasons),
                 requested=args["page_count"],
@@ -175,13 +212,16 @@ class PresentationCreationCapability:
             "requested_slide_count": int(args["page_count"]),
             "editable": True,
         }
-        return {
+        capability_result = {
             "success": True,
             "accepted": True,
             "acceptance": acceptance,
             "artifact": artifact,
             "message": "",
         }
+        if execution_session is not None and self._job_coordinator is not None:
+            await self._job_coordinator.complete(execution_session, capability_result)
+        return capability_result
 
     @staticmethod
     def _pipeline_request(args: dict[str, Any], context: CapabilityExecutionContext) -> str:

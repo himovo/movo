@@ -12,6 +12,8 @@ from app.services.presentation.image_native.page_planner import ImageNativePageP
 from app.services.presentation.preview_bundle import PreviewBundleBuilder
 from app.services.presentation.story_planner import StoryPlanner
 from app.services.presentation.structural_sanitizer import sanitize_deck
+from app.services.presentation.contracts import StoryDeckPlan
+from app.services.presentation.execution.session import PresentationExecutionSession
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +48,7 @@ class ImageNativePresentationPipeline:
         messages: List[Any],
         output_spec: Dict[str, Any],
         progress_callback: Optional[Callable[[Dict[str, Any]], Awaitable[None] | None]] = None,
+        execution_session: PresentationExecutionSession | None = None,
     ) -> Dict[str, Any]:
         enriched_output_spec = dict(output_spec or {})
         enriched_output_spec["presentation_pipeline_version"] = "image_rebuild"
@@ -60,7 +63,20 @@ class ImageNativePresentationPipeline:
                 "message": "正在生成PPT故事线",
             },
         )
-        story_plan = await self._story_planner.build(messages=messages, output_spec=enriched_output_spec)
+        story_plan = None
+        if execution_session is not None and execution_session.story_plan:
+            try:
+                story_plan = StoryDeckPlan.model_validate(execution_session.story_plan)
+            except Exception:
+                logger.warning(
+                    "presentation_image_native_stage stage=story_checkpoint_invalid job_id=%s",
+                    execution_session.job_id,
+                    exc_info=True,
+                )
+        if story_plan is None:
+            story_plan = await self._story_planner.build(messages=messages, output_spec=enriched_output_spec)
+            if execution_session is not None:
+                await execution_session.checkpoint_story(story_plan.model_dump())
         logger.info(
             "presentation_image_native_stage stage=story_ready deck_id=%s page_count=%s",
             str(story_plan.deck_id or "").strip(),
@@ -71,6 +87,7 @@ class ImageNativePresentationPipeline:
             story_plan=story_plan,
             request_context={"messages": messages, "output_spec": enriched_output_spec},
             progress_callback=progress_callback,
+            execution_session=execution_session,
         )
         blueprint = sanitize_deck(blueprint)
 

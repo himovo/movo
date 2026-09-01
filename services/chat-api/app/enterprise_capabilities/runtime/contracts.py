@@ -50,6 +50,7 @@ class CapabilityExecutionContext(BaseModel):
     message_id: str = ""
     model_instance_id: str = ""
     turn_context: dict[str, Any] = Field(default_factory=dict)
+    cancel_event: Any = Field(default=None, exclude=True, repr=False)
     progress_sink: Callable[[dict[str, Any]], Awaitable[None]] | None = Field(
         default=None, exclude=True, repr=False
     )

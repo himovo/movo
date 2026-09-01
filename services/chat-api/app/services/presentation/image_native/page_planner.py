@@ -36,6 +36,7 @@ from app.services.presentation.image_native.prompt_builder import (
 )
 from app.services.presentation.image_native.visual_analyzer import VisualSemanticAnalyzer
 from app.services.presentation.theme_factory_catalog import build_freeform_theme_from_design_tokens
+from app.services.presentation.execution.session import PresentationExecutionSession
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,7 @@ class ImageNativePagePlanner:
         story_plan: StoryDeckPlan,
         request_context: Dict[str, Any] | None = None,
         progress_callback: Optional[Callable[[Dict[str, Any]], Awaitable[None] | None]] = None,
+        execution_session: PresentationExecutionSession | None = None,
     ) -> FreeformDeckBlueprint:
         messages = list((request_context or {}).get("messages") or [])
         output_spec = dict((request_context or {}).get("output_spec") or {})
@@ -89,12 +91,20 @@ class ImageNativePagePlanner:
             user_generation_guidance=generation_guidance,
             user_message_context=user_message_context,
         )
-        deck_brief = await self._legacy_helper._build_deck_brief(
-            story_plan=story_plan,
-            constraint_bundle=constraint_bundle,
-            user_message_context=user_message_context,
-        )
-        deck_brief = self._legacy_helper._resolve_deck_theme(deck_brief, constraint_bundle=constraint_bundle)
+        restored_planning = dict(execution_session.planning) if execution_session is not None else {}
+        try:
+            deck_brief = DeckBrief.model_validate(restored_planning["image_native_deck_brief"])
+        except Exception:
+            deck_brief = await self._legacy_helper._build_deck_brief(
+                story_plan=story_plan,
+                constraint_bundle=constraint_bundle,
+                user_message_context=user_message_context,
+            )
+            deck_brief = self._legacy_helper._resolve_deck_theme(deck_brief, constraint_bundle=constraint_bundle)
+            if execution_session is not None:
+                await execution_session.checkpoint_planning({
+                    "image_native_deck_brief": deck_brief.model_dump(),
+                })
 
         await self._emit_progress(
             progress_callback,
@@ -112,9 +122,33 @@ class ImageNativePagePlanner:
         page_briefs = list(deck_brief.page_briefs or [])
         page_count = len(page_briefs)
         page_concurrency = self._page_concurrency(page_count)
+        restored_pages: Dict[str, tuple[FreeformPageBlueprint, Dict[str, Any]]] = {}
+        if execution_session is not None:
+            for page_id, checkpoint in execution_session.pages.items():
+                try:
+                    restored_pages[page_id] = (
+                        FreeformPageBlueprint.model_validate(checkpoint.get("blueprint", checkpoint)),
+                        dict(checkpoint.get("metadata") or {}),
+                    )
+                except Exception:
+                    logger.warning(
+                        "presentation_image_native_checkpoint_invalid job_id=%s page_id=%s",
+                        execution_session.job_id,
+                        page_id,
+                        exc_info=True,
+                    )
 
         if page_concurrency <= 1 or page_count <= 1:
             for idx, page_brief in enumerate(page_briefs):
+                page_id = str(page_brief.page_id or "").strip()
+                if page_id in restored_pages:
+                    page, artifact = restored_pages[page_id]
+                    built_pages.append(page)
+                    page_artifacts.append(artifact)
+                    repair_reports.append(self._repair_report(page))
+                    continue
+                if execution_session is not None:
+                    execution_session.raise_if_cancelled()
                 page_label = self._legacy_helper._progress_page_label(page_brief, idx + 1)
                 await self._emit_progress(
                     progress_callback,
@@ -139,16 +173,13 @@ class ImageNativePagePlanner:
                 )
                 built_pages.append(page)
                 page_artifacts.append(artifact)
-                repair_reports.append(
-                    PageRepairReport(
-                        page_id=page.page_id,
-                        issues=[],
-                        accepted=True,
-                        attempt_count=1,
-                        issue_score_before=0,
-                        issue_score_after=0,
+                repair_reports.append(self._repair_report(page))
+                if execution_session is not None:
+                    await execution_session.checkpoint_page(
+                        page_id,
+                        page.model_dump(),
+                        metadata=artifact,
                     )
-                )
                 logger.info(
                     "presentation_image_native_page_ready page_id=%s block_count=%s",
                     str(page.page_id or "").strip(),
@@ -164,8 +195,17 @@ class ImageNativePagePlanner:
             sem = asyncio.Semaphore(page_concurrency)
             ordered_results: List[tuple[FreeformPageBlueprint, Dict[str, Any]] | None] = [None] * page_count
             realized_pages: List[FreeformPageBlueprint | None] = [None] * page_count
+            for idx, page_brief in enumerate(page_briefs):
+                restored = restored_pages.get(str(page_brief.page_id or "").strip())
+                if restored is not None:
+                    ordered_results[idx] = restored
+                    realized_pages[idx] = restored[0]
 
             async def _run_page(idx: int, page_brief: PageBrief) -> None:
+                if ordered_results[idx] is not None:
+                    return
+                if execution_session is not None:
+                    execution_session.raise_if_cancelled()
                 page_label = self._legacy_helper._progress_page_label(page_brief, idx + 1)
                 await self._emit_progress(
                     progress_callback,
@@ -192,6 +232,12 @@ class ImageNativePagePlanner:
                     )
                 realized_pages[idx] = page
                 ordered_results[idx] = (page, artifact)
+                if execution_session is not None:
+                    await execution_session.checkpoint_page(
+                        str(page_brief.page_id or "").strip(),
+                        page.model_dump(),
+                        metadata=artifact,
+                    )
                 logger.info(
                     "presentation_image_native_page_ready page_id=%s block_count=%s page_index=%s",
                     str(page.page_id or "").strip(),
@@ -207,16 +253,7 @@ class ImageNativePagePlanner:
                 page, artifact = item
                 built_pages.append(page)
                 page_artifacts.append(artifact)
-                repair_reports.append(
-                    PageRepairReport(
-                        page_id=page.page_id,
-                        issues=[],
-                        accepted=True,
-                        attempt_count=1,
-                        issue_score_before=0,
-                        issue_score_after=0,
-                    )
-                )
+                repair_reports.append(self._repair_report(page))
 
         blueprint = FreeformDeckBlueprint(
             deck_id=str(deck_brief.deck_id or story_plan.deck_id or "presentation").strip() or "presentation",
@@ -234,6 +271,17 @@ class ImageNativePagePlanner:
             "image_native_artifacts": page_artifacts,
         }
         return self._legacy_helper._renumber_pages(blueprint)
+
+    @staticmethod
+    def _repair_report(page: FreeformPageBlueprint) -> PageRepairReport:
+        return PageRepairReport(
+            page_id=page.page_id,
+            issues=[],
+            accepted=True,
+            attempt_count=1,
+            issue_score_before=0,
+            issue_score_after=0,
+        )
 
     @staticmethod
     def _page_concurrency(page_count: int) -> int:

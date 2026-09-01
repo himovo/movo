@@ -453,6 +453,11 @@ async def chat_cancel(
 ) -> ApiResponse:
     tenant_id, user_id, _ = await _identity(authorization)
     try:
+        await dsh_runtime_application.require_tools().cancel_conversation(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            conversation_id=payload.session_id,
+        )
         cancelled = await dsh_runtime_application.require_chat().cancel(
             payload.session_id,
             tenant_id=tenant_id,

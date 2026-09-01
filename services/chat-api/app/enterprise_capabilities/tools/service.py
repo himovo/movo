@@ -1,4 +1,4 @@
-"""Single ASKAI policy and execution authority for DSH-managed tool calls."""
+"""Single MOVO policy and execution authority for DSH-managed tool calls."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from app.dsh_runtime.tool_gateway import ToolGatewayClaims
 from app.dsh_runtime.events.turn_channel import TurnEventRegistry
 from app.services.external_tools import external_tool_service
 from app.governance.position_policy import EmployeePolicyResolver
+from app.services.presentation.execution import PresentationJobRepository
 
 from app.enterprise_capabilities.runtime import CapabilityExecutionContext, InternalCapabilityService
 from app.enterprise_capabilities.evidence import ExecutionEvidenceRepository
@@ -36,6 +37,7 @@ from .execution_timeout import (
     ExecutionTimeoutPolicy,
     execute_with_timeout,
 )
+from .cancellation import ActiveCapabilityExecutions
 
 
 class ToolPolicyDenied(RuntimeError):
@@ -53,6 +55,7 @@ class EnterpriseToolService:
         content_contracts: ContentInvocationContractRepository | None = None,
         authoritative_deliveries: AuthoritativeDeliveryRepository | None = None,
         employee_policy: EmployeePolicyResolver | None = None,
+        presentation_jobs: PresentationJobRepository | None = None,
     ) -> None:
         self._repository = repository
         self._profiles = profiles
@@ -62,7 +65,25 @@ class EnterpriseToolService:
         self._content_contracts = content_contracts or ContentInvocationContractRepository()
         self._authoritative_deliveries = authoritative_deliveries
         self._employee_policy = employee_policy
+        self._presentation_jobs = presentation_jobs or PresentationJobRepository()
         self._signals: dict[str, asyncio.Event] = defaultdict(asyncio.Event)
+        self._active_executions = ActiveCapabilityExecutions()
+
+    async def cancel_conversation(
+        self,
+        *,
+        tenant_id: str,
+        user_id: str,
+        conversation_id: str,
+    ) -> int:
+        """Cancel MOVO-owned capability work without waiting for DSH disconnect."""
+
+        cancelled = await self._presentation_jobs.cancel_conversation(
+            tenant_id,
+            user_id,
+            conversation_id,
+        )
+        return cancelled + self._active_executions.cancel_conversation(conversation_id)
 
     async def request_approval(self, request: ApprovalAskRequest, claims: ToolGatewayClaims) -> str:
         tool, binding = await self._authorize(request.toolName, request.profileVersion, request.sessionId, claims)
@@ -283,6 +304,10 @@ class EnterpriseToolService:
             tenant_id=claims.tenant_id, user_id=claims.user_id, action_id=request.actionId,
             event="tool.started", details={"tool_name": tool.name, "idempotency_key": request.idempotencyKey},
         )
+        cancel_event = self._active_executions.register(
+            request.actionId,
+            str(binding["conversation_id"]),
+        )
         try:
             activity = ExecutionActivity() if tool.timeout_mode == "activity" else None
             if tool.source_type == "internal":
@@ -353,6 +378,7 @@ class EnterpriseToolService:
                         message_id=str(active_turn.get("message_id") or ""),
                         turn_context=capability_turn_context,
                         progress_sink=(activity.progress_sink(base_progress_sink) if activity else base_progress_sink),
+                        cancel_event=cancel_event,
                     ),
                 )
             else:
@@ -409,16 +435,31 @@ class EnterpriseToolService:
                 error="" if execution_succeeded else str(result.get("message") or "tool failed"),
             )
         except ExecutionDeadlineExceeded as exc:
+            continuation = (
+                await self._presentation_jobs.continuation_for_action(request.actionId)
+                if str(tool.capability_ref or "") == "presentation.create@v1"
+                else {}
+            )
             receipt = await self._repository.finish_receipt(
-                request.actionId, status="timed_out", error=exc.reason
+                request.actionId,
+                status="timed_out",
+                result={"continuation": continuation} if continuation else {},
+                error=exc.reason,
             )
         except asyncio.CancelledError:
+            cancel_event.set()
+            if str(tool.capability_ref or "") == "presentation.create@v1":
+                await asyncio.shield(
+                    self._presentation_jobs.cancel_by_action(request.actionId, "user_cancelled")
+                )
             await self._repository.finish_receipt(request.actionId, status="cancelled", error="tool execution cancelled")
             raise
         except Exception as exc:
             receipt = await self._repository.finish_receipt(
                 request.actionId, status="failed", error=self._safe_error(exc)
             )
+        finally:
+            self._active_executions.unregister(request.actionId)
         await self._repository.audit(
             tenant_id=claims.tenant_id, user_id=claims.user_id, action_id=request.actionId,
             event=f"tool.{receipt.status}", details={"tool_name": tool.name, "error": receipt.error},

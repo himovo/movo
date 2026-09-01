@@ -17,6 +17,8 @@ from app.services.presentation.structural_sanitizer import sanitize_deck
 from app.services.presentation.cover_image_composer import CoverImageComposer
 from app.services.presentation.style_contract import PresentationStyleContract
 from app.services.presentation.iconography_refiner import IconographyRefiner
+from app.services.presentation.contracts import StoryDeckPlan
+from app.services.presentation.execution.session import PresentationExecutionSession
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +69,7 @@ class PresentationPipeline:
         messages: List[Any],
         output_spec: Dict[str, Any],
         progress_callback: Optional[Callable[[Dict[str, Any]], Awaitable[None] | None]] = None,
+        execution_session: PresentationExecutionSession | None = None,
     ) -> Dict[str, Any]:
         enriched_output_spec = dict(output_spec or {})
         enriched_output_spec["presentation_pipeline_version"] = "llm"
@@ -84,9 +87,15 @@ class PresentationPipeline:
                 "message": "正在生成PPT故事线",
             },
         )
-        story_plan = await self._story_planner.build(
-            messages=messages, output_spec=enriched_output_spec
-        )
+        if execution_session is not None:
+            execution_session.raise_if_cancelled()
+        story_plan = self._restored_story_plan(execution_session)
+        if story_plan is None:
+            story_plan = await self._story_planner.build(
+                messages=messages, output_spec=enriched_output_spec
+            )
+            if execution_session is not None:
+                await execution_session.checkpoint_story(story_plan.model_dump())
         logger.info(
             "presentation_stage stage=story_ready deck_id=%s page_count=%s",
             str(story_plan.deck_id or "").strip(),
@@ -99,6 +108,7 @@ class PresentationPipeline:
                 "output_spec": enriched_output_spec,
             },
             progress_callback=progress_callback,
+            execution_session=execution_session,
         )
         logger.info(
             "presentation_stage stage=blueprint_ready deck_id=%s page_count=%s",
@@ -119,6 +129,7 @@ class PresentationPipeline:
                 blueprint=blueprint,
                 failed_page_ids=empty_page_ids,
             )
+            await self._checkpoint_rebuilt_pages(execution_session, blueprint)
             still_empty = self._detect_empty_pages(blueprint)
             if still_empty:
                 logger.warning(
@@ -257,6 +268,22 @@ class PresentationPipeline:
         }
 
     @staticmethod
+    def _restored_story_plan(
+        execution_session: PresentationExecutionSession | None,
+    ) -> StoryDeckPlan | None:
+        if execution_session is None or not execution_session.story_plan:
+            return None
+        try:
+            return StoryDeckPlan.model_validate(execution_session.story_plan)
+        except Exception:
+            logger.warning(
+                "presentation_stage stage=story_checkpoint_invalid job_id=%s",
+                execution_session.job_id,
+                exc_info=True,
+            )
+            return None
+
+    @staticmethod
     def _detect_empty_pages(blueprint) -> List[str]:
         """Detect pages where no text_box has any visible content."""
         empty_ids: List[str] = []
@@ -272,6 +299,22 @@ class PresentationPipeline:
             if not has_text:
                 empty_ids.append(page_id)
         return empty_ids
+
+    @staticmethod
+    async def _checkpoint_rebuilt_pages(
+        execution_session: PresentationExecutionSession | None,
+        blueprint: Any,
+    ) -> None:
+        if execution_session is None:
+            return
+        checkpoint_ids = list(execution_session.pages)
+        for index, page in enumerate(list(blueprint.pages or [])):
+            if index >= len(checkpoint_ids):
+                break
+            await execution_session.checkpoint_page(
+                checkpoint_ids[index],
+                page.model_dump(),
+            )
 
     @staticmethod
     def _block_has_text(block) -> bool:

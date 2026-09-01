@@ -9,7 +9,7 @@ CapabilityHandler = Callable[[dict[str, Any], CapabilityExecutionContext], Await
 
 
 class CapabilityHandlerRegistry:
-    """One execution registry for all ASKAI-owned DSH capability adapters."""
+    """One execution registry for all MOVO-owned DSH capability adapters."""
 
     def __init__(self) -> None:
         self._handlers: dict[str, CapabilityHandler] = {}
