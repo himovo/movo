@@ -28,7 +28,7 @@
         "fabric": "^6.9.1",
         "highlight.js": "^11.11.1",
         "naive-ui": "^2.44.1",
-        "pdfjs-dist": "^5.6.205",
+        "pdfjs-dist": "^6.2.108",
         "vue": "^3.4.0"
     },
     "devDependencies": {
