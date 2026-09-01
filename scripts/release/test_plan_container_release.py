@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 
 import unittest
+from pathlib import Path
 
 from plan_container_release import IMAGES, select_images
+
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
 
 class ContainerReleasePlanTests(unittest.TestCase):
@@ -35,6 +39,14 @@ class ContainerReleasePlanTests(unittest.TestCase):
         changed, unchanged = select_images([], force_all=True)
         self.assertEqual(len(IMAGES), len(changed))
         self.assertEqual([], unchanged)
+
+    def test_private_repository_skips_unsupported_github_attestation(self):
+        workflow = (REPOSITORY_ROOT / ".github/workflows/container-release.yml").read_text()
+        self.assertIn(
+            "if: ${{ github.event.repository.visibility == 'public' }}\n"
+            "        uses: actions/attest-build-provenance@v3",
+            workflow,
+        )
 
 
 if __name__ == "__main__":

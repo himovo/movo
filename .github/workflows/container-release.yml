@@ -132,7 +132,9 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.suffix }}
           provenance: mode=max
           sbom: true
-      - uses: actions/attest-build-provenance@v3
+      - name: Attest public image provenance
+        if: ${{ github.event.repository.visibility == 'public' }}
+        uses: actions/attest-build-provenance@v3
         with:
           subject-name: ${{ steps.image.outputs.name }}
           subject-digest: ${{ steps.build.outputs.digest }}
