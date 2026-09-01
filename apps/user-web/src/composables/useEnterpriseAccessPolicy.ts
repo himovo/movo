@@ -27,8 +27,9 @@ export function useEnterpriseAccessPolicy(profile: Ref<UserProfile | null>) {
     return !policy || policy.toolAccessMode === 'all' || policy.toolIds.length > 0
   })
   const isEnterpriseSpace = computed(() => profile.value?.spaceType === 'enterprise')
-  const canCreateOrganization = computed(() => personalSpaceActionsAllowed(profile.value))
-  const canUpgradePlan = computed(() => personalSpaceActionsAllowed(profile.value))
+  const isCommunity = computed(() => profile.value?.edition === 'community')
+  const canCreateOrganization = computed(() => personalSpaceActionsAllowed(profile.value) && !isCommunity.value)
+  const canUpgradePlan = computed(() => personalSpaceActionsAllowed(profile.value) && !isCommunity.value && profile.value?.billingEnabled !== false)
 
   return {
     canUseCode: capabilityEnabled('code_generation'),

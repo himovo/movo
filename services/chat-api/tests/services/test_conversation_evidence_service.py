@@ -81,16 +81,16 @@ def test_build_artifacts_prefers_persisted_evidence() -> None:
                 "seq": 2,
                 "role": "assistant",
                 "message_id": "msg_research",
-                "content": "AskBot is the product described by askbot.cn.",
+                "content": "MOVO is the product described by movo.example.",
                 "evidence_bundles": [
                     {
-                        "confirmed_facts": ["AskBot provides enterprise AI assistant products."],
+                        "confirmed_facts": ["MOVO provides enterprise AI assistant products."],
                         "sources": [
                             {
-                                "title": "AskBot official site",
+                                "title": "MOVO official site",
                                 "snippet": "Enterprise AI assistant product information.",
                                 "source_type": "web",
-                                "source_url": "https://www.askbot.cn/",
+                                "source_url": "https://movo.example/",
                             }
                         ],
                     }
@@ -98,13 +98,13 @@ def test_build_artifacts_prefers_persisted_evidence() -> None:
             }
         ],
         current_request="Turn the prior research into a social post",
-        canonical_subject="AskBot from askbot.cn",
+        canonical_subject="MOVO from movo.example",
     )
 
     bundle = artifacts["evidence_bundle"]
     assert bundle["confirmed_facts"]
-    assert bundle["results"][0]["source_url"] == "https://www.askbot.cn/"
-    assert artifacts["selected_content"]["title"] == "AskBot from askbot.cn"
+    assert bundle["results"][0]["source_url"] == "https://movo.example/"
+    assert artifacts["selected_content"]["title"] == "MOVO from movo.example"
 
 
 def test_build_artifacts_marks_assistant_only_fallback_as_derived() -> None:

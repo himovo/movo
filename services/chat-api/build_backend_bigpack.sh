@@ -5,7 +5,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ---------- Defaults ----------
 ENVIRONMENT="${ENVIRONMENT:-test}"
-REGISTRY="${REGISTRY:-registry-vpc.cn-zhangjiakou.aliyuncs.com/guoran}"
+REGISTRY="${REGISTRY:-ghcr.io}"
+REGISTRY_NAMESPACE="${REGISTRY_NAMESPACE:-}"
 IMAGE_NAME="${IMAGE_NAME:-movo-backend}"
 IMAGE_TAG="${IMAGE_TAG:-dev-0.0.1}"
 DOCKERFILE="${DOCKERFILE:-Dockerfile}"
@@ -20,7 +21,11 @@ BUILD_MEMORY_SWAP="${BUILD_MEMORY_SWAP:-}"
 VERIFY_MARKER="${VERIFY_MARKER:-spreadsheet_export_skill_applied}"
 VERIFY_MARKER_FILE="${VERIFY_MARKER_FILE:-app/runtime/subagents/runtime.py}"
 
-IMAGE_REF="${REGISTRY%/}/${IMAGE_NAME}:${IMAGE_TAG}"
+if [[ -z "${REGISTRY_NAMESPACE}" ]]; then
+  echo "ERROR: set REGISTRY_NAMESPACE to the target registry owner or organization." >&2
+  exit 2
+fi
+IMAGE_REF="${REGISTRY%/}/${REGISTRY_NAMESPACE#/}/${IMAGE_NAME}:${IMAGE_TAG}"
 LOCAL_TAG="${IMAGE_NAME}:${IMAGE_TAG}"
 TAR_FILE="${OUTPUT_DIR}/${IMAGE_NAME}_${IMAGE_TAG}.tar.gz"
 

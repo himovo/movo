@@ -19,14 +19,36 @@ BLOCKED_PREFIXES = (
     "apps/crm/",
     "services/crm-service/",
 )
-PRIVATE_MARKERS = (
-    "master.test.askbot.cn",
-    "askbot2.openai.azure.com",
-    "agentic_register@mail.guoranbot.com",
+PRIVATE_DEPLOYMENT_PATTERNS = (
+    (
+        re.compile(r"(?i)https?://(?:[a-z0-9-]+\.)*askbot\.cn\b"),
+        "AskBot deployment URL",
+    ),
+    (re.compile(r"(?i)https?://askbot\d+\.openai\.azure\.com\b"), "private Azure OpenAI endpoint"),
+    (re.compile(r"(?i)registry-vpc\.[^\s/]+/guoran\b"), "private container registry"),
+    (re.compile(r"(?i)[\w.+-]+@(?:guoranbot|askbot)\.com\b"), "private organization email"),
 )
 SECRET_PATTERNS = (
     (re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"), "private key"),
     (re.compile(r"\bAKIA[0-9A-Z]{16}\b"), "AWS access key"),
+    (re.compile(r"\bLTAI[A-Za-z0-9]{12,}\b"), "Alibaba Cloud access key"),
+    (re.compile(r"\bsk-[A-Za-z0-9_-]{16,}\b"), "OpenAI-compatible API key"),
+    (
+        re.compile(r"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b"),
+        "JWT",
+    ),
+    (
+        re.compile(
+            r"(?i)\b(?:mongodb(?:\+srv)?|postgres(?:ql)?|mysql|redis)://"
+            r"[^\s:/]+:[^\s@/]+@"
+        ),
+        "credential-bearing connection URI",
+    ),
+)
+ENV_SECRET_PATTERN = re.compile(
+    r"(?im)^[ \t]*[A-Z0-9_]*(?:API_KEY|ACCESS_KEY_ID|ACCESS_KEY_SECRET|"
+    r"CLIENT_SECRET|JWT_SECRET|PASSWORD|TOKEN)[ \t]*=[ \t]*"
+    r"(?![ \t]*(?:$|<[^>]+>|change-me|your-|example|dummy|test))[^\s#]{16,}"
 )
 REQUIRED_ROOT_FILES = (
     "LICENSE",
@@ -43,6 +65,17 @@ EXPECTED_MOVO_VOLUMES = 8
 def tracked_files() -> list[str]:
     output = subprocess.check_output(
         ["git", "ls-files"], cwd=ROOT, text=True, encoding="utf-8"
+    )
+    return [item for item in output.splitlines() if item and (ROOT / item).exists()]
+
+
+def publication_files() -> list[str]:
+    """Return tracked and untracked, non-ignored files that a release could include."""
+    output = subprocess.check_output(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+        cwd=ROOT,
+        text=True,
+        encoding="utf-8",
     )
     return [item for item in output.splitlines() if item and (ROOT / item).exists()]
 
@@ -65,7 +98,7 @@ def main() -> int:
             f"{EXPECTED_MOVO_VOLUMES} MOVO-prefixed physical volumes; "
             f"found {volume_prefix_count}"
         )
-    for relative in tracked:
+    for relative in publication_files():
         if relative == "scripts/check_open_source_hygiene.py":
             continue
         normalized = relative.replace("\\", "/")
@@ -90,12 +123,14 @@ def main() -> int:
             content = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
-        for marker in PRIVATE_MARKERS:
-            if marker in content:
-                failures.append(f"private deployment marker {marker!r}: {relative}")
+        for pattern, label in PRIVATE_DEPLOYMENT_PATTERNS:
+            if pattern.search(content):
+                failures.append(f"{label}: {relative}")
         for pattern, label in SECRET_PATTERNS:
             if pattern.search(content):
                 failures.append(f"possible {label}: {relative}")
+        if name == ".env.example" and ENV_SECRET_PATTERN.search(content):
+            failures.append(f"non-placeholder environment secret: {relative}")
 
     if failures:
         print("Open-source hygiene check failed:")

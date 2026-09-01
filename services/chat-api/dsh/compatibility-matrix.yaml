@@ -1,4 +1,4 @@
-schema_version: askai.dsh-compatibility-matrix.v1
+schema_version: movo.dsh-compatibility-matrix.v1
 active_release:
   dsh_release_train: 0.1.2-alpha.2
   node_runtime: "^22.19.0 || >=24.0.0"
@@ -65,6 +65,6 @@ upgrade_policy:
   candidate_requires_full_contract_suite: true
   candidate_requires_packaged_smoke: true
   candidate_requires_old_session_resume: true
-  rollback_unit: signed_desktop_release
-  rollback_preserves_askai_history: true
+  rollback_unit: versioned_container_release
+  rollback_preserves_runtime_data: true
   publish_on_failed_admission: false

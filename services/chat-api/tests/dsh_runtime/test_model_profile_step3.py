@@ -239,6 +239,6 @@ def test_model_gateway_normalizes_provider_failures(
 
 
 def test_model_gateway_redacts_provider_secrets() -> None:
-    message = ModelGatewayService._safe_message(RuntimeError("API key=sk-1234567890SECRET rejected"))
-    assert "1234567890SECRET" not in message
+    message = ModelGatewayService._safe_message(RuntimeError("API key=provider-secret-value rejected"))
+    assert "provider-secret-value" not in message
     assert "[REDACTED]" in message

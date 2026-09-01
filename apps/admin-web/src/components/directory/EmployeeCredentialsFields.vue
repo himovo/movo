@@ -11,7 +11,7 @@ const loginName = defineModel<string>('loginName', { required: true });
 const password = defineModel<string>('password', { required: true });
 const isLocal = computed(() => props.source === 'local');
 const passwordLabel = computed(() => (props.mode === 'create' ? t('初始密码') : t('重置密码（可选）')));
-const passwordPlaceholder = computed(() => (props.mode === 'create' ? t('至少 6 位') : t('不填则保留当前密码')));
+const passwordPlaceholder = computed(() => (props.mode === 'create' ? t('至少 10 位') : t('不填则保留当前密码')));
 </script>
 
 <template>

@@ -2,36 +2,41 @@
 
 ## Legal and public identity
 
-- [ ] Replace “MOVO” in LICENSE and NOTICE with the legal copyright owner.
-- [ ] Confirm the commercial-license and security contact channels.
+- [x] LICENSE and NOTICE identify 北京果然智汇科技有限公司 as the legal
+      copyright owner.
+- [x] Security, commercial licensing and support use `support@himovo.com`.
 - [ ] Review the MOVO logo and every bundled third-party asset for distribution rights.
-- [ ] Confirm that release messaging says “source-available” rather than claiming
+- [x] Confirm that release messaging says “source-available” rather than claiming
       an unmodified OSI-approved Apache 2.0 license.
 
 ## Repository boundary
 
-- [ ] No desktop client, local browser sidecar, official website, CRM example or
+- [x] No desktop client, local browser sidecar, official website, CRM example or
       cloud/enterprise overlay source is tracked.
-- [ ] No environment file, credential, runtime data, generated output or customer material is tracked.
-- [ ] The open-source hygiene script passes.
-- [ ] DSH lock, compatibility matrix, SBOM and third-party notices are current.
+- [x] No environment file, credential, runtime data, generated output or customer material is tracked.
+- [x] The open-source hygiene script passes.
+- [ ] Rotate every credential from the local ignored `.env` files that was exposed
+      to a review tool or copied from an existing deployment before publication.
+- [x] DSH lock, compatibility matrix, SBOM and DSH notice are current.
+- [ ] Complete the legal review of transitive third-party license obligations.
 
 ## Build and runtime
 
-- [ ] Both Web production builds pass.
-- [ ] Python services compile and relevant tests pass.
-- [ ] DSH Runtime Host installs from its lock and its contract suite passes.
-- [ ] Docker Compose configuration validation passes.
-- [ ] Every first-run Docker image builds without private registries or credentials.
-- [ ] A clean deployment reaches healthy state and completes initial setup.
-- [ ] The setup organization is community, billing is disabled and member limit is unlimited.
+- [x] Both Web production builds pass.
+- [x] Python services compile and relevant tests pass.
+- [x] DSH Runtime Host installs from its lock and its contract suite passes.
+- [x] Docker Compose pull and source-build configurations validate.
+- [x] Every first-run Docker image builds without private registries or credentials.
+- [x] A clean deployment reaches healthy state and completes initial setup.
+- [x] The setup organization is community, billing is disabled and member limit is unlimited.
+- [ ] Run the GHCR candidate workflow successfully for both amd64 and arm64.
 - [ ] Backup, upgrade and rollback steps have been exercised on non-production data.
 
 ## GitHub publication
 
-- [ ] The repository contains only the intended new MOVO history.
+- [x] The repository contains only the intended new MOVO history.
 - [ ] Branch protection requires the runtime and Web build guards.
 - [ ] Private vulnerability reporting and Discussions are enabled.
 - [ ] Issue labels and templates are available.
 - [ ] The release tag, image tags and changelog identify the same commit.
-- [ ] No Git remote is added or pushed until all items above are accepted.
+- [x] No Git remote is added or pushed until all items above are accepted.

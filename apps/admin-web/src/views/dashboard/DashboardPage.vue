@@ -74,14 +74,11 @@
               <span><strong>{{ overview?.billing.currentMembersCount ?? 0 }}</strong> {{ memberCapacityLabel }}</span>
               <span><strong>{{ overview?.billing.isOwnModel ? t('已开启') : t('未开启') }}</strong> {{ t('自有模型') }}</span>
             </div>
-            <div v-if="canUpgradePro" class="deployment-upgrade">
-              <span>{{ t('升级后最多 {count} 人', { count: proUserLimit }) }}</span>
-              <n-button size="tiny" type="primary" secondary :loading="upgradingPro" @click="upgradeToPro">{{ t('升级专业版') }}</n-button>
-            </div>
-            <div v-if="pendingBillingOrder" class="billing-order-note">
-              <strong>{{ t('支付订单已创建') }}</strong>
-              <span>{{ pendingBillingOrder.planName }} · {{ pendingBillingOrder.amountText }}</span>
-            </div>
+            <component
+              :is="ProductDashboardBillingActions"
+              v-if="ProductDashboardBillingActions && overview"
+              :billing="overview.billing"
+            />
           </section>
 
           <n-card class="panel-card todo-panel" :bordered="false" size="large">
@@ -148,22 +145,14 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { useMessage } from 'naive-ui';
 import { useRouter } from 'vue-router';
 import { apiClient } from '@/api/client';
 import { t } from '@/composables/i18n';
 import { formatAdminShortDateTime } from '@/composables/adminTimezone';
+import adminProductUiExtension from '@movo-admin-product-extension';
 
 type HealthStatus = 'healthy' | 'warning' | 'critical';
 type TodoLevel = 'error' | 'warning' | 'info';
-
-interface BillingOrder {
-  orderNo: string;
-  planName: string;
-  amountText: string;
-  status: string;
-  paymentUrl: string;
-}
 
 interface DashboardOverview {
   billing: {
@@ -215,11 +204,9 @@ interface DashboardOverview {
 }
 
 const router = useRouter();
-const message = useMessage();
+const ProductDashboardBillingActions = adminProductUiExtension.dashboardBillingActions;
 const overview = ref<DashboardOverview | null>(null);
 const loading = ref(false);
-const upgradingPro = ref(false);
-const pendingBillingOrder = ref<BillingOrder | null>(null);
 const errorText = ref('');
 
 const emptyMetrics = {
@@ -249,15 +236,10 @@ const tierLabel = computed(() => {
   if (tier === 'enterprise') return t('企业定制版');
   return t('免费版');
 });
-const canUpgradePro = computed(() => {
-  const tier = overview.value?.billing.tier;
-  return Boolean(overview.value?.billing.billingEnabled) && tier !== 'pro' && tier !== 'enterprise';
-});
 const memberCapacityLabel = computed(() => {
   const limit = overview.value?.billing.userLimit;
   return limit === null || limit === undefined ? t('名成员 · 不限人数') : t(' / {count} 名成员', { count: limit });
 });
-const proUserLimit = 50;
 const healthLabel = computed(() => {
   if (healthStatus.value === 'critical') return t('需要处理');
   if (healthStatus.value === 'warning') return t('有待确认');
@@ -387,27 +369,6 @@ async function loadOverview() {
   }
 }
 
-async function upgradeToPro() {
-  upgradingPro.value = true;
-  try {
-    const orderResponse = await apiClient.post('/api/organizations/billing/orders', {
-      planCode: 'org_pro_monthly',
-      paymentMethod: 'wechat_native',
-    });
-    const orderPayload = orderResponse.data;
-    if (orderPayload?.code !== 0) {
-      throw new Error(orderPayload?.message || t('创建支付订单失败'));
-    }
-    const order = orderPayload?.data?.order;
-    pendingBillingOrder.value = order;
-    message.success(`${t('支付订单已创建')}：${order.orderNo}`);
-  } catch (error: any) {
-    message.error(error?.message || t('创建支付订单失败'));
-  } finally {
-    upgradingPro.value = false;
-  }
-}
-
 function go(route: string) {
   router.push(route);
 }
@@ -493,8 +454,7 @@ onMounted(loadOverview);
 
 .deployment-head,
 .deployment-title,
-.deployment-facts,
-.deployment-upgrade {
+.deployment-facts {
   display: flex;
   align-items: center;
 }
@@ -550,29 +510,6 @@ onMounted(loadOverview);
 
 .deployment-facts strong {
   color: #17366f;
-}
-
-.deployment-upgrade {
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 10px;
-  color: #2563eb;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.billing-order-note {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-width: 560px;
-  margin-top: 12px;
-  padding: 10px 12px;
-  border: 1px solid #bfdbfe;
-  border-radius: 8px;
-  background: #eff6ff;
-  color: #1f3f73;
-  font-size: 12px;
 }
 
 .health-dot {

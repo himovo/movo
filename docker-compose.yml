@@ -113,9 +113,8 @@ services:
       start_period: 30s
 
   dsh-runtime-host:
-    build:
-      context: ./services/chat-api/dsh/runtime-host
-      dockerfile: Dockerfile
+    image: ${MOVO_IMAGE_PREFIX:-movo}-dsh-runtime-host:${MOVO_VERSION:-latest}
+    pull_policy: ${MOVO_PULL_POLICY:-missing}
     restart: unless-stopped
     volumes:
       - deployment-secrets:/run/askai-secrets:ro
@@ -137,13 +136,8 @@ services:
       start_period: 20s
 
   chat-api:
-    build:
-      context: ./services/chat-api
-      dockerfile: Dockerfile
-      args:
-        INSTALL_SYSTEM_DEPS_AT_BUILD: "true"
-        INSTALL_PLAYWRIGHT_AT_BUILD: "true"
-        PLAYWRIGHT_WITH_DEPS: "true"
+    image: ${MOVO_IMAGE_PREFIX:-movo}-chat-api:${MOVO_VERSION:-latest}
+    pull_policy: ${MOVO_PULL_POLICY:-missing}
     restart: unless-stopped
     environment:
       OPENAI_API_KEY: ""
@@ -184,9 +178,8 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=3).read()"]
 
   admin-api:
-    build:
-      context: ./services/admin-api
-      dockerfile: Dockerfile
+    image: ${MOVO_IMAGE_PREFIX:-movo}-admin-api:${MOVO_VERSION:-latest}
+    pull_policy: ${MOVO_PULL_POLICY:-missing}
     restart: unless-stopped
     environment:
       ASKAI_ADMIN_APP_ENV: production
@@ -223,14 +216,8 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/health', timeout=3).read()"]
 
   document-api:
-    build:
-      context: ./services/document-parser
-      dockerfile: Dockerfile
-      args:
-        INSTALL_SYSTEM_DEPS_AT_BUILD: "true"
-        INSTALL_PYTHON_DEPS_AT_BUILD: "true"
-        INSTALL_DOCLING_MODELS_AT_BUILD: "true"
-        PYTORCH_ACCELERATOR: cpu
+    image: ${MOVO_DOCUMENT_API_IMAGE:-${MOVO_IMAGE_PREFIX:-movo}-document-parser:${MOVO_VERSION:-latest}}
+    pull_policy: ${MOVO_PULL_POLICY:-missing}
     restart: unless-stopped
     command: ["api"]
     environment: &document-environment
@@ -267,14 +254,8 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8200/api/health', timeout=3).read()"]
 
   document-worker:
-    build:
-      context: ./services/document-parser
-      dockerfile: Dockerfile
-      args:
-        INSTALL_SYSTEM_DEPS_AT_BUILD: "true"
-        INSTALL_PYTHON_DEPS_AT_BUILD: "true"
-        INSTALL_DOCLING_MODELS_AT_BUILD: "true"
-        PYTORCH_ACCELERATOR: cpu
+    image: ${MOVO_DOCUMENT_WORKER_IMAGE:-${MOVO_IMAGE_PREFIX:-movo}-document-parser:${MOVO_VERSION:-latest}}
+    pull_policy: ${MOVO_PULL_POLICY:-missing}
     restart: unless-stopped
     command: ["worker"]
     environment: *document-environment
@@ -295,11 +276,8 @@ services:
       - backend
 
   user-web:
-    build:
-      context: ./apps/user-web
-      dockerfile: Dockerfile.prod
-      args:
-        VITE_ADMIN_WEB_URL: /admin/
+    image: ${MOVO_IMAGE_PREFIX:-movo}-user-web:${MOVO_VERSION:-latest}
+    pull_policy: ${MOVO_PULL_POLICY:-missing}
     restart: unless-stopped
     networks:
       - public
@@ -310,12 +288,8 @@ services:
       retries: 20
 
   admin-web:
-    build:
-      context: ./apps/admin-web
-      dockerfile: Dockerfile
-      args:
-        VITE_BASE_PATH: /admin/
-        VITE_ADMIN_API_BASE_URL: /admin-api
+    image: ${MOVO_IMAGE_PREFIX:-movo}-admin-web:${MOVO_VERSION:-latest}
+    pull_policy: ${MOVO_PULL_POLICY:-missing}
     restart: unless-stopped
     networks:
       - public

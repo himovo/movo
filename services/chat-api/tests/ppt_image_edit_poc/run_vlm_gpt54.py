@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parent
 BACKEND_ROOT = ROOT.parents[1]
 ENV_PATH = BACKEND_ROOT / ".env"
 SCHEMA_PATH = ROOT / "slide_schema.json"
-DEFAULT_ENDPOINT = "https://askbot4.openai.azure.com/openai/responses?api-version=2025-04-01-preview"
+DEFAULT_ENDPOINT = ""
 DEFAULT_MODEL = "gpt-5.4"
 
 

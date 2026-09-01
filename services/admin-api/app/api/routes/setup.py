@@ -17,7 +17,7 @@ from pymongo.errors import DuplicateKeyError
 from app.api.time_utils import utc_iso
 from app.core.config import settings
 from app.core.db import get_db
-from app.core.product_edition import ensure_community_organization
+from app.product.extensions import get_admin_product_extension
 from app.core.security import hash_password
 from app.repositories.directory_repository import (
     DEPARTMENT_COLLECTION,
@@ -27,7 +27,13 @@ from app.repositories.directory_repository import (
 )
 from app.repositories.org_user_repository import ensure_bootstrap_account, ensure_group_exists
 from app.repositories.model_repository import ensure_indexes as ensure_model_indexes
-from app.repositories.setup_repository import ensure_indexes, get_setup_state, mark_setup_completed
+from app.repositories.setup_repository import (
+    acquire_setup_lock,
+    ensure_indexes,
+    get_setup_state,
+    mark_setup_completed,
+    release_setup_lock,
+)
 from app.position_roles.repository import PositionRoleRepository
 from app.services.setup_model import (
     SetupModelError,
@@ -95,10 +101,10 @@ class SetupExternalSearchRequest(BaseModel):
 class SetupInitRequest(BaseModel):
     orgName: str = Field(min_length=2, max_length=120)
     adminUsername: str = Field(min_length=3, max_length=64)
-    adminPassword: str = Field(min_length=6, max_length=128)
+    adminPassword: str = Field(min_length=10, max_length=128)
     adminDisplayName: str = Field(default="系统管理员", min_length=2, max_length=64)
     employeeUsername: str = Field(min_length=3, max_length=64)
-    employeePassword: str = Field(min_length=6, max_length=128)
+    employeePassword: str = Field(min_length=10, max_length=128)
     employeeName: str = Field(min_length=2, max_length=64)
     orgTotalTokens: int = Field(gt=0)
     defaultUserTokens: int = Field(gt=0)
@@ -327,6 +333,12 @@ async def setup_initialize(payload: SetupInitRequest) -> dict[str, Any]:
     main_id = await _next_main_id(payload.orgName)
     org_name = payload.orgName.strip()
     now = datetime.now(timezone.utc)
+    lock_token = secrets.token_urlsafe(32)
+    if not await acquire_setup_lock(lock_token):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="setup is already completed or initialization is in progress",
+        )
 
     try:
         await ensure_group_exists(
@@ -376,11 +388,23 @@ async def setup_initialize(payload: SetupInitRequest) -> dict[str, Any]:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="员工登录名已存在") from exc
 
         user_id = str(result.inserted_id)
-        await ensure_community_organization(
-            main_id=main_id,
-            org_name=org_name,
-            owner_user_id=user_id,
-            total_points=payload.orgTotalTokens,
+        product_extension = get_admin_product_extension()
+        organization_defaults = dict(product_extension.organization_defaults)
+        if product_extension.edition == "community":
+            organization_defaults["total_points"] = max(int(payload.orgTotalTokens or 0), 0)
+        await db["organizations"].update_one(
+            {"main_id": main_id},
+            {
+                "$set": {
+                    "main_id": main_id,
+                    "org_name": org_name,
+                    "owner_user_id": user_id,
+                    **organization_defaults,
+                    "updated_at": now,
+                },
+                "$setOnInsert": {"created_at": now},
+            },
+            upsert=True,
         )
         await db[USER_ORG_REL_COLLECTION].insert_one(
             {
@@ -431,6 +455,7 @@ async def setup_initialize(payload: SetupInitRequest) -> dict[str, Any]:
             await save_setup_search(payload.externalSearch.model_dump(), main_id)
 
         await mark_setup_completed(
+            lock_token=lock_token,
             main_id=main_id,
             org_name=org_name,
             admin_username=payload.adminUsername.strip(),
@@ -441,6 +466,8 @@ async def setup_initialize(payload: SetupInitRequest) -> dict[str, Any]:
         if isinstance(exc, SetupModelError):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
         raise
+    finally:
+        await release_setup_lock(lock_token)
     return {
         "completed": True,
         "mainId": main_id,

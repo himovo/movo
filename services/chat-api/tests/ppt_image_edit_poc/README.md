@@ -36,7 +36,7 @@ Optional planner overrides:
 ```bash
 python tests/ppt_image_edit_poc/run_layout_first_poc.py --mode api --max-slides 1 \
   --planner-model gpt-5.4 \
-  --planner-endpoint "https://askbot4.openai.azure.com/openai/responses?api-version=2025-04-01-preview"
+  --planner-endpoint "https://your-resource.openai.azure.com/openai/responses?api-version=2025-04-01-preview"
 ```
 
 Outputs are written to `runs/<timestamp>_layout_first/`:
@@ -146,7 +146,7 @@ Optional overrides:
 ```bash
 python tests/ppt_image_edit_poc/run_poc.py --mode api --vlm-provider gpt54 \
   --vlm-model gpt-5.4 \
-  --vlm-endpoint "https://askbot4.openai.azure.com/openai/responses?api-version=2025-04-01-preview"
+  --vlm-endpoint "https://your-resource.openai.azure.com/openai/responses?api-version=2025-04-01-preview"
 ```
 
 Generation-only smoke test, one slide, no VLM/mask/edit/PPTX:
@@ -182,7 +182,7 @@ Open `comparison.html` to inspect A, mask, B, inferred layout, and the PPTX link
 Use a dedicated script to test multimodal OCR/style extraction via Azure Responses API:
 
 ```env
-AZURE_VLM_GPT54_ENDPOINT=https://askbot4.openai.azure.com/openai/responses?api-version=2025-04-01-preview
+AZURE_VLM_GPT54_ENDPOINT=https://your-resource.openai.azure.com/openai/responses?api-version=2025-04-01-preview
 AZURE_VLM_GPT54_MODEL=gpt-5.4
 AZURE_VLM_GPT54_API_KEY=...
 ```

@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { messages, type Locale, type MessageKey } from '../locales/messages'
+import type { ProductLocaleMessages } from '../product/contracts'
 
 export type { Locale } from '../locales/messages'
 
@@ -17,6 +18,12 @@ export function detectSystemLocale(): Locale {
 }
 
 const _locale = ref<Locale>(detectSystemLocale())
+const productMessages: ProductLocaleMessages = {}
+
+export function registerProductMessages(catalog?: ProductLocaleMessages) {
+  Object.keys(productMessages).forEach(key => delete productMessages[key])
+  if (catalog) Object.assign(productMessages, catalog)
+}
 
 export function useLocale() {
   return {
@@ -36,7 +43,7 @@ export function getLocale(): Locale {
 }
 
 export function t(key: string, params?: Record<string, string | number>): string {
-  const entry = messages[key as MessageKey] as LabelMap | undefined
+  const entry = productMessages[key] || messages[key as MessageKey] as LabelMap | undefined
   const template = entry?.[_locale.value] || entry?.zh || key
   if (!params) return template
   return template.replace(/\{(\w+)\}/g, (_, name) => String(params[name] ?? `{${name}}`))

@@ -115,6 +115,7 @@ from app.api.endpoints import (
     knowledge_sources,
     models,
     projects,
+    product,
     quota,
     scheduled_tasks,
     sessions,
@@ -135,6 +136,7 @@ app.include_router(knowledge_sources.router, prefix="/api")
 app.include_router(external_tools.router, prefix="/api")
 app.include_router(models.router, prefix="/api")
 app.include_router(projects.router, prefix="/api")
+app.include_router(product.router, prefix="/api")
 app.include_router(sessions.router, prefix="/api")
 app.include_router(tasks.router, prefix="/api")
 app.include_router(skills.router, prefix="/api")
@@ -146,6 +148,12 @@ app.include_router(browser_ws_endpoint.router, prefix="/api")
 app.include_router(dsh_model_gateway.router)
 app.include_router(dsh_tool_gateway.internal_router)
 app.include_router(dsh_tool_gateway.public_router, prefix="/api")
+
+from app.product.extensions import get_product_extension
+
+product_extension = get_product_extension()
+for extension_router in product_extension.routers:
+    app.include_router(extension_router, prefix="/api")
 
 if settings.ENABLE_DEMO_ENDPOINTS:
     from app.api.endpoints import (
@@ -233,6 +241,10 @@ async def startup_event() -> None:
     await action_receipt_store.reconcile_abandoned()
     await token_usage_dispatcher.start()
     await scheduled_task_scheduler.start()
+    for callback in product_extension.startup:
+        result = callback()
+        if asyncio.iscoroutine(result):
+            await result
     async def _receipt_gc_loop() -> None:
         while True:
             try:
@@ -258,6 +270,10 @@ async def startup_event() -> None:
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
     global _receipt_gc_task
+    for callback in reversed(product_extension.shutdown):
+        result = callback()
+        if asyncio.iscoroutine(result):
+            await result
     if _receipt_gc_task is not None:
         _receipt_gc_task.cancel()
         _receipt_gc_task = None

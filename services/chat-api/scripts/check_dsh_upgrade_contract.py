@@ -19,7 +19,6 @@ VERSIONS_LOCK = CHAT_API_ROOT / "dsh" / "versions.lock"
 HOST_PACKAGE = CHAT_API_ROOT / "dsh" / "runtime-host" / "package.json"
 HOST_PROTOCOL = CHAT_API_ROOT / "dsh" / "runtime-host" / "src" / "host-protocol.mjs"
 HOST_OVERLAY = CHAT_API_ROOT / "dsh" / "runtime-host" / "src" / "official-host" / "overlay.mjs"
-DESKTOP_CONTRACT = REPO_ROOT / "apps" / "desktop-electron" / "src" / "main" / "dsh" / "runtime_contracts.ts"
 SBOM_PATH = CHAT_API_ROOT / "dsh" / "sbom.cdx.json"
 
 
@@ -119,7 +118,7 @@ def validate_candidate(candidate: dict[str, Any], matrix: dict[str, Any]) -> Non
 
 def validate_repository() -> None:
     matrix = yaml.safe_load(MATRIX_PATH.read_text(encoding="utf-8"))
-    if matrix.get("schema_version") != "askai.dsh-compatibility-matrix.v1":
+    if matrix.get("schema_version") != "movo.dsh-compatibility-matrix.v1":
         raise ValueError("unsupported DSH compatibility matrix schema")
     policy = matrix["upgrade_policy"]
     required_policy = {
@@ -128,8 +127,8 @@ def validate_repository() -> None:
         "candidate_requires_full_contract_suite": True,
         "candidate_requires_packaged_smoke": True,
         "candidate_requires_old_session_resume": True,
-        "rollback_unit": "signed_desktop_release",
-        "rollback_preserves_askai_history": True,
+        "rollback_unit": "versioned_container_release",
+        "rollback_preserves_runtime_data": True,
         "publish_on_failed_admission": False,
     }
     if policy != required_policy:
@@ -154,10 +153,6 @@ def validate_repository() -> None:
         raise ValueError("Runtime Host kernel handshake version differs from the matrix")
     if _constant(HOST_PROTOCOL, "ASKAI_DSH_HOST_PROTOCOL_VERSION") != active["host_protocol"]:
         raise ValueError("Runtime Host protocol differs from the matrix")
-    if _constant(DESKTOP_CONTRACT, "DSH_KERNEL_VERSION") != version:
-        raise ValueError("Desktop kernel handshake version differs from the matrix")
-    if _constant(DESKTOP_CONTRACT, "DSH_HOST_PROTOCOL_VERSION") != active["host_protocol"]:
-        raise ValueError("Desktop protocol differs from the matrix")
     if _constant(HOST_OVERLAY, "ASKAI_DSH_HOST_OVERLAY_VERSION") != active["host_overlay"]:
         raise ValueError("Host overlay differs from the matrix")
     sbom = json.loads(SBOM_PATH.read_text(encoding="utf-8"))
@@ -172,7 +167,7 @@ def validate_repository() -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Admit a bundled DSH release against ASKAI's versioned contracts.")
+    parser = argparse.ArgumentParser(description="Admit a bundled DSH release against MOVO's versioned contracts.")
     parser.add_argument("--candidate", type=Path, help="optional JSON candidate inventory produced by the contract suite")
     args = parser.parse_args()
     matrix = yaml.safe_load(MATRIX_PATH.read_text(encoding="utf-8"))

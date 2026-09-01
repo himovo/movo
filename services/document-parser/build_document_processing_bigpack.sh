@@ -29,10 +29,11 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 ENVIRONMENT="${ENVIRONMENT:-test}"
-REGISTRY="${REGISTRY:-registry-vpc.cn-zhangjiakou.aliyuncs.com/guoran}"
+REGISTRY="${REGISTRY:-ghcr.io}"
+REGISTRY_NAMESPACE="${REGISTRY_NAMESPACE:-}"
 IMAGE_NAME="${IMAGE_NAME:-movo-document-processing}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
-BASE_IMAGE="${BASE_IMAGE:-registry-vpc.cn-zhangjiakou.aliyuncs.com/guoran/python:3.10}"
+BASE_IMAGE="${BASE_IMAGE:-python:3.10-slim-bookworm}"
 USE_COMMITTED_SYSTEM_BASE="${USE_COMMITTED_SYSTEM_BASE:-true}"
 SYSTEM_BASE_SOURCE_IMAGE="${SYSTEM_BASE_SOURCE_IMAGE:-python:3.10-slim-bookworm}"
 PYPI_INDEX_URL="${PYPI_INDEX_URL:-https://mirrors.aliyun.com/pypi/simple/}"
@@ -58,7 +59,11 @@ case "${PYTORCH_ACCELERATOR}" in
     exit 2
     ;;
 esac
-SYSTEM_BASE_IMAGE="${SYSTEM_BASE_IMAGE:-${REGISTRY%/}/movo-document-parser-base:${DEFAULT_SYSTEM_BASE_TAG}}"
+if [[ -z "${REGISTRY_NAMESPACE}" ]]; then
+  echo "ERROR: set REGISTRY_NAMESPACE to the target registry owner or organization." >&2
+  exit 2
+fi
+SYSTEM_BASE_IMAGE="${SYSTEM_BASE_IMAGE:-${REGISTRY%/}/${REGISTRY_NAMESPACE#/}/movo-document-parser-base:${DEFAULT_SYSTEM_BASE_TAG}}"
 REBUILD_SYSTEM_BASE="${REBUILD_SYSTEM_BASE:-false}"
 PUSH_SYSTEM_BASE="${PUSH_SYSTEM_BASE:-false}"
 RESUME_SYSTEM_BASE_BUILD="${RESUME_SYSTEM_BASE_BUILD:-true}"

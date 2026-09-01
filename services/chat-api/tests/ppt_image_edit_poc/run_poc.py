@@ -1096,12 +1096,12 @@ def infer_layout_with_vlm(
             endpoint_override.strip()
             or env.get("AZURE_VLM_GPT54_ENDPOINT", "").strip()
             or env.get("AZURE_VLM_RESPONSES_ENDPOINT", "").strip()
-            or "https://askbot4.openai.azure.com/openai/responses?api-version=2025-04-01-preview"
         )
         model = model_override.strip() or env.get("AZURE_VLM_GPT54_MODEL", "").strip() or "gpt-5.4"
-        if not api_key:
+        if not endpoint or not api_key:
             if log:
-                log.log("vlm_skipped", provider=chosen, reason="missing_AZURE_VLM_GPT54_API_KEY")
+                reason = "missing_AZURE_VLM_GPT54_ENDPOINT" if not endpoint else "missing_AZURE_VLM_GPT54_API_KEY"
+                log.log("vlm_skipped", provider=chosen, reason=reason)
             return default_layout(slide)
         payload = {
             "model": model,

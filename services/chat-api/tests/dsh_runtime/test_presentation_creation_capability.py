@@ -63,7 +63,7 @@ class _Pipeline:
             },
         }
         return {
-            "story_plan": SimpleNamespace(deck_goal="AskBot 员工AI助手介绍"),
+            "story_plan": SimpleNamespace(deck_goal="MOVO 员工AI助手介绍"),
             "preview_bundle": bundle,
             "document_payload": {
                 "type": "presentation_preview_bundle",
@@ -133,16 +133,16 @@ def test_presentation_reuses_pipeline_and_returns_one_editable_bundle(monkeypatc
     progress: list[dict] = []
     result = asyncio.run(capability.run(
         {
-            "request": "根据 AskBot 的情况生成一个简单介绍 PPT",
+            "request": "根据 MOVO 的情况生成一个简单介绍 PPT",
             "page_count": 3,
             "audience": "企业管理者",
         },
         _context(progress, evidence_bundle={
             "results": [{
                 "tool": "web_search",
-                "title": "AskBot 官网",
-                "source_url": "https://www.askbot.cn",
-                "content": "AskBot 是企业智能体平台。",
+                "title": "MOVO 官网",
+                "source_url": "https://movo.example",
+                "content": "MOVO 是企业智能体平台。",
             }],
         }),
     ))
@@ -159,14 +159,14 @@ def test_presentation_reuses_pipeline_and_returns_one_editable_bundle(monkeypatc
     }
     artifact = result["artifact"]
     assert artifact["type"] == "presentation_preview_bundle"
-    assert artifact["title"] == "AskBot 员工AI助手介绍"
+    assert artifact["title"] == "MOVO 员工AI助手介绍"
     assert artifact["lifecycle"] == "final"
     assert artifact["visibility"] == "user"
     assert artifact["bundle"]["preview_metadata"]["blueprint_artifact_path"].endswith(".json")
     assert "url" not in artifact
     assert "url" not in artifact["bundle"]["html_preview"]
     assert "必须生成且仅生成 3 页幻灯片" in pipeline.messages[0]["content"]
-    assert pipeline.output_spec["tool_observations"][0]["source_label"] == "AskBot 官网"
+    assert pipeline.output_spec["tool_observations"][0]["source_label"] == "MOVO 官网"
     assert pipeline.output_spec["presentation_generation_mode"] == "llm"
     assert progress[0]["payload"]["text"] == "正在生成PPT故事线"
 
@@ -243,9 +243,9 @@ def test_presentation_semantically_reuses_prior_conversation_evidence(monkeypatc
             "evidence_bundle": {
                 "results": [{
                     "tool": "conversation_history",
-                    "title": "AskBot 官网",
-                    "content": "AskBot is an enterprise agent platform.",
-                    "source_url": "https://askbot.cn",
+                    "title": "MOVO 官网",
+                    "content": "MOVO is an enterprise agent platform.",
+                    "source_url": "https://movo.example",
                 }],
             }
         }
@@ -253,7 +253,7 @@ def test_presentation_semantically_reuses_prior_conversation_evidence(monkeypatc
     monkeypatch.setattr(module.conversation_evidence_service, "collect", collect)
     result = asyncio.run(capability.run(
         {
-            "request": "根据上文的 AskBot 调研制作三页 PPT",
+            "request": "根据上文的 MOVO 调研制作三页 PPT",
             "page_count": 3,
             "use_conversation_evidence": True,
         },
@@ -262,8 +262,8 @@ def test_presentation_semantically_reuses_prior_conversation_evidence(monkeypatc
 
     assert result["accepted"] is True
     assert calls[0]["current_request"] == "根据上文制作三页 PPT"
-    assert calls[0]["evidence_requirement"] == "根据上文的 AskBot 调研制作三页 PPT"
-    assert pipeline.output_spec["tool_observations"][0]["source_label"] == "AskBot 官网"
+    assert calls[0]["evidence_requirement"] == "根据上文的 MOVO 调研制作三页 PPT"
+    assert pipeline.output_spec["tool_observations"][0]["source_label"] == "MOVO 官网"
 
 
 def test_presentation_does_not_read_history_without_semantic_opt_in(monkeypatch) -> None:

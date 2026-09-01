@@ -150,7 +150,6 @@ def plan_layout_gpt54(
         or env.get("AZURE_LAYOUT_GPT54_ENDPOINT", "").strip()
         or env.get("AZURE_VLM_GPT54_ENDPOINT", "").strip()
         or env.get("AZURE_VLM_RESPONSES_ENDPOINT", "").strip()
-        or "https://askbot4.openai.azure.com/openai/responses?api-version=2025-04-01-preview"
     )
     model = model_override.strip() or env.get("AZURE_LAYOUT_GPT54_MODEL", "").strip() or env.get("AZURE_VLM_GPT54_MODEL", "").strip() or "gpt-5.4"
     api_key = (
@@ -159,6 +158,8 @@ def plan_layout_gpt54(
         or env.get("AZURE_VLM_GPT54_API_KEY", "").strip()
         or env.get("OPENAI_API_KEY", "").strip()
     )
+    if not endpoint:
+        raise RuntimeError("missing GPT-5.4 planner endpoint")
     if not api_key:
         raise RuntimeError("missing GPT-5.4 planner API key")
     prompt = planner_prompt(slide)

@@ -4,7 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 
 ENVIRONMENT="${ENVIRONMENT:-test}"
-REGISTRY="${REGISTRY:-registry-vpc.cn-zhangjiakou.aliyuncs.com/guoran}"
+REGISTRY="${REGISTRY:-ghcr.io}"
+REGISTRY_NAMESPACE="${REGISTRY_NAMESPACE:-}"
 IMAGE_NAME="${IMAGE_NAME:-movo-backend}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 LOCAL_IMAGE="${LOCAL_IMAGE:-${IMAGE_NAME}}"
@@ -14,7 +15,11 @@ CONTEXT_DIR="${CONTEXT_DIR:-services/chat-api}"
 PUSH="${PUSH:-true}"
 NO_CACHE="${NO_CACHE:-true}"
 
-IMAGE_REF="${REGISTRY%/}/${IMAGE_NAME}:${IMAGE_TAG}"
+if [[ -z "${REGISTRY_NAMESPACE}" ]]; then
+  echo "ERROR: set REGISTRY_NAMESPACE to the target registry owner or organization." >&2
+  exit 2
+fi
+IMAGE_REF="${REGISTRY%/}/${REGISTRY_NAMESPACE#/}/${IMAGE_NAME}:${IMAGE_TAG}"
 
 echo "Backend image build"
 echo "  environment: ${ENVIRONMENT}"

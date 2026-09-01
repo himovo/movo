@@ -150,7 +150,7 @@
               v-model:value="accountForm.initialPassword"
               type="password"
               show-password-on="click"
-              :placeholder="t('至少 6 位')"
+              :placeholder="t('至少 10 位')"
             />
           </n-form-item>
           <div class="section-muted">{{ t('新建账号需设置初始密码，创建后可直接用于登录后台。') }}</div>
@@ -507,8 +507,8 @@ async function saveAccount() {
     message.warning(t('邮箱格式不正确'));
     return;
   }
-  if (accountEditorMode.value === 'create' && accountForm.value.initialPassword.trim().length < 6) {
-    message.warning(t('初始密码至少 6 位'));
+  if (accountEditorMode.value === 'create' && accountForm.value.initialPassword.trim().length < 10) {
+    message.warning(t('初始密码至少 10 位'));
     return;
   }
   saving.value = true;

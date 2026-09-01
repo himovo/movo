@@ -16,7 +16,7 @@ import httpx
 ROOT = Path(__file__).resolve().parent
 BACKEND_ROOT = ROOT.parents[1]
 ENV_PATH = BACKEND_ROOT / ".env"
-DEFAULT_ENDPOINT = "https://askbot4.openai.azure.com/openai/responses?api-version=2025-04-01-preview"
+DEFAULT_ENDPOINT = ""
 DEFAULT_MODEL = "gpt-5.4"
 SLIDE_W = 1536
 SLIDE_H = 864

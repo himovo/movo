@@ -1,4 +1,4 @@
-name: DSH Migration Guard
+name: DSH Runtime Guard
 
 on:
   pull_request:
@@ -52,7 +52,7 @@ jobs:
         run: python services/chat-api/scripts/check_dsh_native_code_boundary.py
       - name: Admit bundled DSH upgrade contract
         run: python services/chat-api/scripts/check_dsh_upgrade_contract.py
-      - name: Test versioned contracts and migration ledger
+      - name: Test versioned contracts and runtime boundary
         working-directory: services/chat-api
         run: python -m pytest tests/dsh_runtime -q
       - name: Test native Runtime Host modules

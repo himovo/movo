@@ -6,7 +6,7 @@ from app.services.employee_credentials import normalize_employee_credentials, re
 def test_local_employee_requires_login_and_initial_password() -> None:
     with pytest.raises(ValueError, match="登录名"):
         normalize_employee_credentials(source="local", login_name="", password="secret1", creating=True)
-    with pytest.raises(ValueError, match="至少 6 位"):
+    with pytest.raises(ValueError, match="至少 10 位"):
         normalize_employee_credentials(source="local", login_name="user01", password="", creating=True)
 
 
@@ -21,7 +21,7 @@ def test_existing_local_employee_can_keep_password() -> None:
 
 
 def test_local_password_length_is_enforced() -> None:
-    with pytest.raises(ValueError, match="密码至少 6 位"):
+    with pytest.raises(ValueError, match="密码至少 10 位"):
         normalize_employee_credentials(source="local", login_name="user01", password="12345", creating=False, has_existing_password=True)
 
 

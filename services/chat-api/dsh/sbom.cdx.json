@@ -4,17 +4,17 @@
   "serialNumber": "urn:uuid:5c8c8f40-2f59-5d35-a6bb-a5ca1d5a0001",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-08-31T09:22:45+00:00",
+    "timestamp": "2026-09-01T03:07:22+00:00",
     "component": {
       "type": "application",
-      "name": "@askai/dsh-runtime-host",
+      "name": "@movo/dsh-runtime-host",
       "version": "0.1.0"
     },
     "tools": {
       "components": [
         {
           "type": "application",
-          "name": "ASKAI DSH SBOM generator",
+          "name": "MOVO DSH SBOM generator",
           "version": "1"
         }
       ]

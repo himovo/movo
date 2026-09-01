@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 
-MIN_PASSWORD_LENGTH = 6
+MIN_PASSWORD_LENGTH = 10
 
 
 def normalize_employee_credentials(
@@ -27,9 +27,9 @@ def normalize_employee_credentials(
 
     password_is_required = creating or not has_existing_password
     if password_is_required and not password:
-        raise ValueError("请设置至少 6 位密码")
+        raise ValueError("请设置至少 10 位密码")
     if password and len(password) < MIN_PASSWORD_LENGTH:
-        raise ValueError("密码至少 6 位")
+        raise ValueError("密码至少 10 位")
 
     return normalized_login, password
 

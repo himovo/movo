@@ -229,7 +229,7 @@ class InviteAcceptPayload(BaseModel):
     mobile: str = Field(default="", max_length=32)
     email: str = Field(default="", max_length=128)
     loginName: str = Field(default="", max_length=64)
-    password: str = Field(min_length=6, max_length=128)
+    password: str = Field(min_length=10, max_length=128)
 
 
 @router.get("/departments/tree")

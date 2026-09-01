@@ -81,7 +81,7 @@ class AccountCreatePayload(BaseModel):
     groupCode: str = Field(min_length=2, max_length=64)
     roleName: str = Field(min_length=1, max_length=64)
     status: str = Field(default="active", pattern=r"^(active|disabled)$")
-    initialPassword: str = Field(min_length=6, max_length=128)
+    initialPassword: str = Field(min_length=10, max_length=128)
 
 
 class AccountUpdatePayload(BaseModel):
@@ -255,16 +255,14 @@ async def get_org_billing(current_user: dict = Depends(get_current_admin_user)) 
     
     org = await db["organizations"].find_one({"main_id": main_id})
     if not org:
+        from app.product.extensions import get_admin_product_extension
+
         now = datetime.now(timezone.utc)
         org = {
             "main_id": main_id,
             "org_name": current_user.get("org_name") or "组织空间",
-            "tier": "free",
-            "user_limit": 5,
-            "total_points": 1000000,
-            "used_points": 0,
+            **dict(get_admin_product_extension().organization_defaults),
             "owner_user_id": str(current_user.get("_id") or ""),
-            "is_own_model": False,
             "created_at": now,
             "updated_at": now,
         }
@@ -284,123 +282,9 @@ async def get_org_billing(current_user: dict = Depends(get_current_admin_user)) 
             "billingEnabled": billing_enabled(org),
             "userLimit": member_limit(org),
             "currentMembersCount": current_members,
-            "totalPoints": org.get("total_points", 1000000),
+            "totalPoints": org.get("total_points", 0),
             "usedPoints": org.get("used_points", 0),
-            "remainingPoints": max(0, org.get("total_points", 1000000) - org.get("used_points", 0)),
+            "remainingPoints": max(0, (org.get("total_points") or 0) - (org.get("used_points") or 0)),
             "isOwnModel": bool(org.get("is_own_model", False)),
         }
     }
-
-
-class UpgradePayload(BaseModel):
-    tier: str = Field(..., pattern=r"^(pro|enterprise)$")
-
-
-class BillingOrderPayload(BaseModel):
-    planCode: str = Field(..., min_length=2, max_length=64)
-    paymentMethod: str = Field(default="wechat_native", pattern=r"^(wechat_native|wechat_jsapi|wechat_h5|dev_mock)$")
-
-
-@router.post("/upgrade")
-async def upgrade_org_billing(
-    payload: UpgradePayload,
-    current_user: dict = Depends(get_current_admin_user)
-) -> dict[str, object]:
-    main_id = str(current_user.get("main_id", "default"))
-
-    tier = payload.tier
-    if tier == "pro":
-        from app.core.billing import create_billing_order
-
-        try:
-            order = await create_billing_order(
-                main_id=main_id,
-                buyer_user_id=str(current_user.get("_id") or ""),
-                plan_code="org_pro_monthly",
-                source="admin_legacy_upgrade",
-                payment_method="wechat_native",
-            )
-        except ValueError as exc:
-            return {"code": 1, "message": str(exc)}
-        return {
-            "code": 0,
-            "message": "Payment order created",
-            "data": {"order": order},
-        }
-    elif tier == "enterprise":
-        return {"code": 0, "message": "Enterprise upgrade request submitted. Our sales team will reach out to you."}
-    return {"code": 1, "message": "Invalid tier"}
-
-
-@router.get("/billing/plans")
-async def get_org_billing_plans(current_user: dict = Depends(get_current_admin_user)) -> dict[str, object]:
-    from app.core.billing import list_billing_plans
-    from app.core.product_edition import billing_enabled
-
-    main_id = str(current_user.get("main_id", "default"))
-    org = await get_db()["organizations"].find_one({"main_id": main_id})
-
-    return {"code": 0, "data": {"plans": list_billing_plans() if billing_enabled(org) else []}}
-
-
-@router.post("/billing/orders")
-async def create_org_billing_order(
-    payload: BillingOrderPayload,
-    current_user: dict = Depends(get_current_admin_user),
-) -> dict[str, object]:
-    main_id = str(current_user.get("main_id", "default"))
-    from app.core.billing import create_billing_order
-
-    try:
-        order = await create_billing_order(
-            main_id=main_id,
-            buyer_user_id=str(current_user.get("_id") or ""),
-            plan_code=payload.planCode,
-            source="admin",
-            payment_method=payload.paymentMethod,
-        )
-    except ValueError as exc:
-        return {"code": 1, "message": str(exc)}
-    return {"code": 0, "message": "Payment order created", "data": {"order": order}}
-
-
-@router.get("/billing/orders/{order_no}")
-async def get_org_billing_order(
-    order_no: str,
-    current_user: dict = Depends(get_current_admin_user),
-) -> dict[str, object]:
-    main_id = str(current_user.get("main_id", "default"))
-    from app.core.billing import get_billing_order
-
-    order = await get_billing_order(main_id, order_no)
-    if not order:
-        return {"code": 1, "message": "Payment order not found"}
-    return {"code": 0, "data": {"order": order}}
-
-
-@router.get("/billing/orders")
-async def list_org_billing_orders(current_user: dict = Depends(get_current_admin_user)) -> dict[str, object]:
-    main_id = str(current_user.get("main_id", "default"))
-    from app.core.billing import list_billing_orders
-    from app.core.product_edition import billing_enabled
-
-    org = await get_db()["organizations"].find_one({"main_id": main_id})
-    if not billing_enabled(org):
-        return {"code": 0, "data": {"orders": []}}
-
-    return {"code": 0, "data": {"orders": await list_billing_orders(main_id)}}
-
-
-@router.post("/billing/orders/{order_no}/confirm-dev")
-async def confirm_org_billing_order_dev(
-    order_no: str,
-    current_user: dict = Depends(get_current_admin_user),
-) -> dict[str, object]:
-    main_id = str(current_user.get("main_id", "default"))
-    from app.core.billing import mark_order_paid_and_apply
-
-    try:
-        order = await mark_order_paid_and_apply(main_id, order_no)
-    except ValueError as exc:
-        return {"code": 1, "message": str(exc)}
-    return {"code": 0, "message": "Payment confirmed and plan applied", "data": {"order": order}}

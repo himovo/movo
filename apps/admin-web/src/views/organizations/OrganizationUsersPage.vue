@@ -1155,13 +1155,13 @@ async function saveUser() {
   if (
     userForm.value.source === 'local'
     && userEditorMode.value === 'create'
-    && userForm.value.credentialPassword.length < 6
+    && userForm.value.credentialPassword.length < 10
   ) {
-    message.warning(t('初始密码至少 6 位'));
+    message.warning(t('初始密码至少 10 位'));
     return;
   }
-  if (userForm.value.credentialPassword && userForm.value.credentialPassword.length < 6) {
-    message.warning(t('密码至少 6 位'));
+  if (userForm.value.credentialPassword && userForm.value.credentialPassword.length < 10) {
+    message.warning(t('密码至少 10 位'));
     return;
   }
   const customFieldPayload = buildCustomFieldPayload();

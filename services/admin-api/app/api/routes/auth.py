@@ -45,7 +45,7 @@ class ProfileUpdateRequest(BaseModel):
 
 class PasswordChangeRequest(BaseModel):
     currentPassword: str = Field(min_length=1, max_length=128)
-    newPassword: str = Field(min_length=6, max_length=128)
+    newPassword: str = Field(min_length=10, max_length=128)
 
 
 router = APIRouter()

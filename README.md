@@ -1,16 +1,154 @@
-# MOVO Community Edition
+<p align="center">
+  <img src="apps/user-web/public/movo-logo.png" alt="MOVO" width="180">
+</p>
 
-MOVO is a goal-driven agent platform for enterprise tasks. Users describe the
-desired result; MOVO plans the work, invokes models and tools, processes
-documents, requests approval for risky actions, and returns traceable outputs.
+<h1 align="center">MOVO Community Edition</h1>
 
-This repository contains the self-hosted Community Edition. It is the shared
-source foundation used by MOVO cloud and future enterprise distributions.
+<p align="center">
+  A self-hosted enterprise Agent platform built on DeepSeek Harness (DSH).
+</p>
 
-## Included components
+<p align="center">
+  <strong>English</strong> · <a href="README.zh-CN.md">简体中文</a>
+</p>
+
+MOVO brings DSH Agents from development experiments into enterprise production. It combines the DSH Runtime, Skills, Tools and MCP ecosystem with a deployable user workspace, enterprise knowledge, identity and access control, administration, governance and file delivery.
+
+> **In one sentence:** DSH runs the Agent; MOVO brings the Agent into enterprise production.
+
+This repository contains the self-hosted Community Edition and is the shared source foundation used by MOVO cloud and future enterprise distributions.
+
+## What MOVO provides
+
+| Capability | What you can do |
+| --- | --- |
+| DSH-native Agent runtime | Use planning, tool calls, Skills, sub-agents and governed execution through the bundled DSH Runtime Host. |
+| Enterprise knowledge and research | Search internal documents and public sources, run multi-round research, retain citations and inspect supporting evidence. |
+| Document and multimodal intelligence | Parse PDF, DOCX, XLSX, PPTX, CSV and Markdown files, including images, charts and other visual content. |
+| Content and file generation | Create reports, articles, editable presentations, spreadsheets, PDFs and Markdown deliverables. |
+| Skills, Tools and MCP | Reuse workflows and connect HTTP or MCP services to business systems. |
+| Automation and governance | Schedule tasks, require approval for sensitive tool actions, trace executions and retain generated artifacts. |
+| Enterprise administration | Manage organizations, users, roles, models, knowledge, Skills, Tools, audit records and runtime health. |
+
+Typical use cases include enterprise knowledge Q&A, policy and project-material retrieval, multi-source research, competitive analysis, report and presentation generation, spreadsheet processing, translation, template filling and controlled system integration.
+
+## Community Edition
+
+A tenant created by the self-hosted setup flow is marked as `community`:
+
+- no member-count limit;
+- billing and commercial plan enforcement are disabled;
+- self-managed model connections are enabled;
+- data and runtime services remain in your own deployment.
+
+The repository includes the Web user workspace, administration console, conversation and Agent APIs, DSH Runtime Host, document parser and retrieval services, and Docker deployment configuration.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    U[User workspace] --> G[Gateway]
+    A[Admin console] --> G
+    G --> C[Chat API]
+    G --> M[Admin API]
+    C --> D[DSH Runtime Host]
+    C --> P[Document services]
+    M --> P
+    C --> S[(MongoDB / Redis / Weaviate)]
+    M --> S
+    P --> S
+```
+
+The default Docker Compose deployment starts 12 services: the gateway, two Web applications, three application APIs, the DSH Runtime Host, a document worker, MongoDB, Redis, Weaviate and a one-time secret bootstrap service.
+
+## Quick start with Docker
+
+### Requirements
+
+- Git
+- Docker Desktop, or Docker Engine with Docker Compose v2
+- at least 8 GB of available memory
+
+Clone MOVO and start it with the prebuilt images:
+
+```bash
+git clone https://github.com/himovo/movo.git
+cd movo
+chmod +x movo
+./movo up
+```
+
+`./movo up` pulls the published MOVO images, starts the complete stack, waits for health checks and prints the first-run setup address. Normal users do **not** need to build the images locally.
+
+Open:
+
+```text
+http://localhost:3000/admin/setup
+```
+
+The setup wizard checks the deployment and guides you through creating the organization and initial accounts, connecting a default chat model, and optionally configuring embedding, reranking, vision, image generation and Web search providers. Provider credentials are encrypted before storage.
+
+After setup:
+
+| Entry | Default URL | Purpose |
+| --- | --- | --- |
+| User workspace | `http://localhost:3000/` | Conversations, research, knowledge, files and content generation |
+| Admin console | `http://localhost:3000/admin/` | Users, models, knowledge, Skills, Tools and governance |
+| Setup wizard | `http://localhost:3000/admin/setup` | First-run initialization only |
+
+### Common operations
+
+```bash
+./movo status
+./movo logs chat-api
+./movo restart
+./movo update
+./movo backup /path/on/a/large-disk/movo-backup
+./movo down       # Stop containers and preserve data
+./movo down -v    # Permanently delete MOVO data after confirmation
+```
+
+For production, pin a release tag instead of using `latest`. See [Docker deployment](docs/docker-deployment.md) for image selection, upgrades, backup and restore, reverse proxy configuration and the production baseline.
+
+### Configuration
+
+The default local deployment does not require an `.env` file. To change the public port, canonical URL, image version or volume prefix:
+
+```bash
+cp .env.example .env
+```
+
+```env
+MOVO_PORT=3000
+MOVO_VOLUME_PREFIX=movo
+MOVO_IMAGE_PREFIX=ghcr.io/himovo/movo
+MOVO_VERSION=vX.Y.Z
+PUBLIC_BASE_URL=https://movo.example.com
+```
+
+Keep `MOVO_VOLUME_PREFIX` stable after first startup. DNS, TLS certificates and the external reverse proxy remain the deployment operator's responsibility.
+
+## Build from source
+
+Building locally is intended for contributors and developers. Build and start
+the source tree with:
+
+```bash
+./movo up --build
+```
+
+To build the images without starting the services:
+
+```bash
+./movo build
+```
+
+Source builds download Playwright, LibreOffice, Docling and model assets, so they need substantially more time and disk space than the prebuilt-image path.
+
+## Repository layout
 
 | Path | Component |
-|---|---|
+| --- | --- |
 | `apps/user-web/` | Vue 3 user workspace |
 | `apps/admin-web/` | Vue 3 setup and administration console |
 | `services/chat-api/` | FastAPI conversation, task, Agent, Skill and DSH gateway |
@@ -19,146 +157,22 @@ source foundation used by MOVO cloud and future enterprise distributions.
 | `services/document-parser/` | Document parsing, preview, retrieval API and worker |
 | `deploy/` | Bootstrap and gateway configuration |
 
-The proprietary desktop client, local browser sidecar, official website and
-commercial CRM examples are not included in this repository.
+## Contributing and support
 
-## Community Edition behavior
+- [Contribution guide](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Community support policy](SUPPORT.md)
+- [Maintainer release process](docs/release-process.md)
+- Security, commercial licensing and support: `support@himovo.com`
 
-A tenant created by the self-hosted setup flow is marked as `community`:
-
-- no member-count limit;
-- billing is disabled;
-- self-managed model connections are enabled;
-- data and runtime services remain in the operator's deployment.
-
-Cloud plan limits are not used to determine Community Edition entitlements.
-
-## Quick start
-
-### Requirements
-
-- Docker Desktop, or Docker Engine with Docker Compose v2
-- at least 8 GB of available memory; document-model image construction may
-  require more during the first build
-
-Clone the repository and run:
-
-```bash
-chmod +x movo
-./movo up
-```
-
-MOVO waits for the deployment health checks and prints the setup URL:
-
-```text
-http://localhost:3000/admin/setup
-```
-
-The first build downloads Node, Python, Playwright, LibreOffice, Docling and
-model dependencies and can take several minutes. Later starts reuse Docker
-images and caches.
-
-Useful commands:
-
-```bash
-./movo status
-./movo logs chat-api
-./movo restart
-./movo down       # Preserve data volumes
-./movo down -v    # Permanently remove MOVO data volumes
-```
-
-To use a different port or public URL:
-
-```bash
-cp .env.example .env
-```
-
-Then edit `.env`:
-
-```env
-MOVO_PORT=3000
-MOVO_VOLUME_PREFIX=movo
-PUBLIC_BASE_URL=https://movo.example.com
-```
-
-Persistent Docker volumes use the `movo_` prefix by default. Keep
-`MOVO_VOLUME_PREFIX` stable after the first startup. Existing AskAI volumes
-are not reused or removed automatically.
-
-TLS certificates, DNS and the external reverse proxy remain the deployment
-operator's responsibility.
-
-## Services
-
-The default Compose deployment contains 12 services:
-
-- gateway, user-web and admin-web;
-- chat-api and dsh-runtime-host;
-- admin-api;
-- document-api and document-worker;
-- mongo, redis and weaviate;
-- one-time bootstrap secret initialization.
-
-MongoDB, Redis, Weaviate, generated files, document data, DSH state and
-deployment secrets are stored in independent `movo_*` Docker volumes.
-
-## Local development
-
-The Docker deployment is the supported full-stack path. For focused local
-development, install only the dependencies for the component being changed.
-
-```bash
-# Chat API
-cd services/chat-api
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-
-# User Web
-cd apps/user-web
-npm ci
-npm run dev
-
-# Admin Web
-cd apps/admin-web
-npm ci --legacy-peer-deps
-npm run dev
-```
-
-## Verification
-
-Before publishing or submitting a change, run the relevant checks:
+Before submitting a change, run the relevant checks described in [CONTRIBUTING.md](CONTRIBUTING.md). At minimum, the repository hygiene check is:
 
 ```bash
 python3 scripts/check_open_source_hygiene.py
-python3 -m compileall -q services/chat-api/app services/admin-api/app services/document-parser/app
-docker compose config --quiet
 ```
-
-The production frontends and services can be verified with:
-
-```bash
-docker compose build user-web admin-web dsh-runtime-host
-docker compose build chat-api admin-api document-api document-worker
-```
-
-## Documentation and support
-
-- Product direction and deployment decisions: `docs/open-source-productization/`
-- Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
-- Security policy: [SECURITY.md](SECURITY.md)
-- Community support policy: [SUPPORT.md](SUPPORT.md)
 
 ## License
 
-MOVO is source-available under the [MOVO Community License](LICENSE), based on
-Apache License 2.0 with additional conditions. Without written authorization,
-the license does not permit operating a hosted multi-tenant SaaS offering or
-removing/modifying the MOVO logo and copyright notices in the included
-frontends.
+MOVO is source-available under the [MOVO Community License](LICENSE), based on Apache License 2.0 with additional conditions. Without written authorization, the license does not permit operating a hosted multi-tenant SaaS offering or removing or modifying the MOVO logo and copyright notices in the included frontends.
 
-These additional restrictions mean that the MOVO Community License is not the
-unmodified Apache License 2.0 and should not be represented as an OSI-approved
-open-source license.
+These additional restrictions mean that the MOVO Community License is not the unmodified Apache License 2.0 and should not be represented as an OSI-approved open-source license. For commercial licensing, multi-tenant SaaS authorization or alternative branding rights, contact `support@himovo.com`.

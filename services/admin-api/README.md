@@ -14,17 +14,14 @@
 当前已支持：
 
 - MongoDB 持久化管理员用户
-- 启动时自动引导默认超级管理员
+- 首次安装向导创建超级管理员
 - 真实登录密码校验
 - `/api/auth/me` 当前会话查询
 - `/api/auth/logout` 当前会话失效
 
-默认管理员：
-
-```text
-username: admin
-password: admin123
-```
+系统不提供固定的默认管理员密码。Docker 部署完成后，请访问
+`http://localhost:3000/admin/setup` 创建首位管理员。直接源码开发如需启用
+启动引导账号，必须在本地 `.env` 中显式设置账号和强密码。
 
 模型连通性测试（OpenAI / Azure OpenAI）TLS 说明：
 

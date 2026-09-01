@@ -11,4 +11,5 @@ SECURITY.md for security reports.
 
 The Community Edition is provided without a support SLA. Commercial support,
 multi-tenant SaaS authorization and alternative branding rights require a
-separate written agreement with MOVO.
+separate written agreement with MOVO. Contact `support@himovo.com` for these
+requests.

@@ -98,6 +98,7 @@ ipython_config.py
 static
 ppt/
 .claude/
+/backups/
 .github/
 !.github/
 .github/*
@@ -106,6 +107,7 @@ ppt/
 !.github/workflows/dsh-migration-step1.yml
 !.github/workflows/runtime-guard.yml
 !.github/workflows/dsh-upgrade-candidate.yml
+!.github/workflows/container-release.yml
 !.github/ISSUE_TEMPLATE/
 !.github/ISSUE_TEMPLATE/*
 !.github/pull_request_template.md

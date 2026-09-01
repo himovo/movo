@@ -54,7 +54,13 @@ def test_document_resource_can_flow_directly_into_image_facts(monkeypatch) -> No
 
     async def fake_extract_image_facts(*, node, output_spec, user_text):
         captured["vision_input"] = output_spec["input_artifacts"]["images"][0]
-        return {"images": [{"image_index": 1, "facts": ["three warehouses"]}]}
+        return {
+            "vision_summary": "three warehouses",
+            "images": [{"image_index": 1, "facts": ["three warehouses"]}],
+        }
+
+    async def fake_vision_model(*args, **kwargs):
+        return {"id": "vision-model-a"}
 
     monkeypatch.setattr(
         "app.enterprise_capabilities.runtime.adapters.runtime_parse_service.extract_resources",
@@ -63,6 +69,10 @@ def test_document_resource_can_flow_directly_into_image_facts(monkeypatch) -> No
     monkeypatch.setattr(
         "app.enterprise_capabilities.runtime.adapters.runtime_parse_service.extract_image_facts",
         fake_extract_image_facts,
+    )
+    monkeypatch.setattr(
+        "app.enterprise_capabilities.runtime.adapters.get_default_model_config_by_capability",
+        fake_vision_model,
     )
     monkeypatch.setattr(
         "app.enterprise_capabilities.artifacts.resource_result.AliyunOSSUploader",

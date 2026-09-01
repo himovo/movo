@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { darkTheme, NButton, NConfigProvider, NDialogProvider, NInput, NMessageProvider, NNotificationProvider, NSelect } from 'naive-ui'
 import TokenInput from './components/TokenInput.vue'
-import LoginModal from './components/LoginModal.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
 import TokenUsagePage from './components/TokenUsagePage.vue'
-import BillingModal from './components/BillingModal.vue'
 import ProfileModal from './components/ProfileModal.vue'
-import CreateOrganizationModal from './components/CreateOrganizationModal.vue'
+import productUiExtension from '@movo-product-extension'
 import DesktopWindowChrome from './components/desktop/DesktopWindowChrome.vue'
 import DesktopServerSetup from './components/desktop/DesktopServerSetup.vue'
 import type { DesktopToolTabKind } from './components/desktop/desktopToolTabs'
@@ -26,7 +24,7 @@ import {
 } from './api/sessions'
 import { deleteSkill, enrichSkillDraft, generateSkill, listSkills, updateSkill, uploadSkillSource } from './api/skills'
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { setLocale as setAppLocale, t, useLocale, type Locale } from './composables/i18n'
+import { registerProductMessages, setLocale as setAppLocale, t, useLocale, type Locale } from './composables/i18n'
 import { getBrowserTimezone, setAppTimezone } from './composables/appTimezone'
 import { buildAdminSsoUrl } from './utils/adminUrl'
 import { sortSessionsByRecentActivity } from './utils/sessionOrdering'
@@ -45,6 +43,10 @@ const ToolsPage = defineAsyncComponent(() => import('./components/MyToolsPage.vu
 const SkillConfigPage = defineAsyncComponent(() => import('./components/MySkillConfigPage.vue'))
 const CompositeSkillEditor = defineAsyncComponent(() => import('./components/CompositeSkillEditor.vue'))
 const ScheduledTaskPage = defineAsyncComponent(() => import('./components/scheduled-tasks/ScheduledTaskPage.vue'))
+const ProductLoginModal = productUiExtension.loginModal
+const ProductBillingModal = productUiExtension.billingModal
+const ProductCreateOrganizationModal = productUiExtension.createOrganizationModal
+registerProductMessages(productUiExtension.messages)
 
 const currentModel = ref('openAI GPT5.2')
 
@@ -2479,13 +2481,16 @@ onBeforeUnmount(() => {
         </template>
       </div>
     </main>
-    <LoginModal
+    <component
+      :is="ProductLoginModal"
       :open="loginOpen"
       :saved-users="savedUsers"
       @close="loginOpen = false"
       @login-success="handleLoginSuccess"
     />
-    <BillingModal
+    <component
+      v-if="ProductBillingModal"
+      :is="ProductBillingModal"
       :open="billingOpen"
       :token="authToken"
       :can-access-admin="isEnterpriseSpace && userProfile?.canAccessAdmin === true"
@@ -2499,7 +2504,9 @@ onBeforeUnmount(() => {
       @close="profileOpen = false"
       @updated="handleProfileUpdated"
     />
-    <CreateOrganizationModal
+    <component
+      v-if="ProductCreateOrganizationModal"
+      :is="ProductCreateOrganizationModal"
       :open="createOrganizationOpen"
       :token="authToken"
       @close="createOrganizationOpen = false"

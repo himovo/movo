@@ -6,7 +6,9 @@
     "moduleResolution": "Node",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@movo-admin-product-extension": ["src/product/community.ts"],
+      "@movo-admin-web/*": ["src/*"]
     },
     "strict": true,
     "jsx": "preserve",

@@ -52,14 +52,12 @@ def _cost(model_name: str, prompt_tokens: int, completion_tokens: int) -> float:
 async def _billing(db: Any, main_id: str, current_user: dict[str, Any]) -> dict[str, Any]:
     org = await db[ORG_COLLECTION].find_one({"main_id": main_id})
     if not org:
+        from app.product.extensions import get_admin_product_extension
+
         org = {
             "main_id": main_id,
             "org_name": current_user.get("org_name") or "组织空间",
-            "tier": "free",
-            "user_limit": 5,
-            "total_points": 0,
-            "used_points": 0,
-            "is_own_model": False,
+            **dict(get_admin_product_extension().organization_defaults),
         }
     current_members = await db[USER_COLLECTION].count_documents({"main_id": main_id})
     total_points = int(org.get("total_points") or 0)

@@ -147,7 +147,7 @@ def test_presentation_observations_accept_merged_search_knowledge_and_document_e
             "results": [
                 {
                     "tool": "external_search", "title": "AskBot 官网",
-                    "content": "公开产品定位。", "source_url": "https://askbot.cn",
+                    "content": "公开产品定位。", "source_url": "https://example.com",
                 },
                 {
                     "tool": "knowledge_search", "title": "内部产品手册",

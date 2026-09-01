@@ -25,6 +25,10 @@ source "${ROOT_DIR}/deploy/cli/i18n.sh"
 movo_detect_locale
 # shellcheck source=deploy/cli/dsh-version.sh
 source "${ROOT_DIR}/deploy/cli/dsh-version.sh"
+# shellcheck source=deploy/cli/images.sh
+source "${ROOT_DIR}/deploy/cli/images.sh"
+# shellcheck source=deploy/cli/backup.sh
+source "${ROOT_DIR}/deploy/cli/backup.sh"
 
 print_logo() {
   printf '\n'
@@ -65,6 +69,9 @@ require_docker() {
 }
 
 retire_legacy_compose_project() {
+  if [[ "${MOVO_MIGRATE_LEGACY_PROJECT:-false}" != "true" ]]; then
+    return 0
+  fi
   local legacy_containers=""
   legacy_containers="$("${DOCKER_BIN}" compose -p askai ps -q 2>/dev/null || true)"
   if [[ -n "${legacy_containers}" ]]; then
@@ -75,14 +82,14 @@ retire_legacy_compose_project() {
 
 refresh_gateway_resolution() {
   local gateway_id=""
-  gateway_id="$("${DOCKER_BIN}" compose ps -q gateway 2>/dev/null || true)"
+  gateway_id="$(movo_compose ps -q gateway 2>/dev/null || true)"
   if [[ -z "${gateway_id}" ]]; then
     return 0
   fi
   # The stock Nginx image resolves Compose service names when it starts.
   # Rebuilt upstream containers may receive new IPs while gateway is kept,
   # so restart this stateless proxy before probing deployment readiness.
-  "${DOCKER_BIN}" compose restart gateway
+  movo_compose restart gateway
 }
 
 dotenv_value() {
@@ -125,7 +132,7 @@ status_is_ready() {
   elif command -v wget >/dev/null 2>&1; then
     response="$(wget -qO- -T 5 "${status_url}" 2>/dev/null || true)"
   else
-    response="$("${DOCKER_BIN}" compose exec -T gateway wget -qO- \
+    response="$(movo_compose exec -T gateway wget -qO- \
       http://admin-api:8100/api/setup/status 2>/dev/null || true)"
   fi
   [[ "${response}" == *'"ready":true'* ]]
@@ -155,17 +162,51 @@ command_up() {
   print_logo
   require_docker
   deployment_urls
+  if movo_has_build_flag "$@"; then
+    movo_configure_images true
+  else
+    movo_configure_images false
+  fi
   retire_legacy_compose_project
   movo_msg starting
   if movo_has_build_flag "$@"; then
     movo_print_dsh_build_target
   fi
-  if ! "${DOCKER_BIN}" compose up -d "$@"; then
+  if ! movo_compose up -d "$@"; then
     movo_msg start_failed >&2
-    "${DOCKER_BIN}" compose ps >&2 || true
+    movo_compose ps >&2 || true
     movo_msg logs_hint >&2
     return 1
   fi
+  refresh_gateway_resolution
+  wait_until_ready
+  movo_print_running_dsh_version
+  show_ready_message
+}
+
+command_build() {
+  print_logo
+  require_docker
+  movo_configure_images true
+  movo_msg building
+  movo_print_dsh_build_target
+  movo_compose build "$@"
+}
+
+command_update() {
+  print_logo
+  require_docker
+  deployment_urls
+  movo_configure_images false
+  if [[ "${MOVO_USING_LOCAL_IMAGES:-false}" == "true" ]]; then
+    movo_msg update_local_only >&2
+    return 2
+  fi
+  movo_msg updating
+  MOVO_PULL_POLICY=always
+  export MOVO_PULL_POLICY
+  movo_compose pull
+  movo_compose up -d
   refresh_gateway_resolution
   wait_until_ready
   movo_print_running_dsh_version
@@ -181,31 +222,75 @@ case "${command}" in
   up)
     command_up "$@"
     ;;
+  build)
+    command_build "$@"
+    ;;
+  update)
+    command_update
+    ;;
+  backup)
+    require_docker
+    deployment_urls
+    movo_configure_images false
+    movo_backup "${1:-}"
+    ;;
+  restore)
+    require_docker
+    if [[ -z "${1:-}" ]]; then
+      movo_usage >&2
+      exit 2
+    fi
+    restore_confirmed=false
+    for argument in "${@:2}"; do
+      [[ "${argument}" == "--yes" ]] && restore_confirmed=true
+    done
+    deployment_urls
+    movo_configure_images false
+    movo_restore "$1" "${restore_confirmed}"
+    ;;
   status)
     require_docker
-    "${DOCKER_BIN}" compose ps
+    movo_compose ps
     ;;
   logs)
     require_docker
-    "${DOCKER_BIN}" compose logs --tail=200 "$@"
+    movo_compose logs --tail=200 "$@"
     ;;
   restart)
     print_logo
     require_docker
     deployment_urls
-    "${DOCKER_BIN}" compose restart
+    movo_compose restart
     wait_until_ready
     show_ready_message
     ;;
   down)
     require_docker
     remove_volumes=false
+    confirmed=false
+    compose_down_args=()
     for argument in "$@"; do
       case "${argument}" in
         -v|--volumes) remove_volumes=true ;;
+        --yes) confirmed=true ;;
+        *) compose_down_args+=("${argument}") ;;
       esac
     done
-    "${DOCKER_BIN}" compose down "$@"
+    if [[ "${remove_volumes}" == "true" ]]; then
+      compose_down_args+=(--volumes)
+      if [[ "${confirmed}" != "true" ]]; then
+        confirmation=""
+        if [[ -t 0 ]]; then
+          movo_msg remove_confirm
+          read -r confirmation
+        fi
+        if [[ "${confirmation}" != "MOVO" ]]; then
+          movo_msg remove_aborted >&2
+          exit 2
+        fi
+      fi
+    fi
+    movo_compose down "${compose_down_args[@]}"
     retire_legacy_compose_project
     if [[ "${remove_volumes}" == "true" ]]; then
       movo_msg stopped_removed

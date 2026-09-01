@@ -66,7 +66,7 @@ class Settings(BaseSettings):
     KNOWLEDGE_CANDIDATES_TIMEOUT_SECONDS: float = 20.0
     KNOWLEDGE_CANDIDATES_MIN_RERANK_SCORE: float = 10.0
     DOCUMENT_PROCESSING_BASE_URL: str = "http://127.0.0.1:8200"
-    DOCUMENT_PROCESSING_SERVICE_TOKEN: str = "movo-document-processing-dev-token"
+    DOCUMENT_PROCESSING_SERVICE_TOKEN: str = ""
     DOCUMENT_PROCESSING_TIMEOUT_SECONDS: float = 30.0
     DOCUMENT_PROCESSING_SYNC_PARSE_TIMEOUT_SECONDS: float = 180.0
     KNOWLEDGE_STORAGE_TYPE: str = "local"
@@ -84,30 +84,7 @@ class Settings(BaseSettings):
     MONGODB_URI: str = ""
     MONGODB_DB: str = "gragentic"
     END_USER_AUTH_TOKEN_TTL_SECONDS: int = 60 * 60 * 24 * 7
-    END_USER_AUTH_SECRET: str = "askai-end-user-dev-secret"
-    WECHAT_PAY_MCH_ID: str = "1639152931"
-    WECHAT_PAY_APP_ID: str = ""
-    WECHAT_PAY_API_V3_KEY: str = ""
-    WECHAT_PAY_MERCHANT_SERIAL_NO: str = ""
-    WECHAT_PAY_PRIVATE_KEY_PATH: str = ""
-    WECHAT_PAY_NOTIFY_URL: str = ""
-    ALIYUN_DM_SMTP_HOST: str = "smtpdm.aliyun.com"
-    ALIYUN_DM_SMTP_PORT: int = 465
-    ALIYUN_DM_SMTP_USERNAME: str = ""
-    ALIYUN_DM_SMTP_PASSWORD: str = ""
-    ALIYUN_DM_FROM_EMAIL: str = ""
-    ALIYUN_DM_FROM_NAME: str = "MOVO"
-    EMAIL_VERIFICATION_CODE_TTL_SECONDS: int = 10 * 60
-    ALIYUN_SMS_ACCESS_KEY_ID: str = ""
-    ALIYUN_SMS_ACCESS_KEY_SECRET: str = ""
-    ALIYUN_SMS_SIGN_NAME: str = ""
-    ALIYUN_SMS_TEMPLATE_CODE: str = "SMS_492570528"
-    ALIYUN_SMS_REGION_ID: str = "cn-hangzhou"
-    SMS_VERIFICATION_CODE_TTL_SECONDS: int = 5 * 60
-    ALIYUN_CAPTCHA_ENABLED: bool = True
-    ALIYUN_CAPTCHA_APP_ID: str = ""
-    ALIYUN_CAPTCHA_APP_KEY: str = ""
-    ALIYUN_CAPTCHA_DOMAIN: str = "https://captcha.alicaptcha.com"
+    END_USER_AUTH_SECRET: str = ""
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
     LOG_FILE_ENABLED: bool = False
@@ -122,9 +99,9 @@ class Settings(BaseSettings):
     TOOL_SLOW_MS: int = 20000
     DB_SLOW_MS: int = 3000
     PRESENTATION_PAGE_SLOW_MS: int = 20000
-    DEBUG_ARTIFACTS_ENABLED: bool = True
+    DEBUG_ARTIFACTS_ENABLED: bool = False
     DEBUG_ARTIFACT_RETENTION_DAYS: int = 7
-    REQUEST_DEBUG_SNAPSHOT_ENABLED: bool = True
+    REQUEST_DEBUG_SNAPSHOT_ENABLED: bool = False
     ENABLE_BROWSER_PLANNING: bool = True
     ENABLE_CODING_PLANNING: bool = True
     PLAN_ONLY_MODE: bool = False
@@ -138,7 +115,7 @@ class Settings(BaseSettings):
     PRESENTATION_V5_RAW_RENDER: str = ""
     PRESENTATION_V5_FAST_MODE: str = ""
     PRESENTATION_FAST_MODE: str = ""
-    ASKAI_ADMIN_JWT_SECRET: str = "askai-admin-dev-secret"
+    ASKAI_ADMIN_JWT_SECRET: str = ""
     ADMIN_BACKEND_SERVICE_TOKEN: str = ""
     DSH_MODEL_GATEWAY_SIGNING_SECRET: str = ""
     DSH_TOOL_GATEWAY_URL: str = "http://127.0.0.1:8000/internal/dsh/tools"
@@ -149,8 +126,6 @@ class Settings(BaseSettings):
 
     # Optional demo APIs are excluded from production by default.
     ENABLE_DEMO_ENDPOINTS: bool = False
-    ENABLE_DEV_BILLING: bool = False
-
     # Upload limits. Defaults are intentionally generous to preserve existing
     # workflows while preventing accidental unbounded in-memory reads.
     MAX_UPLOAD_IMAGE_BYTES: int = 50 * 1024 * 1024

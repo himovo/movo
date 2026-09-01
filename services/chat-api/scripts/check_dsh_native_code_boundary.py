@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import os
 from collections import Counter
 from dataclasses import dataclass
@@ -65,24 +64,6 @@ def scan_occurrences(root: Path) -> Counter[Occurrence]:
     return found
 
 
-def load_allowance(path: Path) -> Counter[Occurrence]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if payload.get("schema_version") != "askai.dsh-native-code-retired.v2":
-        raise ValueError(f"unsupported baseline schema: {payload.get('schema_version')!r}")
-    if payload.get("allowed_occurrences"):
-        raise ValueError("retired ASKAI Code Agent production allowances must remain empty")
-    allowed: Counter[Occurrence] = Counter()
-    for item in payload.get("allowed_occurrences", []):
-        occurrence = Occurrence(str(item["path"]), str(item["token"]))
-        count = int(item["max_count"])
-        if count < 0 or occurrence.token not in LEGACY_TOKENS:
-            raise ValueError(f"invalid allowance: {item!r}")
-        if occurrence in allowed:
-            raise ValueError(f"duplicate allowance: {item!r}")
-        allowed[occurrence] = count
-    return allowed
-
-
 def violations(found: Counter[Occurrence], allowed: Counter[Occurrence]) -> list[str]:
     failures: list[str] = []
     for occurrence, count in sorted(found.items(), key=lambda item: (item[0].path, item[0].token)):
@@ -96,21 +77,18 @@ def violations(found: Counter[Occurrence], allowed: Counter[Occurrence]) -> list
 
 def main() -> int:
     repo_root = Path(__file__).resolve().parents[3]
-    parser = argparse.ArgumentParser(description="Reject every production reference to the retired ASKAI Code Agent.")
+    parser = argparse.ArgumentParser(description="Reject every production reference to the retired legacy Code Agent.")
     parser.add_argument("--root", type=Path, default=repo_root)
-    parser.add_argument(
-        "--baseline",
-        type=Path,
-        default=repo_root / "docs" / "dsh-native-code-legacy-baseline.json",
-    )
     args = parser.parse_args()
-    failures = violations(scan_occurrences(args.root.resolve()), load_allowance(args.baseline.resolve()))
+    # Community releases permit no production exceptions, so a historical
+    # migration baseline is neither required nor accepted.
+    failures = violations(scan_occurrences(args.root.resolve()), Counter())
     if failures:
         print("DSH native Code boundary guard failed:")
         for failure in failures:
             print(f"- {failure}")
         return 1
-    print("DSH native Code boundary guard passed: the retired ASKAI Code Agent has zero production references.")
+    print("DSH native Code boundary guard passed: the retired legacy Code Agent has zero production references.")
     return 0
 
 

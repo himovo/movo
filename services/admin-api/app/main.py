@@ -19,6 +19,7 @@ from app.services.admin_bootstrap import bootstrap_admin_user
 from app.services.directory_bootstrap import bootstrap_directory
 from app.services.organization_tools import repair_role_referenced_personal_tools
 from app.system_audit import SystemAuditMiddleware, SystemAuditRepository
+from app.product.extensions import get_admin_product_extension
 
 
 def create_app() -> FastAPI:
@@ -45,7 +46,8 @@ def create_app() -> FastAPI:
     async def on_startup() -> None:
         init_db()
         await bootstrap_admin_user()
-        await migrate_bootstrapped_community_organization()
+        if get_admin_product_extension().edition == "community":
+            await migrate_bootstrapped_community_organization()
         await bootstrap_directory()
         await SystemAuditRepository().ensure_indexes()
         await ensure_model_indexes()
@@ -64,6 +66,8 @@ def create_app() -> FastAPI:
         close_db()
 
     app.include_router(api_router, prefix="/api")
+    for extension_router in get_admin_product_extension().routers:
+        app.include_router(extension_router, prefix="/api")
     static_dir = Path(settings.admin_static_dir).expanduser().resolve()
     static_dir.mkdir(parents=True, exist_ok=True)
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")

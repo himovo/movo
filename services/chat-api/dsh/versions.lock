@@ -1,4 +1,4 @@
-# ASKAI DSH dependency lock policy (format 1)
+# MOVO DSH dependency lock policy (format 1)
 # Generated during migration step 1 on 2026-08-15.
 # This file records approved direct artifacts. Step 2 must create pnpm-lock.yaml
 # and verify every transitive package against the same release train.

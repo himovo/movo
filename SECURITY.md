@@ -2,8 +2,8 @@
 
 Please do not disclose suspected vulnerabilities in public issues. Use GitHub's
 private vulnerability reporting feature for this repository. If that feature is
-not available, contact a maintainer privately before sharing details. Include
-the affected commit or release, impact, reproduction steps and any suggested
+not available, email `support@himovo.com` before sharing details. Include the
+affected commit or release, impact, reproduction steps and any suggested
 mitigation, but never include real credentials or customer data.
 
 Self-hosted operators are responsible for TLS termination, network access

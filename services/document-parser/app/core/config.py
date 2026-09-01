@@ -12,8 +12,8 @@ LEGACY_ENV_PREFIX = "ASKAI_DOC_PROCESSING_"
 
 class Settings(BaseSettings):
     app_env: str = "development"
-    service_token: str = "movo-document-processing-dev-token"
-    callback_token: str = "movo-document-preview-callback-dev-token"
+    service_token: str = ""
+    callback_token: str = ""
     local_storage_dir: str = "../admin-api/data/knowledge-documents"
     artifacts_prefix: str = "artifacts"
     oss_endpoint: str = "https://oss-cn-beijing.aliyuncs.com"

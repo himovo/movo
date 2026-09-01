@@ -73,7 +73,7 @@ def generate() -> dict:
                 "name": host["name"],
                 "version": host["version"],
             },
-            "tools": {"components": [{"type": "application", "name": "ASKAI DSH SBOM generator", "version": "1"}]},
+            "tools": {"components": [{"type": "application", "name": "MOVO DSH SBOM generator", "version": "1"}]},
         },
         "components": components,
     }

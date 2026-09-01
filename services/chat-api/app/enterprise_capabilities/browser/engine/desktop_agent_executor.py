@@ -1051,7 +1051,7 @@ class DesktopAgentBrowserExecutor:
         # node starts with current_obs==about:blank, so the planner LLM
         # sees "I'm on a blank page" and re-navigates from the enterprise
         # site map — undoing any progress an upstream node made (e.g.
-        # landed on wisdom.test.askbot.cn, next node restarts from portal).
+        # landed on an authenticated portal, next node restarts from the entry page).
         # A no-domain browser_observe falls through to getLastActivePage
         # on the agent side, returning the actual tab state if one exists.
         initial_probe = await acquire_initial_observation(

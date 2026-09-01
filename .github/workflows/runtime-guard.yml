@@ -59,3 +59,28 @@ jobs:
       - name: Runtime Host contract suite
         working-directory: services/chat-api/dsh/runtime-host
         run: pnpm test
+
+  community-release-guard:
+    runs-on: ubuntu-latest
+    env:
+      MOVO_IMAGE_PREFIX: ghcr.io/example/movo
+      MOVO_VERSION: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install focused test dependencies
+        run: python -m pip install -r services/admin-api/requirements.txt pytest
+      - name: Verify Community Edition entitlements and credentials
+        run: |
+          PYTHONPATH=services/admin-api python -m pytest -q \
+            services/admin-api/tests/test_product_edition.py \
+            services/admin-api/tests/test_employee_credentials.py \
+            services/admin-api/tests/test_setup_repository_lock.py
+          PYTHONPATH=services/chat-api python -m pytest -q \
+            services/chat-api/tests/core/test_product_edition.py
+      - name: Validate prebuilt-image Compose
+        run: docker compose config --quiet
+      - name: Validate source-build Compose
+        run: docker compose -f docker-compose.yml -f docker-compose.build.yml config --quiet

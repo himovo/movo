@@ -110,7 +110,7 @@
               v-model:value="passwordForm.newPassword"
               type="password"
               show-password-on="click"
-              :placeholder="t('至少 6 位字符')"
+              :placeholder="t('至少 10 位字符')"
             />
           </n-form-item>
           <n-form-item :label="t('确认新密码')" path="confirmPassword">
@@ -193,7 +193,7 @@ const passwordRules: FormRules = {
   currentPassword: [{ required: true, message: t('请输入当前密码'), trigger: ['input', 'blur'] }],
   newPassword: [
     { required: true, message: t('请输入新密码'), trigger: ['input', 'blur'] },
-    { min: 6, message: t('新密码至少 6 位'), trigger: ['input', 'blur'] },
+    { min: 10, message: t('新密码至少 10 位'), trigger: ['input', 'blur'] },
     {
       validator: (_rule, value: string) => value !== passwordForm.currentPassword,
       message: t('新密码不能与当前密码相同'),

@@ -61,8 +61,11 @@ def _secret_key() -> bytes:
         os.getenv("MODEL_CONFIG_SECRET")
         or str(get_settings().ASKAI_ADMIN_JWT_SECRET or "")
         or os.getenv("ASKAI_ADMIN_JWT_SECRET")
-        or "askai-admin-dev-secret"
     )
+    if not secret:
+        raise ModelConfigError(
+            "MODEL_CONFIG_SECRET is required to encrypt stored model credentials"
+        )
     return hashlib.sha256(secret.encode("utf-8")).digest()
 
 

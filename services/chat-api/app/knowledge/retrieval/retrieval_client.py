@@ -16,7 +16,7 @@ class KnowledgeRetrievalClient:
     def __init__(self) -> None:
         settings = get_settings()
         self.base_url = str(getattr(settings, "DOCUMENT_PROCESSING_BASE_URL", "") or "http://127.0.0.1:8200").rstrip("/")
-        self.service_token = str(getattr(settings, "DOCUMENT_PROCESSING_SERVICE_TOKEN", "") or "askai-document-processing-dev-token")
+        self.service_token = str(getattr(settings, "DOCUMENT_PROCESSING_SERVICE_TOKEN", "") or "")
         self.timeout = float(getattr(settings, "DOCUMENT_PROCESSING_TIMEOUT_SECONDS", 30.0) or 30.0)
 
     async def search(

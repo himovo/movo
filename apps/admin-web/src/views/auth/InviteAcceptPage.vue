@@ -45,7 +45,7 @@
               </n-grid-item>
               <n-grid-item>
                 <n-form-item :label="t('设置密码')">
-                  <n-input v-model:value="form.password" type="password" show-password-on="click" :placeholder="t('至少 6 位')" />
+                  <n-input v-model:value="form.password" type="password" show-password-on="click" :placeholder="t('至少 10 位')" />
                 </n-form-item>
               </n-grid-item>
               <n-grid-item>
@@ -155,8 +155,8 @@ async function submitAccept() {
     errorMessage.value = t('请填写姓名');
     return;
   }
-  if (form.password.length < 6) {
-    errorMessage.value = t('密码至少 6 位');
+  if (form.password.length < 10) {
+    errorMessage.value = t('密码至少 10 位');
     return;
   }
   if (form.password !== form.confirmPassword) {

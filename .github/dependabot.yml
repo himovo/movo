@@ -4,6 +4,18 @@ updates:
     directory: /apps/user-web
     schedule:
       interval: weekly
+  - package-ecosystem: pip
+    directory: /services/chat-api
+    schedule:
+      interval: weekly
+  - package-ecosystem: pip
+    directory: /services/admin-api
+    schedule:
+      interval: weekly
+  - package-ecosystem: pip
+    directory: /services/document-parser
+    schedule:
+      interval: weekly
   - package-ecosystem: npm
     directory: /apps/admin-web
     schedule:

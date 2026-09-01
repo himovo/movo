@@ -197,7 +197,7 @@ function validateAccountForm() {
   if (!accountForm.orgName.trim()) return t('请填写企业名称');
   if (!accountForm.adminUsername.trim() || !accountForm.employeeUsername.trim()) return t('请填写管理员和员工账号');
   if (accountForm.adminUsername.trim() === accountForm.employeeUsername.trim()) return t('管理员账号和员工账号不能相同');
-  if (accountForm.adminPassword.trim().length < 6 || accountForm.employeePassword.trim().length < 6) return t('管理员和员工密码至少 6 位');
+  if (accountForm.adminPassword.trim().length < 10 || accountForm.employeePassword.trim().length < 10) return t('管理员和员工密码至少 10 位');
   if (!accountForm.employeeName.trim()) return t('请填写初始员工姓名');
   if (!accountForm.orgTotalTokens || accountForm.orgTotalTokens <= 0) return t('请填写企业总 Token');
   if (!accountForm.defaultUserTokens || accountForm.defaultUserTokens <= 0) return t('请填写员工默认 Token');
