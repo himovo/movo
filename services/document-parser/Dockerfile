@@ -25,6 +25,7 @@ ARG INSTALL_DOCLING_MODELS_AT_BUILD=true
 ARG MOVO_APT_MIRROR=
 ARG MOVO_APT_SECURITY_MIRROR=
 ARG MOVO_PYPI_INDEX_URL=
+ARG MOVO_HF_ENDPOINT=
 COPY scripts /tmp/document-parser-scripts
 RUN if [ -n "${MOVO_APT_MIRROR}" ]; then \
         for source_file in /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources; do \
@@ -88,6 +89,7 @@ RUN if [ "${INSTALL_PYTHON_DEPS_AT_BUILD}" = "true" ]; then \
     && python -c "import torch; print(f'torch {torch.__version__}, cuda_available={torch.cuda.is_available()}, cuda={torch.version.cuda}')"
 
 RUN if [ "${INSTALL_DOCLING_MODELS_AT_BUILD}" = "true" ]; then \
+        if [ -n "${MOVO_HF_ENDPOINT}" ]; then export HF_ENDPOINT="${MOVO_HF_ENDPOINT}"; fi; \
         python /tmp/document-parser-scripts/download_docling_models.py; \
     else \
         echo "Skip Docling model download (INSTALL_DOCLING_MODELS_AT_BUILD=false)"; \
