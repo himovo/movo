@@ -91,7 +91,7 @@ ARG MOVO_HF_ENDPOINT=
 ARG MOVO_HF_TIMEOUT=120
 RUN if [ "${INSTALL_DOCLING_MODELS_AT_BUILD}" = "true" ]; then \
         if [ -n "${MOVO_HF_ENDPOINT}" ]; then export HF_ENDPOINT="${MOVO_HF_ENDPOINT}"; fi; \
-        HF_HUB_ETAG_TIMEOUT="${MOVO_HF_TIMEOUT}" HF_HUB_DOWNLOAD_TIMEOUT="${MOVO_HF_TIMEOUT}" \
+        HF_HUB_DISABLE_XET=1 HF_HUB_ETAG_TIMEOUT="${MOVO_HF_TIMEOUT}" HF_HUB_DOWNLOAD_TIMEOUT="${MOVO_HF_TIMEOUT}" \
             python /tmp/document-parser-scripts/download_docling_models.py; \
     else \
         echo "Skip Docling model download (INSTALL_DOCLING_MODELS_AT_BUILD=false)"; \
