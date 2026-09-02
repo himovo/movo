@@ -21,7 +21,6 @@ ARG INSTALL_PYTHON_DEPS_AT_BUILD=true
 ARG PYTORCH_ACCELERATOR=cpu
 ARG PYTORCH_CPU_INDEX_URL=https://download.pytorch.org/whl/cpu
 ARG PYTORCH_CUDA_INDEX_URL=
-ARG INSTALL_DOCLING_MODELS_AT_BUILD=true
 ARG MOVO_APT_MIRROR=
 ARG MOVO_APT_SECURITY_MIRROR=
 ARG MOVO_PYPI_INDEX_URL=
@@ -87,6 +86,7 @@ RUN if [ "${INSTALL_PYTHON_DEPS_AT_BUILD}" = "true" ]; then \
     && python -c "from docling.document_converter import DocumentConverter; print('docling ok')" \
     && python -c "import torch; print(f'torch {torch.__version__}, cuda_available={torch.cuda.is_available()}, cuda={torch.version.cuda}')"
 
+ARG INSTALL_DOCLING_MODELS_AT_BUILD=true
 ARG MOVO_HF_ENDPOINT=
 ARG MOVO_HF_TIMEOUT=120
 RUN if [ "${INSTALL_DOCLING_MODELS_AT_BUILD}" = "true" ]; then \
