@@ -22,7 +22,23 @@ ARG PYTORCH_ACCELERATOR=cpu
 ARG PYTORCH_CPU_INDEX_URL=https://download.pytorch.org/whl/cpu
 ARG PYTORCH_CUDA_INDEX_URL=
 ARG INSTALL_DOCLING_MODELS_AT_BUILD=true
+ARG MOVO_APT_MIRROR=
+ARG MOVO_APT_SECURITY_MIRROR=
+ARG MOVO_PYPI_INDEX_URL=
 COPY scripts /tmp/document-parser-scripts
+RUN if [ -n "${MOVO_APT_MIRROR}" ]; then \
+        for source_file in /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources; do \
+            if [ -f "${source_file}" ]; then \
+                sed -i "s|http://deb.debian.org/debian|${MOVO_APT_MIRROR}|g; s|https://deb.debian.org/debian|${MOVO_APT_MIRROR}|g" "${source_file}"; \
+                if [ -n "${MOVO_APT_SECURITY_MIRROR}" ]; then \
+                    sed -i "s|http://deb.debian.org/debian-security|${MOVO_APT_SECURITY_MIRROR}|g; s|https://deb.debian.org/debian-security|${MOVO_APT_SECURITY_MIRROR}|g; s|http://security.debian.org/debian-security|${MOVO_APT_SECURITY_MIRROR}|g; s|https://security.debian.org/debian-security|${MOVO_APT_SECURITY_MIRROR}|g" "${source_file}"; \
+                fi; \
+            fi; \
+        done; \
+    fi \
+    && if [ -n "${MOVO_PYPI_INDEX_URL}" ]; then \
+        python -m pip config set global.index-url "${MOVO_PYPI_INDEX_URL}"; \
+    fi
 RUN if [ "${INSTALL_SYSTEM_DEPS_AT_BUILD}" = "true" ]; then \
         unset XZ_DEFAULTS XZ_OPT \
         && rm -f /etc/apt/apt.conf.d/docker-clean \

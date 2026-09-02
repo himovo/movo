@@ -1,12 +1,15 @@
 FROM node:24-bookworm-slim AS dependencies
 
+ARG MOVO_NPM_REGISTRY=
+
 ENV NODE_ENV=production \
     PNPM_HOME=/pnpm \
     PATH=/pnpm:$PATH
 
 WORKDIR /app
 
-RUN npm install --global pnpm@10.34.4
+RUN if [ -n "${MOVO_NPM_REGISTRY}" ]; then npm config set registry "${MOVO_NPM_REGISTRY}"; fi \
+    && npm install --global pnpm@10.34.4
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --prod
@@ -14,11 +17,24 @@ RUN node -e "const declared=require('./package.json').dependencies['@deepseek-ai
 
 FROM node:24-bookworm-slim
 
+ARG MOVO_APT_MIRROR=
+ARG MOVO_APT_SECURITY_MIRROR=
+
 ENV NODE_ENV=production
 
 WORKDIR /app
 
-RUN apt-get update \
+RUN if [ -n "${MOVO_APT_MIRROR}" ]; then \
+        for source_file in /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources; do \
+            if [ -f "${source_file}" ]; then \
+                sed -i "s|http://deb.debian.org/debian|${MOVO_APT_MIRROR}|g; s|https://deb.debian.org/debian|${MOVO_APT_MIRROR}|g" "${source_file}"; \
+                if [ -n "${MOVO_APT_SECURITY_MIRROR}" ]; then \
+                    sed -i "s|http://deb.debian.org/debian-security|${MOVO_APT_SECURITY_MIRROR}|g; s|https://deb.debian.org/debian-security|${MOVO_APT_SECURITY_MIRROR}|g; s|http://security.debian.org/debian-security|${MOVO_APT_SECURITY_MIRROR}|g; s|https://security.debian.org/debian-security|${MOVO_APT_SECURITY_MIRROR}|g" "${source_file}"; \
+                fi; \
+            fi; \
+        done; \
+    fi \
+    && apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates gosu \
     && rm -rf /var/lib/apt/lists/* \
     && npm uninstall --global npm
