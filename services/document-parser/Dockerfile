@@ -64,11 +64,16 @@ RUN if [ "${INSTALL_SYSTEM_DEPS_AT_BUILD}" = "true" ]; then \
 COPY requirements.txt /tmp/requirements.txt
 COPY requirements-docling.txt /tmp/requirements-docling.txt
 
+ARG PYTORCH_CPU_FIND_LINKS=
 RUN if [ "${INSTALL_PYTHON_DEPS_AT_BUILD}" = "true" ]; then \
         python -m pip install --progress-bar off --upgrade pip setuptools wheel \
         && case "${PYTORCH_ACCELERATOR}" in \
             cpu) \
-                python -m pip install --progress-bar off --index-url "${PYTORCH_CPU_INDEX_URL}" "torch>=2.2.2,<3.0.0" "torchvision>=0,<1" ;; \
+                if [ -n "${PYTORCH_CPU_FIND_LINKS}" ]; then \
+                    python -m pip install --progress-bar off --find-links "${PYTORCH_CPU_FIND_LINKS}" "torch>=2.2.2,<3.0.0" "torchvision>=0,<1"; \
+                else \
+                    python -m pip install --progress-bar off --index-url "${PYTORCH_CPU_INDEX_URL}" "torch>=2.2.2,<3.0.0" "torchvision>=0,<1"; \
+                fi ;; \
             cu128|cu130) \
                 python -m pip install --progress-bar off --index-url "${PYTORCH_CUDA_INDEX_URL:-https://download.pytorch.org/whl/${PYTORCH_ACCELERATOR}}" "torch>=2.2.2,<3.0.0" "torchvision>=0,<1" ;; \
             default) \
