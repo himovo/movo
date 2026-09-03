@@ -52,6 +52,29 @@ export interface PlatformCapabilities {
   workspaceChanges: boolean
   /** The platform can host a real interactive project terminal. */
   projectTerminal: boolean
+  /** The desktop shell can check, download, and install signed app updates. */
+  desktopUpdates: boolean
+}
+
+export type DesktopUpdatePhase =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'not-available'
+  | 'downloading'
+  | 'downloaded'
+  | 'error'
+  | 'disabled'
+
+export interface DesktopUpdateState {
+  phase: DesktopUpdatePhase
+  current_version: string
+  available_version?: string
+  progress_percent?: number
+  transferred_bytes?: number
+  total_bytes?: number
+  bytes_per_second?: number
+  message?: string
 }
 
 export interface DshWorkspace {

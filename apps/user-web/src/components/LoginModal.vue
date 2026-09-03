@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import PasswordLoginForm from './login/PasswordLoginForm.vue'
+import DesktopLoginServerSwitch from './desktop/DesktopLoginServerSwitch.vue'
 import { t } from '../composables/i18n'
 import type { UserProfile } from '../api/auth'
 
@@ -16,7 +17,7 @@ const emit = defineEmits<{
 
 <template>
   <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
-    <div class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+    <div class="max-h-[calc(100vh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
       <div class="flex items-start justify-between gap-4">
         <div class="flex items-start gap-3">
           <img src="/movo-logo.png" alt="MOVO" class="mt-0.5 h-10 w-12 shrink-0 object-contain" />
@@ -42,6 +43,7 @@ const emit = defineEmits<{
         :suggested-username="savedUsers[0]"
         @login-success="emit('login-success', $event)"
       />
+      <DesktopLoginServerSwitch />
     </div>
   </div>
 </template>

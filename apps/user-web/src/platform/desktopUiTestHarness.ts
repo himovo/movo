@@ -16,6 +16,7 @@ export function installDesktopUiTestHarness() {
     settings: { get: async () => ({ service_url: 'http://localhost:3000', server_configured: true, backend_url: '', agent_ws_url: '', user_id: 'ui-user', auth_token: 'ui-token', auto_start_agent: false, language: 'zh', timezone: 'Asia/Shanghai' }), update: async (value: any) => value },
     enterprise: { connect: async (address: string) => ({ settings: { service_url: address, server_configured: true }, org_name: 'MOVO', main_id: 'ui', services_ready: true }) },
     agent: { status: async () => ({ running: false, ws_url: '', user_id: '', local_control_url: '', local_control_token: '' }), start: async () => ({}), stop: async () => ({}), restart: async () => ({}) },
+    updates: { state: async () => ({ phase: 'not-available', current_version: '0.1.0' }), check: async () => ({ phase: 'not-available', current_version: '0.1.0' }), download: async () => ({ phase: 'downloaded', current_version: '0.1.0', available_version: '0.1.1', progress_percent: 100 }), install: async () => ({ installing: false }), onState: () => () => {} },
     dshWorkspace: {
       list: async () => [workspace], select: async () => workspace, rename: async () => workspace, delete: async () => true,
       branches: async () => ({ current_branch: 'main', head_commit: 'a'.repeat(40), detached: false, dirty: false, branches: [{ name: 'main', full_ref: 'refs/heads/main', kind: 'local', commit: 'a'.repeat(40), current: true }] }),

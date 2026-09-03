@@ -23,6 +23,7 @@ import {
   type Settings, type AgentStatus,
 } from '../platform'
 import { setLocale, t } from '../composables/i18n'
+import DesktopUpdateCard from './desktop/DesktopUpdateCard.vue'
 
 const settings = ref<Settings | null>(null)
 const status = ref<AgentStatus>({
@@ -171,5 +172,7 @@ async function onAgentAction(action: 'start' | 'stop' | 'restart') {
         </n-space>
       </n-space>
     </n-card>
+
+    <DesktopUpdateCard v-if="capabilities.desktopUpdates" />
   </div>
 </template>

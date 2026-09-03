@@ -1,7 +1,7 @@
 // Web implementation of the platform adapter.
 // Desktop-only features are stubbed or proxied to localStorage.
 
-import type { AgentStatus, BrowserBounds, BrowserOwner, BrowserPurpose, DshCodeSession, DshDirectoryEntry, DshExecutionEvent, DshFileDiff, DshFilePreview, DshGitCommitResult, DshGitPushResult, DshPendingApproval, DshTaskChangeSet, DshTaskFileDiff, DshTerminalEvent, DshWorkspace, DshWorkspaceInspection, DshWorkspaceSummary, EmbeddedBrowserState, EnterpriseConnectionResult, PlatformCapabilities, SaveResult, Settings } from './types'
+import type { AgentStatus, BrowserBounds, BrowserOwner, BrowserPurpose, DesktopUpdateState, DshCodeSession, DshDirectoryEntry, DshExecutionEvent, DshFileDiff, DshFilePreview, DshGitCommitResult, DshGitPushResult, DshPendingApproval, DshTaskChangeSet, DshTaskFileDiff, DshTerminalEvent, DshWorkspace, DshWorkspaceInspection, DshWorkspaceSummary, EmbeddedBrowserState, EnterpriseConnectionResult, PlatformCapabilities, SaveResult, Settings } from './types'
 import { detectSystemLocale } from '../composables/i18n'
 import { getBrowserTimezone } from '../composables/appTimezone'
 
@@ -36,6 +36,7 @@ export const capabilities: PlatformCapabilities = {
   workspaceFiles: false,
   workspaceChanges: false,
   projectTerminal: false,
+  desktopUpdates: false,
 }
 
 export async function getSettings(): Promise<Settings> {
@@ -65,6 +66,12 @@ export async function stopAgent(): Promise<AgentStatus> {
 export async function restartAgent(): Promise<AgentStatus> {
   throw new Error('local agent is only available in the desktop app')
 }
+const WEB_UPDATE_STATE: DesktopUpdateState = { phase: 'disabled', current_version: '' }
+export async function getDesktopUpdateState() { return { ...WEB_UPDATE_STATE } }
+export async function checkDesktopUpdate() { return { ...WEB_UPDATE_STATE } }
+export async function downloadDesktopUpdate() { return { ...WEB_UPDATE_STATE } }
+export async function installDesktopUpdate() { return { installing: false } }
+export function onDesktopUpdateState(_listener: (state: DesktopUpdateState) => void) { return () => {} }
 export async function listDshWorkspaces(_modelId?: string): Promise<DshWorkspace[]> { return [] }
 export async function selectDshWorkspace(_modelId?: string): Promise<DshWorkspace | null> { throw new Error('local Workspace selection is only available in the desktop app') }
 export async function renameDshWorkspace(_workspaceId: string, _title: string, _modelId?: string): Promise<DshWorkspace> { throw new Error('local Workspaces are only available in the desktop app') }

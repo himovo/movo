@@ -1,9 +1,16 @@
-import type { AgentStatus, BrowserBounds, BrowserOwner, BrowserPurpose, DshCodeSession, DshDirectoryEntry, DshExecutionEvent, DshFileDiff, DshFilePreview, DshGitBranchSnapshot, DshGitCommitResult, DshGitPushResult, DshPendingApproval, DshTaskChangeSet, DshTaskFileDiff, DshTerminalEvent, DshWorkspace, DshWorkspaceInspection, DshWorkspaceSummary, EmbeddedBrowserState, EnterpriseConnectionResult, PlatformCapabilities, SaveResult, Settings } from './types'
+import type { AgentStatus, BrowserBounds, BrowserOwner, BrowserPurpose, DesktopUpdateState, DshCodeSession, DshDirectoryEntry, DshExecutionEvent, DshFileDiff, DshFilePreview, DshGitBranchSnapshot, DshGitCommitResult, DshGitPushResult, DshPendingApproval, DshTaskChangeSet, DshTaskFileDiff, DshTerminalEvent, DshWorkspace, DshWorkspaceInspection, DshWorkspaceSummary, EmbeddedBrowserState, EnterpriseConnectionResult, PlatformCapabilities, SaveResult, Settings } from './types'
 
 interface ElectronApi {
   settings: { get(): Promise<Settings>; update(next: Settings): Promise<Settings> }
   enterprise: { connect(address: string): Promise<EnterpriseConnectionResult> }
   agent: { status(): Promise<AgentStatus>; start(): Promise<AgentStatus>; stop(): Promise<AgentStatus>; restart(): Promise<AgentStatus> }
+  updates: {
+    state(): Promise<DesktopUpdateState>
+    check(): Promise<DesktopUpdateState>
+    download(): Promise<DesktopUpdateState>
+    install(): Promise<{ installing: boolean }>
+    onState(listener: (state: DesktopUpdateState) => void): () => void
+  }
   dshWorkspace: {
     list(modelId?: string): Promise<DshWorkspace[]>
     select(modelId?: string): Promise<DshWorkspace | null>
@@ -85,6 +92,7 @@ export const capabilities: PlatformCapabilities = {
   workspaceFiles: true,
   workspaceChanges: true,
   projectTerminal: true,
+  desktopUpdates: true,
 }
 
 export const getSettings = () => api().settings.get()
@@ -94,6 +102,11 @@ export const getAgentStatus = () => api().agent.status()
 export const startAgent = () => api().agent.start()
 export const stopAgent = () => api().agent.stop()
 export const restartAgent = () => api().agent.restart()
+export const getDesktopUpdateState = () => api().updates.state()
+export const checkDesktopUpdate = () => api().updates.check()
+export const downloadDesktopUpdate = () => api().updates.download()
+export const installDesktopUpdate = () => api().updates.install()
+export const onDesktopUpdateState = (listener: (state: DesktopUpdateState) => void) => api().updates.onState(listener)
 export const listDshWorkspaces = (modelId?: string) => api().dshWorkspace.list(modelId)
 export const selectDshWorkspace = (modelId?: string) => api().dshWorkspace.select(modelId)
 export const renameDshWorkspace = (workspaceId: string, title: string, modelId?: string) =>
