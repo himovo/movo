@@ -6,7 +6,8 @@ export type ExecutionTimelineEntry =
 
 const SENSITIVE_ARGUMENT = /(?:token|secret|password|authorization|cookie|api[_-]?key)/i
 const INTERNAL_FILE_ARGUMENT = /^(?:object_path|signed_url|download_url|local_path|storage_path|blueprint_object_path)$/i
-const FILE_ARGUMENT = /^(?:artifact|artifacts|file|files|document|documents|image|images|filename)$/i
+const FILE_ARGUMENT = /^(?:artifact|artifacts|file|files|file_path|path|document|documents|image|images|filename)$/i
+const VERBOSE_ARGUMENT = /^(?:command|content|old_string|new_string|patch|code|todos)$/i
 const DETAIL_LIMIT = 180
 
 export type ToolCapabilityKey =
@@ -16,14 +17,16 @@ export type ToolCapabilityKey =
   | 'execution.v3.activity.search_code'
   | 'execution.v3.activity.use_browser'
   | 'execution.v3.activity.search_web'
+  | 'execution.v3.activity.update_plan'
   | 'execution.v3.activity.call_tools'
 
 function toolCapability(item: ExecutionItemV3): ToolCapabilityKey | null {
   const name = toolName(item).toLowerCase().replace(/[^a-z0-9]+/g, '_')
+  if (/(?:^|_)(todo_write|update_plan|write_plan)(?:_|$)/.test(name)) return 'execution.v3.activity.update_plan'
   if (/(?:^|_)(browser|navigate|click|fill|press|screenshot)(?:_|$)/.test(name)) return 'execution.v3.activity.use_browser'
   if (/(?:^|_)(web_search|search_web|internet_search|external_search)(?:_|$)/.test(name)) return 'execution.v3.activity.search_web'
   if (/(?:^|_)(apply_patch|patch|edit|write|create_file|delete_file|move_file|rename_file|multi_edit)(?:_|$)/.test(name)) return 'execution.v3.activity.edit_files'
-  if (/(?:^|_)(bash|shell|terminal|exec|run_command|powershell|command)(?:_|$)/.test(name)) return 'execution.v3.activity.run_commands'
+  if (/(?:^|_)(bash|shell|terminal|exec|run_command|powershell|command|job_output|job_kill)(?:_|$)/.test(name)) return 'execution.v3.activity.run_commands'
   if (/(?:^|_)(grep|glob|ripgrep|search_files|find_files|list_files)(?:_|$)/.test(name)) return 'execution.v3.activity.search_code'
   if (/(?:^|_)(read|read_file|view_file|preview_file|cat|head|tail)(?:_|$)/.test(name)) return 'execution.v3.activity.read_files'
   return null
@@ -41,6 +44,25 @@ export function toolCapabilityKeys(items: ExecutionItemV3[]): ToolCapabilityKey[
 
 export function toolName(item: ExecutionItemV3): string {
   return String(item.payload?.display_name || item.payload?.name || '').trim() || 'tool'
+}
+
+/** Localized, user-facing action label; raw adapter tool names remain audit metadata only. */
+export function toolActionLabelKey(item: ExecutionItemV3): ToolCapabilityKey {
+  return toolCapability(item) || 'execution.v3.activity.call_tools'
+}
+
+function normalizedArguments(item: ExecutionItemV3): Record<string, unknown> | null {
+  const value = item.payload?.args
+  if (value && typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>
+  if (typeof value !== 'string' || !value.trim()) return null
+  try {
+    const parsed: unknown = JSON.parse(value)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : null
+  } catch {
+    return null
+  }
 }
 
 function fileNameFromPath(value: unknown): string {
@@ -64,7 +86,7 @@ function compactValue(value: unknown): string {
   if (value && typeof value === 'object') {
     const record = value as Record<string, unknown>
     const visible = Object.entries(record)
-      .filter(([key]) => !SENSITIVE_ARGUMENT.test(key) && !INTERNAL_FILE_ARGUMENT.test(key))
+      .filter(([key]) => !SENSITIVE_ARGUMENT.test(key) && !INTERNAL_FILE_ARGUMENT.test(key) && !VERBOSE_ARGUMENT.test(key))
       .map(([key, nested]) => {
         const rendered = FILE_ARGUMENT.test(key) ? friendlyFileValue(nested) : compactValue(nested)
         return rendered ? `${key}: ${rendered}` : ''
@@ -164,18 +186,31 @@ export function collapseRepeatedToolCalls(items: ExecutionItemV3[]): ExecutionTi
 }
 
 export function toolCallSummary(item: ExecutionItemV3): string {
-  const args = item.payload?.args
-  if (!args || typeof args !== 'object' || Array.isArray(args)) return ''
-  const description = compactValue((args as Record<string, unknown>).description)
+  const args = normalizedArguments(item)
+  if (!args) return ''
+  const action = toolActionLabelKey(item)
+  const fileValue = args.file_path ?? args.path ?? args.filename ?? args.file ?? args.files
+    ?? args.document ?? args.documents ?? args.image ?? args.images ?? args.artifact ?? args.artifacts
+  if ((action === 'execution.v3.activity.read_files' || action === 'execution.v3.activity.edit_files') && fileValue) {
+    return friendlyFileValue(fileValue)
+  }
+  if (action === 'execution.v3.activity.search_code') {
+    const pattern = compactValue(args.pattern)
+    const location = friendlyFileValue(args.path)
+    return [pattern, location && location !== '.' ? location : ''].filter(Boolean).join(' · ')
+  }
+  if (action === 'execution.v3.activity.run_commands') return compactValue(args.description).slice(0, DETAIL_LIMIT)
+  if (action === 'execution.v3.activity.update_plan') return ''
+  const description = compactValue(args.description)
   return description || toolCallDetail(item)
 }
 
 /** A schema-agnostic, redacted view of supplied call arguments for the detail list. */
 export function toolCallDetail(item: ExecutionItemV3): string {
-  const args = item.payload?.args
-  if (!args || typeof args !== 'object' || Array.isArray(args)) return ''
-  const parts = Object.entries(args as Record<string, unknown>)
-    .filter(([key]) => !SENSITIVE_ARGUMENT.test(key) && !INTERNAL_FILE_ARGUMENT.test(key))
+  const args = normalizedArguments(item)
+  if (!args) return ''
+  const parts = Object.entries(args)
+    .filter(([key]) => !SENSITIVE_ARGUMENT.test(key) && !INTERNAL_FILE_ARGUMENT.test(key) && !VERBOSE_ARGUMENT.test(key))
     .map(([key, value]) => {
       const rendered = FILE_ARGUMENT.test(key) ? friendlyFileValue(value) : compactValue(value)
       if (!rendered) return ''

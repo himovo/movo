@@ -10,6 +10,8 @@ test('missing turn context normalizes to a complete automatic-retrieval scope', 
   assert.equal(context.knowledgeBaseCount, 0)
   assert.equal(context.strictKnowledgeMode, false)
   assert.match(renderTurnContext(context), /retrieval mode is automatic/)
+  assert.match(renderTurnContext(context), /language of the user's latest message/)
+  assert.match(renderTurnContext(context), /including progress notes before tools/)
 })
 
 test('trusted turn context exposes governed references but strips signed URLs', () => {

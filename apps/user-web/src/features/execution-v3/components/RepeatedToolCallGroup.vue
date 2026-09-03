@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { ExecutionItemV3 } from '../domain/model'
-import { toolCallSummary, toolCapabilityKeys, toolName } from '../domain/repeatedToolCalls'
+import { toolActionLabelKey, toolCallSummary, toolCapabilityKeys } from '../domain/repeatedToolCalls'
 import { t } from '../../../composables/i18n'
 import ActivityIcon from './ActivityIcon.vue'
 
@@ -27,8 +27,8 @@ function syncExpanded(event: Event) {
     <ol>
       <li v-for="item in items" :key="item.id" :class="`status-${item.status}`">
         <ActivityIcon category="tool" kind="tool" />
-        <span class="tool-call-name">{{ toolName(item) }}</span>
-        <span class="tool-call-summary">{{ toolCallSummary(item) || t('execution.v3.tool_call_without_arguments') }}</span>
+        <span class="tool-call-name">{{ t(toolActionLabelKey(item)) }}</span>
+        <span class="tool-call-summary">{{ toolCallSummary(item) || t('execution.v3.tool_call_completed') }}</span>
         <span v-if="item.status === 'failed'" class="repeated-tool-error">{{ String(item.payload?.error || t('ui.failed')) }}</span>
       </li>
     </ol>

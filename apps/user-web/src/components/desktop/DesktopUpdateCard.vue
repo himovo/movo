@@ -14,8 +14,9 @@ import { t } from '../../composables/i18n'
 const state = ref<DesktopUpdateState>({ phase: 'idle', current_version: '' })
 let stopListening: (() => void) | undefined
 
-const busy = computed(() => state.value.phase === 'checking' || state.value.phase === 'downloading')
+const busy = computed(() => ['checking', 'downloading', 'installing'].includes(state.value.phase))
 const progress = computed(() => Math.max(0, Math.min(100, state.value.progress_percent || 0)))
+const progressLabel = computed(() => Math.round(progress.value))
 const statusText = computed(() => t(`settings.update.phase.${state.value.phase}`))
 
 onMounted(async () => {
@@ -38,13 +39,18 @@ async function install() { await installDesktopUpdate() }
         <span v-if="state.available_version">· v{{ state.available_version }}</span>
       </div>
 
-      <n-progress
-        v-if="state.phase === 'downloading'"
-        type="line"
-        :percentage="progress"
-        :indicator-placement="'inside'"
-        processing
-      />
+      <div v-if="state.phase === 'downloading'" class="space-y-2">
+        <div class="flex items-center justify-end text-xs font-medium tabular-nums text-slate-600">
+          {{ progressLabel }}%
+        </div>
+        <n-progress
+          type="line"
+          :percentage="progress"
+          :show-indicator="false"
+          :height="8"
+          processing
+        />
+      </div>
 
       <n-alert v-if="state.phase === 'error' && state.message" type="error" :show-icon="true">
         {{ state.message }}
@@ -66,7 +72,14 @@ async function install() { await installDesktopUpdate() }
         <n-button v-if="state.phase === 'available'" size="small" type="primary" @click="download">
           {{ t('settings.update.download') }}
         </n-button>
-        <n-button v-if="state.phase === 'downloaded'" size="small" type="primary" @click="install">
+        <n-button
+          v-if="state.phase === 'downloaded' || state.phase === 'installing'"
+          size="small"
+          type="primary"
+          :loading="state.phase === 'installing'"
+          :disabled="state.phase === 'installing'"
+          @click="install"
+        >
           {{ t('settings.update.restart') }}
         </n-button>
       </n-space>

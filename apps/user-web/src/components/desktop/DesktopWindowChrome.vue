@@ -3,6 +3,7 @@ import FolderOpenOutline from '@vicons/ionicons5/es/FolderOpenOutline'
 import GitCompareOutline from '@vicons/ionicons5/es/GitCompareOutline'
 import TerminalOutline from '@vicons/ionicons5/es/TerminalOutline'
 import BrowserTestButton from '../browser/BrowserTestButton.vue'
+import DesktopUpdateIndicator from './DesktopUpdateIndicator.vue'
 import WorkspaceContextPicker from '../code/WorkspaceContextPicker.vue'
 import BranchContextPicker from '../code/BranchContextPicker.vue'
 import type { DshWorkspace } from '../../platform/types'
@@ -87,39 +88,42 @@ const emit = defineEmits<{
         </div>
         <span class="desktop-window-chrome__title" :title="title">{{ title }}</span>
       </div>
-      <div v-if="chatActions" class="desktop-window-chrome__actions">
-        <button
-          v-if="codeAvailable && codeSessionActive && gitAvailable"
-          type="button"
-          class="desktop-window-chrome__icon-button"
-          :class="{ active: activeTool === 'changes' }"
-          :aria-label="locale === 'en' ? 'Open changes' : '打开变更'"
-          :title="locale === 'en' ? 'Changes' : '变更'"
-          @click="emit('toggle-code-panel', 'changes')"
-        >
-          <GitCompareOutline /><span v-if="changeCount" class="desktop-window-chrome__badge">{{ changeCount > 99 ? '99+' : changeCount }}</span>
-        </button>
-        <button
-          v-if="codeAvailable && codeSessionActive && filesAvailable"
-          type="button"
-          class="desktop-window-chrome__icon-button"
-          :class="{ active: activeTool === 'files' }"
-          :aria-label="locale === 'en' ? 'Open files' : '打开文件'"
-          :title="locale === 'en' ? 'Files' : '文件'"
-          @click="emit('toggle-code-panel', 'files')"
-        ><FolderOpenOutline /></button>
-        <button
-          v-if="codeAvailable && codeSessionActive && terminalAvailable"
-          type="button"
-          class="desktop-window-chrome__icon-button"
-          :class="{ active: activeTool === 'terminal' }"
-          :aria-label="locale === 'en' ? 'Open terminal' : '打开终端'"
-          :title="locale === 'en' ? 'Terminal' : '终端'"
-          @click="emit('toggle-code-panel', 'terminal')"
-        >
-          <TerminalOutline />
-        </button>
-        <BrowserTestButton v-if="browserAvailable && sessionId" icon-only :active="activeTool === 'browser'" :session-id="sessionId" @open="emit('open-browser')" />
+      <div class="desktop-window-chrome__actions">
+        <DesktopUpdateIndicator />
+        <template v-if="chatActions">
+          <button
+            v-if="codeAvailable && codeSessionActive && gitAvailable"
+            type="button"
+            class="desktop-window-chrome__icon-button"
+            :class="{ active: activeTool === 'changes' }"
+            :aria-label="locale === 'en' ? 'Open changes' : '打开变更'"
+            :title="locale === 'en' ? 'Changes' : '变更'"
+            @click="emit('toggle-code-panel', 'changes')"
+          >
+            <GitCompareOutline /><span v-if="changeCount" class="desktop-window-chrome__badge">{{ changeCount > 99 ? '99+' : changeCount }}</span>
+          </button>
+          <button
+            v-if="codeAvailable && codeSessionActive && filesAvailable"
+            type="button"
+            class="desktop-window-chrome__icon-button"
+            :class="{ active: activeTool === 'files' }"
+            :aria-label="locale === 'en' ? 'Open files' : '打开文件'"
+            :title="locale === 'en' ? 'Files' : '文件'"
+            @click="emit('toggle-code-panel', 'files')"
+          ><FolderOpenOutline /></button>
+          <button
+            v-if="codeAvailable && codeSessionActive && terminalAvailable"
+            type="button"
+            class="desktop-window-chrome__icon-button"
+            :class="{ active: activeTool === 'terminal' }"
+            :aria-label="locale === 'en' ? 'Open terminal' : '打开终端'"
+            :title="locale === 'en' ? 'Terminal' : '终端'"
+            @click="emit('toggle-code-panel', 'terminal')"
+          >
+            <TerminalOutline />
+          </button>
+          <BrowserTestButton v-if="browserAvailable && sessionId" icon-only :active="activeTool === 'browser'" :session-id="sessionId" @open="emit('open-browser')" />
+        </template>
       </div>
     </div>
   </header>

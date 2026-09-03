@@ -44,7 +44,9 @@ export function normalizeTurnContext(value) {
 
 export function renderTurnContext(value) {
   if (value === undefined) return ''
-  const sections = []
+  const sections = [
+    'MOVO interaction language policy: use the language of the user\'s latest message for all user-facing text, including progress notes before tools, retry explanations, questions, and the final answer. If the user explicitly requests another output language, follow that request. Tool commands and source-code identifiers may remain in their technically required language.',
+  ]
   if (value.strictKnowledgeMode) {
     const scope = value.knowledgeBaseCount > 0
       ? `${value.knowledgeBaseCount} explicitly selected server-authorized knowledge base(s)`

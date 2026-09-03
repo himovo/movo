@@ -11,7 +11,7 @@ import type { DesktopToolTabKind } from './components/desktop/desktopToolTabs'
 import CreateProjectDialog from './components/code/CreateProjectDialog.vue'
 import { fetchOrgBilling, fetchUserProfile, getAdminSSOToken, logoutWithToken, switchTenant, type TenantCandidate, type UserProfile } from './api/auth'
 import { AUTH_EXPIRED_EVENT } from './api/authExpiry'
-import { activateEmbeddedBrowserSession, capabilities, getDshWorkspaceSummary, getSettings, updateSettings, startAgent, getAgentStatus, openResource, selectEmbeddedBrowserSession, selectDshWorkspace, renameDshWorkspace } from './platform'
+import { activateEmbeddedBrowserSession, capabilities, getDshWorkspaceSummary, getSettings, updateSettings, startAgent, stopAgent, getAgentStatus, openResource, selectEmbeddedBrowserSession, selectDshWorkspace, renameDshWorkspace } from './platform'
 import type { DshTaskChangeSet, DshWorkspace, DshWorkspaceSummary } from './platform/types'
 import {
   createDesktopProject,
@@ -36,6 +36,7 @@ import { availableUserProjects } from './composables/code/projectAuthorization'
 import { useEnterpriseAccessPolicy } from './composables/useEnterpriseAccessPolicy'
 import { useProfileRefreshOnResume } from './composables/useProfileRefreshOnResume'
 import { useDesktopToolTabs } from './composables/desktop/useDesktopToolTabs'
+import { clearDesktopAuthSession, restoreDesktopAuthToken } from './composables/desktop/desktopAuthSession'
 
 const ChatWindow = defineAsyncComponent(() => import('./components/ChatWindow.vue'))
 const SkillsPage = defineAsyncComponent(() => import('./components/MySkillsPage.vue'))
@@ -774,6 +775,11 @@ function clearAuthenticatedState() {
   sessionSearchHasMore.value = false
   sessionSearchLoading.value = false
   sessionSearchDidRun.value = false
+  if (capabilities.isDesktop) {
+    void clearDesktopAuthSession({ getSettings, updateSettings, getAgentStatus, stopAgent }).catch((error) => {
+      console.warn('[desktop] failed to clear persisted authentication', error)
+    })
+  }
 }
 
 function logout() {
@@ -1729,8 +1735,9 @@ onMounted(async () => {
   systemThemeMedia.addEventListener('change', handleSystemThemeChange)
   currentView.value = resolveViewFromPath(window.location.pathname)
   let serverConfigured = !capabilities.isDesktop
+  let storedSettings = null
   try {
-    const storedSettings = await getSettings()
+    storedSettings = await getSettings()
     serverConfigured = storedSettings.server_configured
     applyLanguage(storedSettings.language)
     timezoneValue.value = setAppTimezone(storedSettings.timezone || getBrowserTimezone())
@@ -1744,7 +1751,9 @@ onMounted(async () => {
   }
   desktopServerState.value = 'ready'
   currentAccount.value = localStorage.getItem(authAccountKey) || ''
-  authToken.value = localStorage.getItem(authTokenKey) || ''
+  authToken.value = capabilities.isDesktop && storedSettings
+    ? restoreDesktopAuthToken(storedSettings, localStorage, authTokenKey)
+    : localStorage.getItem(authTokenKey) || ''
   loadSavedUsers()
   loadUserProfile()
   if (authToken.value && !userProfile.value) {
@@ -2742,15 +2751,28 @@ onBeforeUnmount(() => {
   </div>
   <div
     v-if="capabilities.isDesktop && settingsPanelOpen"
-    class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/30 px-4 backdrop-blur-[2px]"
+    class="desktop-settings-modal fixed inset-0 z-[80] flex items-start justify-center bg-slate-900/30 px-4 pb-4 pt-16 backdrop-blur-[2px]"
     @click.self="closeSettingsPanel"
   >
-    <div class="w-full max-w-2xl rounded-[28px] border border-gray-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
-      <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-        <div class="text-lg font-semibold text-gray-900">{{ t('settings.modal.title') }}</div>
-        <button class="text-sm text-gray-400 hover:text-gray-700" @click="closeSettingsPanel">{{ t('ui.close') }}</button>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="desktop-settings-title"
+      class="flex max-h-[calc(100vh-80px)] w-full max-w-2xl flex-col overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
+    >
+      <div class="flex shrink-0 items-center justify-between border-b border-gray-100 py-2 pl-6 pr-3">
+        <div id="desktop-settings-title" class="text-lg font-semibold text-gray-900">{{ t('settings.modal.title') }}</div>
+        <button
+          type="button"
+          class="flex min-h-11 min-w-11 items-center justify-center rounded-xl px-3 text-sm text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          @click="closeSettingsPanel"
+        >
+          {{ t('ui.close') }}
+        </button>
       </div>
-      <SettingsPanel />
+      <div class="min-h-0 overflow-y-auto overscroll-contain">
+        <SettingsPanel />
+      </div>
     </div>
   </div>
   </n-dialog-provider>
@@ -2763,6 +2785,11 @@ onBeforeUnmount(() => {
 .app-shell--desktop > .app-sidebar,
 .app-shell--desktop > .app-main {
   padding-top: 48px;
+}
+
+.desktop-settings-modal,
+.desktop-settings-modal * {
+  -webkit-app-region: no-drag;
 }
 
 @media (max-width: 1100px) {

@@ -49,7 +49,19 @@ function event(overrides: Partial<ExecutionEventV3>): ExecutionEventV3 {
   assert.equal(timeline[1].type === 'tool-group' && timeline[1].statusItems.length, 4)
   assert.deepEqual(timeline[1].type === 'tool-group' && timeline[1].items.map(item => item.id), ['bash-1', 'read-1'])
   assert.equal(toolCallSummary(items[3]), '查看根目录')
-  assert.equal(toolCallDetail(items[5]), 'path: README.md')
+  assert.equal(toolCallSummary(items[5]), 'README.md')
+  assert.equal(toolCallDetail(items[5]), 'README.md')
+  const persistedStringArgs = {
+    ...items[5], id: 'read-string', payload: { name: 'read', args: '{"file_path":"src/HomeHero.vue"}' },
+  } as any
+  assert.equal(toolCallSummary(persistedStringArgs), 'HomeHero.vue')
+  const hiddenCommand = {
+    ...items[3], id: 'bash-secret', payload: {
+      name: 'bash', args: { command: 'curl -H "Authorization: secret" internal.example', description: '检查页面样式' },
+    },
+  } as any
+  assert.equal(toolCallSummary(hiddenCommand), '检查页面样式')
+  assert.doesNotMatch(toolCallDetail(hiddenCommand), /secret|curl|internal\.example/)
   const translatedDocument = {
     ...items[5],
     payload: {
@@ -75,6 +87,9 @@ function event(overrides: Partial<ExecutionEventV3>): ExecutionEventV3 {
     'execution.v3.activity.edit_files',
     'execution.v3.activity.run_commands',
   ])
+  assert.deepEqual(toolCapabilityKeys([
+    { ...items[3], payload: { name: 'todo_write', args: { todos: [{ content: 'private plan' }] } } },
+  ] as any), ['execution.v3.activity.update_plan'])
 }
 
 {

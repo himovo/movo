@@ -13,6 +13,7 @@
         "test:session-ordering": "esbuild tests/session-ordering.test.ts --bundle --platform=node --format=esm --outfile=/tmp/askai-session-ordering-test.mjs && node /tmp/askai-session-ordering-test.mjs",
         "test:user-bound-projects": "esbuild tests/user-bound-projects.test.ts --bundle --platform=node --format=esm --outfile=/tmp/askai-user-bound-projects-test.mjs && node /tmp/askai-user-bound-projects-test.mjs",
         "test:code-platform": "esbuild tests/code-platform-contract.test.ts --bundle --platform=node --format=esm --outfile=/tmp/askai-code-platform-test.mjs && node /tmp/askai-code-platform-test.mjs",
+        "test:desktop-auth": "esbuild tests/desktop-auth-session.test.ts --bundle --platform=node --format=esm --outfile=/tmp/movo-desktop-auth-test.mjs && node /tmp/movo-desktop-auth-test.mjs",
         "preview": "vite preview"
     },
     "dependencies": {

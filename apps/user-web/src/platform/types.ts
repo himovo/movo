@@ -63,6 +63,7 @@ export type DesktopUpdatePhase =
   | 'not-available'
   | 'downloading'
   | 'downloaded'
+  | 'installing'
   | 'error'
   | 'disabled'
 
