@@ -12,11 +12,29 @@
   <a href="README.md">English</a> · <strong>简体中文</strong>
 </p>
 
+<p align="center">
+  <a href="https://himovo.com/">官方网站</a> ·
+  <a href="https://himovo.com/guide/introduction">产品文档</a> ·
+  <a href="https://himovo.com/guide/getting-started">快速开始</a>
+</p>
+
 MOVO 帮助企业将 DSH Agent 从开发验证推进到生产使用。它在 DSH Runtime、Skill、工具和 MCP 生态之上，提供可部署的用户工作台、企业知识、身份与权限、管理治理和文件交付能力。
 
 > **一句话理解 MOVO：** DSH 负责智能体如何运行，MOVO 负责智能体如何进入企业生产环境。
 
 本仓库包含可私有化部署的 MOVO 社区版，也是 MOVO 云服务和未来企业版本共同依赖的源码基础。
+
+## 为什么选择 MOVO
+
+让 Agent 完成一次演示，与让一个 Agent 平台真正服务团队是两件事。MOVO 在 DSH 周围提供完整的产品与基础设施层，让你无需自行拼装身份、知识、管理、治理和交付系统，就能进入真实使用。
+
+- **保持 DSH 原生。** 直接使用官方 DSH Runtime、Skill、工具、MCP 集成和子智能体能力，不引入割裂的私有运行时。
+- **部署的是完整产品。** 通过 Docker Compose 一次启动用户工作台、管理后台、API、文档处理、检索和基础设施。
+- **模型和数据由自己掌控。** 连接自己的模型服务，并将应用数据、企业知识和运行服务保留在自己的部署环境中。
+- **同时服务员工和管理员。** 员工使用完整工作台，管理员统一管理账号、模型、知识、能力、配额和审计记录。
+- **需求增长时无需重建基础。** 从可私有化部署的社区版起步，并在部署需求扩大时继续使用同一套共享源码基础。
+
+如果你只需要底层 Agent Runtime，DSH 可能已经足够；当你需要把 Runtime 变成可部署、可管理、能服务真实用户的产品时，选择 MOVO。
 
 ## MOVO 提供什么
 
@@ -42,6 +60,12 @@ MOVO 帮助企业将 DSH Agent 从开发验证推进到生产使用。它在 DSH
 - 数据和运行服务保留在部署者自己的环境中。
 
 本仓库包括用户工作台、管理后台、对话与 Agent API、DSH Runtime Host、文档解析与检索服务，以及完整的 Docker 部署配置。
+
+### 浏览器 Agent 与 Code Agent
+
+私有化部署的 Web 工作台支持对话、研究、知识、文件和内容生成。如需使用**浏览器 Agent** 或 **Code Agent**，请下载安装 [MOVO Desktop](https://himovo.com/download)，并将它连接到你自行部署的 MOVO 服务。
+
+MOVO Desktop 为这些能力提供本地浏览器会话、代码工作区、项目终端和 Git 集成。该桌面客户端是独立分发的专有软件，源码不包含在本仓库中，也不属于社区版源码发布范围。
 
 ## 系统架构
 
