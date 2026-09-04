@@ -239,4 +239,13 @@ export interface EmbeddedBrowserState {
   tabs: BrowserTabState[]
 }
 
+export interface BrowserPreviewFrame {
+  data_url: string
+  width: number
+  height: number
+  captured_at: number
+  url: string
+  title: string
+}
+
 export interface SaveResult { saved: boolean; path?: string }

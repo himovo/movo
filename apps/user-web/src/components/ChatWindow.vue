@@ -34,13 +34,13 @@ import { downloadResourceUrl, openPreviewResource, saveBlobDownload } from '../u
 import { normalizeAssistantContent, renderAssistantMarkdown, sanitizeMermaid } from '../utils/assistantMarkdown'
 import type { DshCodeSession, DshExecutionEvent, DshPendingApproval, DshTaskChangeSet, DshWorkspace } from '../platform/types'
 import { capabilities } from '../platform'
-import type { DesktopToolTab, DesktopToolTabKind } from './desktop/desktopToolTabs'
+import type { DesktopToolLauncherKind, DesktopToolTab } from './desktop/desktopToolTabs'
 import type { AgentPolicySnapshot } from '../api/auth'
 import { resolveArtifactIcon, resolveArtifactPresentation } from '../registries'
 import { resolveArtifactKind } from '../features/execution-v3/domain/artifactKind'
 import { authenticatedJsonHeaders } from '../api/authHeaders'
 
-type ProjectPanelMode = 'changes' | 'files' | 'terminal'
+type ProjectPanelMode = 'changes' | 'files' | 'terminal' | 'file' | 'diff'
 const ProjectWorkspacePanel = defineAsyncComponent(() => import('./code/ProjectWorkspacePanel.vue'))
 
 // Architecture boundary:
@@ -74,8 +74,8 @@ const props = defineProps<{
   desktopWorkspaceRequest?: number
   desktopBrowserRequest?: number
   desktopToolTabs?: DesktopToolTab[]
-  desktopActiveTool?: DesktopToolTabKind | null
-  desktopAvailableTools?: DesktopToolTabKind[]
+  desktopActiveTool?: string | null
+  desktopAvailableTools?: DesktopToolLauncherKind[]
   desktopCodeReviewPath?: string
   desktopCodeReviewChanges?: DshTaskChangeSet | null
   desktopCodeFilePath?: string
@@ -123,9 +123,11 @@ const emit = defineEmits<{
   (e: 'code-branch-updated', branch: string): void
   (e: 'code-approval', approvalId: string, decision: 'approved' | 'rejected', scope: 'once' | 'session'): void
   (e: 'close-code-panel'): void
-  (e: 'select-desktop-tool', kind: DesktopToolTabKind): void
-  (e: 'close-desktop-tool', kind: DesktopToolTabKind): void
-  (e: 'open-desktop-tool', kind: DesktopToolTabKind): void
+  (e: 'select-desktop-tool', id: string): void
+  (e: 'close-desktop-tool', id: string): void
+  (e: 'open-desktop-tool', kind: DesktopToolLauncherKind): void
+  (e: 'open-desktop-file-tab', path: string): void
+  (e: 'open-desktop-diff-tab', path: string, changes?: DshTaskChangeSet): void
   (e: 'code-workspace-change'): void
   (e: 'review-code-changes', changes: DshTaskChangeSet, path?: string): void
   (e: 'open-code-file', path: string): void
@@ -339,13 +341,15 @@ const {
   getIntervention: () => props.activeIntervention,
   onClearIntervention: () => emit('clear-intervention'),
 })
-watch(() => props.desktopActiveTool, mode => {
-  isPreviewExpanded.value = mode === 'browser'
+const desktopActiveTab = computed(() => (props.desktopToolTabs || []).find(tab => tab.id === props.desktopActiveTool) || null)
+watch(() => desktopActiveTab.value?.kind, kind => {
+  isPreviewExpanded.value = kind === 'browser'
 })
 const desktopCodePanelMode = computed<ProjectPanelMode | null>(() => {
-  const mode = props.desktopActiveTool
-  return mode === 'changes' || mode === 'files' || mode === 'terminal' ? mode : null
+  const mode = desktopActiveTab.value?.kind
+  return mode === 'changes' || mode === 'files' || mode === 'terminal' || mode === 'file' || mode === 'diff' ? mode : null
 })
+const hasDesktopCodeTabs = computed(() => (props.desktopToolTabs || []).some(tab => tab.kind !== 'browser'))
 function openBrowserForIntervention(): void {
   openBrowserForLogin()
   emit('open-desktop-tool', 'browser')
@@ -1892,6 +1896,7 @@ function formatErrorMessage(raw: string): string {
     :open="isPreviewExpanded"
     :tabs="props.desktopToolTabs || []"
     :active-tool="props.desktopActiveTool"
+    :active-kind="desktopActiveTab?.kind"
     :available-tools="props.desktopAvailableTools || []"
     :locale="locale === 'en' ? 'en' : 'zh'"
     :session-id="props.sessionId"
@@ -2247,9 +2252,10 @@ function formatErrorMessage(raw: string): string {
     </div>
   </div>
     <ProjectWorkspacePanel
-      v-if="capabilities.codeInspector && props.codeSession && desktopCodePanelMode"
+      v-if="capabilities.codeInspector && props.codeSession && hasDesktopCodeTabs"
+      v-show="Boolean(desktopCodePanelMode)"
       :session="props.codeSession"
-      :mode="desktopCodePanelMode"
+      :active-id="props.desktopActiveTool || ''"
       :tabs="props.desktopToolTabs || []"
       :available-tabs="props.desktopAvailableTools || []"
       :locale="locale === 'en' ? 'en' : 'zh'"
@@ -2261,6 +2267,8 @@ function formatErrorMessage(raw: string): string {
       @select-tab="emit('select-desktop-tool', $event)"
       @close-tab="emit('close-desktop-tool', $event)"
       @open-tab="emit('open-desktop-tool', $event)"
+      @open-file="emit('open-desktop-file-tab', $event)"
+      @open-diff="(path, changes) => emit('open-desktop-diff-tab', path, changes)"
       @workspace-change="emit('code-workspace-change')"
     />
     </div>

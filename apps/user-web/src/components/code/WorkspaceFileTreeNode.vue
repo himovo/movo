@@ -9,7 +9,7 @@ import CodeFileTypeIcon from './CodeFileTypeIcon.vue'
 
 defineOptions({ name: 'WorkspaceFileTreeNode' })
 const props = defineProps<{ sessionId: string; entry: DshDirectoryEntry; selectedPath?: string }>()
-const emit = defineEmits<{ (event: 'select', entry: DshDirectoryEntry): void }>()
+const emit = defineEmits<{ (event: 'select', entry: DshDirectoryEntry): void; (event: 'open', path: string): void }>()
 const expanded = ref(false)
 const loading = ref(false)
 const children = ref<DshDirectoryEntry[] | null>(null)
@@ -26,14 +26,14 @@ async function activate() {
 
 <template>
   <div class="tree-node">
-    <button type="button" :class="{ selected: selectedPath === entry.path }" @click="activate">
+    <button type="button" :class="{ selected: selectedPath === entry.path }" @click="activate" @dblclick="entry.kind === 'file' && emit('open', entry.path)">
       <ChevronForwardOutline v-if="entry.kind === 'directory'" class="chevron" :class="{ expanded }" />
       <component :is="expanded ? FolderOpenOutline : FolderOutline" v-if="entry.kind === 'directory'" class="kind folder" />
       <CodeFileTypeIcon v-else :path="entry.path" />
       <span>{{ entry.name }}</span><small v-if="loading">…</small>
     </button>
     <div v-if="expanded && children" class="children">
-      <WorkspaceFileTreeNode v-for="child in children" :key="child.path" :session-id="sessionId" :entry="child" :selected-path="selectedPath" @select="emit('select', $event)" />
+      <WorkspaceFileTreeNode v-for="child in children" :key="child.path" :session-id="sessionId" :entry="child" :selected-path="selectedPath" @select="emit('select', $event)" @open="emit('open', $event)" />
     </div>
   </div>
 </template>

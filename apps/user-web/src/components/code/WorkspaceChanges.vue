@@ -15,7 +15,7 @@ import { buildWorkspaceChangeTree } from './changeTree'
 import { suggestCommitMessage } from './commitMessageSuggestion'
 
 const props = defineProps<{ sessionId: string; locale?: 'zh' | 'en'; running?: boolean; requestedPath?: string }>()
-const emit = defineEmits<{ (event: 'committed', result: DshGitCommitResult): void }>()
+const emit = defineEmits<{ (event: 'committed', result: DshGitCommitResult): void; (event: 'open-diff', path: string): void }>()
 const summary = ref<DshWorkspaceSummary | null>(null)
 const selected = ref('')
 const fileDiff = ref<DshFileDiff | null>(null)
@@ -139,7 +139,7 @@ onMounted(refresh)
       </div>
       <label class="filter"><SearchOutline /><input v-model="filter" :placeholder="locale === 'en' ? 'Filter changed files…' : '筛选变更文件…'" /></label>
       <div class="tree-scroll">
-        <WorkspaceChangeTreeNode v-for="node in tree" :key="node.path" :node="node" :selected-path="selected" :locale="locale" @select="select" />
+        <WorkspaceChangeTreeNode v-for="node in tree" :key="node.path" :node="node" :selected-path="selected" :locale="locale" @select="select" @open="emit('open-diff', $event)" />
         <div v-if="!filtered.length" class="empty tree-empty">{{ locale === 'en' ? 'No matching changes' : '没有匹配的变更' }}</div>
       </div>
       <div v-if="summary && !summary.git_available" class="git-warning">{{ locale === 'en' ? 'Git information unavailable' : '无法读取 Git 信息' }}</div>

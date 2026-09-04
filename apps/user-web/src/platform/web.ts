@@ -1,7 +1,7 @@
 // Web implementation of the platform adapter.
 // Desktop-only features are stubbed or proxied to localStorage.
 
-import type { AgentStatus, BrowserBounds, BrowserOwner, BrowserPurpose, DesktopUpdateState, DshCodeSession, DshDirectoryEntry, DshExecutionEvent, DshFileDiff, DshFilePreview, DshGitCommitResult, DshGitPushResult, DshPendingApproval, DshTaskChangeSet, DshTaskFileDiff, DshTerminalEvent, DshWorkspace, DshWorkspaceInspection, DshWorkspaceSummary, EmbeddedBrowserState, EnterpriseConnectionResult, PlatformCapabilities, SaveResult, Settings } from './types'
+import type { AgentStatus, BrowserBounds, BrowserOwner, BrowserPreviewFrame, BrowserPurpose, DesktopUpdateState, DshCodeSession, DshDirectoryEntry, DshExecutionEvent, DshFileDiff, DshFilePreview, DshGitCommitResult, DshGitPushResult, DshPendingApproval, DshTaskChangeSet, DshTaskFileDiff, DshTerminalEvent, DshWorkspace, DshWorkspaceInspection, DshWorkspaceSummary, EmbeddedBrowserState, EnterpriseConnectionResult, PlatformCapabilities, SaveResult, Settings } from './types'
 import { detectSystemLocale } from '../composables/i18n'
 import { getBrowserTimezone } from '../composables/appTimezone'
 
@@ -111,6 +111,7 @@ const EMPTY_BROWSER: EmbeddedBrowserState = {
   active_tab_id: '', tabs: [],
 }
 export async function getEmbeddedBrowserState() { return { ...EMPTY_BROWSER } }
+export async function captureEmbeddedBrowserPreview(_sessionId: string): Promise<BrowserPreviewFrame | null> { return null }
 export async function selectEmbeddedBrowserSession(_sessionId: string) {}
 export async function activateEmbeddedBrowserSession(_sessionId: string) {}
 export async function attachEmbeddedBrowserSurface(_surfaceId: string, _sessionId: string) {}

@@ -13,6 +13,7 @@ const props = defineProps<{
   requestedPath?: string
   locale?: 'zh' | 'en'
 }>()
+const emit = defineEmits<{ (event: 'open-diff', path: string): void }>()
 const selected = ref('')
 const fileDiff = ref<DshTaskFileDiff | null>(null)
 const filter = ref('')
@@ -49,7 +50,7 @@ watch(() => [props.changes.task_id, props.requestedPath] as const, selectRequest
       </div>
       <label class="filter"><SearchOutline /><input v-model="filter" :placeholder="locale === 'en' ? 'Filter files…' : '筛选变更文件…'" /></label>
       <div class="file-list">
-        <button v-for="file in visibleFiles" :key="file.path" type="button" :class="{ selected: selected === file.path }" @click="select(file.path)">
+        <button v-for="file in visibleFiles" :key="file.path" type="button" :class="{ selected: selected === file.path }" @click="select(file.path)" @dblclick="emit('open-diff', file.path)">
           <CodeFileTypeIcon :path="file.path" />
           <span :title="file.path">{{ file.path }}</span>
           <code v-if="file.binary">BIN</code>

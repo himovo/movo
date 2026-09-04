@@ -14,6 +14,8 @@
         "test:user-bound-projects": "esbuild tests/user-bound-projects.test.ts --bundle --platform=node --format=esm --outfile=/tmp/askai-user-bound-projects-test.mjs && node /tmp/askai-user-bound-projects-test.mjs",
         "test:code-platform": "esbuild tests/code-platform-contract.test.ts --bundle --platform=node --format=esm --outfile=/tmp/askai-code-platform-test.mjs && node /tmp/askai-code-platform-test.mjs",
         "test:desktop-auth": "esbuild tests/desktop-auth-session.test.ts --bundle --platform=node --format=esm --outfile=/tmp/movo-desktop-auth-test.mjs && node /tmp/movo-desktop-auth-test.mjs",
+        "test:desktop-tools": "esbuild tests/desktop-tool-tabs.test.ts --bundle --platform=node --format=esm --outfile=/tmp/movo-desktop-tools-test.mjs && node /tmp/movo-desktop-tools-test.mjs",
+        "test:scheduled-task-time": "TZ=Asia/Shanghai esbuild tests/scheduled-task-time.test.ts --bundle --platform=node --format=esm --outfile=/tmp/movo-scheduled-task-time-test.mjs && TZ=Asia/Shanghai node /tmp/movo-scheduled-task-time-test.mjs",
         "preview": "vite preview"
     },
     "dependencies": {

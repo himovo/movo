@@ -56,6 +56,7 @@ export const uncoveredMessages = {
   '自动发送的提示词': { zh: '自动发送的提示词', en: 'Prompt to Send Automatically' },
   '执行频率': { zh: '执行频率', en: 'Frequency' },
   '首次/下次执行时间': { zh: '首次/下次执行时间', en: 'First / Next Run' },
+  '执行时区': { zh: '执行时区', en: 'Execution timezone' },
   '执行星期': { zh: '执行星期', en: 'Days of Week' },
   '结果写入方式': { zh: '结果写入方式', en: 'Result Destination' },
   '选择一个属于你的会话': { zh: '选择一个属于你的会话', en: 'Select one of your chats' },

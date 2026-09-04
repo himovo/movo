@@ -1,16 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
-import { listDshWorkspaceDirectory, previewDshWorkspaceFile } from '../../platform'
-import type { DshDirectoryEntry, DshFilePreview } from '../../platform/types'
-import CodeFileTypeIcon from './CodeFileTypeIcon.vue'
-import CodeSyntaxPreview from './CodeSyntaxPreview.vue'
+import { listDshWorkspaceDirectory } from '../../platform'
+import type { DshDirectoryEntry } from '../../platform/types'
 import WorkspaceFileTreeNode from './WorkspaceFileTreeNode.vue'
+import WorkspaceFilePreview from './WorkspaceFilePreview.vue'
 
 const props = defineProps<{ sessionId: string; locale?: 'zh' | 'en'; requestedPath?: string }>()
+const emit = defineEmits<{ (event: 'open-file', path: string): void }>()
 const roots = ref<DshDirectoryEntry[]>([])
 const selectedPath = ref('')
-const preview = ref<DshFilePreview | null>(null)
-const loading = ref(false)
 const error = ref('')
 
 async function loadRoot() {
@@ -24,10 +22,7 @@ async function select(entry: DshDirectoryEntry) {
 }
 
 async function selectPath(path: string) {
-  selectedPath.value = path; loading.value = true; error.value = ''
-  try { preview.value = await previewDshWorkspaceFile(props.sessionId, path) }
-  catch (value) { error.value = String(value); preview.value = null }
-  finally { loading.value = false }
+  selectedPath.value = path
 }
 
 watch(() => props.sessionId, loadRoot)
@@ -39,18 +34,9 @@ onMounted(() => { if (props.requestedPath) void selectPath(props.requestedPath) 
 <template>
   <div class="file-browser">
     <nav aria-label="Workspace files">
-      <WorkspaceFileTreeNode v-for="entry in roots" :key="entry.path" :session-id="sessionId" :entry="entry" :selected-path="selectedPath" @select="select" />
+      <WorkspaceFileTreeNode v-for="entry in roots" :key="entry.path" :session-id="sessionId" :entry="entry" :selected-path="selectedPath" @select="select" @open="emit('open-file', $event)" />
     </nav>
-    <main>
-      <div v-if="preview" class="preview-heading"><div class="preview-file"><CodeFileTypeIcon :path="preview.path" /><strong>{{ preview.name }}</strong></div><span>{{ preview.language || preview.mime_type }} · {{ preview.size }} B</span></div>
-      <div v-if="error" class="state error">{{ error }}</div>
-      <div v-else-if="loading" class="state">{{ locale === 'en' ? 'Loading…' : '正在读取…' }}</div>
-      <img v-else-if="preview?.kind === 'image'" :src="preview.content" :alt="preview.name" class="image-preview" />
-      <CodeSyntaxPreview v-else-if="preview?.kind === 'text'" :content="preview.content" :path="preview.path" :language="preview.language" />
-      <div v-else-if="preview?.kind === 'binary'" class="state">{{ locale === 'en' ? 'Binary files cannot be previewed.' : '该二进制文件暂不支持预览。' }}</div>
-      <div v-else class="state">{{ locale === 'en' ? 'Select a file to preview it.' : '选择文件后在此预览。' }}</div>
-      <div v-if="preview?.truncated" class="truncated">{{ locale === 'en' ? 'Preview truncated for safety.' : '文件较大，仅显示安全范围内的内容。' }}</div>
-    </main>
+    <main><div v-if="error" class="state error">{{ error }}</div><WorkspaceFilePreview v-else :session-id="sessionId" :path="selectedPath" :locale="locale" /></main>
   </div>
 </template>
 

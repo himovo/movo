@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import ElectronBrowserSurface from './ElectronBrowserSurface.vue'
+import BrowserMiniView from './BrowserMiniView.vue'
 import DesktopToolTabBar from '../desktop/DesktopToolTabBar.vue'
-import type { DesktopToolTab, DesktopToolTabKind } from '../desktop/desktopToolTabs'
+import type { DesktopToolLauncherKind, DesktopToolTab, DesktopToolTabKind } from '../desktop/desktopToolTabs'
 import { capabilities } from '../../platform'
 import { useDesktopToolPanelSize } from '../../composables/desktop/useDesktopToolPanelSize'
 import { useEmbeddedBrowserState } from '../../composables/browser/embeddedBrowserState'
@@ -16,15 +17,16 @@ const props = defineProps<{
   mainId?: string
   enabled?: boolean
   tabs?: DesktopToolTab[]
-  activeTool?: DesktopToolTabKind | null
-  availableTools?: DesktopToolTabKind[]
+  activeTool?: string | null
+  activeKind?: DesktopToolTabKind | null
+  availableTools?: DesktopToolLauncherKind[]
   locale?: 'zh' | 'en'
 }>()
 const emit = defineEmits<{
   (event: 'update:open', value: boolean): void
-  (event: 'select-tab', kind: DesktopToolTabKind): void
-  (event: 'close-tab', kind: DesktopToolTabKind): void
-  (event: 'open-tab', kind: DesktopToolTabKind): void
+  (event: 'select-tab', id: string): void
+  (event: 'close-tab', id: string): void
+  (event: 'open-tab', kind: DesktopToolLauncherKind): void
 }>()
 const panel = useDesktopToolPanelSize()
 const embeddedState = useEmbeddedBrowserState()
@@ -37,13 +39,49 @@ const useElectron = computed(() => capabilities.embeddedBrowser
   && embeddedState.value.active
   && sessionMatches.value)
 const hasPreview = computed(() => useElectron.value)
-const panelOpen = computed(() => props.enabled !== false && props.active && props.open && props.activeTool === 'browser' && hasPreview.value)
+const panelOpen = computed(() => props.enabled !== false && props.active && props.open && props.activeKind === 'browser' && hasPreview.value)
+const dismissedSession = ref('')
+const miniVisible = computed(() => Boolean(
+  useElectron.value
+  && !panelOpen.value
+  && props.sessionId
+  && dismissedSession.value !== props.sessionId
+  && embeddedState.value.url
+  && embeddedState.value.url !== 'about:blank',
+))
+
+watch(() => props.sessionId, (sessionId, previous) => {
+  if (sessionId !== previous) dismissedSession.value = ''
+})
+watch(useElectron, (active, previous) => {
+  if (active && previous === false) dismissedSession.value = ''
+})
+
+function expandBrowser() {
+  emit('open-tab', 'browser')
+}
+
+function closeMiniView() {
+  dismissedSession.value = props.sessionId || ''
+}
 
 </script>
 
 <template>
   <div class="browser-workspace" :class="{ dragging: panel.dragging.value }">
     <div class="chat-pane"><slot /></div>
+    <BrowserMiniView
+      v-if="miniVisible && sessionId"
+      :session-id="sessionId"
+      :active="miniVisible"
+      :title="embeddedState.title"
+      :url="embeddedState.url"
+      :loading="embeddedState.loading"
+      :owner="embeddedState.owner"
+      :locale="locale"
+      @expand="expandBrowser"
+      @close="closeMiniView"
+    />
     <template v-if="panelOpen">
       <div
         class="split-handle"

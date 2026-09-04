@@ -13,7 +13,6 @@ import {
   useMessage,
 } from 'naive-ui'
 import { ArrowBackOutline } from '@vicons/ionicons5'
-import { formatAppDateTime, getAppTimezone, parseAppDate } from '../../composables/appTimezone'
 import type { SessionSummary } from '../../api/sessions'
 import {
   createScheduledJob,
@@ -26,6 +25,7 @@ import {
 } from '../../api/scheduledTasks'
 import ScheduledTaskEditor from './ScheduledTaskEditor.vue'
 import { getLocale, t } from '../../composables/i18n'
+import { formatScheduledInstant, formatScheduledWallTime } from './scheduledTaskTime'
 
 const props = defineProps<{
   token: string
@@ -148,14 +148,9 @@ async function remove(job: ScheduledJob) {
 }
 
 function scheduleText(job: ScheduledJob) {
-  const at = parseAppDate(job.run_at) || new Date(job.run_at)
-  const time = new Intl.DateTimeFormat(getLocale() === 'zh' ? 'zh-CN' : 'en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    timeZone: getAppTimezone(),
-  }).format(at)
-  if (job.schedule_kind === 'once') return t('单次 · {time}', { time: formatAppDateTime(job.run_at) })
+  const locale = getLocale() === 'zh' ? 'zh-CN' : 'en-US'
+  const time = formatScheduledWallTime(job.run_at, locale)
+  if (job.schedule_kind === 'once') return t('单次 · {time}', { time: formatScheduledWallTime(job.run_at, locale, true) })
   if (job.schedule_kind === 'daily') return t('每天 {time}', { time })
   const labels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
   const separator = getLocale() === 'zh' ? '、' : ', '
@@ -166,7 +161,7 @@ function statusText(job: ScheduledJob) {
   if (!job.enabled) return t('已停用')
   if (job.last_run_status === 'running') return t('正在运行')
   if (job.last_run_status === 'failed') return t('最近执行失败')
-  if (job.next_run_at) return t('下次 {time}', { time: formatAppDateTime(job.next_run_at) })
+  if (job.next_run_at) return t('下次 {time}', { time: formatScheduledInstant(job.next_run_at, job.timezone, getLocale() === 'zh' ? 'zh-CN' : 'en-US', true) })
   return t('等待安排')
 }
 

@@ -3,8 +3,8 @@ import { computed, reactive, watch } from 'vue'
 import { NButton, NCard, NDatePicker, NForm, NFormItem, NInput, NModal, NSelect, NSwitch } from 'naive-ui'
 import type { SessionSummary } from '../../api/sessions'
 import type { ScheduledJob, ScheduledJobDraft } from '../../api/scheduledTasks'
-import { parseAppDate } from '../../composables/appTimezone'
 import { t } from '../../composables/i18n'
+import { defaultPickerValue, instantToPickerValue, pickerValueToWallDateTime } from './scheduledTaskTime'
 
 const props = defineProps<{
   open: boolean
@@ -21,9 +21,8 @@ const emit = defineEmits<{
   (e: 'save', value: ScheduledJobDraft): void
 }>()
 
-const tomorrow = () => Date.now() + 24 * 60 * 60 * 1000
 const form = reactive({
-  name: '', prompt: '', scheduleKind: 'daily', timezone: 'Asia/Shanghai', runAt: tomorrow(),
+  name: '', prompt: '', scheduleKind: 'daily', timezone: 'Asia/Shanghai', runAt: defaultPickerValue('Asia/Shanghai'),
   weekdays: [0] as number[], sessionMode: 'fixed', sessionId: null as string | null,
   sessionTitleTemplate: '{name} · {date}', enabled: true,
 })
@@ -58,9 +57,10 @@ watch(() => props.open, (open) => {
   form.prompt = job?.prompt || props.initialPrompt || ''
   form.scheduleKind = job?.schedule_kind || 'daily'
   form.timezone = job?.timezone || props.timezone || 'Asia/Shanghai'
-  const parsedRunAt = parseAppDate(job?.run_at)
-  form.runAt = parsedRunAt ? parsedRunAt.getTime() : tomorrow()
-  form.weekdays = job?.weekdays?.length ? [...job.weekdays] : [new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]
+  const parsedRunAt = job?.run_at ? instantToPickerValue(job.run_at, form.timezone) : null
+  form.runAt = parsedRunAt ?? defaultPickerValue(form.timezone)
+  const defaultDay = new Date(form.runAt).getDay()
+  form.weekdays = job?.weekdays?.length ? [...job.weekdays] : [defaultDay === 0 ? 6 : defaultDay - 1]
   form.sessionMode = job?.session_mode || (props.initialSessionId ? 'fixed' : 'new_per_run')
   form.sessionId = job?.session_id || props.initialSessionId || null
   form.sessionTitleTemplate = job?.session_title_template || '{name} · {date}'
@@ -74,7 +74,7 @@ function submit() {
     prompt: form.prompt.trim(),
     schedule_kind: form.scheduleKind as ScheduledJobDraft['schedule_kind'],
     timezone: form.timezone,
-    run_at: new Date(form.runAt).toISOString(),
+    run_at: pickerValueToWallDateTime(form.runAt),
     weekdays: form.scheduleKind === 'weekly' ? [...form.weekdays].sort() : [],
     session_mode: form.sessionMode as ScheduledJobDraft['session_mode'],
     session_id: form.sessionMode === 'fixed' ? form.sessionId : null,
@@ -96,6 +96,7 @@ function submit() {
           <n-form-item :label="t('执行频率')" required><n-select v-model:value="form.scheduleKind" :options="scheduleOptions" /></n-form-item>
           <n-form-item :label="t('首次/下次执行时间')" required><n-date-picker v-model:value="form.runAt" type="datetime" class="w-full" :is-date-disabled="isPastDate" /></n-form-item>
         </div>
+        <div class="-mt-3 mb-3 text-xs text-slate-500">{{ t('执行时区') }}：{{ form.timezone }}</div>
         <n-form-item v-if="form.scheduleKind === 'weekly'" :label="t('执行星期')" required>
           <n-select v-model:value="form.weekdays" multiple :options="weekdayOptions" />
         </n-form-item>

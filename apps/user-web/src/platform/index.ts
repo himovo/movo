@@ -1,6 +1,6 @@
 // Platform adapter: one API surface; picks Electron or web at runtime.
 
-import type { AgentStatus, BrowserBounds, BrowserOwner, BrowserPurpose, DesktopUpdateState, DshCodeSession, DshDirectoryEntry, DshExecutionEvent, DshFileDiff, DshFilePreview, DshGitBranchSnapshot, DshGitCommitResult, DshGitPushResult, DshPendingApproval, DshTaskChangeSet, DshTaskFileDiff, DshTerminalEvent, DshWorkspace, DshWorkspaceInspection, DshWorkspaceSummary, EmbeddedBrowserState, EnterpriseConnectionResult, PlatformCapabilities, SaveResult, Settings } from './types'
+import type { AgentStatus, BrowserBounds, BrowserOwner, BrowserPreviewFrame, BrowserPurpose, DesktopUpdateState, DshCodeSession, DshDirectoryEntry, DshExecutionEvent, DshFileDiff, DshFilePreview, DshGitBranchSnapshot, DshGitCommitResult, DshGitPushResult, DshPendingApproval, DshTaskChangeSet, DshTaskFileDiff, DshTerminalEvent, DshWorkspace, DshWorkspaceInspection, DshWorkspaceSummary, EmbeddedBrowserState, EnterpriseConnectionResult, PlatformCapabilities, SaveResult, Settings } from './types'
 import * as web from './web'
 
 if (import.meta.env.DEV && new URLSearchParams(globalThis.location?.search || '').has('desktop-ui-contract')) {
@@ -69,6 +69,7 @@ export const closeDshProjectTerminal: (terminalId: string) => Promise<{ closed: 
 export const onDshProjectTerminalEvent: (listener: (event: DshTerminalEvent) => void) => () => void = impl.onDshProjectTerminalEvent
 export const decideDshCodeApproval: (sessionId: string, approvalId: string, decision: 'approved' | 'rejected', grantScope: 'once' | 'session') => Promise<{ decided: boolean }> = impl.decideDshCodeApproval
 export const getEmbeddedBrowserState: () => Promise<EmbeddedBrowserState> = impl.getEmbeddedBrowserState
+export const captureEmbeddedBrowserPreview: (sessionId: string) => Promise<BrowserPreviewFrame | null> = impl.captureEmbeddedBrowserPreview
 export const selectEmbeddedBrowserSession: (sessionId: string) => Promise<void> = impl.selectEmbeddedBrowserSession
 export const activateEmbeddedBrowserSession: (sessionId: string) => Promise<void> = impl.activateEmbeddedBrowserSession
 export const attachEmbeddedBrowserSurface: (surfaceId: string, sessionId: string) => Promise<void> = impl.attachEmbeddedBrowserSurface
@@ -90,4 +91,4 @@ export const onEmbeddedBrowserLayoutRequest: (listener: () => void) => () => voi
 export const openResource: (url: string, purpose?: BrowserPurpose | 'external') => Promise<void> = impl.openResource
 export const saveBytes: (filename: string, bytes: Uint8Array) => Promise<SaveResult> = impl.saveBytes
 
-export type { AgentStatus, BrowserBounds, BrowserOwner, BrowserPurpose, DesktopUpdatePhase, DesktopUpdateState, DshCodeSession, DshDirectoryEntry, DshExecutionEvent, DshFileDiff, DshFilePreview, DshGitBranchRef, DshGitBranchSnapshot, DshGitCommitResult, DshGitPushResult, DshPendingApproval, DshTaskChangeSet, DshTaskFileDiff, DshTerminalEvent, DshWorkspace, DshWorkspaceInspection, DshWorkspaceSummary, EmbeddedBrowserState, EnterpriseConnectionResult, PlatformCapabilities, SaveResult, Settings } from './types'
+export type { AgentStatus, BrowserBounds, BrowserOwner, BrowserPreviewFrame, BrowserPurpose, DesktopUpdatePhase, DesktopUpdateState, DshCodeSession, DshDirectoryEntry, DshExecutionEvent, DshFileDiff, DshFilePreview, DshGitBranchRef, DshGitBranchSnapshot, DshGitCommitResult, DshGitPushResult, DshPendingApproval, DshTaskChangeSet, DshTaskFileDiff, DshTerminalEvent, DshWorkspace, DshWorkspaceInspection, DshWorkspaceSummary, EmbeddedBrowserState, EnterpriseConnectionResult, PlatformCapabilities, SaveResult, Settings } from './types'

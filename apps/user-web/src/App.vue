@@ -7,7 +7,7 @@ import ProfileModal from './components/ProfileModal.vue'
 import productUiExtension from '@movo-product-extension'
 import DesktopWindowChrome from './components/desktop/DesktopWindowChrome.vue'
 import DesktopServerSetup from './components/desktop/DesktopServerSetup.vue'
-import type { DesktopToolTabKind } from './components/desktop/desktopToolTabs'
+import type { DesktopToolLauncherKind } from './components/desktop/desktopToolTabs'
 import CreateProjectDialog from './components/code/CreateProjectDialog.vue'
 import { fetchOrgBilling, fetchUserProfile, getAdminSSOToken, logoutWithToken, switchTenant, type TenantCandidate, type UserProfile } from './api/auth'
 import { AUTH_EXPIRED_EVENT } from './api/authExpiry'
@@ -161,38 +161,38 @@ const timezoneOptions = computed(() => [
   },
   {
     label: locale.value === 'en'
-      ? 'Central European Time (GMT+1) - Europe/Berlin'
-      : '欧洲中部时间 (GMT+1) - Europe/Berlin',
+      ? 'Central European Time - Europe/Berlin'
+      : '欧洲中部时间 - Europe/Berlin',
     value: 'Europe/Berlin',
   },
   {
     label: locale.value === 'en'
-      ? 'Greenwich Mean Time (GMT) - Europe/London'
-      : '格林威治标准时间 (GMT) - Europe/London',
+      ? 'United Kingdom Time - Europe/London'
+      : '英国时间 - Europe/London',
     value: 'Europe/London',
   },
   {
     label: locale.value === 'en'
-      ? 'Eastern Standard Time (GMT-5) - America/New_York'
-      : '美国东部时间 (GMT-5) - America/New_York',
+      ? 'US Eastern Time - America/New_York'
+      : '美国东部时间 - America/New_York',
     value: 'America/New_York',
   },
   {
     label: locale.value === 'en'
-      ? 'Central Standard Time (GMT-6) - America/Chicago'
-      : '美国中部时间 (GMT-6) - America/Chicago',
+      ? 'US Central Time - America/Chicago'
+      : '美国中部时间 - America/Chicago',
     value: 'America/Chicago',
   },
   {
     label: locale.value === 'en'
-      ? 'Pacific Standard Time (GMT-8) - America/Los_Angeles'
-      : '太平洋时间 (GMT-8) - America/Los_Angeles',
+      ? 'US Pacific Time - America/Los_Angeles'
+      : '美国太平洋时间 - America/Los_Angeles',
     value: 'America/Los_Angeles',
   },
   {
     label: locale.value === 'en'
-      ? 'Australian Eastern Standard Time (GMT+10) - Australia/Sydney'
-      : '澳大利亚东部时间 (GMT+10) - Australia/Sydney',
+      ? 'Australian Eastern Time - Australia/Sydney'
+      : '澳大利亚东部时间 - Australia/Sydney',
     value: 'Australia/Sydney',
   },
 ])
@@ -386,8 +386,8 @@ function requestDesktopBrowser(): void {
   }
 }
 
-const desktopAvailableTools = computed<DesktopToolTabKind[]>(() => {
-  const tools: DesktopToolTabKind[] = []
+const desktopAvailableTools = computed<DesktopToolLauncherKind[]>(() => {
+  const tools: DesktopToolLauncherKind[] = []
   if (canUseBrowser.value && currentSessionId.value) tools.push('browser')
   if (activeCodeState.value.session && capabilities.codeInspector) {
     if (desktopWorkspaceSummary.value?.git_available === true) tools.push('changes')
@@ -400,14 +400,22 @@ const desktopAvailableTools = computed<DesktopToolTabKind[]>(() => {
 const {
   tabs: desktopToolTabs,
   active: desktopActiveTool,
+  activeKind: desktopActiveToolKind,
+  tabsFor: desktopToolTabsFor,
+  activeFor: desktopActiveToolFor,
   open: openDesktopTool,
+  reveal: revealDesktopTool,
+  openFile: openDesktopFileTab,
+  openDiff: openDesktopDiffTab,
   select: selectDesktopTool,
   close: closeDesktopTool,
-  reset: resetDesktopTools,
+  hide: hideDesktopTools,
 } = useDesktopToolTabs({
+  getScopeKey: () => activeChatKey.value,
+  getLocale: () => locale.value === 'en' ? 'en' : 'zh',
   isAvailable: kind => currentView.value === 'chat' && desktopAvailableTools.value.includes(kind),
-  onActivate: kind => {
-    if (kind === 'browser') {
+  onActivate: tab => {
+    if (tab.kind === 'browser') {
       desktopBrowserRequest.value += 1
       const sessionId = currentSessionId.value
       if (sessionId && capabilities.embeddedBrowser) {
@@ -420,14 +428,14 @@ const {
 })
 
 function toggleDesktopCodePanel(mode: 'changes' | 'files' | 'terminal'): void {
-  if (desktopActiveTool.value === mode) {
-    desktopActiveTool.value = null
+  if (desktopActiveToolKind.value === mode) {
+    hideDesktopTools()
     return
   }
   desktopCodeReviewPath.value = ''
   desktopCodeReviewChanges.value = null
   desktopCodeFilePath.value = ''
-  openDesktopTool(mode)
+  revealDesktopTool(mode)
 }
 
 function reviewCodeChanges(changes: DshTaskChangeSet, path?: string): void {
@@ -435,14 +443,15 @@ function reviewCodeChanges(changes: DshTaskChangeSet, path?: string): void {
   desktopCodeReviewChanges.value = changes
   desktopCodeReviewPath.value = path || ''
   desktopCodeFilePath.value = ''
-  openDesktopTool('changes')
+  if (path) openDesktopDiffTab(path, changes)
+  else revealDesktopTool('changes')
 }
 function openCodeFile(path: string): void {
   if (!activeCodeState.value.session) return
   desktopCodeReviewChanges.value = null
   desktopCodeReviewPath.value = ''
   desktopCodeFilePath.value = path
-  openDesktopTool('files')
+  openDesktopFileTab(path)
 }
 async function refreshDesktopWorkspaceSummary(): Promise<void> {
   const sessionId = activeCodeState.value.session?.kernel_session_id
@@ -452,7 +461,6 @@ async function refreshDesktopWorkspaceSummary(): Promise<void> {
 let workspaceSummaryRequest = 0
 watch(() => activeCodeState.value.session?.kernel_session_id, async sessionId => {
   const request = ++workspaceSummaryRequest
-  resetDesktopTools()
   desktopCodeReviewPath.value = ''
   desktopCodeReviewChanges.value = null
   desktopCodeFilePath.value = ''
@@ -471,7 +479,6 @@ watch(() => activeCodeState.value.events.length, async (length, previous) => {
   try { desktopWorkspaceSummary.value = await getDshWorkspaceSummary(sessionId) } catch { /* keep last known summary */ }
 })
 watch(currentSessionId, (sessionId) => {
-  resetDesktopTools()
   if (capabilities.embeddedBrowser && sessionId) void selectEmbeddedBrowserSession(sessionId)
 }, { immediate: true })
 const sessionSearchDisplayItems = computed(() =>
@@ -1846,7 +1853,7 @@ onBeforeUnmount(() => {
       :workspace-busy="activeCodeState.busy"
       :worktree="activeCodeState.worktree"
       :locale="locale === 'en' ? 'en' : 'zh'"
-      :active-tool="desktopActiveTool"
+      :active-tool="desktopActiveToolKind"
       :git-available="desktopWorkspaceSummary?.git_available === true"
       :change-count="desktopWorkspaceSummary?.changes.length || 0"
       :files-available="capabilities.workspaceFiles"
@@ -2457,8 +2464,8 @@ onBeforeUnmount(() => {
               :code-history-project="pane.codeProject"
               :desktop-workspace-request="desktopWorkspaceRequest"
               :desktop-browser-request="desktopBrowserRequest"
-              :desktop-tool-tabs="pane.key === activeChatKey ? desktopToolTabs : []"
-              :desktop-active-tool="pane.key === activeChatKey ? desktopActiveTool : null"
+              :desktop-tool-tabs="desktopToolTabsFor(pane.key)"
+              :desktop-active-tool="desktopActiveToolFor(pane.key)"
               :desktop-available-tools="pane.key === activeChatKey ? desktopAvailableTools : []"
               :desktop-code-review-path="pane.key === activeChatKey ? desktopCodeReviewPath : ''"
               :desktop-code-review-changes="pane.key === activeChatKey ? desktopCodeReviewChanges : null"
@@ -2477,10 +2484,12 @@ onBeforeUnmount(() => {
               @code-source-ref="(fullRef) => codeRuntime.setSourceRef(pane.key, fullRef)"
               @code-branch-updated="(branch) => codeRuntime.setWorkspaceBranch(pane.key, branch)"
               @code-approval="(approvalId, decision, scope) => codeRuntime.decide(pane.key, approvalId, decision, scope)"
-              @close-code-panel="desktopActiveTool = null"
+              @close-code-panel="hideDesktopTools"
               @select-desktop-tool="selectDesktopTool"
               @close-desktop-tool="closeDesktopTool"
               @open-desktop-tool="openDesktopTool"
+              @open-desktop-file-tab="openDesktopFileTab"
+              @open-desktop-diff-tab="openDesktopDiffTab"
               @code-workspace-change="refreshDesktopWorkspaceSummary"
               @review-code-changes="reviewCodeChanges"
               @open-code-file="openCodeFile"

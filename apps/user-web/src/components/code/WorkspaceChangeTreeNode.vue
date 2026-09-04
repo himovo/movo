@@ -8,14 +8,14 @@ import type { WorkspaceChangeNode } from './changeTree'
 
 defineOptions({ name: 'WorkspaceChangeTreeNode' })
 const props = defineProps<{ node: WorkspaceChangeNode; selectedPath?: string; locale?: 'zh' | 'en' }>()
-const emit = defineEmits<{ (event: 'select', path: string): void }>()
+const emit = defineEmits<{ (event: 'select', path: string): void; (event: 'open', path: string): void }>()
 const expanded = ref(true)
 const status = (value: string) => changeStatusPresentation(value, props.locale)
 </script>
 
 <template>
   <div>
-    <button type="button" :class="{ selected: selectedPath === node.path }" @click="node.kind === 'directory' ? (expanded = !expanded) : emit('select', node.path)">
+    <button type="button" :class="{ selected: selectedPath === node.path }" @click="node.kind === 'directory' ? (expanded = !expanded) : emit('select', node.path)" @dblclick="node.kind === 'file' && emit('open', node.path)">
       <ChevronForwardOutline v-if="node.kind === 'directory'" class="chevron" :class="{ expanded }" />
       <FolderOpenOutline v-if="node.kind === 'directory'" class="kind folder" />
       <CodeFileTypeIcon v-else :path="node.path" />
@@ -26,7 +26,7 @@ const status = (value: string) => changeStatusPresentation(value, props.locale)
         <small v-else-if="(node.change.additions || 0) > 0 || (node.change.deletions || 0) > 0" class="counts"><b v-if="(node.change.additions || 0) > 0">+{{ node.change.additions }}</b><i v-if="(node.change.deletions || 0) > 0">-{{ node.change.deletions }}</i></small>
       </template>
     </button>
-    <div v-if="expanded" class="children"><WorkspaceChangeTreeNode v-for="child in node.children" :key="child.path" :node="child" :selected-path="selectedPath" :locale="locale" @select="emit('select', $event)" /></div>
+    <div v-if="expanded" class="children"><WorkspaceChangeTreeNode v-for="child in node.children" :key="child.path" :node="child" :selected-path="selectedPath" :locale="locale" @select="emit('select', $event)" @open="emit('open', $event)" /></div>
   </div>
 </template>
 

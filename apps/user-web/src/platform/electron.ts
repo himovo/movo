@@ -1,4 +1,4 @@
-import type { AgentStatus, BrowserBounds, BrowserOwner, BrowserPurpose, DesktopUpdateState, DshCodeSession, DshDirectoryEntry, DshExecutionEvent, DshFileDiff, DshFilePreview, DshGitBranchSnapshot, DshGitCommitResult, DshGitPushResult, DshPendingApproval, DshTaskChangeSet, DshTaskFileDiff, DshTerminalEvent, DshWorkspace, DshWorkspaceInspection, DshWorkspaceSummary, EmbeddedBrowserState, EnterpriseConnectionResult, PlatformCapabilities, SaveResult, Settings } from './types'
+import type { AgentStatus, BrowserBounds, BrowserOwner, BrowserPreviewFrame, BrowserPurpose, DesktopUpdateState, DshCodeSession, DshDirectoryEntry, DshExecutionEvent, DshFileDiff, DshFilePreview, DshGitBranchSnapshot, DshGitCommitResult, DshGitPushResult, DshPendingApproval, DshTaskChangeSet, DshTaskFileDiff, DshTerminalEvent, DshWorkspace, DshWorkspaceInspection, DshWorkspaceSummary, EmbeddedBrowserState, EnterpriseConnectionResult, PlatformCapabilities, SaveResult, Settings } from './types'
 
 interface ElectronApi {
   settings: { get(): Promise<Settings>; update(next: Settings): Promise<Settings> }
@@ -48,6 +48,7 @@ interface ElectronApi {
   }
   browser: {
     state(): Promise<EmbeddedBrowserState>
+    capturePreview(sessionId: string): Promise<BrowserPreviewFrame | null>
     selectSession(sessionId: string): Promise<void>
     activateSession(sessionId: string): Promise<void>
     attachSurface(surfaceId: string, sessionId: string): Promise<void>
@@ -142,6 +143,7 @@ export const onDshProjectTerminalEvent = (listener: (event: DshTerminalEvent) =>
 export const decideDshCodeApproval = (sessionId: string, approvalId: string, decision: 'approved' | 'rejected', grantScope: 'once' | 'session') =>
   api().dshCodeSession.decideApproval(sessionId, approvalId, decision, grantScope)
 export const getEmbeddedBrowserState = () => api().browser.state()
+export const captureEmbeddedBrowserPreview = (sessionId: string) => api().browser.capturePreview(sessionId)
 export const selectEmbeddedBrowserSession = (sessionId: string) => api().browser.selectSession(sessionId)
 export const activateEmbeddedBrowserSession = (sessionId: string) => api().browser.activateSession(sessionId)
 export const attachEmbeddedBrowserSurface = (surfaceId: string, sessionId: string) => api().browser.attachSurface(surfaceId, sessionId)

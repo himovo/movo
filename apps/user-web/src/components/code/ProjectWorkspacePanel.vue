@@ -1,34 +1,35 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
 import type { DshCodeSession } from '../../platform/types'
 import DesktopToolTabBar from '../desktop/DesktopToolTabBar.vue'
-import type { DesktopToolTab, DesktopToolTabKind } from '../desktop/desktopToolTabs'
+import type { DesktopToolLauncherKind, DesktopToolTab } from '../desktop/desktopToolTabs'
 import ProjectTerminal from './ProjectTerminal.vue'
 import WorkspaceChanges from './WorkspaceChanges.vue'
 import TaskChangeReview from './TaskChangeReview.vue'
 import WorkspaceFileBrowser from './WorkspaceFileBrowser.vue'
+import WorkspaceFilePreview from './WorkspaceFilePreview.vue'
+import WorkspaceDiffPreview from './WorkspaceDiffPreview.vue'
 import type { DshTaskChangeSet } from '../../platform/types'
 import { useDesktopToolPanelSize } from '../../composables/desktop/useDesktopToolPanelSize'
 
-export type ProjectPanelMode = 'changes' | 'files' | 'terminal'
-const props = defineProps<{ session: DshCodeSession; mode: ProjectPanelMode; tabs: DesktopToolTab[]; availableTabs: DesktopToolTabKind[]; locale?: 'zh' | 'en'; running?: boolean; reviewPath?: string; reviewChanges?: DshTaskChangeSet | null; filePath?: string }>()
-const emit = defineEmits<{ (event: 'close'): void; (event: 'workspace-change'): void; (event: 'select-tab', kind: DesktopToolTabKind): void; (event: 'close-tab', kind: DesktopToolTabKind): void; (event: 'open-tab', kind: DesktopToolTabKind): void }>()
+export type ProjectPanelMode = 'changes' | 'files' | 'terminal' | 'file' | 'diff'
+const props = defineProps<{ session: DshCodeSession; activeId: string; tabs: DesktopToolTab[]; availableTabs: DesktopToolLauncherKind[]; locale?: 'zh' | 'en'; running?: boolean; reviewPath?: string; reviewChanges?: DshTaskChangeSet | null; filePath?: string }>()
+const emit = defineEmits<{ (event: 'close'): void; (event: 'workspace-change'): void; (event: 'select-tab', id: string): void; (event: 'close-tab', id: string): void; (event: 'open-tab', kind: DesktopToolLauncherKind): void; (event: 'open-file', path: string): void; (event: 'open-diff', path: string, changes?: DshTaskChangeSet): void }>()
 const panel = useDesktopToolPanelSize()
-const openedModes = ref(new Set<ProjectPanelMode>([props.mode]))
-watch(() => props.mode, mode => {
-  openedModes.value = new Set([...openedModes.value, mode])
-})
 </script>
 
 <template>
   <aside class="project-panel" :class="{ dragging: panel.dragging.value }" :style="{ width: panel.width.value }">
     <button type="button" class="resize-handle" :aria-label="locale === 'en' ? 'Resize panel' : '调整面板宽度'" @pointerdown="panel.beginDrag" @keydown="panel.adjustByKeyboard"></button>
-    <DesktopToolTabBar :tabs="tabs" :active="mode" :available="availableTabs" :locale="locale" @select="emit('select-tab', $event)" @close="emit('close-tab', $event)" @open="emit('open-tab', $event)" @close-panel="emit('close')" />
+    <DesktopToolTabBar :tabs="tabs" :active="activeId" :available="availableTabs" :locale="locale" @select="emit('select-tab', $event)" @close="emit('close-tab', $event)" @open="emit('open-tab', $event)" @close-panel="emit('close')" />
     <div class="panel-body">
-      <TaskChangeReview v-if="openedModes.has('changes') && mode === 'changes' && reviewChanges" :session-id="session.kernel_session_id" :changes="reviewChanges" :locale="locale" :requested-path="reviewPath" />
-      <WorkspaceChanges v-else-if="openedModes.has('changes')" v-show="mode === 'changes'" :session-id="session.kernel_session_id" :locale="locale" :running="running" :requested-path="reviewPath" @committed="emit('workspace-change')" />
-      <WorkspaceFileBrowser v-if="openedModes.has('files')" v-show="mode === 'files'" :session-id="session.kernel_session_id" :locale="locale" :requested-path="filePath" />
-      <ProjectTerminal v-if="openedModes.has('terminal')" v-show="mode === 'terminal'" :session-id="session.kernel_session_id" />
+      <template v-for="tab in tabs" :key="tab.id">
+        <TaskChangeReview v-if="tab.kind === 'changes' && reviewChanges" v-show="activeId === tab.id" :session-id="session.kernel_session_id" :changes="reviewChanges" :locale="locale" :requested-path="reviewPath" @open-diff="emit('open-diff', $event, reviewChanges)" />
+        <WorkspaceChanges v-else-if="tab.kind === 'changes'" v-show="activeId === tab.id" :session-id="session.kernel_session_id" :locale="locale" :running="running" :requested-path="reviewPath" @committed="emit('workspace-change')" @open-diff="emit('open-diff', $event)" />
+        <WorkspaceFileBrowser v-else-if="tab.kind === 'files'" v-show="activeId === tab.id" :session-id="session.kernel_session_id" :locale="locale" :requested-path="filePath" @open-file="emit('open-file', $event)" />
+        <ProjectTerminal v-else-if="tab.kind === 'terminal'" v-show="activeId === tab.id" :session-id="session.kernel_session_id" />
+        <WorkspaceFilePreview v-else-if="tab.kind === 'file' && tab.resource?.path" v-show="activeId === tab.id" :session-id="session.kernel_session_id" :path="tab.resource.path" :locale="locale" />
+        <WorkspaceDiffPreview v-else-if="tab.kind === 'diff' && tab.resource?.path" v-show="activeId === tab.id" :session-id="session.kernel_session_id" :path="tab.resource.path" :task-changes="tab.resource.taskChanges" :locale="locale" />
+      </template>
     </div>
   </aside>
 </template>
