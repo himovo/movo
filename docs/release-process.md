@@ -39,19 +39,6 @@ Publish GitHub release notes from the corresponding `CHANGELOG.md` entry. A
 stable `vX.Y.Z` tag also updates `latest`, but production documentation and
 support responses must continue recommending an explicit version tag.
 
-After the tag-triggered `Container Release` workflow succeeds, create the
-GitHub Release with:
-
-```bash
-scripts/release/create_github_release.sh vX.Y.Z
-```
-
-The script verifies that the tag exists on `origin`, that its container release
-completed successfully for the same commit, and then marks a stable release as
-Latest. It never creates or pushes a tag and therefore does not trigger another
-container build. Pass `--notes-file PATH` to publish reviewed notes from the
-matching changelog entry; otherwise GitHub generates the notes.
-
 If any image build, vulnerability scan or attestation fails, do not create a
 GitHub Release. Fix the cause, create a new candidate commit and use a new tag;
 never move or overwrite an existing public release tag.
