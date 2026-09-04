@@ -29,14 +29,17 @@
 - [x] Every first-run Docker image builds without private registries or credentials.
 - [x] A clean deployment reaches healthy state and completes initial setup.
 - [x] The setup organization is community, billing is disabled and member limit is unlimited.
-- [ ] Run the GHCR candidate workflow successfully for both amd64 and arm64.
+- [x] GHCR release images are available for both amd64 and arm64.
 - [ ] Backup, upgrade and rollback steps have been exercised on non-production data.
 
 ## GitHub publication
 
+- [x] The GitHub repository is public.
 - [x] The repository contains only the intended new MOVO history.
-- [ ] Branch protection requires the runtime and Web build guards.
-- [ ] Private vulnerability reporting and Discussions are enabled.
-- [ ] Issue labels and templates are available.
-- [ ] The release tag, image tags and changelog identify the same commit.
-- [x] No Git remote is added or pushed until all items above are accepted.
+- [x] Branch protection requires the runtime, Web build and native-code guards.
+- [x] Private vulnerability reporting and Discussions are enabled.
+- [x] Issue labels and templates are available.
+- [x] The release tag, changelog and approved component image set identify the
+      same release version.
+- [x] All published `movo-*` GHCR packages are public and anonymously pullable.
+- [x] Git remotes were reviewed before the initial public push.
