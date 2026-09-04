@@ -1,0 +1,63 @@
+name: Promote Container Candidates
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Commit SHA whose sha-xxxxxxx candidate images should be promoted
+        required: true
+        type: string
+      image_suffixes:
+        description: Comma-separated image suffixes from the release manifest
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Promote validated candidates to latest
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          IMAGE_SUFFIXES: ${{ inputs.image_suffixes }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$SOURCE_SHA" =~ ^[0-9a-fA-F]{7,40}$ ]]; then
+            echo "source_sha must contain 7 to 40 hexadecimal characters" >&2
+            exit 2
+          fi
+
+          repository="${GITHUB_REPOSITORY,,}"
+          candidate_tag="sha-${SOURCE_SHA:0:7}"
+          IFS=',' read -ra suffixes <<< "$IMAGE_SUFFIXES"
+
+          for suffix in "${suffixes[@]}"; do
+            suffix="${suffix//[[:space:]]/}"
+            case "$suffix" in
+              dsh-runtime-host|chat-api|admin-api|document-parser|user-web|admin-web|gateway) ;;
+              *)
+                echo "Unsupported image suffix: $suffix" >&2
+                exit 2
+                ;;
+            esac
+
+            image="ghcr.io/${repository}-${suffix}"
+            source="${image}:${candidate_tag}"
+            target="${image}:latest"
+            echo "Promoting ${source} -> ${target}"
+            docker buildx imagetools inspect "$source" >/dev/null
+            docker buildx imagetools create --tag "$target" "$source"
+            docker buildx imagetools inspect "$target"
+          done
