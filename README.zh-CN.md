@@ -13,9 +13,9 @@
 </p>
 
 <p align="center">
-  <a href="https://himovo.com/">官方网站</a> ·
-  <a href="https://himovo.com/guide/introduction">产品文档</a> ·
-  <a href="https://himovo.com/guide/getting-started">快速开始</a>
+  <a href="https://www.himovo.com/">官方网站</a> ·
+  <a href="https://www.himovo.com/guide/introduction.html">产品文档</a> ·
+  <a href="https://www.himovo.com/guide/getting-started.html">快速开始</a>
 </p>
 
 MOVO 帮助企业将 DSH Agent 从开发验证推进到生产使用。它在 DSH Runtime、Skill、工具和 MCP 生态之上，提供可部署的用户工作台、企业知识、身份与权限、管理治理和文件交付能力。
@@ -63,7 +63,7 @@ MOVO 帮助企业将 DSH Agent 从开发验证推进到生产使用。它在 DSH
 
 ### 浏览器 Agent 与 Code Agent
 
-私有化部署的 Web 工作台支持对话、研究、知识、文件和内容生成。如需使用**浏览器 Agent** 或 **Code Agent**，请下载安装 [MOVO Desktop](https://himovo.com/download)，并将它连接到你自行部署的 MOVO 服务。
+私有化部署的 Web 工作台支持对话、研究、知识、文件和内容生成。如需使用**浏览器 Agent** 或 **Code Agent**，请下载安装 [MOVO Desktop](https://www.himovo.com/download.html)，并将它连接到你自行部署的 MOVO 服务。
 
 MOVO Desktop 为这些能力提供本地浏览器会话、代码工作区、项目终端和 Git 集成。该桌面客户端是独立分发的专有软件，源码不包含在本仓库中，也不属于社区版源码发布范围。
 

@@ -13,9 +13,9 @@
 </p>
 
 <p align="center">
-  <a href="https://himovo.com/en/">Official website</a> ·
-  <a href="https://himovo.com/en/guide/introduction">Documentation</a> ·
-  <a href="https://himovo.com/en/guide/getting-started">Quick start</a>
+  <a href="https://www.himovo.com/en/">Official website</a> ·
+  <a href="https://www.himovo.com/en/guide/introduction.html">Documentation</a> ·
+  <a href="https://www.himovo.com/en/guide/getting-started.html">Quick start</a>
 </p>
 
 MOVO brings DSH Agents from development experiments into enterprise production. It combines the DSH Runtime, Skills, Tools and MCP ecosystem with a deployable user workspace, enterprise knowledge, identity and access control, administration, governance and file delivery.
@@ -63,7 +63,7 @@ The repository includes the Web user workspace, administration console, conversa
 
 ### Browser Agent and Code Agent
 
-The self-hosted Web workspace supports chat, research, knowledge, files and content generation. To use **Browser Agent** or **Code Agent**, install [MOVO Desktop](https://himovo.com/en/download) and connect it to your self-hosted MOVO service.
+The self-hosted Web workspace supports chat, research, knowledge, files and content generation. To use **Browser Agent** or **Code Agent**, install [MOVO Desktop](https://www.himovo.com/en/download.html) and connect it to your self-hosted MOVO service.
 
 MOVO Desktop provides the local browser session, code workspace, project terminal and Git integration required by these capabilities. It is distributed separately as proprietary software; its source code is not included in this repository and is not part of the Community Edition source release.
 
