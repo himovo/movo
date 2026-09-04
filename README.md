@@ -199,6 +199,4 @@ python3 scripts/check_open_source_hygiene.py
 
 MOVO is source-available under the [MOVO Community License](LICENSE), based on Apache License 2.0 with additional conditions. Without written authorization, the license does not permit operating a hosted multi-tenant SaaS offering, removing or modifying the MOVO logo and copyright notices in the included frontends, or selling MOVO or a derivative as an OEM, white-label, or rebranded enterprise Agent platform whose primary product is MOVO itself.
 
-The OEM and white-label restriction does not prevent you from building independent business applications on MOVO, or from providing implementation, customization, and private single-tenant deployment services for an individual customer. The other license conditions, including the frontend branding requirements, still apply.
-
 These additional restrictions mean that the MOVO Community License is not the unmodified Apache License 2.0 and should not be represented as an OSI-approved open-source license. For commercial licensing, multi-tenant SaaS authorization, OEM or white-label distribution, or alternative branding rights, contact `support@himovo.com`.

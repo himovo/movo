@@ -198,6 +198,4 @@ python3 scripts/check_open_source_hygiene.py
 
 MOVO 依据 [MOVO Community License](LICENSE) 提供源码。该许可证以 Apache License 2.0 为基础并附加了额外条件：未经书面授权，不允许将 MOVO 作为托管式多租户 SaaS 服务运营，不允许移除或修改所含前端中的 MOVO Logo 与版权声明，也不得将 MOVO 或其衍生版本作为主要产品，以 OEM、White-label（白标）或重新品牌的企业 Agent 平台向第三方商业销售。
 
-OEM 与白标限制不影响基于 MOVO 开发独立业务应用，也不影响集成商为单一客户提供实施、定制和单租户私有化部署服务。许可证的其他条件（包括前端品牌标识要求）仍然适用。
-
 由于存在这些附加限制，MOVO Community License 并非未经修改的 Apache License 2.0，也不应被描述为 OSI 认可的开源许可证。如需商业授权、多租户 SaaS 授权、OEM/白标分发或替换品牌，请联系 `support@himovo.com`。
