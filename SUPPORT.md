@@ -10,6 +10,6 @@ private documents, customer data or production incident details. Follow
 SECURITY.md for security reports.
 
 The Community Edition is provided without a support SLA. Commercial support,
-multi-tenant SaaS authorization and alternative branding rights require a
-separate written agreement with MOVO. Contact `support@himovo.com` for these
-requests.
+multi-tenant SaaS authorization, OEM or white-label platform distribution, and
+alternative branding rights require a separate written agreement with MOVO.
+Contact `support@himovo.com` for these requests.
