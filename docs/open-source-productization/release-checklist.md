@@ -36,7 +36,8 @@
 
 - [x] The GitHub repository is public.
 - [x] The repository contains only the intended new MOVO history.
-- [x] Branch protection requires the runtime, Web build and native-code guards.
+- [x] Branch protection requires the always-on runtime and Web build guards;
+      path-specific DSH guards run whenever their protected sources change.
 - [x] Private vulnerability reporting and Discussions are enabled.
 - [x] Issue labels and templates are available.
 - [x] The release tag, changelog and approved component image set identify the
