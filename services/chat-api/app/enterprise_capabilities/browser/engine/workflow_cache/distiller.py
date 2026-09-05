@@ -12,7 +12,8 @@ from .action_policy import DYNAMIC_MUTATION_TOOLS, action_disposition
 
 _LOCATOR_FIELDS = (
     "selector", "role", "name", "text", "description", "placeholder",
-    "semanticPurpose", "scopeName", "scopeRole", "hasPopup", "frameDepth",
+    "semanticPurpose", "scopeName", "scopeRole", "contentContextId",
+    "hasPopup", "frameDepth",
     "type", "accept",
 )
 

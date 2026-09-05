@@ -21,7 +21,8 @@ from .url_portability import portable_navigation_url
 
 _LOCATOR_FIELDS = (
     "selector", "role", "name", "text", "description", "placeholder",
-    "semanticPurpose", "scopeName", "scopeRole", "hasPopup", "frameDepth",
+    "semanticPurpose", "scopeName", "scopeRole", "contentContextId",
+    "hasPopup", "frameDepth",
     "type", "accept",
 )
 _DYNAMIC_LOCATOR_ROLES = {
@@ -163,7 +164,10 @@ def _compile_step(
             locator.pop(key, None)
     for key, value in list(locator.items()):
         text = str(value or "")
-        if key not in {"role", "semanticPurpose", "scopeRole", "hasPopup", "frameDepth"} and any(
+        if key not in {
+            "role", "semanticPurpose", "scopeRole", "contentContextId",
+            "hasPopup", "frameDepth",
+        } and any(
             sensitive and sensitive in text for sensitive in catalog.sensitive_values
         ):
             locator.pop(key, None)

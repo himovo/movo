@@ -465,6 +465,11 @@ async def chat_cancel(
         )
     except LookupError as exc:
         raise HTTPException(status_code=404, detail="session_not_found") from exc
+    except DshRuntimeError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "dsh_cancel_pending", "message": str(exc), "retryable": True},
+        ) from exc
     return ApiResponse(code=0 if cancelled else 404, message="ok" if cancelled else "session_not_found")
 
 

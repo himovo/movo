@@ -12,6 +12,7 @@ interface PendingImage {
 
 const props = defineProps<{
   running: boolean
+  stopping?: boolean
   isNewSessionView: boolean
   chatModels: ChatModelOption[]
   selectedModelId: string
@@ -431,6 +432,7 @@ function onComposerKeydown(event: KeyboardEvent) {
 
 async function sendMessage() {
   if (props.running) {
+    if (props.stopping) return
     emit('stop')
     return
   }
@@ -835,12 +837,17 @@ watch(() => props.allowSkills, (allowed) => {
           </svg>
           <button
             @click="sendMessage"
-            :disabled="!userInput.trim() && pendingImages.length === 0 && pendingDocuments.length === 0 && !selectedSkill && !running"
+            :disabled="stopping || (!userInput.trim() && pendingImages.length === 0 && pendingDocuments.length === 0 && !selectedSkill && !running)"
+            :title="stopping ? (locale === 'zh' ? '正在停止…' : 'Stopping…') : undefined"
             class="relative z-10 flex h-8 w-8 items-center justify-center rounded-lg text-white transition-all duration-200 ease-in-out transform active:scale-95"
             :class="(userInput.trim() || pendingImages.length > 0 || pendingDocuments.length > 0 || selectedSkill || running) ? 'bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200' : 'bg-gray-200 cursor-not-allowed'"
           >
-            <svg v-if="running" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <svg v-if="running && !stopping" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
               <rect x="6" y="6" width="12" height="12" rx="2" />
+            </svg>
+            <svg v-else-if="stopping" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" opacity="0.3" />
+              <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
             </svg>
             <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" class="text-white" xmlns="http://www.w3.org/2000/svg"><path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>

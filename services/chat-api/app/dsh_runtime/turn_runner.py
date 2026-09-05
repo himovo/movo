@@ -24,6 +24,7 @@ from app.dsh_runtime.evidence_projection import (
 )
 from app.dsh_runtime.gateway import DshAgentKernelGateway
 from app.dsh_runtime.profile.service import RuntimeProfilePublisher
+from app.dsh_runtime.turn_finalization import TurnStateFinalizer
 from app.enterprise_capabilities.evidence import ExecutionEvidenceRepository
 
 
@@ -65,6 +66,7 @@ class DshTurnRunner:
         self._turn_events = turn_events
         self._execution_evidence = execution_evidence
         self._authoritative_deliveries = authoritative_deliveries
+        self._finalizer = TurnStateFinalizer(bindings, conversations)
         self._credential_refresh_interval_seconds = credential_refresh_interval_seconds
         self._mapper = DshEventMapper(kernel_version=kernel_version)
 
@@ -185,7 +187,16 @@ class DshTurnRunner:
             await credential_lease.stop()
             await writer.abort()
             await self._finish_side_events(message_id)
-            await self._clear_active_run(binding=binding, message_id=message_id)
+            try:
+                await self._finalizer.finalize(
+                    binding=binding, message_id=message_id, status="cancelled"
+                )
+            except Exception:
+                logger.exception(
+                    "failed to finalize cancelled DSH turn",
+                    extra={"message_id": message_id},
+                )
+            live_stream.finish()
             return "cancelled"
         except Exception as exc:
             await writer.abort()
@@ -200,12 +211,17 @@ class DshTurnRunner:
             if terminal_projection is not None:
                 history_events.append(terminal_projection)
         if status == "interrupted":
-            await credential_lease.stop()
             await writer.abort()
-            await self._finish_side_events(message_id)
-            await self._clear_active_run(binding=binding, message_id=message_id)
-            live_stream.finish()
-            return "interrupted"
+            writer_aborted = True
+            status = "failed"
+            terminal_projection = await self._best_effort_failure(
+                binding=binding,
+                message_id=message_id,
+                cursor=9_050_000_000_000_000 + last_native_cursor,
+                error=RuntimeError("DSH event stream ended before a terminal event"),
+            )
+            if terminal_projection is not None:
+                history_events.append(terminal_projection)
         try:
             if not writer_aborted:
                 await writer.close()
@@ -243,8 +259,11 @@ class DshTurnRunner:
                 execution_events=history_events,
                 evidence_bundles=evidence_bundles,
             )
-            await self._bindings.finish_turn(
-                str(binding["binding_id"]), message_id=message_id, status=status
+            await self._finalizer.finalize(
+                binding=binding,
+                message_id=message_id,
+                status=status,
+                clear_conversation=browser_intervention is None,
             )
         except Exception as exc:
             status = "failed"
@@ -255,8 +274,8 @@ class DshTurnRunner:
                 error=exc,
             )
             try:
-                await self._bindings.finish_turn(
-                    str(binding["binding_id"]), message_id=message_id, status=status
+                await self._finalizer.finalize(
+                    binding=binding, message_id=message_id, status=status
                 )
             except Exception:
                 pass
@@ -270,8 +289,6 @@ class DshTurnRunner:
                     message_id=message_id,
                     intervention=browser_intervention,
                 )
-            else:
-                await self._clear_active_run(binding=binding, message_id=message_id)
             if terminal_projection is not None:
                 live_stream.publish(terminal_projection)
             live_stream.finish()
@@ -315,17 +332,6 @@ class DshTurnRunner:
         if not isinstance(payload, dict) or payload.get("name") != "browser_task":
             return ""
         return str(payload.get("callId") or "")
-
-    async def _clear_active_run(self, *, binding: dict[str, Any], message_id: str) -> None:
-        try:
-            await self._conversations.clear_active_run(
-                conversation_id=str(binding["conversation_id"]),
-                tenant_id=str(binding["tenant_id"]),
-                user_id=str(binding["user_id"]),
-                message_id=message_id,
-            )
-        except Exception:
-            logger.exception("failed to clear DSH active_run", extra={"message_id": message_id})
 
     async def _best_effort_failure(
         self,

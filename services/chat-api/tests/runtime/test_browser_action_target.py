@@ -50,6 +50,25 @@ def test_click_role_can_change_within_same_action_family() -> None:
     assert locator_matches(locator, rerendered_target, tool="browser_click")
 
 
+def test_content_context_disambiguates_unnamed_links_in_repeated_cards() -> None:
+    locator = {
+        "role": "link",
+        "contentContextId": "attribute:data-note-id:note-12345",
+    }
+    expected = {
+        "role": "link",
+        "contentContextId": "attribute:data-note-id:note-12345",
+        "visible": True, "inViewport": True, "hitTestable": True,
+    }
+    other_card = {
+        **expected,
+        "contentContextId": "attribute:data-note-id:note-99999",
+    }
+
+    assert locator_matches(locator, expected, tool="browser_click")
+    assert not locator_matches(locator, other_card, tool="browser_click")
+
+
 def test_hidden_or_covered_target_cannot_receive_a_replayed_click() -> None:
     base = {"role": "menuitem", "visible": True, "inViewport": True, "hitTestable": True}
 

@@ -243,13 +243,16 @@ class DshAgentKernelGateway(AgentKernelContract):
         binding = self._binding(session_id)
         await self._refresh_model_credential(binding.runtime_id)
 
-    async def cancel(self, request: CancelSessionRequest) -> None:
+    async def cancel(self, request: CancelSessionRequest) -> dict[str, Any]:
         binding = self._binding(request.session_id)
-        await self._transport.request(
+        response = await self._transport.request(
             "POST",
             f"/v1/runtimes/{binding.runtime_id}/sessions/{request.session_id}/cancel",
             json={"cause": request.cause},
         )
+        if response.get("accepted") is not True:
+            raise DshProtocolError("DSH Runtime Host did not accept Session cancellation")
+        return response
 
     async def dispose_session(self, session_id: str) -> None:
         binding = self._binding(session_id)

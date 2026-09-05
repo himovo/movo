@@ -126,6 +126,46 @@ def test_manual_event_normalization_keeps_distinct_business_fields() -> None:
     assert [item["target"]["selector"] for item in normalized.events] == ["#title", "#body"]
 
 
+def test_manual_event_normalization_discards_only_noncausal_unresolved_clicks() -> None:
+    url = "https://cms.example.test/editor"
+    events = [
+        {
+            "sequence": 1, "type": "unresolved_click",
+            "before_url": url, "after_url": url,
+            "before_fingerprint": "same", "after_fingerprint": "same",
+        },
+        {
+            "sequence": 2, "type": "unresolved_click",
+            "before_url": url, "after_url": f"{url}/next",
+            "before_fingerprint": "same", "after_fingerprint": "changed",
+        },
+    ]
+
+    normalized = normalize_manual_events(events)
+
+    assert [item["sequence"] for item in normalized.events] == [2]
+    assert normalized.discarded_diagnostics == 1
+
+
+def test_manual_recording_admits_route_with_incidental_unresolved_click() -> None:
+    events = _events()
+    events.insert(1, {
+        "recording_id": "r1", "sequence": 0, "type": "unresolved_click",
+        "before_url": "https://cms.example.test/editor",
+        "after_url": "https://cms.example.test/editor",
+        "before_fingerprint": "s1", "after_fingerprint": "s1",
+    })
+
+    plan = build_manual_recording_plan(
+        events=events,
+        operation="保存带图文章草稿",
+        capability_id="browser.submit",
+    )
+
+    assert plan.complete is True
+    assert "unsupported_human_action" not in plan.reasons
+
+
 def test_recorded_target_identity_survives_value_driven_accessible_name_changes() -> None:
     selector = "body > main:nth-of-type(2) > div:nth-child(7)"
     url = "https://cms.example.test/editor"
@@ -509,7 +549,7 @@ def test_recording_analysis_rejects_a_tab_that_was_not_recordable() -> None:
         analysis = await ManualRecordingAnalyzer(llm=_NamingLLM()).analyze(events)  # type: ignore[arg-type]
 
         assert analysis.complete is False
-        assert "unsupported_human_action" in analysis.reasons
+        assert "recording_target_unavailable" in analysis.reasons
 
     asyncio.run(run())
 

@@ -12,20 +12,22 @@ from uuid import uuid4
 from app.dsh_runtime.bindings import BindingReplacementConflict, KernelBindingRepository
 from app.dsh_runtime.contracts import CancelSessionRequest
 from app.dsh_runtime.conversation import ConversationRepository
-from app.dsh_runtime.events import KernelEventRepository, KernelEventWrite
+from app.dsh_runtime.events import KernelEventRepository
 from app.dsh_runtime.events.live_stream import LiveTurnStream
 from app.dsh_runtime.events.projection_writer import ProjectionScope
 from app.dsh_runtime.events.turn_channel import TurnEventRegistry
-from app.dsh_runtime.events.tool_presentation import tool_presentations
 from app.dsh_runtime.gateway import DshAgentKernelGateway
 from app.dsh_runtime.locale import resolve_turn_locale
 from app.dsh_runtime.profile.service import RuntimeProfilePublisher
 from app.dsh_runtime.profile.synchronizer import ConversationProfileSynchronizer
 from app.dsh_runtime.runtime_coordinator import RuntimeCoordinator
 from app.dsh_runtime.temporal_context import build_temporal_context
+from app.dsh_runtime.turn_cancellation import TurnCancellationCoordinator
 from app.dsh_runtime.turn_runner import DshTurnRunner
+from app.dsh_runtime.turn_finalization import TurnStateFinalizer
+from app.dsh_runtime.turn_recovery import TurnTerminalRecovery
 from app.enterprise_capabilities.evidence import ExecutionEvidenceRepository
-from app.dsh_runtime.events.authoritative_delivery import DeliveryStore, AuthoritativeDeliveryGuard
+from app.dsh_runtime.events.authoritative_delivery import DeliveryStore
 
 
 @dataclass(frozen=True)
@@ -62,7 +64,6 @@ class DshChatService:
         self._profiles = profiles
         self._profile_sync = ConversationProfileSynchronizer(profiles, coordinator)
         self._turn_events = turn_events
-        self._authoritative_deliveries = authoritative_deliveries
         self._turn_runner = DshTurnRunner(
             gateway=gateway,
             conversations=conversations,
@@ -77,6 +78,23 @@ class DshChatService:
         self._tasks: dict[str, asyncio.Task[str]] = {}
         self._turn_outcomes: dict[str, str] = {}
         self._live_streams: dict[str, LiveTurnStream] = {}
+        self._finalizer = TurnStateFinalizer(bindings, conversations)
+        self._terminal_recovery = TurnTerminalRecovery(
+            gateway=gateway,
+            conversations=conversations,
+            bindings=bindings,
+            events=events,
+            profiles=profiles,
+            authoritative_deliveries=authoritative_deliveries,
+        )
+        self._cancellation = TurnCancellationCoordinator(
+            gateway=gateway,
+            runtime_coordinator=coordinator,
+            conversations=conversations,
+            bindings=bindings,
+            recovery=self._terminal_recovery,
+            task_for_message=self._tasks.get,
+        )
 
     async def prepare_turn(
         self,
@@ -154,6 +172,17 @@ class DshChatService:
             if model_instance_id and model_instance_id != str(binding["model_instance_id"]):
                 raise ValueError("a Conversation keeps its immutable model profile; create a new Conversation to switch model")
             active_status = str((binding.get("active_turn") or {}).get("status") or "")
+            if active_status and active_status not in {"completed", "failed", "cancelled"}:
+                binding = await self._terminal_recovery.recover(binding)
+                active_status = str((binding.get("active_turn") or {}).get("status") or "")
+            elif active_status in {"completed", "failed", "cancelled"}:
+                terminal_message_id = str((binding.get("active_turn") or {}).get("message_id") or "")
+                if terminal_message_id:
+                    await self._finalizer.finalize(
+                        binding=binding,
+                        message_id=terminal_message_id,
+                        status=active_status,
+                    )
             if active_status and active_status not in {"completed", "failed", "cancelled"}:
                 raise ConversationBusyError("another DSH turn is already running for this Conversation")
             try:
@@ -323,7 +352,9 @@ class DshChatService:
         if binding and str((binding.get("active_turn") or {}).get("status")) == "running":
             try:
                 binding = await self._coordinator.restore(binding)
-                await self._ingest_once(binding=binding, message_id=message_id)
+                await self._terminal_recovery.ingest_once(
+                    binding=binding, message_id=message_id
+                )
             except Exception:
                 pass
         rows = await self._events.list_for_message(
@@ -353,15 +384,9 @@ class DshChatService:
         }
 
     async def cancel(self, conversation_id: str, *, tenant_id: str, user_id: str) -> bool:
-        await self._conversations.owned(conversation_id, tenant_id=tenant_id, user_id=user_id)
-        binding = await self._bindings.current(conversation_id, tenant_id=tenant_id, user_id=user_id)
-        if binding is None:
-            return False
-        binding = await self._coordinator.restore(binding)
-        await self._gateway.cancel(
-            CancelSessionRequest(session_id=str(binding["kernel_session_id"]), cause="user_cancelled")
+        return await self._cancellation.cancel(
+            conversation_id, tenant_id=tenant_id, user_id=user_id
         )
-        return True
 
     async def dispose_conversation(self, conversation_id: str, *, tenant_id: str, user_id: str) -> None:
         await self._conversations.owned(conversation_id, tenant_id=tenant_id, user_id=user_id)
@@ -400,66 +425,3 @@ class DshChatService:
         live_stream = self._live_streams.get(message_id)
         if live_stream is not None:
             live_stream.finish()
-
-    @staticmethod
-    def _compact_history_events(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        return [row for row in rows if row.get("type") != "item.delta"]
-
-    async def _ingest_once(self, *, binding: dict[str, Any], message_id: str) -> None:
-        terminal_status: str | None = None
-        native_events = await self._gateway.events_once(
-            str(binding["kernel_session_id"]), int(binding.get("event_cursor") or 0)
-        )
-        writes: list[KernelEventWrite] = []
-        profile = await self._profiles.get(str(binding["profile_version"]))
-        tool_ui = tool_presentations(profile)
-        delivery_guard = AuthoritativeDeliveryGuard(
-            store=self._authoritative_deliveries,
-            tool_presentations=tool_ui,
-            tenant_id=str(binding["tenant_id"]),
-            user_id=str(binding["user_id"]),
-            message_id=message_id,
-        )
-        for event in native_events:
-            projected = self._events.project(
-                event,
-                message_id=message_id,
-                tool_presentations=tool_ui,
-            )
-            projected = await delivery_guard.apply(event, projected)
-            writes.append(KernelEventWrite(event=event, projected=projected))
-            if event.type == "turn.completed":
-                terminal_status = str((projected or {}).get("type") or "run.completed").removeprefix("run.")
-        if writes:
-            await self._events.persist_batch(
-                writes,
-                tenant_id=str(binding["tenant_id"]),
-                user_id=str(binding["user_id"]),
-                conversation_id=str(binding["conversation_id"]),
-                message_id=message_id,
-            )
-            await self._bindings.advance_cursor(
-                str(binding["binding_id"]), max(write.event.cursor for write in writes)
-            )
-        if terminal_status is not None:
-            rows = await self._events.all_for_message(
-                message_id,
-                tenant_id=str(binding["tenant_id"]),
-                user_id=str(binding["user_id"]),
-            )
-            assistant_text = ""
-            for row in rows:
-                if row.get("item_kind") != "final_answer":
-                    continue
-                value = str((row.get("payload") or {}).get("text") or "")
-                assistant_text = value if row.get("type") == "item.completed" else assistant_text + value
-            await self._conversations.update_assistant_projection(
-                message_id=message_id,
-                tenant_id=str(binding["tenant_id"]),
-                user_id=str(binding["user_id"]),
-                content=assistant_text,
-                execution_events=self._compact_history_events(rows),
-            )
-            await self._bindings.finish_turn(
-                str(binding["binding_id"]), message_id=message_id, status=terminal_status
-            )

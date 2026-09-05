@@ -59,6 +59,7 @@ const props = defineProps<{
   authToken?: string
   active: boolean
   running?: boolean
+  stopping?: boolean
   codeWorkspace?: DshWorkspace | null
   codeSession?: DshCodeSession | null
   codeEvents?: DshExecutionEvent[]
@@ -2136,6 +2137,7 @@ function formatErrorMessage(raw: string): string {
         v-else
         ref="composerRef"
         :running="isLoading"
+        :stopping="Boolean(props.stopping)"
         :is-new-session-view="isNewSessionView"
         :chat-models="chatModels"
         :selected-model-id="selectedModelId"

@@ -2,6 +2,7 @@
 
 import type { ExecutionEventV3 } from '../features/execution-v3/domain/protocol'
 import { notifyAuthExpiredFromResponse } from '../api/authExpiry'
+import { createStreamReadiness } from './tasks/streamReadiness'
 
 export interface ChatStreamRequest {
   messages: any[]
@@ -17,6 +18,8 @@ export interface ChatStreamHandle {
   sessionId: string | null
   /** Per-turn message id (returned via X-Message-Id header on stream start) */
   messageId: string | null
+  /** Resolves after response headers are available, including failed requests. */
+  ready: Promise<void>
   /** Promise that resolves when the stream finishes (or aborts cleanly) */
   done: Promise<void>
   /** Aborts the local fetch (does NOT inform backend; call cancelChat() for that) */
@@ -33,79 +36,86 @@ export function startChatStream(
   } = {},
 ): ChatStreamHandle {
   const ctrl = new AbortController()
+  const readiness = createStreamReadiness()
   const handle: ChatStreamHandle = {
     sessionId: null,
     messageId: null,
+    ready: readiness.ready,
     done: Promise.resolve(),
     abort: () => ctrl.abort(),
   }
 
   handle.done = (async () => {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (opts.authToken) headers.Authorization = `Bearer ${opts.authToken}`
-    const resp = await fetch('/askai-api/api/chat/completions', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-      signal: ctrl.signal,
-    })
-    notifyAuthExpiredFromResponse(resp, Boolean(opts.authToken))
-    if (!resp.ok) {
-      let errorMessage = `Request failed: ${resp.status}`
-      try {
-        const contentType = resp.headers.get('content-type') || ''
-        if (contentType.includes('application/json')) {
-          const payload = await resp.json()
-          const detail = payload?.detail
-          if (typeof detail === 'string' && detail.trim()) {
-            errorMessage = detail.trim()
-          } else if (detail?.message) {
-            errorMessage = String(detail.message)
-          } else if (payload?.message) {
-            errorMessage = String(payload.message)
-          }
-        } else {
-          const text = (await resp.text()).trim()
-          if (text) errorMessage = text
-        }
-      } catch {
-        // Ignore parse failures and keep the status-based fallback.
-      }
-      throw new Error(errorMessage)
-    }
-    const sid = resp.headers.get('X-Session-Id')
-    if (sid) {
-      handle.sessionId = sid
-      opts.onSessionId?.(sid)
-    }
-    const mid = resp.headers.get('X-Message-Id')
-    if (mid) {
-      handle.messageId = mid
-      opts.onMessageId?.(mid)
-    }
-    if (!resp.body) throw new Error('No response body')
-
-    const reader = resp.body.getReader()
-    const decoder = new TextDecoder()
-    let buffer = ''
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
-      for (const line of lines) {
-        const s = line.trim()
-        if (!s) continue
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (opts.authToken) headers.Authorization = `Bearer ${opts.authToken}`
+      const resp = await fetch('/askai-api/api/chat/completions', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+        signal: ctrl.signal,
+      })
+      notifyAuthExpiredFromResponse(resp, Boolean(opts.authToken))
+      if (!resp.ok) {
+        let errorMessage = `Request failed: ${resp.status}`
         try {
-          onEvent(JSON.parse(s) as ExecutionEventV3)
-        } catch (e) {
-          console.warn('[chat-stream] bad line', s)
+          const contentType = resp.headers.get('content-type') || ''
+          if (contentType.includes('application/json')) {
+            const payload = await resp.json()
+            const detail = payload?.detail
+            if (typeof detail === 'string' && detail.trim()) {
+              errorMessage = detail.trim()
+            } else if (detail?.message) {
+              errorMessage = String(detail.message)
+            } else if (payload?.message) {
+              errorMessage = String(payload.message)
+            }
+          } else {
+            const text = (await resp.text()).trim()
+            if (text) errorMessage = text
+          }
+        } catch {
+          // Ignore parse failures and keep the status-based fallback.
+        }
+        throw new Error(errorMessage)
+      }
+      const sid = resp.headers.get('X-Session-Id')
+      if (sid) {
+        handle.sessionId = sid
+        opts.onSessionId?.(sid)
+      }
+      const mid = resp.headers.get('X-Message-Id')
+      if (mid) {
+        handle.messageId = mid
+        opts.onMessageId?.(mid)
+      }
+      readiness.settle()
+      if (!resp.body) throw new Error('No response body')
+
+      const reader = resp.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+        for (const line of lines) {
+          const s = line.trim()
+          if (!s) continue
+          try {
+            onEvent(JSON.parse(s) as ExecutionEventV3)
+          } catch (e) {
+            console.warn('[chat-stream] bad line', s)
+          }
         }
       }
-    }
-    if (buffer.trim()) {
-      try { onEvent(JSON.parse(buffer.trim()) as ExecutionEventV3) } catch { /* ignore */ }
+      if (buffer.trim()) {
+        try { onEvent(JSON.parse(buffer.trim()) as ExecutionEventV3) } catch { /* ignore */ }
+      }
+    } finally {
+      readiness.settle()
     }
   })()
 
@@ -124,7 +134,9 @@ export async function cancelChat(sessionId: string, authToken?: string | null): 
       body: JSON.stringify({ session_id: sessionId }),
       keepalive: true,
     })
-    return resp.ok
+    if (!resp.ok) return false
+    const payload = await resp.json().catch(() => null)
+    return payload?.code === 0
   } catch {
     return false
   }

@@ -20,6 +20,8 @@ export type RecordingTarget = {
   semanticPurpose?: string
   scopeName?: string
   scopeRole?: string
+  contentContextId?: string
+  contentContextSource?: 'dom_attribute' | 'content_link' | 'heading_context'
   placeholder?: string
   type?: string
   accept?: string

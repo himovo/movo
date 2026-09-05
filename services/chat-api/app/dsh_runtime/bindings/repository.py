@@ -213,10 +213,16 @@ class KernelBindingRepository:
             return_document=ReturnDocument.AFTER,
         )
 
-    async def finish_turn(self, binding_id: str, *, message_id: str, status: str) -> None:
+    async def finish_turn(self, binding_id: str, *, message_id: str, status: str) -> bool:
+        if status not in {"completed", "failed", "cancelled"}:
+            raise ValueError(f"unsupported terminal turn status: {status}")
         now = datetime.utcnow()
-        await self._collection.update_one(
-            {"binding_id": binding_id, "active_turn.message_id": message_id},
+        result = await self._collection.update_one(
+            {
+                "binding_id": binding_id,
+                "active_turn.message_id": message_id,
+                "active_turn.status": "running",
+            },
             {
                 "$set": {
                     "status": "idle" if status == "completed" else status,
@@ -226,6 +232,7 @@ class KernelBindingRepository:
                 }
             },
         )
+        return result.matched_count > 0
 
     async def mark_disposed(self, binding_id: str, *, pending: bool = False) -> None:
         await self._collection.update_one(

@@ -2,7 +2,7 @@ import { computed, reactive, ref } from 'vue'
 import { fetchOrgBilling } from '../api/auth'
 import { uploadChatDocument, uploadChatImage, type UploadedDocument, type UploadedImage } from '../api/chat'
 import { getSession, type ChatMessage, type SessionDetail } from '../api/sessions'
-import { cancelChat, fetchChatMessageEvents, startChatStream, type ChatStreamHandle } from './useChatStream'
+import { fetchChatMessageEvents, startChatStream, type ChatStreamHandle } from './useChatStream'
 import { getLocale, t } from './i18n'
 import { resumeBrowserInterventionTaskUntilSettled } from './tasks/browserInterventionTaskFlow'
 import {
@@ -16,6 +16,7 @@ import { ensureMessageExecutionV3 } from '../features/execution-v3/stores/messag
 import { refreshAfterRun } from './chatRuntimeRefresh'
 import { applyAssistantContentEvent } from '../features/execution-v3/domain/assistantContent'
 import type { BrowserAssistanceHandoff } from './browser/useBrowserWorkspace'
+import { stopChatGeneration } from './chatCancellation'
 
 export type RuntimeDocumentInfo = {
   id?: string
@@ -86,6 +87,7 @@ export type ChatRuntimePane = {
   sessionId: string | null
   messages: RuntimeMessage[]
   running: boolean
+  stopping: boolean
   lastActivatedAt: number
   activeStream: ChatStreamHandle | null
   abortController: AbortController | null
@@ -171,6 +173,7 @@ function createPane(input: { key?: string; sessionId: string | null; messages?: 
     sessionId: input.sessionId,
     messages: normalizeMessages(input.messages),
     running: Boolean(input.running),
+    stopping: false,
     lastActivatedAt: Date.now(),
     activeStream: null,
     abortController: null,
@@ -331,6 +334,7 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
   let uploadedDocuments: RuntimeDocumentInfo[] = []
   try {
     const quota = await fetchOrgBilling(input.authToken)
+    if (pane.operationId !== operationId) return
     const remaining = Number(quota.data?.remainingPoints || 0)
     if (!quota.ok || remaining <= 0) {
       const isEnterprise = quota.data?.spaceType === 'enterprise'
@@ -346,6 +350,7 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
     }
 
     uploadedImages = await uploadImages(input.userId, input.images, input.authToken)
+    if (pane.operationId !== operationId) return
     uploadedDocuments = await uploadDocuments(input.userId, input.documents, input.authToken)
   } catch (uploadErr) {
     pane.messages.push({
@@ -357,6 +362,7 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
     pane.activeAuthToken = null
     return
   }
+  if (pane.operationId !== operationId) return
 
   const userMessage: RuntimeMessage = {
     _id: nextMessageId(),
@@ -568,43 +574,8 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
 
 async function stopGeneration(key: string) {
   const pane = findPaneByKey(key)
-  if (!pane) return
-  pane.authResumeController?.abort()
-  pane.authResumeController = null
-  const handle = pane.activeStream
-  const activeAssistant =
-    (pane.activeAssistantMessageId ? pane.messages.find((m) => m._id === pane.activeAssistantMessageId) : null) ||
-    [...pane.messages].reverse().find((m) => m.role === 'assistant')
-  const backendSessionId = handle?.sessionId || activeAssistant?._backendSid || pane.sessionId || ''
-  if (activeAssistant) {
-    if (!String(activeAssistant.content || '').trim()) {
-      activeAssistant.content = t('ui.generation_stopped')
-    }
-    const cancelEventId = 'cancel_' + Math.random().toString(36).slice(2)
-    ensureExecV3(activeAssistant).applyEvent({
-      v: 3,
-      event_id: cancelEventId,
-      id: cancelEventId,
-      ts: Date.now(),
-      type: 'run.cancelled',
-      revision: 1,
-      payload: {
-        reason: 'user_cancelled',
-        message: t('ui.generation_stopped'),
-      },
-    } as ExecutionEventV3)
-  }
-  if (backendSessionId) {
-    await Promise.race([
-      cancelChat(backendSessionId, pane.activeAuthToken),
-      new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 1200)),
-    ])
-  }
-  handle?.abort()
-  pane.abortController?.abort()
-  pane.activeStream = null
-  pane.abortController = null
-  setPaneRunning(pane, false)
+  if (!pane) return false
+  return await stopChatGeneration(pane, (running) => setPaneRunning(pane, running))
 }
 
 export function useChatRuntimeStore(callbacks: RuntimeCallbacks = {}) {

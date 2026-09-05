@@ -6,12 +6,14 @@ from typing import Any, Dict, Iterable
 
 from .manual_inputs import infer_recorded_semantic
 from .page_state import url_shape
+from .recorded_event_evidence import recorded_event_made_progress
 
 
 @dataclass(frozen=True)
 class NormalizedManualEvents:
     events: list[Dict[str, Any]]
     discarded_mutations: int = 0
+    discarded_diagnostics: int = 0
 
 
 def normalize_manual_events(events: Iterable[Dict[str, Any]]) -> NormalizedManualEvents:
@@ -30,6 +32,7 @@ def normalize_manual_events(events: Iterable[Dict[str, Any]]) -> NormalizedManua
     mutation_burst: list[Dict[str, Any]] = []
     pending_tab: Dict[str, Any] | None = None
     discarded = 0
+    discarded_diagnostics = 0
 
     def flush() -> None:
         nonlocal discarded, pending_tab
@@ -45,6 +48,12 @@ def normalize_manual_events(events: Iterable[Dict[str, Any]]) -> NormalizedManua
     for event in ordered:
         kind = str(event.get("type") or "").strip().lower()
         target = event.get("target") if isinstance(event.get("target"), dict) else {}
+        if kind == "unresolved_click" and not recorded_event_made_progress(event):
+            # Capturing-phase listeners see incidental clicks on page chrome,
+            # overlays, and empty containers. They are not replay actions when
+            # neither page identity nor tab identity changed.
+            discarded_diagnostics += 1
+            continue
         if kind == "fill" and str(target.get("type") or "").strip().casefold() == "file":
             discarded += 1
             continue
@@ -64,7 +73,11 @@ def normalize_manual_events(events: Iterable[Dict[str, Any]]) -> NormalizedManua
         output.append(event)
     flush()
     output = [dict(item, _recording_order=index) for index, item in enumerate(output)]
-    return NormalizedManualEvents(events=output, discarded_mutations=discarded)
+    return NormalizedManualEvents(
+        events=output,
+        discarded_mutations=discarded,
+        discarded_diagnostics=discarded_diagnostics,
+    )
 
 
 def _normalize_mutation_burst(events: list[Dict[str, Any]]) -> list[Dict[str, Any]]:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
-from typing import Protocol
+from typing import Any, Protocol
 
 from .events import KernelEventEnvelope
 from .kernel import (
@@ -27,7 +27,7 @@ class AgentKernelContract(Protocol):
 
     async def send(self, request: SendRequest) -> str: ...
 
-    async def cancel(self, request: CancelSessionRequest) -> None: ...
+    async def cancel(self, request: CancelSessionRequest) -> dict[str, Any]: ...
 
     async def dispose_session(self, session_id: str) -> None: ...
 

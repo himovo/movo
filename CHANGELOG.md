@@ -8,6 +8,20 @@ image.
 
 No changes yet.
 
+## v0.1.4 - 2026-09-05
+
+### Added
+
+- Add durable DSH turn recovery and idempotent terminal-state finalization.
+- Preserve evidence from manually recorded browser events to improve workflow
+  portability and target matching.
+
+### Changed
+
+- Make chat cancellation wait for authoritative backend acknowledgement before
+  releasing the active UI state.
+- Improve stream startup, interrupted-turn handling and browser recording review.
+
 ## v0.1.1 - 2026-09-04
 
 ### Added

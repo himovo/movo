@@ -12,11 +12,13 @@ from .page_state import url_shape
 from .action_policy import action_disposition, stable_locator_required
 from .terminal_semantics import locator_has_terminal_intent
 from .recorded_target_identity import stabilize_recorded_target_identities
+from .recorded_event_evidence import recorded_event_made_progress
 
 
 _LOCATOR_FIELDS = (
     "selector", "role", "name", "text", "description", "placeholder",
-    "semanticPurpose", "scopeName", "scopeRole", "hasPopup", "frameDepth",
+    "semanticPurpose", "scopeName", "scopeRole", "contentContextId",
+    "hasPopup", "frameDepth",
     "type", "accept", "activationVerified",
 )
 
@@ -127,6 +129,28 @@ class WorkflowLearningTrace:
             kind = str(event.get("type") or "").strip().lower()
             if kind in {"recording_started", "recording_stopped", ""}:
                 continue
+            if kind == "unresolved_click":
+                self.gaps.append(LearningTraceGap(
+                    sequence=self._take_sequence(),
+                    tool="human:unresolved_click",
+                    reason="human_click_target_missing",
+                    before_url=str(event.get("before_url") or event.get("url") or ""),
+                    after_url=str(event.get("after_url") or event.get("url") or ""),
+                    before_tab_id=str(event.get("before_tab_id") or ""),
+                    after_tab_id=str(event.get("after_tab_id") or ""),
+                ))
+                continue
+            if kind == "recording_target_unavailable":
+                self.gaps.append(LearningTraceGap(
+                    sequence=self._take_sequence(),
+                    tool="human:recording_target_unavailable",
+                    reason="recording_target_unavailable",
+                    before_url=str(event.get("before_url") or event.get("url") or ""),
+                    after_url=str(event.get("after_url") or event.get("url") or ""),
+                    before_tab_id=str(event.get("before_tab_id") or ""),
+                    after_tab_id=str(event.get("after_tab_id") or ""),
+                ))
+                continue
             tool = {
                 "click": "browser_click",
                 "fill": "browser_fill",
@@ -161,7 +185,7 @@ class WorkflowLearningTrace:
                 continue
             if (
                 tool == "browser_click"
-                and not _recorded_event_made_progress(event)
+                and not recorded_event_made_progress(event)
                 and not locator_has_terminal_intent(target)
             ):
                 # Human recordings include bubbling wrappers and accidental
@@ -329,20 +353,6 @@ def _recorded_locator(value: Any) -> Dict[str, Any]:
             continue
         output[key] = raw_value
     return output
-
-
-def _recorded_event_made_progress(event: Dict[str, Any]) -> bool:
-    before_tab = str(event.get("before_tab_id") or "")
-    after_tab = str(event.get("after_tab_id") or "")
-    if before_tab and after_tab and before_tab != after_tab:
-        return True
-    before_url = str(event.get("before_url") or event.get("url") or "")
-    after_url = str(event.get("after_url") or event.get("url") or before_url)
-    if before_url != after_url:
-        return True
-    before_fp = str(event.get("before_fingerprint") or "")
-    after_fp = str(event.get("after_fingerprint") or "")
-    return bool(before_fp and after_fp and before_fp != after_fp)
 
 
 def _locator_for_record(record: StepRecord) -> Dict[str, Any]:

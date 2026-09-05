@@ -2449,6 +2449,7 @@ onBeforeUnmount(() => {
               :main-id="getMainId()"
               :auth-token="authToken"
               :running="pane.running"
+              :stopping="pane.stopping"
               :active-intervention="pane.activeIntervention"
               :code-workspace="codeRuntime.stateFor(pane.key).workspace"
               :code-session="codeRuntime.stateFor(pane.key).session"

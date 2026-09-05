@@ -65,12 +65,14 @@ class _Bindings:
     def __init__(self) -> None:
         self.cursors: list[int] = []
         self.finished_at: float | None = None
+        self.finished_status: str | None = None
 
     async def advance_cursor(self, _binding_id: str, cursor: int) -> None:
         self.cursors.append(cursor)
 
-    async def finish_turn(self, *_args, **_kwargs) -> None:
+    async def finish_turn(self, *_args, **kwargs) -> None:
         self.finished_at = monotonic()
+        self.finished_status = kwargs.get("status")
 
 
 class _Conversations:
@@ -220,6 +222,95 @@ def test_active_turn_refreshes_credentials_during_a_long_tool_gap() -> None:
             pass
         assert await task == "completed"
         assert gateway.refreshes >= 1
+
+    asyncio.run(run())
+
+
+def test_cancelled_runner_releases_binding_and_sidebar_state() -> None:
+    async def run() -> None:
+        started = asyncio.Event()
+
+        class _HangingGateway(_Gateway):
+            async def refresh_session_credentials(self, _session_id: str) -> None:
+                return None
+
+            async def subscribe(self, _session_id: str, _after_cursor: int):
+                started.set()
+                await asyncio.Event().wait()
+                if False:
+                    yield _event(1, "turn.started", {})
+
+        bindings = _Bindings()
+        conversations = _Conversations()
+        service = DshChatService(
+            gateway=_HangingGateway(),
+            coordinator=SimpleNamespace(),
+            conversations=conversations,
+            bindings=bindings,
+            events=_BatchEvents(),
+            profiles=_Profiles(),
+            kernel_version="0.1.0-rc.6",
+        )
+        binding = {
+            "binding_id": "binding", "tenant_id": "tenant", "user_id": "user",
+            "conversation_id": "conversation", "kernel_session_id": "session",
+            "runtime_id": "runtime", "profile_version": "profile", "event_cursor": 0,
+        }
+        live = LiveTurnStream()
+        task = asyncio.create_task(service._turn_runner.run(
+            binding=binding,
+            message_id="message",
+            request_id="request",
+            text="cancel me",
+            temporal_context=build_temporal_context("UTC"),
+            live_stream=live,
+        ))
+        await started.wait()
+        task.cancel()
+        assert await task == "cancelled"
+        assert bindings.finished_status == "cancelled"
+        assert conversations.active_run_cleared is True
+
+    asyncio.run(run())
+
+
+def test_stream_ending_without_terminal_event_fails_and_releases_turn() -> None:
+    async def run() -> None:
+        class _InterruptedGateway(_Gateway):
+            async def refresh_session_credentials(self, _session_id: str) -> None:
+                return None
+
+            async def subscribe(self, _session_id: str, _after_cursor: int):
+                if False:
+                    yield _event(1, "turn.started", {})
+
+        bindings = _Bindings()
+        conversations = _Conversations()
+        service = DshChatService(
+            gateway=_InterruptedGateway(),
+            coordinator=SimpleNamespace(),
+            conversations=conversations,
+            bindings=bindings,
+            events=_BatchEvents(),
+            profiles=_Profiles(),
+            kernel_version="0.1.0-rc.6",
+        )
+        live = LiveTurnStream()
+        result = await service._turn_runner.run(
+            binding={
+                "binding_id": "binding", "tenant_id": "tenant", "user_id": "user",
+                "conversation_id": "conversation", "kernel_session_id": "session",
+                "runtime_id": "runtime", "profile_version": "profile", "event_cursor": 0,
+            },
+            message_id="message",
+            request_id="request",
+            text="interrupt me",
+            temporal_context=build_temporal_context("UTC"),
+            live_stream=live,
+        )
+        assert result == "failed"
+        assert bindings.finished_status == "failed"
+        assert conversations.active_run_cleared is True
 
     asyncio.run(run())
 

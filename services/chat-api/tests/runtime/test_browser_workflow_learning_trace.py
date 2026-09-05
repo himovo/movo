@@ -167,7 +167,7 @@ def test_unlocatable_successful_action_blocks_cache_admission() -> None:
     assert len(distilled.critical_gaps) == 1
 
 
-def test_unresolved_human_click_blocks_cache_admission() -> None:
+def test_causal_unresolved_human_click_blocks_cache_admission_with_specific_reason() -> None:
     trace = WorkflowLearningTrace.restore(None, history_size=0)
 
     trace.capture_recorded([
@@ -177,14 +177,14 @@ def test_unresolved_human_click_blocks_cache_admission() -> None:
             "type": "unresolved_click",
             "url": "https://example.test/home",
             "before_url": "https://example.test/home",
-            "after_url": "https://example.test/home",
+            "after_url": "https://example.test/detail",
         },
     ], input_context=_context())
 
     assert trace.complete is False
     assert len(trace.gaps) == 1
     assert trace.gaps[0].tool == "human:unresolved_click"
-    assert trace.gaps[0].reason == "unsupported_human_action"
+    assert trace.gaps[0].reason == "human_click_target_missing"
 
 
 def test_human_recording_preserves_auth_transition_for_compilation() -> None:

@@ -2,6 +2,7 @@ from app.enterprise_capabilities.browser.engine.form_input.input_context import 
 from app.enterprise_capabilities.browser.engine.workflow_cache.contracts import CachedWorkflowStep
 from app.enterprise_capabilities.browser.engine.workflow_cache.coverage import assess_compiled_workflow
 from app.enterprise_capabilities.browser.engine.workflow_cache.manual_plan import build_manual_recording_plan
+from app.enterprise_capabilities.browser.engine.workflow_cache.locator_portability import portable_locator
 from app.enterprise_capabilities.browser.engine.workflow_cache.page_state import url_shape
 from app.enterprise_capabilities.browser.engine.workflow_cache.url_portability import portable_navigation_url
 
@@ -69,3 +70,23 @@ def test_quality_gate_rejects_a_pure_positional_action_locator() -> None:
 
     assert result.allowed is False
     assert result.reasons == ("unstable_recorded_locator_present",)
+
+
+def test_content_scoped_link_does_not_depend_on_its_positional_selector() -> None:
+    locator = portable_locator({
+        "selector": "body > main > section:nth-of-type(7) > a",
+        "role": "link",
+        "contentContextId": "attribute:data-note-id:abc12345",
+    })
+    result = assess_compiled_workflow(
+        steps=[CachedWorkflowStep(
+            tool="browser_click",
+            locator=locator,
+        )],
+        context=BrowserInputContext(original_request="打开目标内容", candidates=[]),
+        capability_id="browser.navigate",
+    )
+
+    assert result.allowed is True
+    assert result.reasons == ()
+    assert "selector" not in locator

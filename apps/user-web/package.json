@@ -11,6 +11,7 @@
         "typecheck": "vue-tsc --noEmit -p tsconfig.json",
         "test:execution-v3": "esbuild tests/execution-v3-store.test.ts --bundle --platform=node --format=esm --outfile=/tmp/askai-execution-v3-test.mjs && node /tmp/askai-execution-v3-test.mjs",
         "test:session-ordering": "esbuild tests/session-ordering.test.ts --bundle --platform=node --format=esm --outfile=/tmp/askai-session-ordering-test.mjs && node /tmp/askai-session-ordering-test.mjs",
+        "test:chat-cancellation": "esbuild tests/chat-cancellation-contract.test.ts --bundle --platform=node --format=esm --outfile=/tmp/movo-chat-cancellation-test.mjs && node /tmp/movo-chat-cancellation-test.mjs",
         "test:user-bound-projects": "esbuild tests/user-bound-projects.test.ts --bundle --platform=node --format=esm --outfile=/tmp/askai-user-bound-projects-test.mjs && node /tmp/askai-user-bound-projects-test.mjs",
         "test:code-platform": "esbuild tests/code-platform-contract.test.ts --bundle --platform=node --format=esm --outfile=/tmp/askai-code-platform-test.mjs && node /tmp/askai-code-platform-test.mjs",
         "test:desktop-auth": "esbuild tests/desktop-auth-session.test.ts --bundle --platform=node --format=esm --outfile=/tmp/movo-desktop-auth-test.mjs && node /tmp/movo-desktop-auth-test.mjs",

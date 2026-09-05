@@ -103,6 +103,7 @@ def locator_match_score(locator: Mapping[str, Any], element: Mapping[str, Any]) 
     for key, weight in (
         ("placeholder", 14),
         ("semanticPurpose", 24), ("scopeName", 10), ("scopeRole", 8),
+        ("contentContextId", 30),
         ("type", 18), ("accept", 8), ("hasPopup", 8),
     ):
         wanted = normalize_target_text(locator.get(key))

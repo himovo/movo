@@ -26,6 +26,9 @@ const reasonLabels: Record<string, { zh: string; en: string }> = {
   required_media_action_missing: { zh: '流程需要图片或文件，但未录到上传动作', en: 'A required media or file action was not recorded' },
   temporary_navigation_url_present: { zh: '导航地址包含临时登录或会话参数', en: 'A navigation URL contains temporary session parameters' },
   unstable_recorded_locator_present: { zh: '部分操作只有不稳定的位置定位', en: 'Some actions only have unstable positional locators' },
+  human_click_target_missing: { zh: '有一次产生页面变化的点击未识别到目标控件', en: 'A click that changed the page did not have an identifiable target' },
+  recording_target_unavailable: { zh: '录制期间有浏览器页面未成功接入录制器', en: 'A browser page was not attached to the recorder during this recording' },
+  unsupported_human_action: { zh: '录制中包含当前尚不支持的人工操作', en: 'The recording contains an unsupported manual action' },
 }
 
 function reasonLabel(reason: string, locale: 'zh' | 'en'): string {

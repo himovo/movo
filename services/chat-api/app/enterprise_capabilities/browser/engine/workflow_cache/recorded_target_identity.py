@@ -10,7 +10,8 @@ from .page_state import url_shape
 
 _SEMANTIC_FIELDS = (
     "role", "name", "text", "description", "placeholder",
-    "semanticPurpose", "scopeName", "scopeRole", "hasPopup", "type", "accept",
+    "semanticPurpose", "scopeName", "scopeRole", "contentContextId",
+    "hasPopup", "type", "accept",
     "activationVerified",
 )
 _VALUE_BEARING_EVENTS = {"fill", "select"}

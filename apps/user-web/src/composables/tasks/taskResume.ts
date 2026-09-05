@@ -1,6 +1,7 @@
 import { notifyAuthExpiredFromResponse } from '../../api/authExpiry'
 import type { ChatStreamHandle } from '../useChatStream'
 import type { ExecutionEventV3 } from '../../features/execution-v3/domain/protocol'
+import { createStreamReadiness } from './streamReadiness'
 
 export function startTaskResumeStream(input: {
   runId: string
@@ -15,47 +16,54 @@ export function startTaskResumeStream(input: {
   onMessageId?: (messageId: string) => void
 }): ChatStreamHandle {
   const controller = new AbortController()
+  const readiness = createStreamReadiness()
   const handle: ChatStreamHandle = {
     sessionId: null,
     messageId: null,
+    ready: readiness.ready,
     done: Promise.resolve(),
     abort: () => controller.abort(),
   }
   handle.done = (async () => {
-    const response = await fetch(`/askai-api/api/tasks/${encodeURIComponent(input.runId)}/resume`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${options.authToken}`,
-      },
-      body: JSON.stringify({
-        suspension_id: input.suspensionId,
-        node_id: input.nodeId,
-        messages: input.messages,
-        model_id: input.modelId || '',
-        signal: input.signal || {},
-      }),
-      signal: controller.signal,
-    })
-    notifyAuthExpiredFromResponse(response, true)
-    if (!response.ok) throw new Error(await responseError(response))
-    options.onAccepted?.()
-    handle.sessionId = response.headers.get('X-Session-Id')
-    handle.messageId = response.headers.get('X-Message-Id')
-    if (handle.messageId) options.onMessageId?.(handle.messageId)
-    if (!response.body) throw new Error('No response body')
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder()
-    let buffer = ''
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
-      for (const line of lines) emitLine(line, onEvent)
+    try {
+      const response = await fetch(`/askai-api/api/tasks/${encodeURIComponent(input.runId)}/resume`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${options.authToken}`,
+        },
+        body: JSON.stringify({
+          suspension_id: input.suspensionId,
+          node_id: input.nodeId,
+          messages: input.messages,
+          model_id: input.modelId || '',
+          signal: input.signal || {},
+        }),
+        signal: controller.signal,
+      })
+      notifyAuthExpiredFromResponse(response, true)
+      if (!response.ok) throw new Error(await responseError(response))
+      options.onAccepted?.()
+      handle.sessionId = response.headers.get('X-Session-Id')
+      handle.messageId = response.headers.get('X-Message-Id')
+      if (handle.messageId) options.onMessageId?.(handle.messageId)
+      readiness.settle()
+      if (!response.body) throw new Error('No response body')
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+        for (const line of lines) emitLine(line, onEvent)
+      }
+      emitLine(buffer, onEvent)
+    } finally {
+      readiness.settle()
     }
-    emitLine(buffer, onEvent)
   })()
   return handle
 }

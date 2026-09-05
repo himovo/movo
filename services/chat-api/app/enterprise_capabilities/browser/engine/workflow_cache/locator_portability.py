@@ -53,8 +53,12 @@ def _semantic_strength(locator: dict[str, Any]) -> int:
         score += 18
     if locator.get("accept"):
         score += 8
-    if locator.get("scopeName") or locator.get("scopeRole"):
-        score += 6
+    if locator.get("scopeName"):
+        score += 10
+    if locator.get("scopeRole"):
+        score += 4
+    if locator.get("contentContextId"):
+        score += 24
     return score
 
 
