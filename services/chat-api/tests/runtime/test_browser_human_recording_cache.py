@@ -147,6 +147,56 @@ def test_manual_event_normalization_discards_only_noncausal_unresolved_clicks() 
     assert normalized.discarded_diagnostics == 1
 
 
+def test_manual_event_normalization_discards_editor_placeholder_click_before_fill() -> None:
+    url = "https://example.test/detail/1"
+    events = [
+        {
+            "sequence": 1, "type": "unresolved_click",
+            "before_url": url, "after_url": url,
+            "before_fingerprint": "collapsed", "after_fingerprint": "editor-active",
+            "before_tab_id": "tab-1", "after_tab_id": "tab-1",
+            "before_auth_state": "authenticated", "after_auth_state": "authenticated",
+        },
+        {
+            "sequence": 2, "type": "fill", "value": "有价值的评论",
+            "target": {"selector": "#comment", "role": "textbox", "placeholder": "说点什么"},
+            "before_url": url, "after_url": url,
+            "before_fingerprint": "editor-active", "after_fingerprint": "comment-filled",
+            "before_tab_id": "tab-1", "after_tab_id": "tab-1",
+        },
+    ]
+
+    normalized = normalize_manual_events(events)
+
+    assert [item["type"] for item in normalized.events] == ["fill"]
+    assert normalized.discarded_diagnostics == 1
+
+
+def test_manual_event_normalization_keeps_unresolved_navigation_before_fill() -> None:
+    events = [
+        {
+            "sequence": 1, "type": "unresolved_click",
+            "before_url": "https://example.test/list",
+            "after_url": "https://example.test/editor",
+            "before_fingerprint": "list", "after_fingerprint": "editor",
+            "before_tab_id": "tab-1", "after_tab_id": "tab-1",
+        },
+        {
+            "sequence": 2, "type": "fill", "value": "正文",
+            "target": {"selector": "#body", "role": "textbox"},
+            "before_url": "https://example.test/editor",
+            "after_url": "https://example.test/editor",
+            "before_fingerprint": "editor", "after_fingerprint": "filled",
+            "before_tab_id": "tab-1", "after_tab_id": "tab-1",
+        },
+    ]
+
+    normalized = normalize_manual_events(events)
+
+    assert [item["type"] for item in normalized.events] == ["unresolved_click", "fill"]
+    assert normalized.discarded_diagnostics == 0
+
+
 def test_manual_recording_admits_route_with_incidental_unresolved_click() -> None:
     events = _events()
     events.insert(1, {

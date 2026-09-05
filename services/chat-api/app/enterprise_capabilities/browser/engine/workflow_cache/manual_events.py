@@ -6,7 +6,10 @@ from typing import Any, Dict, Iterable
 
 from .manual_inputs import infer_recorded_semantic
 from .page_state import url_shape
-from .recorded_event_evidence import recorded_event_made_progress
+from .recorded_event_evidence import (
+    recorded_event_made_progress,
+    unresolved_click_is_preparatory_fill,
+)
 
 
 @dataclass(frozen=True)
@@ -45,13 +48,18 @@ def normalize_manual_events(events: Iterable[Dict[str, Any]]) -> NormalizedManua
             output.append(pending_tab)
             pending_tab = None
 
-    for event in ordered:
+    for index, event in enumerate(ordered):
         kind = str(event.get("type") or "").strip().lower()
         target = event.get("target") if isinstance(event.get("target"), dict) else {}
-        if kind == "unresolved_click" and not recorded_event_made_progress(event):
+        following = ordered[index + 1] if index + 1 < len(ordered) else None
+        if kind == "unresolved_click" and (
+            not recorded_event_made_progress(event)
+            or unresolved_click_is_preparatory_fill(event, following)
+        ):
             # Capturing-phase listeners see incidental clicks on page chrome,
-            # overlays, and empty containers. They are not replay actions when
-            # neither page identity nor tab identity changed.
+            # overlays, and rich-editor placeholders. A same-document click
+            # immediately superseded by a fill is focus preparation, not a
+            # separately replayable business action.
             discarded_diagnostics += 1
             continue
         if kind == "fill" and str(target.get("type") or "").strip().casefold() == "file":
