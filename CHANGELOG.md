@@ -8,6 +8,13 @@ image.
 
 No changes yet.
 
+## v0.1.5 - 2026-09-05
+
+### Security
+
+- Upgrade the Community Web runtime base image to the current minimal
+  Nginx/Alpine release to remove fixable high-severity OS vulnerabilities.
+
 ## v0.1.4 - 2026-09-05
 
 ### Added
