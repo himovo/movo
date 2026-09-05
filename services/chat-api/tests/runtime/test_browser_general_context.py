@@ -69,6 +69,34 @@ def test_factory_uses_stateful_general_context_for_uncategorized_browser_task():
     assert context.active is False
 
 
+def test_focused_read_does_not_repeat_search_from_original_chat_request():
+    original = "搜索 DeepSeek Harness，打开一篇笔记并发表评论"
+    goal = "快速检查当前页面：报告 URL、标题以及是否出现登录或风控提示，只读取，不操作"
+    node = CapabilityTask(
+        node_id="browser",
+        goal=goal,
+        assigned_agent="agent.browser",
+        meta={"capability_id": "browser.read"},
+    )
+
+    context = GeneralBrowserContext(
+        lang="zh",
+        node=node,
+        goal=goal,
+        original_user_request=original,
+    )
+    detail = _obs(
+        "https://example.test/detail/1",
+        "Detail title",
+        "正文内容，没有登录或风控提示",
+    )
+    _step(context, "browser_observe", detail)
+
+    assert context.requirements == {"navigate", "read"}
+    assert context.ready_to_done() is True
+    assert "search_submitted" not in context.build_state_ledger(detail)["remaining_signals"]
+
+
 def test_factory_marks_media_search_satisfied_when_upstream_files_exist():
     goal = "打开创作编辑器，搜索2张相关配图并下载上传，停留在发布预览"
     node = CapabilityTask(node_id="browser", goal=goal, assigned_agent="agent.browser")

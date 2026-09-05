@@ -91,8 +91,14 @@ class GeneralBrowserContext(BrowserTaskContext):
         self.operation_contract = BrowserOperationContract.from_node(node)
         self.step_counter = 0
         self.phase = "starting"
-        intent_text = f"{original_user_request}\n{goal}"
-        self.stop_before_final_commit = stops_before_final_commit(intent_text)
+        # The capability goal is the execution contract for this browser run.
+        # The original chat request may describe work already completed by an
+        # earlier browser run (for example search -> open detail -> verify).
+        # Recompiling all milestones from that original text makes a focused
+        # verification run incorrectly demand that it repeat the search.
+        intent_text = str(goal or original_user_request or "")
+        safety_intent_text = f"{original_user_request}\n{goal}"
+        self.stop_before_final_commit = stops_before_final_commit(safety_intent_text)
         self.requirements: Set[str] = self.operation_contract.constrain_requirements(
             self._compile_requirements(intent_text)
         )
@@ -122,7 +128,7 @@ class GeneralBrowserContext(BrowserTaskContext):
         self.reconciled_deferred_effects: Set[str] = set()
         self.rejected_effects: List[Dict[str, str]] = []
         self.mission = GeneralMissionLedger.compile(
-            intent_text,
+            safety_intent_text,
             requires_search=(
                 "search" in self.requirements
                 and "search" not in self.prefulfilled_requirements
