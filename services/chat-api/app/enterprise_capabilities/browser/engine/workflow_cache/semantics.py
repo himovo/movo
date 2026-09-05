@@ -15,6 +15,9 @@ _ALIASES = {
     "media": ("media", "图片", "图像", "image", "上传", "upload"),
     "attachment": ("attachment", "附件", "file", "文件", "upload"),
     "recipient": ("recipient", "收件人", "接收人", "to"),
+    "recipient_email": ("recipient", "email", "收件人", "邮箱"),
+    "search_query": ("search", "query", "keyword", "搜索", "查询", "关键词"),
+    "comment": ("comment", "reply", "feedback", "评论", "回复", "留言"),
     "name": ("name", "姓名", "名称"),
 }
 _LOCATOR_SEMANTIC_FIELDS = (

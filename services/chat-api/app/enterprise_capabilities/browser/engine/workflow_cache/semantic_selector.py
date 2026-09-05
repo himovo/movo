@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from typing import Literal, Sequence
 
@@ -12,7 +13,11 @@ from app.llm.types import Message, Role
 from app.enterprise_capabilities.browser.engine.form_input.input_context import BrowserInputContext
 
 from .contracts import CachedBrowserWorkflow, CachedWorkflowStep
+from .control_semantics import infer_control_semantic
 from .semantic_inputs import SemanticInputValue
+
+
+logger = logging.getLogger(__name__)
 
 
 class BrowserWorkflowRequirement(BaseModel):
@@ -152,6 +157,19 @@ class WorkflowSemanticSelector:
         )
         matching_workflows = tuple(by_id[item] for item in matching_ids)
         if not matching_workflows:
+            reason = str(response.reason or "").strip()[:300]
+            logger.info(
+                "browser workflow semantic selector returned no match: %s",
+                reason or "model returned no valid workflow IDs",
+                extra={
+                    "event": "browser.workflow_cache_semantic_selector_no_match",
+                    "site_id": resolved_site,
+                    "candidate_count": len(candidates),
+                    "selected_workflow_id": selected_id,
+                    "confidence": confidence,
+                    "reason": reason,
+                },
+            )
             return None
         workflow = by_id.get(selected_id) or matching_workflows[0]
         return SemanticWorkflowSelection(
@@ -232,6 +250,14 @@ def _request_pattern(workflow: CachedBrowserWorkflow) -> str:
 
 def _step_summary(index: int, step: CachedWorkflowStep) -> dict:
     locator = dict(step.locator or {})
+    input_bindings = {
+        key: binding.semantic_name
+        for key, binding in {**step.arg_bindings, **step.locator_bindings}.items()
+        if str(binding.semantic_name or "").strip()
+    }
+    control_role = infer_control_semantic(
+        locator, action=str(step.tool or ""), fallback_index=index - 1,
+    )
     return {
         "index": index,
         "tool": str(step.tool or ""),
@@ -241,6 +267,10 @@ def _step_summary(index: int, step: CachedWorkflowStep) -> dict:
             if str(locator.get(key) or "").strip()
         },
         "argument_names": sorted({*step.args.keys(), *step.arg_bindings.keys()}),
+        "input_bindings": input_bindings,
+        "inferred_control_role": (
+            "" if control_role.startswith("field_") else control_role
+        ),
         "source_url_shape": str(step.source_url_shape or "")[:160],
         "target_url_shape": str(step.target_url_shape or "")[:160],
         "execution_kind": step.execution_kind,

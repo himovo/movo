@@ -12,6 +12,7 @@ from app.llm.factory import get_request_scoped_llm_client
 from app.llm.types import Message, Role
 
 from .contracts import CachedWorkflowStep
+from .manual_inputs import infer_recorded_semantic
 from .manual_plan import build_manual_recording_plan
 
 
@@ -113,10 +114,16 @@ class ManualRecordingAnalyzer:
 
 def _event_summary(event: Dict[str, Any]) -> Dict[str, Any]:
     target = event.get("target") if isinstance(event.get("target"), dict) else {}
+    kind = str(event.get("type") or "")
     url = str(event.get("after_url") or event.get("url") or "")
     parsed = urlparse(url)
-    return {
-        "type": str(event.get("type") or ""),
+    semantic_role = (
+        infer_recorded_semantic(target, kind, 0)
+        if kind in {"fill", "select", "upload", "paste_image"}
+        else ""
+    )
+    summary = {
+        "type": kind,
         "site": str(parsed.hostname or "").lower(),
         "path": str(parsed.path or "")[:160],
         "target": {
@@ -127,6 +134,9 @@ def _event_summary(event: Dict[str, Any]) -> Dict[str, Any]:
         "has_value": bool(event.get("value")) and not bool(event.get("value_redacted")),
         "media_count": int(event.get("file_count") or 0),
     }
+    if semantic_role:
+        summary["semantic_role"] = semantic_role
+    return summary
 
 
 def _preview_step(index: int, step: CachedWorkflowStep) -> Dict[str, Any]:
@@ -157,6 +167,7 @@ def _preview_target(step: CachedWorkflowStep) -> str:
             "title": "标题",
             "body": "正文",
             "search_query": "搜索内容",
+            "comment": "评论",
             "recipient_email": "收件人",
             "subject": "主题",
             "media": "文件",
@@ -194,16 +205,18 @@ def _step_label(step: CachedWorkflowStep, target: str) -> str:
 
 
 def _fallback_classification(steps: list[Dict[str, Any]]) -> ManualWorkflowClassification:
-    corpus = " ".join(
-        str(value or "")
-        for step in steps
-        for value in (step.get("type"), json.dumps(step.get("target") or {}, ensure_ascii=False))
-    ).casefold()
+    corpus = json.dumps(steps, ensure_ascii=False).casefold()
     site = next((str(step.get("site") or "") for step in steps if step.get("site")), "网站")
     if any(token in corpus for token in ("保存", "草稿", "save")):
         outcome, capability = "保存草稿", "browser.submit"
     elif any(token in corpus for token in ("发布", "publish")):
         outcome, capability = "发布内容", "browser.publish"
+    elif "comment" in corpus and any(
+        token in corpus for token in ("发送", "提交", "send", "submit")
+    ):
+        outcome, capability = "发表评论", "browser.submit"
+    elif any(token in corpus for token in ("发送", "send", "submit")):
+        outcome, capability = "发送内容", "browser.submit"
     elif any(token in corpus for token in ("搜索", "search")):
         outcome, capability = "搜索内容", "browser.search"
     elif any(step.get("type") in {"fill", "select", "upload", "paste_image"} for step in steps):

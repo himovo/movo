@@ -7,6 +7,8 @@ from typing import Any, Dict
 
 from app.enterprise_capabilities.browser.engine.form_input.input_context import InputCandidate
 
+from .control_semantics import infer_control_semantic
+
 
 def recording_candidates(
     events: list[Dict[str, Any]],
@@ -72,21 +74,7 @@ def _candidate(sequence: int, semantic: str, value: Any, kind: str) -> InputCand
 
 
 def infer_recorded_semantic(target: Dict[str, Any], kind: str, index: int = 0) -> str:
-    text = " ".join(str(target.get(key) or "") for key in (
-        "name", "text", "placeholder", "semanticPurpose", "scopeName", "type", "accept",
-    )).casefold()
-    groups = (
-        ("title", ("title", "标题", "题目")),
-        ("body", ("body", "content", "正文", "内容", "编辑器")),
-        ("search_query", ("search", "query", "keyword", "搜索", "查询", "关键词")),
-        ("recipient_email", ("recipient", "email", "收件人", "邮箱")),
-        ("subject", ("subject", "主题")),
-        ("media", ("upload", "image", "media", "attach", "上传", "图片", "附件")),
-    )
-    for name, tokens in groups:
-        if any(token in text for token in tokens):
-            return name
-    return "media" if kind in {"upload", "paste_image"} else f"field_{index + 1}"
+    return infer_control_semantic(target, action=kind, fallback_index=index)
 
 
 def _safe_semantic_name(value: str) -> str:
