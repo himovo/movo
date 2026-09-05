@@ -6,6 +6,7 @@ from app.enterprise_capabilities.browser.engine.form_input.input_context import 
 from app.enterprise_capabilities.browser.engine.workflow_cache.contracts import (
     CachedBrowserWorkflow,
     CachedCompletionContract,
+    CachedParameterBinding,
     CachedWorkflowStep,
     WorkflowIdentity,
 )
@@ -19,6 +20,7 @@ from app.enterprise_capabilities.browser.engine.workflow_cache.manual_capture im
 from app.enterprise_capabilities.browser.engine.workflow_cache.manual_analysis import (
     ManualRecordingAnalyzer,
     ManualWorkflowClassification,
+    _preview_step,
 )
 from app.enterprise_capabilities.browser.engine.workflow_cache.manual_events import normalize_manual_events
 from app.enterprise_capabilities.browser.engine.workflow_cache.manual_plan import build_manual_recording_plan
@@ -635,6 +637,34 @@ def test_recording_analysis_generates_name_and_reconciles_terminal_capability() 
         assert "本次正文" not in str(analysis.as_dict())
 
     asyncio.run(run())
+
+
+def test_recording_preview_does_not_present_hot_search_placeholder_as_user_input() -> None:
+    fill = CachedWorkflowStep(
+        tool="browser_fill",
+        locator={
+            "selector": "#search-input", "role": "textbox",
+            "placeholder": "八十中高中老师",
+        },
+        arg_bindings={
+            "value": CachedParameterBinding(
+                source="candidate", semantic_name="search_query",
+                source_path="manual.search_query.2",
+            ),
+        },
+    )
+    press = CachedWorkflowStep(
+        tool="browser_press",
+        locator={
+            "selector": "#search-input", "role": "textbox",
+            "placeholder": "八十中高中老师",
+        },
+        args={"key": "Enter"},
+    )
+
+    assert _preview_step(1, fill)["label"] == "填写「搜索内容」"
+    assert _preview_step(2, press)["label"] == "按键「Enter」"
+    assert "八十中" not in str([_preview_step(1, fill), _preview_step(2, press)])
 
 
 def test_recording_analysis_exposes_incomplete_route_before_save() -> None:

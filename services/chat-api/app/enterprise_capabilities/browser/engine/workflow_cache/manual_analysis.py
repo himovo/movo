@@ -130,12 +130,7 @@ def _event_summary(event: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _preview_step(index: int, step: CachedWorkflowStep) -> Dict[str, Any]:
-    locator = dict(step.locator or {})
-    target = next((
-        str(locator.get(key) or "").strip()
-        for key in ("name", "text", "placeholder", "semanticPurpose", "role")
-        if str(locator.get(key) or "").strip()
-    ), "")
+    target = _preview_target(step)
     return {
         "index": index,
         "tool": str(step.tool or ""),
@@ -143,6 +138,39 @@ def _preview_step(index: int, step: CachedWorkflowStep) -> Dict[str, Any]:
         "parameterized": bool(step.arg_bindings or step.locator_bindings),
         "label": _step_label(step, target),
     }
+
+
+def _preview_target(step: CachedWorkflowStep) -> str:
+    tool = str(step.tool or "")
+    if tool == "browser_press":
+        return str((step.args or {}).get("key") or "").strip()
+    if tool in {
+        "browser_fill", "browser_select", "browser_upload_file", "browser_paste_image",
+    }:
+        binding = next((
+            (step.arg_bindings or {}).get(key)
+            for key in ("value", "sources")
+            if (step.arg_bindings or {}).get(key) is not None
+        ), None)
+        semantic_name = str(getattr(binding, "semantic_name", "") or "").strip()
+        semantic_labels = {
+            "title": "标题",
+            "body": "正文",
+            "search_query": "搜索内容",
+            "recipient_email": "收件人",
+            "subject": "主题",
+            "media": "文件",
+        }
+        if semantic_name in semantic_labels:
+            return semantic_labels[semantic_name]
+        if semantic_name and not semantic_name.startswith("field_"):
+            return semantic_name.replace("_", " ")
+    locator = dict(step.locator or {})
+    return next((
+        str(locator.get(key) or "").strip()
+        for key in ("name", "text", "semanticPurpose", "role", "placeholder")
+        if str(locator.get(key) or "").strip()
+    ), "")
 
 
 def _step_label(step: CachedWorkflowStep, target: str) -> str:
