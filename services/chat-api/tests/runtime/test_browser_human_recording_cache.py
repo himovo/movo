@@ -126,6 +126,85 @@ def test_manual_event_normalization_keeps_distinct_business_fields() -> None:
     assert [item["target"]["selector"] for item in normalized.events] == ["#title", "#body"]
 
 
+def test_manual_event_normalization_discards_search_value_hydrated_after_enter_navigation() -> None:
+    search = "https://example.test/explore"
+    results = "https://example.test/search?q=Deepseek%20harness"
+    target = {
+        "selector": "#search-input", "role": "textbox",
+        "placeholder": "搜索", "scopeRole": "header",
+    }
+    events = [
+        {
+            "sequence": 1, "type": "fill", "value": "Deepseek harness",
+            "target": target, "before_url": search, "after_url": search,
+            "before_fingerprint": "empty", "after_fingerprint": "filled",
+        },
+        {
+            "sequence": 2, "type": "press", "key": "Enter", "target": target,
+            "before_url": search, "after_url": results,
+            "before_fingerprint": "filled", "after_fingerprint": "results",
+        },
+        {
+            "sequence": 3, "type": "fill", "value": "Deepseek harness",
+            "target": target, "before_url": results, "after_url": results,
+            "before_fingerprint": "results", "after_fingerprint": "hydrated",
+        },
+    ]
+
+    normalized = normalize_manual_events(events)
+
+    assert [item["type"] for item in normalized.events] == ["fill", "press"]
+    assert normalized.discarded_mutations == 1
+
+
+def test_manual_event_normalization_keeps_same_value_without_enter_navigation() -> None:
+    url = "https://example.test/form"
+    events = [
+        {"sequence": 1, "type": "fill", "value": "same", "target": {"selector": "#q"}, "before_url": url, "after_url": url},
+        {"sequence": 2, "type": "press", "key": "Enter", "target": {"selector": "#q"}, "before_url": url, "after_url": url},
+        {"sequence": 3, "type": "fill", "value": "same", "target": {"selector": "#q"}, "before_url": url, "after_url": url},
+    ]
+
+    normalized = normalize_manual_events(events)
+
+    assert [item["type"] for item in normalized.events] == ["fill", "press", "fill"]
+    assert normalized.discarded_mutations == 0
+
+
+def test_manual_search_and_comment_route_ignores_results_page_search_hydration() -> None:
+    explore = "https://www.example.test/explore"
+    results = "https://www.example.test/search?q=Deepseek%20harness"
+    detail = "https://www.example.test/explore/note-1"
+    search_target = {
+        "selector": "#search-input", "role": "textbox",
+        "placeholder": "搜索", "scopeRole": "header",
+    }
+    events = [
+        {"sequence": 0, "type": "recording_started", "url": "about:blank"},
+        {"sequence": 1, "type": "navigate", "before_url": "about:blank", "after_url": explore, "before_fingerprint": "blank", "after_fingerprint": "home"},
+        {"sequence": 2, "type": "fill", "value": "Deepseek harness", "target": search_target, "before_url": explore, "after_url": explore, "before_fingerprint": "home", "after_fingerprint": "query"},
+        {"sequence": 3, "type": "press", "key": "Enter", "target": search_target, "before_url": explore, "after_url": results, "before_fingerprint": "query", "after_fingerprint": "results"},
+        {"sequence": 4, "type": "fill", "value": "Deepseek harness", "target": search_target, "before_url": results, "after_url": results, "before_fingerprint": "results", "after_fingerprint": "hydrated"},
+        {"sequence": 5, "type": "click", "target": {"role": "link", "contentContextId": "attribute:data-note-id:note-1"}, "before_url": results, "after_url": detail, "before_fingerprint": "hydrated", "after_fingerprint": "detail"},
+        {"sequence": 6, "type": "fill", "value": "有价值的评论", "target": {"selector": "#content-textarea", "role": "textbox"}, "before_url": detail, "after_url": detail, "before_fingerprint": "detail", "after_fingerprint": "comment"},
+        {"sequence": 7, "type": "click", "target": {"role": "button", "name": "发送", "semanticPurpose": "submit"}, "before_url": detail, "after_url": detail, "before_fingerprint": "comment", "after_fingerprint": "sent"},
+        {"sequence": 8, "type": "recording_stopped", "url": detail},
+    ]
+
+    plan = build_manual_recording_plan(
+        events=events,
+        operation="在网站搜索 Deepseek harness 并发送有价值的评论",
+        capability_id="browser.submit",
+    )
+
+    assert plan.complete is True
+    assert plan.compiled.skipped_actions == 0
+    assert [step.tool for step in plan.compiled.steps] == [
+        "browser_navigate", "browser_fill", "browser_press",
+        "browser_click", "browser_fill", "browser_click",
+    ]
+
+
 def test_manual_event_normalization_discards_only_noncausal_unresolved_clicks() -> None:
     url = "https://cms.example.test/editor"
     events = [

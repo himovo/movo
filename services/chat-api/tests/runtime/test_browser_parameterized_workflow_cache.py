@@ -89,6 +89,28 @@ def _workflow(compiled) -> CachedBrowserWorkflow:
     )
 
 
+def test_compiler_binds_equivalent_repeated_recording_candidates() -> None:
+    page = _obs("https://example.test/search", "empty", [
+        {"ref": "q", "selector": "#search-input", "role": "textbox", "placeholder": "搜索"},
+    ])
+    filled = _obs(page.url, "filled")
+    context = BrowserInputContext(
+        original_request="搜索 Deepseek harness",
+        candidates=[
+            InputCandidate("first", "human_recording", "manual.search_query.1", "search_query", "Deepseek harness"),
+            InputCandidate("hydrated", "human_recording", "manual.search_query.3", "search_query", "Deepseek harness"),
+        ],
+    )
+
+    compiled = compile_parameterized_workflow([
+        _record(page, filled, "browser_fill", {"ref": "q", "value": "Deepseek harness"}),
+    ], context)
+
+    assert compiled.complete is True
+    assert compiled.skipped_actions == 0
+    assert compiled.steps[0].arg_bindings["value"].semantic_name == "search_query"
+
+
 class _Fallback(BrowserDriver):
     kind = "fallback"
 

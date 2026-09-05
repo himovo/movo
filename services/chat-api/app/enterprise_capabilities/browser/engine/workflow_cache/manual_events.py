@@ -66,6 +66,12 @@ def normalize_manual_events(events: Iterable[Dict[str, Any]]) -> NormalizedManua
             discarded += 1
             continue
         if kind in {"fill", "select"}:
+            if _is_route_hydration_duplicate(event, output):
+                # Some reactive sites restore the submitted search value after
+                # Enter has navigated to the results route. The resulting DOM
+                # input event is browser hydration, not a second human edit.
+                discarded += 1
+                continue
             if pending_tab is not None and not _mutation_belongs_before_tab(event, pending_tab):
                 flush()
             mutation_burst.append(event)
@@ -161,6 +167,41 @@ def _mutation_belongs_before_tab(event: Dict[str, Any], tab: Dict[str, Any]) -> 
     event_semantic = infer_recorded_semantic(event_target, str(event.get("type") or ""), 0)
     tab_semantic = infer_recorded_semantic(tab_target, "fill", 0)
     return event_semantic == tab_semantic and not event_semantic.startswith("field_")
+
+
+def _is_route_hydration_duplicate(
+    event: Dict[str, Any],
+    output: list[Dict[str, Any]],
+) -> bool:
+    if len(output) < 2:
+        return False
+    previous, submit = output[-2], output[-1]
+    if (
+        str(previous.get("type") or "").casefold() not in {"fill", "select"}
+        or str(submit.get("type") or "").casefold() != "press"
+        or str(submit.get("key") or "") != "Enter"
+        or int(event.get("sequence") or 0) - int(submit.get("sequence") or 0) > 3
+        or _normalized_value(previous.get("value")) != _normalized_value(event.get("value"))
+    ):
+        return False
+    submit_before = str(submit.get("before_url") or submit.get("url") or "")
+    submit_after = str(submit.get("after_url") or submit.get("url") or "")
+    event_before = str(event.get("before_url") or event.get("url") or "")
+    if not submit_before or submit_before == submit_after or submit_after != event_before:
+        return False
+    previous_target = previous.get("target") if isinstance(previous.get("target"), dict) else {}
+    event_target = event.get("target") if isinstance(event.get("target"), dict) else {}
+    previous_selector = str(previous_target.get("selector") or "").strip()
+    event_selector = str(event_target.get("selector") or "").strip()
+    if previous_selector and previous_selector == event_selector:
+        return True
+    previous_semantic = infer_recorded_semantic(
+        previous_target, str(previous.get("type") or ""), 0,
+    )
+    event_semantic = infer_recorded_semantic(
+        event_target, str(event.get("type") or ""), 0,
+    )
+    return previous_semantic == event_semantic and not previous_semantic.startswith("field_")
 
 
 def _locator_quality(target: Dict[str, Any], event: Dict[str, Any]) -> int:

@@ -171,6 +171,7 @@ def _unique_candidate_for_value(
                 str(item.value or ""), str(item.plain_text or ""), str(item.rich_html or ""),
             }
         ]
+    matches = _collapse_equivalent_candidates(matches)
     if len(matches) == 1:
         return matches[0]
     if len(matches) <= 1 or not semantic_hint:
@@ -183,6 +184,34 @@ def _unique_candidate_for_value(
     if ranked[0][0] <= 0 or (len(ranked) > 1 and ranked[0][0] == ranked[1][0]):
         return None
     return ranked[0][1]
+
+
+def _collapse_equivalent_candidates(
+    candidates: Sequence[InputCandidate],
+) -> List[InputCandidate]:
+    """Treat repeated recorder emissions for one semantic value as one input.
+
+    Reactive applications can emit the same value again while hydrating a new
+    route. Distinct semantic fields remain distinct even when their values are
+    equal, so genuine confirmation or multi-field forms stay unambiguous.
+    """
+    output: List[InputCandidate] = []
+    recorded: set[tuple[str, str, str, tuple[str, ...]]] = set()
+    for candidate in candidates:
+        if str(candidate.source_kind or "").strip().casefold() != "human_recording":
+            output.append(candidate)
+            continue
+        key = (
+            str(candidate.semantic_name or "").strip().casefold(),
+            str(candidate.value_kind or "").strip().casefold(),
+            str(candidate.plain_text or ""),
+            _files(candidate.value),
+        )
+        if key in recorded:
+            continue
+        recorded.add(key)
+        output.append(candidate)
+    return output
 
 
 def _unique_runtime_candidate(
