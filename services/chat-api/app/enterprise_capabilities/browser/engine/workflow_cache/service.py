@@ -19,7 +19,7 @@ from .matching import (
     workflow_match_score,
     workflow_runtime_compatible,
 )
-from .repository import BrowserWorkflowCacheRepository
+from .repository import BrowserWorkflowCacheRepository, CURRENT_WORKFLOW_ADMISSION_REVISION
 from .quality import workflow_plan_hash, workflow_quality_score
 from .coverage import assess_cached_workflow, assess_compiled_workflow
 from .semantic_selector import WorkflowSemanticSelector
@@ -135,12 +135,22 @@ class BrowserWorkflowCacheService:
         for workflow in candidates:
             legacy_manual = str(workflow.created_from_run_id or "").startswith("manual_")
             known_failure = int(workflow.failure_count or 0) > 0
-            if int(workflow.admission_revision or 0) < 2 and (legacy_manual or known_failure):
+            admission_revision = int(workflow.admission_revision or 0)
+            obsolete_manual = (
+                legacy_manual
+                and admission_revision < CURRENT_WORKFLOW_ADMISSION_REVISION
+            )
+            obsolete_failed = known_failure and admission_revision < 2
+            if obsolete_manual or obsolete_failed:
                 quarantine = getattr(self.repository, "quarantine", None)
                 if callable(quarantine):
                     await quarantine(
                         workflow.workflow_id,
-                        "superseded_by_recording_admission_v2",
+                        (
+                            "superseded_by_recording_semantics_v3"
+                            if obsolete_manual else
+                            "superseded_by_recording_admission_v2"
+                        ),
                     )
                 continue
             usable.append(workflow)

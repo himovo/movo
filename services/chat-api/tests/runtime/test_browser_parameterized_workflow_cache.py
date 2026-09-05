@@ -944,6 +944,46 @@ def test_semantic_no_match_does_not_force_local_cache_replay() -> None:
     assert matched is None
 
 
+def test_pre_semantic_revision_manual_workflow_is_not_replayed() -> None:
+    request = "在社区搜索 agents 并发表评论"
+    old_manual = CachedBrowserWorkflow(
+        workflow_id="old-manual",
+        admission_revision=2,
+        identity=WorkflowIdentity(
+            user_id="u1", site_id="community.example.test",
+            operation_id="resource.submit", capability_id="browser.submit",
+            signature_hash="old-manual-signature",
+        ),
+        steps=[CachedWorkflowStep(
+            tool="browser_fill",
+            locator={"selector": "#search-input", "placeholder": "random trend"},
+        )],
+        request_fingerprint=request_fingerprint(request),
+        created_from_run_id="manual_old",
+    )
+    repository = _LookupRepository([old_manual])
+    selector = _ChoosingSelector(old_manual.workflow_id)
+    service = BrowserWorkflowCacheService(
+        repository=repository,
+        semantic_selector=selector,
+    )
+    node = CapabilityTask(
+        node_id="comment", goal=request, assigned_agent="agent.browser",
+        meta={
+            "capability_id": "browser.submit",
+            "browser_site_scope": "community.example.test",
+        },
+    )
+
+    matched = asyncio.run(service.lookup(
+        user_id="u1", main_id="m", node=node,
+        input_context=BrowserInputContext(original_request=request),
+    ))
+
+    assert matched is None
+    assert selector.calls == []
+
+
 def test_semantic_selector_failure_falls_back_without_capability_hard_rejection() -> None:
     request = "保存文章草稿"
     cached = CachedBrowserWorkflow(

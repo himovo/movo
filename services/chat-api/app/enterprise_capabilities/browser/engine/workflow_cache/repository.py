@@ -18,6 +18,9 @@ from .contracts import (
 from .route_selector import replay_route_rank
 
 
+CURRENT_WORKFLOW_ADMISSION_REVISION = 3
+
+
 class BrowserWorkflowCacheRepository:
     # V3 is intentionally a new collection.  V2 enforced one document per
     # signature and overwrote a good workflow with every later success, which
@@ -128,7 +131,7 @@ class BrowserWorkflowCacheRepository:
                 {"$set": {
                     "workflow_id": workflow_id,
                     "display_name": str(display_name or existing.get("display_name") or "")[:120],
-                    "admission_revision": 2,
+                    "admission_revision": CURRENT_WORKFLOW_ADMISSION_REVISION,
                     "version": 3,
                     "identity": identity.model_dump(mode="json"),
                     "status": status,
@@ -152,7 +155,7 @@ class BrowserWorkflowCacheRepository:
             updated.update({
                 "workflow_id": workflow_id,
                 "display_name": str(display_name or existing.get("display_name") or "")[:120],
-                "admission_revision": 2,
+                "admission_revision": CURRENT_WORKFLOW_ADMISSION_REVISION,
                 "version": 3,
                 "identity": identity.model_dump(mode="json"),
                 "status": status,
@@ -182,7 +185,7 @@ class BrowserWorkflowCacheRepository:
         created = CachedBrowserWorkflow(
             workflow_id=uuid.uuid4().hex,
             display_name=str(display_name or "")[:120],
-            admission_revision=2,
+            admission_revision=CURRENT_WORKFLOW_ADMISSION_REVISION,
             version=3,
             identity=identity,
             steps=steps,
@@ -275,4 +278,4 @@ class BrowserWorkflowCacheRepository:
             )
             self._indexes_ready = True
 
-__all__ = ["BrowserWorkflowCacheRepository"]
+__all__ = ["BrowserWorkflowCacheRepository", "CURRENT_WORKFLOW_ADMISSION_REVISION"]
