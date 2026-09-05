@@ -24,6 +24,11 @@ def portable_locator(
         if value and any(value == item or item in value for item in sensitive):
             result.pop(key, None)
     selector = str(result.get("selector") or "").strip()
+    if result.get("placeholder") and _has_search_identity(result, selector):
+        # Search portals frequently rotate trending text through placeholder.
+        # Once another locator signal identifies the search control, retaining
+        # that volatile copy would turn it into an incorrect hard constraint.
+        result.pop("placeholder", None)
     if selector and _POSITIONAL_SELECTOR.search(selector) and _semantic_strength(result) >= 16:
         result.pop("selector", None)
     return result
@@ -60,6 +65,13 @@ def _semantic_strength(locator: dict[str, Any]) -> int:
     if locator.get("contentContextId"):
         score += 24
     return score
+
+
+def _has_search_identity(locator: dict[str, Any], selector: str) -> bool:
+    if _text(locator.get("role")) == "searchbox":
+        return True
+    identity = " ".join((selector, str(locator.get("semanticPurpose") or ""))).casefold()
+    return bool(re.search(r"(?:^|[^a-z])(search|query)(?:[^a-z]|$)", identity))
 
 
 def _text(value: Any) -> str:

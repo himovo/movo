@@ -90,3 +90,28 @@ def test_content_scoped_link_does_not_depend_on_its_positional_selector() -> Non
     assert result.allowed is True
     assert result.reasons == ()
     assert "selector" not in locator
+
+
+def test_search_locator_does_not_cache_rotating_placeholder_text() -> None:
+    locator = portable_locator({
+        "selector": "#search-input",
+        "role": "textbox",
+        "placeholder": "八十中高中老师",
+        "scopeRole": "header",
+    })
+
+    assert locator == {
+        "selector": "#search-input",
+        "role": "textbox",
+        "scopeRole": "header",
+    }
+
+
+def test_regular_form_locator_keeps_stable_placeholder_text() -> None:
+    locator = portable_locator({
+        "selector": "#employee-name",
+        "role": "textbox",
+        "placeholder": "请输入员工姓名",
+    })
+
+    assert locator["placeholder"] == "请输入员工姓名"
