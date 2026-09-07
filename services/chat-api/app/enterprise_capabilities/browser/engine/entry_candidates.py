@@ -14,6 +14,7 @@ def extract_candidate_entries(
     visible_sites: List[Dict[str, Any]],
     *,
     expected_site: str = "",
+    target_url: str = "",
 ) -> List[Dict[str, str]]:
     """Resolve browser entry URLs without confusing upstream resources.
 
@@ -22,8 +23,14 @@ def extract_candidate_entries(
     task inputs and can never trigger the browser's first-navigation shortcut.
     """
     text = str(original_user_request or "")
-    if not text:
-        return []
+    explicit_target = _clean_url(target_url)
+    if _is_http_url(explicit_target):
+        return [{
+            "url": explicit_target,
+            "source": "target_url",
+            "name": "",
+        }]
+    candidates: List[Dict[str, str]] = []
     user_urls: List[str] = []
     mentions = list(url_mentions(text))
     for raw_url, _start, _end in mentions:
@@ -43,8 +50,9 @@ def extract_candidate_entries(
             host = None
         if host:
             user_hosts.add(host)
-    candidates: List[Dict[str, str]] = []
     for url in user_urls:
+        if any(item["url"] == url for item in candidates):
+            continue
         synthesized = bool(
             expected_host
             and url == f"https://{expected_host}/"
@@ -82,6 +90,8 @@ def extract_candidate_entries(
             site_host = ""
         if site_host and site_host in user_hosts:
             continue
+        if any(item["url"] == entry_url for item in candidates):
+            continue
         candidates.append({"url": entry_url, "source": "site_profile", "name": name})
     return candidates
 
@@ -100,6 +110,14 @@ def _url_matches_site(url: str, site: str) -> bool:
         return False
     expected = str(site or "").lower().removeprefix("www.")
     return bool(host and expected and (host == expected or host.endswith(f".{expected}")))
+
+
+def _is_http_url(url: str) -> bool:
+    try:
+        parsed = urlparse(str(url or ""))
+    except Exception:
+        return False
+    return parsed.scheme.lower() in {"http", "https"} and bool(parsed.hostname)
 
 
 __all__ = ["extract_candidate_entries"]

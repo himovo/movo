@@ -492,7 +492,7 @@ def test_form_driver_refreshes_then_clicks_unique_enabled_commit_control() -> No
     assert fill.tool == "browser_fill"
     assert refresh.tool == "browser_observe"
     assert commit.tool == "browser_click"
-    assert commit.args == {"ref": "send-new"}
+    assert commit.args == {"ref": "send-new", "__verified_form_commit": True}
 
 
 def test_fallback_fill_is_adopted_then_committed_in_same_form() -> None:
@@ -557,7 +557,7 @@ def test_fallback_fill_is_adopted_then_committed_in_same_form() -> None:
     assert fallback.completed == 1
     assert refresh.tool == "browser_observe"
     assert commit.tool == "browser_click"
-    assert commit.args == {"ref": "send-new"}
+    assert commit.args == {"ref": "send-new", "__verified_form_commit": True}
 
 
 def test_unfocused_editor_with_disabled_send_is_adopted_after_fallback_fill() -> None:
@@ -639,7 +639,7 @@ def test_unfocused_editor_with_disabled_send_is_adopted_after_fallback_fill() ->
     assert fill.tool == "browser_fill"
     assert refresh.tool == "browser_observe"
     assert commit.tool == "browser_click"
-    assert commit.args == {"ref": "send-new"}
+    assert commit.args == {"ref": "send-new", "__verified_form_commit": True}
 
 
 def test_disabled_cancel_does_not_make_an_editor_a_ready_form() -> None:

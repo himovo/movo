@@ -27,29 +27,30 @@ class FakeReceiptStore:
         return sum(1 for row in self.rows if row.business_key == key and row.status == "succeeded")
 
 
-class FakePolicyClient:
-    def __init__(self, **values) -> None:
-        self.values = values
-
-    async def ainvoke_structured(self, messages, schema):
-        return schema(**self.values)
-
-
 def observation(url: str = "https://example.test/posts/123?token=volatile#comments") -> Observation:
     return Observation(url=url, title="A durable target", elements=[])
 
 
-def contract(operation: str = "contribute") -> EffectContract:
+def contract(
+    operation: str = "contribute",
+    *,
+    fingerprint: dict | None = None,
+    side_effect: str = "external",
+) -> EffectContract:
     return EffectContract(
         action_name="commit",
         operation_family="custom_contribution",
         entity="current object",
-        side_effect="external",
+        side_effect=side_effect,
         is_commit=True,
         completes_goal=True,
         intended_operation=operation,
         intended_entity="current object",
         source="model",
+        fingerprint=(
+            {"confirmed_fill_hashes": ["payload-one"]}
+            if fingerprint is None else fingerprint
+        ),
     )
 
 
@@ -71,14 +72,6 @@ def test_confirmed_target_scoped_action_blocks_a_future_run():
 
 async def _confirmed_target_scoped_action_blocks_a_future_run():
     store = FakeReceiptStore()
-    client = FakePolicyClient(
-        guard_across_runs=True,
-        scope_dimensions=["actor", "system", "target", "operation"],
-        max_confirmed=1,
-        purpose="independent contribution",
-        confidence=0.96,
-        reason="the same durable target must not receive the same contribution twice",
-    )
     effect_contract = contract()
     first = BrowserActionHistory(
         actor_id="user-1",
@@ -87,7 +80,6 @@ async def _confirmed_target_scoped_action_blocks_a_future_run():
         goal="Handle an unprocessed target without repeating it",
         original_request="Choose a target not handled before",
         lang="en",
-        llm=client,
     )
 
     first_check = await first.preflight(contract=effect_contract, observation=observation())
@@ -102,7 +94,6 @@ async def _confirmed_target_scoped_action_blocks_a_future_run():
         goal="Handle an unprocessed target without repeating it",
         original_request="Choose a target not handled before",
         lang="en",
-        llm=client,
     )
     second_check = await second.preflight(contract=effect_contract, observation=observation())
 
@@ -116,15 +107,7 @@ def test_future_runs_remain_allowed_when_policy_is_attempt_only():
 
 async def _future_runs_remain_allowed_when_policy_is_attempt_only():
     store = FakeReceiptStore()
-    client = FakePolicyClient(
-        guard_across_runs=False,
-        scope_dimensions=[],
-        max_confirmed=1,
-        purpose="repeatable future operation",
-        confidence=0.98,
-        reason="future independent runs may repeat",
-    )
-    effect_contract = contract()
+    effect_contract = contract(fingerprint={})
     history = BrowserActionHistory(
         actor_id="user-1",
         attempt_id="run-1",
@@ -132,7 +115,6 @@ async def _future_runs_remain_allowed_when_policy_is_attempt_only():
         goal="Perform the requested operation",
         original_request="Perform it now",
         lang="en",
-        llm=client,
     )
 
     check = await history.preflight(contract=effect_contract, observation=observation())
@@ -143,18 +125,85 @@ async def _future_runs_remain_allowed_when_policy_is_attempt_only():
     assert len(store.rows) == 1
 
 
+def test_same_target_with_different_business_payload_remains_allowed():
+    async def scenario():
+        store = FakeReceiptStore()
+        first_contract = contract(fingerprint={"confirmed_fill_hashes": ["first-comment"]})
+        first = BrowserActionHistory(
+            actor_id="user-1", attempt_id="run-1", store=store,  # type: ignore[arg-type]
+            goal="Send a comment", original_request="Send the first comment", lang="en",
+        )
+        await first.preflight(contract=first_contract, observation=observation())
+        await first.record(confirmed(first_contract), observation())
+
+        second_contract = contract(fingerprint={"confirmed_fill_hashes": ["second-comment"]})
+        second = BrowserActionHistory(
+            actor_id="user-1", attempt_id="run-2", store=store,  # type: ignore[arg-type]
+            goal="Send a comment", original_request="Send another comment", lang="en",
+        )
+        check = await second.preflight(contract=second_contract, observation=observation())
+
+        assert check.blocked is False
+        assert check.intent.business_key
+
+    asyncio.run(scenario())
+
+
+def test_semantic_operation_and_target_aliases_are_persisted_for_selection_history():
+    async def scenario():
+        store = FakeReceiptStore()
+        effect_contract = contract()
+        history = BrowserActionHistory(
+            actor_id="user-1", attempt_id="run-1", store=store,  # type: ignore[arg-type]
+            goal="Comment", original_request="Comment", lang="en",
+        )
+        check = await history.preflight(
+            contract=effect_contract,
+            observation=observation(),
+            semantic_operation="comment",
+        )
+        row = await history.record(
+            confirmed(effect_contract),
+            observation(),
+            source_url="https://example.test/search?q=browser",
+        )
+
+        assert check.intent.operation_id == "comment"
+        assert row is not None
+        assert row.operation_id == "comment"
+        assert "https://example.test/posts/123" in row.target_aliases
+        assert row.source_url == "https://example.test/search?q=browser"
+        assert row.evidence["source_url"] == "https://example.test/search?q=browser"
+
+    asyncio.run(scenario())
+
+
+def test_technical_control_fingerprint_does_not_create_cross_run_guard():
+    async def scenario():
+        history = BrowserActionHistory(
+            actor_id="user-1", attempt_id="run-1", store=FakeReceiptStore(),  # type: ignore[arg-type]
+            goal="Submit", original_request="Submit", lang="en",
+        )
+        check = await history.preflight(
+            contract=contract(fingerprint={
+                "interaction_target_id": "button-identity",
+                "confirmed_fill_count": 1,
+            }),
+            observation=observation(),
+        )
+
+        assert check.blocked is False
+        assert check.intent.business_key == ""
+
+    asyncio.run(scenario())
+
+
 def test_unknown_effect_is_not_persisted_as_success():
     asyncio.run(_unknown_effect_is_not_persisted_as_success())
 
 
 async def _unknown_effect_is_not_persisted_as_success():
     store = FakeReceiptStore()
-    client = FakePolicyClient(
-        guard_across_runs=True,
-        scope_dimensions=["actor", "system", "target", "operation"],
-        purpose="durable operation",
-        confidence=0.95,
-    )
     effect_contract = contract()
     history = BrowserActionHistory(
         actor_id="user-1",
@@ -163,7 +212,6 @@ async def _unknown_effect_is_not_persisted_as_success():
         goal="Do not repeat the same target",
         original_request="Do not repeat the same target",
         lang="en",
-        llm=client,
     )
     await history.preflight(contract=effect_contract, observation=observation())
     receipt = confirmed(effect_contract).model_copy(update={"status": "unknown"})
@@ -214,17 +262,11 @@ def test_old_action_receipts_remain_valid_without_business_fields():
 def test_same_target_with_a_different_operation_has_a_different_business_key():
     async def scenario():
         store = FakeReceiptStore()
-        client = FakePolicyClient(
-            guard_across_runs=True,
-            scope_dimensions=["actor", "system", "target", "operation"],
-            purpose="target operation",
-            confidence=0.95,
-        )
         first_contract = contract("contribute")
         first = BrowserActionHistory(
             actor_id="user-1", attempt_id="run-1", store=store,  # type: ignore[arg-type]
             goal="Operate once per target", original_request="Operate once per target",
-            lang="en", llm=client,
+            lang="en",
         )
         first_check = await first.preflight(contract=first_contract, observation=observation())
         await first.record(confirmed(first_contract), observation())
@@ -233,7 +275,7 @@ def test_same_target_with_a_different_operation_has_a_different_business_key():
         second = BrowserActionHistory(
             actor_id="user-1", attempt_id="run-2", store=store,  # type: ignore[arg-type]
             goal="Perform another operation", original_request="Perform another operation",
-            lang="en", llm=client,
+            lang="en",
         )
         second_check = await second.preflight(contract=second_contract, observation=observation())
         assert first_check.intent.business_key != second_check.intent.business_key
@@ -266,20 +308,46 @@ def test_receipt_store_loads_latest_confirmed_business_action():
     asyncio.run(scenario())
 
 
-def test_model_cannot_remove_actor_or_operation_isolation():
+def test_receipt_store_loads_confirmed_targets_by_actor_and_semantic_operation():
+    async def scenario():
+        store = ActionReceiptStore()
+        expected = ActionReceipt(
+            action_id="action-comment",
+            idempotency_key="attempt-comment",
+            status="succeeded",
+            actor_id="user-1",
+            operation_id="comment",
+            target_id="https://example.test/posts/123",
+        )
+
+        async def load_many(query, *, limit):
+            assert query == {
+                "actor_id": "user-1",
+                "operation_id": "comment",
+                "status": "succeeded",
+            }
+            assert limit == 1000
+            return [expected]
+
+        store._load_many = load_many  # type: ignore[method-assign]
+        rows = await store.list_succeeded_for_operation(
+            actor_id="user-1",
+            operation_id="comment",
+        )
+
+        assert rows == [expected]
+
+    asyncio.run(scenario())
+
+
+def test_deterministic_policy_keeps_actor_and_operation_isolation():
     async def scenario():
         store = FakeReceiptStore()
-        client = FakePolicyClient(
-            guard_across_runs=True,
-            scope_dimensions=["target"],
-            purpose="one operation per target",
-            confidence=0.99,
-        )
         first_contract = contract("contribute")
         first = BrowserActionHistory(
             actor_id="user-1", attempt_id="run-1", store=store,  # type: ignore[arg-type]
             goal="Operate once per target", original_request="Operate once per target",
-            lang="en", llm=client,
+            lang="en",
         )
         first_check = await first.preflight(contract=first_contract, observation=observation())
         await first.record(confirmed(first_contract), observation())
@@ -287,7 +355,7 @@ def test_model_cannot_remove_actor_or_operation_isolation():
         another_actor = BrowserActionHistory(
             actor_id="user-2", attempt_id="run-2", store=store,  # type: ignore[arg-type]
             goal="Operate once per target", original_request="Operate once per target",
-            lang="en", llm=client,
+            lang="en",
         )
         actor_check = await another_actor.preflight(
             contract=first_contract,
@@ -297,7 +365,7 @@ def test_model_cannot_remove_actor_or_operation_isolation():
         another_operation = BrowserActionHistory(
             actor_id="user-1", attempt_id="run-3", store=store,  # type: ignore[arg-type]
             goal="Perform another operation", original_request="Perform another operation",
-            lang="en", llm=client,
+            lang="en",
         )
         operation_check = await another_operation.preflight(
             contract=contract("transition"),
@@ -309,6 +377,35 @@ def test_model_cannot_remove_actor_or_operation_isolation():
         ]
         assert actor_check.blocked is False
         assert operation_check.blocked is False
+
+    asyncio.run(scenario())
+
+
+def test_destructive_action_blocks_by_target_without_payload():
+    async def scenario():
+        store = FakeReceiptStore()
+        effect_contract = contract(
+            "delete",
+            fingerprint={},
+            side_effect="destructive",
+        )
+        first = BrowserActionHistory(
+            actor_id="user-1", attempt_id="run-1", store=store,  # type: ignore[arg-type]
+            goal="Delete the object", original_request="Delete the object", lang="en",
+        )
+        await first.preflight(contract=effect_contract, observation=observation())
+        await first.record(confirmed(effect_contract), observation())
+
+        second = BrowserActionHistory(
+            actor_id="user-1", attempt_id="run-2", store=store,  # type: ignore[arg-type]
+            goal="Delete the object", original_request="Delete the object", lang="en",
+        )
+        check = await second.preflight(contract=effect_contract, observation=observation())
+
+        assert check.blocked is True
+        assert check.intent.policy.scope_dimensions == [
+            "actor", "system", "target", "operation",
+        ]
 
     asyncio.run(scenario())
 

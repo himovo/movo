@@ -1,6 +1,6 @@
 from app.enterprise_capabilities.browser.engine.effect_verification.contracts import EffectReceipt
 from app.enterprise_capabilities.browser.engine.effect_verification.form_transaction import FormTransactionTracker
-from app.enterprise_capabilities.browser.engine.agent_loop import planner as browser_planner
+from app.enterprise_capabilities.browser.engine.agent_loop import turn_payload
 from app.enterprise_capabilities.browser.engine.agent_loop.protocol import Decision, Observation
 
 
@@ -439,21 +439,22 @@ def test_page_level_scope_marked_unlockable_does_not_create_a_lock() -> None:
 def test_planner_ledger_pins_active_form_refs(monkeypatch) -> None:
     captured = {}
 
-    def fake_compact(observation, *, goal, target, pinned_refs):
+    def fake_compact(observation, *, goal, target, pinned_refs, element_budget_chars):
+        del goal, target, element_budget_chars
         captured["pinned_refs"] = set(pinned_refs or set())
         return {"url": observation.url, "elements": []}
 
-    monkeypatch.setattr(browser_planner, "compact_observation", fake_compact)
+    monkeypatch.setattr(turn_payload, "compact_observation", fake_compact)
     observation = _obs(
         _element("comment", scope=COMMENT_SCOPE, editable=True, role="textbox"),
         _element("send", scope=COMMENT_SCOPE),
     )
 
-    browser_planner._build_user_turn(
+    turn_payload.build_turn_payload(
         "发表评论",
         [],
         observation,
-        state_ledger={"pinned_refs": ["comment", "send"]},
+        {"pinned_refs": ["comment", "send"]},
     )
 
     assert captured["pinned_refs"] == {"comment", "send"}

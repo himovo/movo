@@ -7,8 +7,6 @@ Decision rule is intentionally simple and explicit:
   skill carries usable steps → return a :class:`SkillDriver` that
   replays them, with an :class:`ExplorationDriver` wired in as
   fallback.
-* Otherwise, when an automatically learned workflow matched → replay its
-  parameterized steps with form/exploration fallback.
 * Otherwise → return a plain :class:`ExplorationDriver`.
 
 Any task category (form / scrape / general) goes through this
@@ -16,7 +14,7 @@ function; the decision is task-type agnostic.
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from app.services.skill_assets.composite_task import parse_composite_skill
 
@@ -25,8 +23,6 @@ from .exploration import ExplorationDriver
 from .form_input import FormInputDriver
 from .skill import SkillDriver
 from app.enterprise_capabilities.browser.engine.form_input import BrowserInputContext
-from app.enterprise_capabilities.browser.engine.workflow_cache.contracts import CachedBrowserWorkflow
-from app.enterprise_capabilities.browser.engine.workflow_cache.driver import LearnedWorkflowDriver
 
 
 def _extract_composite_steps(output_spec: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -81,8 +77,6 @@ def select_driver(
     output_spec: Dict[str, Any],
     input_context: Optional[BrowserInputContext] = None,
     capability_id: str = "",
-    learned_workflow: Optional[CachedBrowserWorkflow] = None,
-    on_learned_workflow_failure: Optional[Callable[[str], None]] = None,
 ) -> BrowserDriver:
     """Return the appropriate :class:`BrowserDriver` for this task.
 
@@ -90,27 +84,17 @@ def select_driver(
     ready to use — no further wiring required.
     """
     steps = _extract_composite_steps(output_spec)
-    fallback: BrowserDriver = ExplorationDriver(lang=lang, enterprise_sites=enterprise_sites)
+    fallback: BrowserDriver = ExplorationDriver(
+        lang=lang,
+        enterprise_sites=enterprise_sites,
+    )
     if input_context is not None:
         fallback = FormInputDriver(
             fallback=fallback,
             input_context=input_context,
             capability_id=capability_id,
             lang=lang,
-            cached_binding_hints=(
-                learned_workflow.field_bindings
-                if learned_workflow is not None and not steps
-                else None
-            ),
         )
     if steps:
         return SkillDriver(steps=steps, fallback=fallback)
-    if learned_workflow is not None and learned_workflow.steps:
-        return LearnedWorkflowDriver(
-            workflow=learned_workflow,
-            fallback=fallback,
-            input_context=input_context or BrowserInputContext(original_request=""),
-            lang=lang,
-            on_failure=on_learned_workflow_failure,
-        )
     return fallback

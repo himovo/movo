@@ -16,12 +16,6 @@ from app.enterprise_capabilities.browser.engine.workflow_cache.replay_plan impor
     build_replay_plan,
     normalize_semantic_replay_count,
 )
-from app.enterprise_capabilities.browser.engine.workflow_cache.semantic_inputs import SemanticInputValue
-from app.enterprise_capabilities.browser.engine.workflow_cache.semantic_selector import (
-    BrowserWorkflowRequirement,
-    WorkflowSelectionResponse,
-    WorkflowSemanticSelector,
-)
 from app.enterprise_capabilities.browser.engine.workflow_cache.service import BrowserWorkflowCacheService
 from app.enterprise_capabilities.runtime.execution_contracts import CapabilityTask
 from app.enterprise_capabilities.browser.engine.agent_loop.protocol import Decision, Observation
@@ -89,55 +83,6 @@ class _Repository:
         return self.workflow if workflow_id == self.workflow.workflow_id else None
 
 
-class _SelectionLLM:
-    async def ainvoke_structured(self, messages, schema, **kwargs):
-        assert schema is WorkflowSelectionResponse
-        return WorkflowSelectionResponse(
-            selected_workflow_id="article-draft",
-            matching_workflow_ids=["article-draft"],
-            confidence=0.98,
-            reason="same article draft operation",
-            parameter_values=[
-                SemanticInputValue(role="title", value="本次标题"),
-                SemanticInputValue(role="body", value="本次正文"),
-            ],
-            replay_step_count=3,
-            missing_input_roles=["images"],
-        )
-
-
-class _ZeroPrefixSelectionLLM:
-    def __init__(self) -> None:
-        self.messages = []
-
-    async def ainvoke_structured(self, messages, schema, **kwargs):
-        self.messages = list(messages)
-        assert schema is WorkflowSelectionResponse
-        return WorkflowSelectionResponse(
-            selected_workflow_id="article-draft",
-            matching_workflow_ids=["article-draft"],
-            confidence=0.97,
-            reason="same complete browser save-draft operation",
-            parameter_values=[
-                SemanticInputValue(role="title", value="本次标题"),
-                SemanticInputValue(role="body", value="本次正文"),
-            ],
-            replay_step_count=0,
-            missing_input_roles=[],
-            browser_requirements=[
-                BrowserWorkflowRequirement(
-                    kind="runtime_precondition",
-                    description="等待用户完成登录",
-                    category="authentication",
-                ),
-                BrowserWorkflowRequirement(
-                    kind="completion_verification",
-                    description="确认保存成功",
-                ),
-            ],
-        )
-
-
 class _Fallback(BrowserDriver):
     kind = "fallback"
 
@@ -177,17 +122,14 @@ def _observation(url: str) -> Observation:
     )
 
 
-def test_same_business_workflow_gets_request_slots_before_compatibility_filter() -> None:
+def test_missing_business_inputs_skip_cache_instead_of_model_extraction() -> None:
     workflow = _workflow()
     workflow = workflow.model_copy(update={
         "runtime_replay_step_count": 3,
         "runtime_missing_input_roles": ["images"],
     })
     context = _context()
-    service = BrowserWorkflowCacheService(
-        repository=_Repository(workflow),
-        semantic_selector=WorkflowSemanticSelector(llm=_SelectionLLM()),
-    )
+    service = BrowserWorkflowCacheService(repository=_Repository(workflow))
     node = CapabilityTask(
         node_id="draft",
         goal="创建文章并保存草稿",
@@ -202,18 +144,12 @@ def test_same_business_workflow_gets_request_slots_before_compatibility_filter()
         user_id="u1", main_id="m1", node=node, input_context=context,
     ))
 
-    assert matched is not None
-    assert {item.semantic_name for item in context.candidates} == {"title", "body", "images"}
-    assert matched.runtime_replay_step_count == 3
-    assert matched.runtime_missing_input_roles == ["images"]
+    assert matched is None
+    assert {item.semantic_name for item in context.candidates} == {"images"}
 
 
-def test_upstream_preparation_does_not_turn_complete_browser_match_into_zero_replay() -> None:
-    llm = _ZeroPrefixSelectionLLM()
-    service = BrowserWorkflowCacheService(
-        repository=_Repository(_workflow()),
-        semantic_selector=WorkflowSemanticSelector(llm=llm),
-    )
+def test_unresolved_request_values_skip_partial_cache_replay() -> None:
+    service = BrowserWorkflowCacheService(repository=_Repository(_workflow()))
     context = BrowserInputContext(
         original_request=(
             "先下载图片，再到内容平台创建文章，标题填本次标题，"
@@ -234,17 +170,7 @@ def test_upstream_preparation_does_not_turn_complete_browser_match_into_zero_rep
         user_id="u1", main_id="m1", node=node, input_context=context,
     ))
 
-    assert matched is not None
-    assert matched.runtime_replay_step_count == -1
-    assert matched.runtime_preconditions == [{
-        "kind": "runtime_precondition",
-        "description": "等待用户完成登录",
-        "safe_cached_prefix_steps": -1,
-        "category": "authentication",
-    }]
-    prompt = str(llm.messages[-1].content)
-    assert '"browser_goal": "在内容平台创建文章并保存草稿"' in prompt
-    assert '"user_request_for_parameter_extraction": "先下载图片' in prompt
+    assert matched is None
 
 
 def test_semantic_replay_boundary_rejects_useless_or_inconsistent_prefixes() -> None:

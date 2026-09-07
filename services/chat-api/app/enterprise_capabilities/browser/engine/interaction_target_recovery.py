@@ -8,6 +8,7 @@ from app.enterprise_capabilities.browser.engine.effect_verification.decision_tar
 from app.enterprise_capabilities.browser.engine.agent_loop.protocol import Decision, Observation
 
 _STALE_TARGET_MARKERS = (
+    "stale_target_rebind_",
     "unknown or stale element ref",
     "click target is stale or no longer resolvable",
     "click target moved or is covered",

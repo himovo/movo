@@ -4,6 +4,7 @@ all reference the same strings.
 
 BROWSER_TOOLS = [
     "browser_execute_workflow",
+    "browser_execute_plan",
     "browser_navigate",
     "browser_observe",
     "browser_click",

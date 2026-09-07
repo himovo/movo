@@ -13,6 +13,7 @@
         "test:session-ordering": "esbuild tests/session-ordering.test.ts --bundle --platform=node --format=esm --outfile=/tmp/askai-session-ordering-test.mjs && node /tmp/askai-session-ordering-test.mjs",
         "test:chat-cancellation": "esbuild tests/chat-cancellation-contract.test.ts --bundle --platform=node --format=esm --outfile=/tmp/movo-chat-cancellation-test.mjs && node /tmp/movo-chat-cancellation-test.mjs",
         "test:user-bound-projects": "esbuild tests/user-bound-projects.test.ts --bundle --platform=node --format=esm --outfile=/tmp/askai-user-bound-projects-test.mjs && node /tmp/askai-user-bound-projects-test.mjs",
+        "test:new-session-project-context": "esbuild tests/new-session-project-context.test.ts --bundle --platform=node --format=esm --outfile=/tmp/movo-new-session-project-context-test.mjs && node /tmp/movo-new-session-project-context-test.mjs",
         "test:code-platform": "esbuild tests/code-platform-contract.test.ts --bundle --platform=node --format=esm --outfile=/tmp/askai-code-platform-test.mjs && node /tmp/askai-code-platform-test.mjs",
         "test:desktop-auth": "esbuild tests/desktop-auth-session.test.ts --bundle --platform=node --format=esm --outfile=/tmp/movo-desktop-auth-test.mjs && node /tmp/movo-desktop-auth-test.mjs",
         "test:desktop-tools": "esbuild tests/desktop-tool-tabs.test.ts --bundle --platform=node --format=esm --outfile=/tmp/movo-desktop-tools-test.mjs && node /tmp/movo-desktop-tools-test.mjs",

@@ -6,7 +6,7 @@ from app.enterprise_capabilities.browser.engine.desktop_agent_executor import (
     _detect_language,
     _effect_timeline_message,
 )
-from app.enterprise_capabilities.browser.engine.agent_loop.planner import _decision_from_mapping
+from app.enterprise_capabilities.browser.engine.agent_loop.protocol import Decision
 
 
 def _inputs(*, language="", messages=None, raw_messages=None, intent=""):
@@ -32,11 +32,12 @@ def test_browser_language_falls_back_to_raw_user_content_and_intent() -> None:
 
 
 def test_model_and_system_rationales_keep_distinct_provenance() -> None:
-    model_decision = _decision_from_mapping({
-        "tool": "browser_fill",
-        "args": {"text": "AskBot"},
-        "rationale": "在搜索框输入 AskBot",
-    })
+    model_decision = Decision(
+        tool="browser_fill",
+        args={"text": "AskBot"},
+        rationale="在搜索框输入 AskBot",
+        rationale_source="model",
+    )
     assert model_decision.rationale_source == "model"
 
 

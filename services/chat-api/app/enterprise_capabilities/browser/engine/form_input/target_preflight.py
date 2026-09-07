@@ -33,7 +33,7 @@ def validate_fill_target(
         return FillTargetPreflight(False, ref, "fill target is disabled", target)
     if target.get("visible") is False:
         return FillTargetPreflight(False, ref, "fill target is not visible", target)
-    if not target.get("editable"):
+    if not (target.get("editable") or target.get("contentEditable")):
         return FillTargetPreflight(False, ref, "fill target is not editable", target)
     return FillTargetPreflight(True, ref, target=target)
 
@@ -42,6 +42,7 @@ def is_stale_fill_target_error(error: Optional[str]) -> bool:
     """Return true for failures that mean the ref must be resolved again."""
     text = str(error or "").strip().lower()
     return any(marker in text for marker in (
+        "stale_target_rebind_",
         "unknown or stale element ref",
         "target_not_found",
         "target_not_editable",

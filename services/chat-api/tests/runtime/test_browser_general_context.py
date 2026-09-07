@@ -525,6 +525,69 @@ def test_confirmed_deferred_effect_blocks_another_business_write():
     assert context.business_effect_blocker(object()) == ""
 
 
+def test_ax_result_click_backfills_search_and_detail_when_submit_observation_was_missed():
+    goal = "搜索 DeepSeek Harness，进入一篇热门笔记详情，阅读正文并发表评论"
+    node = CapabilityTask(node_id="browser", goal=goal, assigned_agent="agent.browser")
+    context = GeneralBrowserContext(
+        lang="zh", node=node, goal=goal, original_user_request=goal,
+    )
+    home = Observation(
+        url="https://example.test/explore",
+        title="Explore",
+        elements=[{
+            "ref": "search", "role": "searchbox", "editable": True,
+            "semanticPurpose": "search", "value": "",
+        }],
+    )
+    # The fill receipt arrived before the SPA exposed its result collection.
+    _transition(
+        context,
+        Decision(tool="browser_fill", args={"ref": "search", "value": "DeepSeek Harness"}),
+        home,
+        home,
+    )
+    results = Observation(
+        url=home.url,
+        title=home.title,
+        page_text="DeepSeek Harness 热门笔记",
+        elements=[
+            {
+                "ref": "search-next", "role": "searchbox", "editable": True,
+                "semanticPurpose": "search", "value": "DeepSeek Harness",
+            },
+            {
+                "ref": "ax-result-1", "role": "link", "backendNodeId": 201,
+                "name": "DeepSeek Harness 实战",
+            },
+            {
+                "ref": "ax-result-2", "role": "link", "backendNodeId": 202,
+                "name": "Harness 入门",
+            },
+        ],
+    )
+    detail = Observation(
+        url="https://example.test/detail/201",
+        title="DeepSeek Harness 实战",
+        page_text="DeepSeek Harness 实战 正文内容",
+        elements=[{
+            "ref": "comment", "role": "textbox", "editable": True,
+            "contentEditable": True, "placeholder": "说点什么",
+        }],
+    )
+
+    _transition(
+        context,
+        Decision(tool="browser_click", args={"ref": "ax-result-1"}),
+        results,
+        detail,
+    )
+
+    assert "search" in context.completed
+    assert "open_result" in context.completed
+    assert context.search_results_url == results.url
+    assert context.detail_url == detail.url
+
+
 def test_confirmed_effect_with_missing_milestones_converges_to_partial_success():
     goal = "搜索相关帖子，进入一个帖子，阅读后发表评论"
     node = CapabilityTask(node_id="browser", goal=goal, assigned_agent="agent.browser")
@@ -1058,6 +1121,59 @@ def test_fresh_result_observation_reconciles_search_after_action_history_is_lost
         elements=[
             {"ref": "r1", "role": "link", "href": "https://askbot.example/", "name": "Askbot"},
             {"ref": "r2", "role": "link", "href": "https://docs.example/askbot", "name": "Docs"},
+        ],
+    )
+
+    ledger = context.build_state_ledger(results)
+
+    assert "search" in context.completed
+    assert "search_submitted" in ledger["completed_signals"]
+    assert context.phase != "awaiting_search"
+
+
+def test_result_url_reconciles_search_when_accessibility_snapshot_is_empty():
+    goal = "搜索 Askbot 并总结"
+    node = CapabilityTask(node_id="browser", goal=goal, assigned_agent="agent.browser")
+    context = GeneralBrowserContext(lang="zh", node=node, goal=goal, original_user_request=goal)
+    context.search_baseline = SearchBaseline(
+        query="Askbot",
+        url="https://search.example/",
+        title="Search",
+    )
+    context.search_submission.query = "Askbot"
+    results = Observation(
+        url="https://search.example/s?wd=Askbot",
+        title="",
+        page_text="",
+        elements=[],
+    )
+
+    ledger = context.build_state_ledger(results)
+
+    assert "search" in context.completed
+    assert "search_submitted" in ledger["completed_signals"]
+    assert context.phase != "awaiting_search"
+
+
+def test_fresh_inline_results_reconcile_search_after_submit_was_reported_failed():
+    goal = "搜索 Askbot 并总结"
+    node = CapabilityTask(node_id="browser", goal=goal, assigned_agent="agent.browser")
+    context = GeneralBrowserContext(lang="zh", node=node, goal=goal, original_user_request=goal)
+    context.search_baseline = SearchBaseline(
+        query="Askbot",
+        url="https://example.test/",
+        title="Search",
+        link_targets=["/home"],
+    )
+    context.search_submission.query = "Askbot"
+    results = Observation(
+        url="https://example.test/",
+        title="Search",
+        page_text="Askbot official site and product overview",
+        elements=[
+            {"ref": "r1", "role": "link", "href": "/home", "name": "Home"},
+            {"ref": "r2", "role": "link", "href": "https://askbot.example/", "name": "Askbot"},
+            {"ref": "r3", "role": "link", "href": "https://docs.example/askbot", "name": "Docs"},
         ],
     )
 

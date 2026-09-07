@@ -43,6 +43,34 @@ def test_search_accepts_navigation_or_a_new_result_collection():
     assert search_submission_confirmed(baseline, same_url_results, {}) is True
 
 
+def test_same_route_ax_results_confirm_search_without_link_hrefs():
+    before = Observation(
+        url="https://example.test/explore",
+        title="Explore",
+        page_text="推荐内容",
+        elements=[
+            {"ref": "search", "role": "searchbox", "editable": True, "value": ""},
+            {"ref": "old", "role": "link", "backendNodeId": 10, "name": "Home"},
+        ],
+    )
+    baseline = capture_search_baseline("DeepSeek Harness", before)
+    results = Observation(
+        url=before.url,
+        title=before.title,
+        page_text="相关笔记",
+        elements=[
+            {
+                "ref": "search-next", "role": "searchbox", "editable": True,
+                "value": "DeepSeek Harness",
+            },
+            {"ref": "result-1", "role": "link", "backendNodeId": 20, "name": "First result"},
+            {"ref": "result-2", "role": "link", "backendNodeId": 21, "name": "Second result"},
+        ],
+    )
+
+    assert search_submission_confirmed(baseline, results, {}) is True
+
+
 def test_short_result_routes_are_recognised_from_generic_query_evidence():
     for url, query in (
         ("https://search.test/s?wd=Askbot", "Askbot"),
@@ -60,6 +88,22 @@ def test_short_result_routes_are_recognised_from_generic_query_evidence():
 
         assert result is not None
         assert result.query == query
+
+
+def test_matching_query_navigation_confirms_search_without_accessibility_elements():
+    before = _obs("https://search.test/", "Search")
+    baseline = capture_search_baseline("Askbot", before)
+    empty_result_snapshot = _obs("https://search.test/s?wd=Askbot", "")
+
+    assert search_submission_confirmed(baseline, empty_result_snapshot, {}) is True
+
+
+def test_unrelated_query_navigation_without_result_evidence_does_not_confirm_search():
+    before = _obs("https://search.test/", "Search")
+    baseline = capture_search_baseline("Askbot", before)
+    unrelated = _obs("https://search.test/s?wd=Different", "")
+
+    assert search_submission_confirmed(baseline, unrelated, {}) is False
 
 
 def test_hash_routed_result_page_is_recognised_without_provider_rules():

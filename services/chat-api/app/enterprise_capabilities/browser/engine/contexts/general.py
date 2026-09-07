@@ -45,6 +45,7 @@ from .search_progress import (
     infer_observed_search_result,
     search_submission_confirmed,
 )
+from .search_detail_causality import confirm_search_result_click
 from .search_submission_policy import (
     SearchSubmissionState,
     begin_search_submission,
@@ -254,11 +255,42 @@ class GeneralBrowserContext(BrowserTaskContext):
         ):
             observed_search = infer_observed_search_result(decision, current_obs)
             search_confirmed = observed_search is not None
+        causal_detail = None
+        if (
+            not search_confirmed
+            and self.search_input_pending
+            and tool in {"browser_click", "browser_click_at"}
+            and "open_result" in self.requirements
+        ):
+            expected_query = str(
+                self.search_submission.query
+                or (self.search_baseline.query if self.search_baseline else "")
+            ).strip()
+            causal_detail = confirm_search_result_click(
+                decision=decision,
+                before=before_obs,
+                after=current_obs,
+                search_baseline=self.search_baseline,
+                expected_query=expected_query,
+                known_page_urls=known_page_urls,
+            )
+            if causal_detail is not None:
+                search_confirmed = True
+                observed_search = causal_detail.search
+
         if search_confirmed:
             self.completed.add("search")
-            self.search_results_url = current_url
-            self.detail_baseline = capture_detail_baseline(current_obs)
+            self.search_results_url = (
+                str(before_obs.url or "") if causal_detail is not None else current_url
+            )
+            self.detail_baseline = (
+                causal_detail.baseline
+                if causal_detail is not None
+                else capture_detail_baseline(current_obs)
+            )
             self.search_input_pending = False
+            if causal_detail is not None:
+                self.detail_target_lock.prepare(causal_detail.target)
 
         candidate_outcome = classify_detail_candidate_return(
             target=self.detail_target_lock.target,
@@ -296,7 +328,7 @@ class GeneralBrowserContext(BrowserTaskContext):
 
         detail_confirmed = bool(
             "open_result" in self.requirements
-            and (had_search or "search" not in self.requirements)
+            and (had_search or search_confirmed or "search" not in self.requirements)
             and detail_page_observed(
                 self.detail_baseline,
                 current_obs,
@@ -308,7 +340,7 @@ class GeneralBrowserContext(BrowserTaskContext):
             not detail_confirmed
             and "open_result" in self.requirements
             and "commit" in self.requirements
-            and (had_search or "search" not in self.requirements)
+            and (had_search or search_confirmed or "search" not in self.requirements)
         ):
             inline_editor = inline_target_editor_observed(
                 decision,
@@ -869,6 +901,19 @@ class GeneralBrowserContext(BrowserTaskContext):
             observation,
             expected_query=expected_query,
         )
+        if (
+            observed is None
+            and self.search_baseline is not None
+            and search_submission_confirmed(
+                self.search_baseline,
+                observation,
+                {},
+            )
+        ):
+            observed = ObservedSearchResult(
+                query=expected_query or self.search_baseline.query,
+                url=str(observation.url or ""),
+            )
         if observed is None:
             return
         self.completed.add("search")

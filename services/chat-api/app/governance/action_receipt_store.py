@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from copy import deepcopy
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from app.core.db import get_db
 from app.governance.action_receipt import ActionReceipt
@@ -86,6 +86,37 @@ class ActionReceiptStore:
             return max(local_count, database_count)
         except Exception:
             return local_count
+
+    async def list_succeeded_for_operation(
+        self,
+        *,
+        actor_id: str,
+        operation_id: str,
+        limit: int = 1000,
+    ) -> List[ActionReceipt]:
+        """Return confirmed target facts for one actor and semantic action."""
+        actor = str(actor_id or "").strip()
+        operation = str(operation_id or "").strip()
+        if not actor or not operation:
+            return []
+        query = {
+            "actor_id": actor,
+            "operation_id": operation,
+            "status": "succeeded",
+        }
+        async with self._lock:
+            local = {
+                row.action_id: deepcopy(row)
+                for row in self._by_action_id.values()
+                if row.actor_id == actor
+                and row.operation_id == operation
+                and row.status == "succeeded"
+            }
+            loaded = await self._load_many(query, limit=max(1, min(int(limit), 5000)))
+            for row in loaded:
+                self._cache(row)
+                local[row.action_id] = deepcopy(row)
+        return sorted(local.values(), key=lambda item: item.updated_at, reverse=True)
 
     async def upsert(self, receipt: ActionReceipt) -> ActionReceipt:
         async with self._lock:
@@ -191,6 +222,18 @@ class ActionReceiptStore:
         except Exception:
             return None
 
+    async def _load_many(self, query: dict, *, limit: int) -> List[ActionReceipt]:
+        try:
+            db = get_db()
+            rows = await db[self._collection].find(query).sort("updated_at", -1).limit(limit).to_list(length=limit)
+            parsed: List[ActionReceipt] = []
+            for row in rows:
+                row.pop("_id", None)
+                parsed.append(ActionReceipt.model_validate(row))
+            return parsed
+        except Exception:
+            return []
+
     async def ensure_indexes(self) -> None:
         try:
             db = get_db()
@@ -199,5 +242,8 @@ class ActionReceiptStore:
             await coll.create_index("action_id", unique=True)
             await coll.create_index([("status", 1), ("updated_at", -1)])
             await coll.create_index([("business_key", 1), ("status", 1), ("updated_at", -1)])
+            await coll.create_index([
+                ("actor_id", 1), ("operation_id", 1), ("status", 1), ("updated_at", -1),
+            ])
         except Exception:
             return

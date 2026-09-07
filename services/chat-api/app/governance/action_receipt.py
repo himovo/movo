@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -19,6 +19,8 @@ class ActionReceipt(BaseModel):
     actor_id: str = ""
     system_id: str = ""
     target_id: str = ""
+    target_aliases: List[str] = Field(default_factory=list)
+    source_url: str = ""
     operation_id: str = ""
     purpose: str = ""
     replay_policy: Dict[str, Any] = Field(default_factory=dict)

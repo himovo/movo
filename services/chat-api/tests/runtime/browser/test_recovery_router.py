@@ -10,6 +10,7 @@ from app.enterprise_capabilities.browser.engine.recovery_router import (
     MODEL_FAILURE,
     OUTPUT_CONTRACT_EXHAUSTED,
     RESUME_RECONCILIATION_UNAVAILABLE,
+    recovery_source_for_browser_fail,
     route_browser_recovery,
 )
 from app.enterprise_capabilities.browser.engine.agent_loop.protocol import Decision, Observation
@@ -135,6 +136,37 @@ def test_explicit_business_failure_and_internal_failure_remain_terminal() -> Non
     assert not business_failure.can_assist
     assert internal_failure.action == "hard_fail"
     assert not internal_failure.can_assist
+
+
+def test_planner_protocol_failure_is_classified_as_internal_not_page_assistance() -> None:
+    source = recovery_source_for_browser_fail({"error_code": "planner_contract_invalid"})
+    plan = route_browser_recovery(
+        source=source,
+        observation=_observation(),
+        lang="zh",
+        error="planner output violated the action contract",
+    )
+
+    assert source == INTERNAL_FAILURE
+    assert plan.action == "hard_fail"
+    assert not plan.can_assist
+    assert recovery_source_for_browser_fail({"reason": "page is ambiguous"}) == MODEL_FAILURE
+
+
+def test_planner_action_segment_failure_is_not_page_assistance() -> None:
+    source = recovery_source_for_browser_fail({
+        "error_code": "planner_action_segment_invalid",
+    })
+    plan = route_browser_recovery(
+        source=source,
+        observation=_observation(),
+        lang="zh",
+        error="browser action segment rejected",
+    )
+
+    assert source == INTERNAL_FAILURE
+    assert plan.action == "hard_fail"
+    assert not plan.can_assist
 
 
 def test_generic_failure_without_live_page_does_not_create_fake_assistance() -> None:

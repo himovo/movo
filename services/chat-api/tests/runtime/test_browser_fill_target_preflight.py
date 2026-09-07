@@ -44,6 +44,21 @@ def test_accepts_editable_target_from_latest_observation() -> None:
     assert result.target is not None and result.target["role"] == "searchbox"
 
 
+def test_accepts_contenteditable_target_from_latest_observation() -> None:
+    observation = _observation([{
+        "ref": "e20",
+        "role": "textbox",
+        "name": "评论",
+        "editable": False,
+        "contentEditable": True,
+        "visible": True,
+    }])
+
+    result = validate_fill_target(observation, {"ref": "e20", "value": "有价值的评论"})
+
+    assert result.ok is True
+
+
 def test_rejects_missing_disabled_and_hidden_targets() -> None:
     missing = validate_fill_target(_observation([]), {"ref": "e1"})
     disabled = validate_fill_target(_observation([{
@@ -63,4 +78,5 @@ def test_stale_target_errors_are_not_business_fill_failures() -> None:
     assert is_stale_fill_target_error("target_not_found: Fill target no longer exists")
     assert is_stale_fill_target_error("target_not_found: Fill target disappeared after click")
     assert is_stale_fill_target_error("Unknown or stale element ref: e2")
+    assert is_stale_fill_target_error("stale_target_rebind_ambiguous: ax-0-41")
     assert not is_stale_fill_target_error("value_not_applied: expected x, received y")

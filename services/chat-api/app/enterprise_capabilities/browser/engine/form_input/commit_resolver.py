@@ -72,7 +72,7 @@ def resolve_form_commit(
             kind="click",
             decision=Decision(
                 tool="browser_click",
-                args={"ref": ref},
+                args={"ref": ref, "__verified_form_commit": True},
                 rationale="[form_commit_resolver] unique enabled commit control in active form",
             ),
             candidate_refs=(ref,),

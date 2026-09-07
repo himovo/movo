@@ -83,7 +83,9 @@ async def browser_task(arguments: dict[str, Any], context: CapabilityExecutionCo
     )
     await checkpoint_session.open()
     executor = DesktopAgentBrowserExecutor(
-        context.user_id, browser_session_id, checkpoint_session=checkpoint_session,
+        context.user_id,
+        browser_session_id,
+        checkpoint_session=checkpoint_session,
     )
     artifacts: dict[str, Any] = {}
     result_events = BrowserResultEventAccumulator()

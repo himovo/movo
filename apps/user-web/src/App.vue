@@ -32,7 +32,6 @@ import { formatExactTokenAmount, formatQuotaUsagePercent, formatTokenAmount, quo
 import { useChatRuntimeStore, type PendingRuntimeDocument } from './composables/useChatRuntimeStore'
 import { useDshCodeRuntime } from './composables/code/useDshCodeRuntime'
 import { useUserBoundProjects } from './composables/code/userBoundProjects'
-import { availableUserProjects } from './composables/code/projectAuthorization'
 import { useEnterpriseAccessPolicy } from './composables/useEnterpriseAccessPolicy'
 import { useProfileRefreshOnResume } from './composables/useProfileRefreshOnResume'
 import { useDesktopToolTabs } from './composables/desktop/useDesktopToolTabs'
@@ -875,7 +874,7 @@ function openScheduledTasks(options: { prompt?: string; sessionId?: string | nul
 }
 
 function handleSidebarAction(icon: string) {
-  if (icon === 'plus') startLocalSession()
+  if (icon === 'plus') startLocalSession({ inheritCurrentProject: true })
   else if (icon === 'clock') openScheduledTasks()
   else openSessionSearch()
 }
@@ -1647,10 +1646,11 @@ function scheduleSessionSearch() {
   }, 250)
 }
 
-function startLocalSession(shouldNavigate = true) {
+function startLocalSession(options: { shouldNavigate?: boolean; inheritCurrentProject?: boolean } = {}) {
+  const sourceKey = options.inheritCurrentProject ? activeChatKey.value : ''
   const pane = chatRuntime.startLocalSession()
-  if (canUseCode.value) codeRuntime.recommend(pane.key, availableUserProjects(projectWorkspaces.value))
-  if (shouldNavigate) {
+  if (canUseCode.value && sourceKey) codeRuntime.inheritDraftProject(sourceKey, pane.key)
+  if (options.shouldNavigate !== false) {
     navigateTo('chat')
   }
   closeSessionSearch()
@@ -1764,19 +1764,19 @@ onMounted(async () => {
   loadSavedUsers()
   loadUserProfile()
   if (authToken.value && !userProfile.value) {
-    startLocalSession(currentView.value === 'chat')
+    startLocalSession({ shouldNavigate: currentView.value === 'chat' })
     sessionsLoading.value = true
     refreshUserProfile(authToken.value).catch(() => {
       sessionsLoading.value = false
     })
   } else if (authToken.value && userProfile.value) {
-    startLocalSession(currentView.value === 'chat')
+    startLocalSession({ shouldNavigate: currentView.value === 'chat' })
     refreshUserProfile(authToken.value, false, true).catch(() => {
       loadSessions(true).catch(() => {})
     })
   } else if (!authToken.value) {
     loginOpen.value = true
-    startLocalSession(currentView.value === 'chat')
+    startLocalSession({ shouldNavigate: currentView.value === 'chat' })
   }
   // Self-heal the desktop agent on boot: if we have a stored session,
   // make sure the Electron settings + sidecar reflect it (no-op on web).
@@ -2328,7 +2328,7 @@ onBeforeUnmount(() => {
                 <div class="max-h-[60vh] overflow-y-auto px-3 py-3 custom-scrollbar">
                   <button
                     class="mb-3 flex w-full items-center gap-3 rounded-2xl bg-gray-50 px-5 py-4 text-left text-gray-700 transition-colors hover:bg-gray-100"
-                    @click="() => startLocalSession()"
+                    @click="() => startLocalSession({ inheritCurrentProject: true })"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
                     <span class="text-base font-medium">{{ t('app.sidebar.new_chat') }}</span>

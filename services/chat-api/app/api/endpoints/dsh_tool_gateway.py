@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 
 from fastapi import APIRouter, Header, HTTPException, Query, Request
 
@@ -14,6 +15,9 @@ from app.dsh_runtime.tool_gateway import ToolGatewayTokenService
 from app.enterprise_capabilities.tools import ApprovalAskRequest, ApprovalDecisionRequest, ToolExecuteRequest
 from app.enterprise_capabilities.tools.service import ToolPolicyDenied
 from app.enterprise_capabilities.tools.result_projection import canonical_tool_result
+
+
+logger = logging.getLogger(__name__)
 
 
 internal_router = APIRouter(prefix="/internal/dsh/tools", tags=["dsh-internal"])
@@ -80,6 +84,17 @@ async def execute(payload: ToolExecuteRequest, request: Request, authorization: 
         if receipt.status == "succeeded":
             canonical = canonical_tool_result(receipt.result)
             return {"ok": True, "receipt": receipt.model_dump(mode="json"), "result": canonical}
+        logger.warning(
+            "DSH tool execution returned a failed receipt",
+            extra={
+                "event": "dsh.tool_gateway.execution_failed",
+                "action_id": payload.actionId,
+                "tool_name": payload.toolName,
+                "kernel_session_id": payload.sessionId,
+                "receipt_status": receipt.status,
+                "error": str(receipt.error or "")[:2000],
+            },
+        )
         raise HTTPException(
             status_code=408 if receipt.status == "timed_out" else 502,
             detail={"code": f"tool_{receipt.status}", "message": receipt.error, "receipt": receipt.model_dump(mode="json")},

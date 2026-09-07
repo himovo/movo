@@ -12,6 +12,7 @@ _TOOL_TIMEOUTS = {
     tool: _VERIFIED_MUTATION_TIMEOUT_SECONDS
     for tool in {
         "browser_navigate",
+        "browser_execute_plan",
         "browser_click",
         "browser_click_at",
         "browser_hover",

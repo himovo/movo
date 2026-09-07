@@ -185,8 +185,8 @@ def test_different_detail_urls_get_independent_form_transactions() -> None:
     _open_another_record(driver, url=first_url)
     second_commit = _fill_refresh_commit(driver, url=second_url, suffix="-two")
 
-    assert first_commit.args == {"ref": "send-one-fresh"}
-    assert second_commit.args == {"ref": "send-two-fresh"}
+    assert first_commit.args == {"ref": "send-one-fresh", "__verified_form_commit": True}
+    assert second_commit.args == {"ref": "send-two-fresh", "__verified_form_commit": True}
 
 
 def test_same_url_dom_content_identity_separates_reused_spa_form() -> None:
@@ -204,8 +204,8 @@ def test_same_url_dom_content_identity_separates_reused_spa_form() -> None:
         driver, url=url, content_id="post:record-200002", suffix="-two",
     )
 
-    assert first_commit.args == {"ref": "send-one-fresh"}
-    assert second_commit.args == {"ref": "send-two-fresh"}
+    assert first_commit.args == {"ref": "send-one-fresh", "__verified_form_commit": True}
+    assert second_commit.args == {"ref": "send-two-fresh", "__verified_form_commit": True}
 
 
 def test_token_change_on_same_record_does_not_reopen_commit_transaction() -> None:

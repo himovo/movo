@@ -165,7 +165,10 @@ def test_causally_bound_unknown_control_can_be_resolved_after_fresh_observation(
 
     assert resolution.kind == "click"
     assert resolution.decision is not None
-    assert resolution.decision.args == {"ref": "#submit"}
+    assert resolution.decision.args == {
+        "ref": "#submit",
+        "__verified_form_commit": True,
+    }
 
 
 def test_rejected_outer_commit_is_returned_to_planner_with_local_alternatives() -> None:

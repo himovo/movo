@@ -11,6 +11,9 @@ from app.enterprise_capabilities.browser.engine.effect_verification.form_scope i
 from app.enterprise_capabilities.runtime.execution_contracts import CapabilityTask
 from app.enterprise_capabilities.runtime.execution_contracts import CapabilityInputs
 from app.enterprise_capabilities.browser.engine.agent_loop.protocol import Decision
+from app.enterprise_capabilities.browser.engine.target_identity import element_target_aliases
+from app.governance.action_receipt import ActionReceipt
+from app.infrastructure import runtime_services
 
 
 class _Driver:
@@ -156,6 +159,57 @@ class _HallucinatedRouteDriver:
         del payload
 
 
+class _HistorySelectionDriver:
+    kind = "test"
+
+    def __init__(self) -> None:
+        self.calls = 0
+        self.seen_refs: list[list[str]] = []
+
+    async def next_step(self, goal, history, observation, state_ledger=None):
+        del goal, history, state_ledger
+        self.calls += 1
+        refs = [str(item.get("ref") or "") for item in observation.elements]
+        self.seen_refs.append(refs)
+        commentary = {
+            "target_history": {
+                "policy": "exclude_completed",
+                "operation": "comment",
+                "reason": "user requested an unprocessed target",
+            },
+        }
+        if self.calls == 1:
+            return Decision(
+                tool="browser_click", args={"ref": "done-target"},
+                rationale_source="model", commentary=commentary,
+            )
+        if self.calls == 2:
+            return Decision(
+                tool="browser_click", args={"ref": "new-target"},
+                rationale_source="model", commentary=commentary,
+            )
+        return Decision(tool="browser_fail", args={"reason": "test complete"})
+
+    def on_step_completed(self, decision, ok, observation):
+        del decision, ok, observation
+
+    def export_checkpoint_state(self):
+        return {"calls": self.calls}
+
+    def restore_checkpoint_state(self, payload):
+        self.calls = int((payload or {}).get("calls") or 0)
+
+
+class _HistoryStore:
+    def __init__(self, rows):
+        self.rows = rows
+
+    async def list_succeeded_for_operation(self, *, actor_id, operation_id):
+        assert actor_id == "user-1"
+        assert operation_id == "comment"
+        return list(self.rows)
+
+
 def _payload(url: str, title: str, revision: str, elements, page_text: str = "", effects=None):
     return {
         "url": url,
@@ -246,10 +300,12 @@ def test_executor_loop_converges_after_one_verified_business_commit(monkeypatch)
     async def no_sites(user_id):
         return []
 
-    async def no_history_preflight(self, *, contract, observation):
+    async def no_history_preflight(self, *, contract, observation, semantic_operation=""):
+        del self, contract, observation, semantic_operation
         return SimpleNamespace(blocked=False)
 
-    async def no_history_record(self, receipt, observation):
+    async def no_history_record(self, receipt, observation, *, source_url=""):
+        del self, receipt, observation, source_url
         return None
 
     def _receipt(prepared, *, status: str, reason: str) -> EffectReceipt:
@@ -793,3 +849,207 @@ def test_non_auth_ask_user_keeps_the_generic_intervention_path(monkeypatch) -> N
     assert ownership_commands[1] == ("set_owner", {"owner": "human"})
     terminal = [event for event, _ in events if event.get("type") == "subagent_done"]
     assert terminal[-1]["content"]["status"] == "suspended_waiting_approval"
+
+
+def test_executor_excludes_completed_candidate_before_navigation(monkeypatch) -> None:
+    results_url = "https://example.test/search?q=agents"
+    completed_url = "https://example.test/posts/completed?token=old"
+    new_url = "https://example.test/posts/new"
+    result_page = _payload(
+        results_url,
+        "Results",
+        "tab:1",
+        [
+            {"ref": "done-target", "role": "link", "href": completed_url, "name": "Done"},
+            {"ref": "new-target", "role": "link", "href": new_url, "name": "New"},
+        ],
+        "Done New",
+    )
+    detail_page = _payload(new_url, "New", "tab:2", [], "New detail")
+    aliases = element_target_aliases(result_page["elements"][0], page_url=results_url)
+    store = _HistoryStore([
+        ActionReceipt(
+            action_id="completed-comment",
+            idempotency_key="completed-comment-1",
+            status="succeeded",
+            actor_id="user-1",
+            operation_id="comment",
+            target_id=aliases[0],
+            target_aliases=list(aliases),
+        ),
+    ])
+    driver = _HistorySelectionDriver()
+
+    monkeypatch.setattr(executor_module, "select_driver", lambda **kwargs: driver)
+    monkeypatch.setattr(executor_module, "prepare_skill_fast_path", lambda **kwargs: None)
+    monkeypatch.setattr(runtime_services, "action_receipt_store", store)
+
+    async def no_sites(user_id):
+        del user_id
+        return []
+
+    monkeypatch.setattr(executor_module.site_profile_service, "list_for_user", no_sites)
+    executor = DesktopAgentBrowserExecutor("user-1", "session-1")
+    dispatched_clicks: list[str] = []
+    state = {"page": result_page}
+
+    async def dispatch(self, decision):
+        if decision.tool == "browser_observe":
+            return state["page"], True, None
+        if decision.tool == "browser_click":
+            dispatched_clicks.append(str(decision.args.get("ref") or ""))
+            state["page"] = detail_page
+            return {"observation": detail_page}, True, None
+        raise AssertionError(f"unexpected dispatch: {decision.tool}")
+
+    executor._dispatch = MethodType(dispatch, executor)
+    goal = "选择一个从未评论过的结果并打开"
+    node = CapabilityTask(
+        node_id="browser",
+        goal=goal,
+        assigned_agent="agent.browser",
+        meta={"semantic_config": {"targetUrl": results_url}},
+    )
+    inputs = CapabilityInputs(
+        messages=[SimpleNamespace(role="user", content=goal)],
+        raw_messages=[{"role": "user", "content": goal}],
+        intent="browser_automation",
+        output_spec={"run_id": "run-history-selection"},
+        language="zh",
+    )
+
+    async def collect():
+        return [item async for item in executor.execute(node=node, inputs=inputs)]
+
+    asyncio.run(collect())
+
+    assert dispatched_clicks == ["new-target"]
+    assert driver.seen_refs[0] == ["done-target", "new-target"]
+    assert driver.seen_refs[1] == ["new-target"]
+
+
+def test_executor_leaves_completed_starting_page_via_persisted_source(monkeypatch) -> None:
+    results_url = "https://example.test/search?q=agents"
+    completed_url = "https://example.test/posts/completed"
+    new_url = "https://example.test/posts/new"
+    completed_page = _payload(
+        completed_url,
+        "Completed",
+        "tab:1",
+        [{"ref": "comment", "role": "textbox", "editable": True}],
+        "Completed detail",
+    )
+    result_page = _payload(
+        results_url,
+        "Results",
+        "tab:2",
+        [
+            {"ref": "done-target", "role": "link", "href": completed_url},
+            {"ref": "new-target", "role": "link", "href": new_url},
+        ],
+        "Completed New",
+    )
+    new_page = _payload(new_url, "New", "tab:3", [], "New detail")
+    store = _HistoryStore([ActionReceipt(
+        action_id="completed-comment",
+        idempotency_key="completed-comment-1",
+        status="succeeded",
+        actor_id="user-1",
+        operation_id="comment",
+        target_id=completed_url,
+        target_aliases=[completed_url],
+        source_url=results_url,
+    )])
+
+    class Driver:
+        kind = "test"
+
+        def __init__(self):
+            self.calls = 0
+            self.seen_urls = []
+            self.seen_refs = []
+
+        async def next_step(self, goal, history, observation, state_ledger=None):
+            del goal, history, state_ledger
+            self.calls += 1
+            self.seen_urls.append(observation.url)
+            self.seen_refs.append([item.get("ref") for item in observation.elements])
+            commentary = {"target_history": {
+                "policy": "exclude_completed",
+                "operation": "comment",
+                "reason": "user requested an unprocessed target",
+            }}
+            if self.calls == 1:
+                return Decision(
+                    "browser_fill",
+                    {"ref": "comment", "value": "must not be dispatched"},
+                    rationale_source="model",
+                    commentary=commentary,
+                )
+            if self.calls == 2:
+                return Decision(
+                    "browser_click",
+                    {"ref": "new-target"},
+                    rationale_source="model",
+                    commentary=commentary,
+                )
+            return Decision("browser_fail", {"reason": "test complete"})
+
+        def on_step_completed(self, decision, ok, observation):
+            del decision, ok, observation
+
+        def export_checkpoint_state(self):
+            return {"calls": self.calls}
+
+        def restore_checkpoint_state(self, payload):
+            self.calls = int((payload or {}).get("calls") or 0)
+
+    driver = Driver()
+    monkeypatch.setattr(executor_module, "select_driver", lambda **kwargs: driver)
+    monkeypatch.setattr(executor_module, "prepare_skill_fast_path", lambda **kwargs: None)
+    monkeypatch.setattr(runtime_services, "action_receipt_store", store)
+
+    async def no_sites(user_id):
+        del user_id
+        return []
+
+    monkeypatch.setattr(executor_module.site_profile_service, "list_for_user", no_sites)
+    executor = DesktopAgentBrowserExecutor("user-1", "session-1")
+    state = {"page": completed_page}
+    dispatched = []
+
+    async def dispatch(self, decision):
+        dispatched.append((decision.tool, dict(decision.args or {})))
+        if decision.tool == "browser_observe":
+            return state["page"], True, None
+        if decision.tool == "browser_navigate":
+            assert decision.args["url"] == results_url
+            state["page"] = result_page
+            return {"observation": result_page}, True, None
+        if decision.tool == "browser_click":
+            assert decision.args["ref"] == "new-target"
+            state["page"] = new_page
+            return {"observation": new_page}, True, None
+        raise AssertionError(f"unexpected dispatch: {decision.tool}")
+
+    executor._dispatch = MethodType(dispatch, executor)
+    goal = "选择一篇从未评论过的内容并打开"
+    node = CapabilityTask(node_id="browser", goal=goal, assigned_agent="agent.browser")
+    inputs = CapabilityInputs(
+        messages=[SimpleNamespace(role="user", content=goal)],
+        raw_messages=[{"role": "user", "content": goal}],
+        intent="browser_automation",
+        output_spec={"run_id": "run-completed-start"},
+        language="zh",
+    )
+
+    async def collect():
+        return [item async for item in executor.execute(node=node, inputs=inputs)]
+
+    asyncio.run(collect())
+
+    assert ("browser_fill", {"ref": "comment", "value": "must not be dispatched"}) not in dispatched
+    assert ("browser_navigate", {"url": results_url}) in dispatched
+    assert ("browser_click", {"ref": "new-target"}) in dispatched
+    assert driver.seen_urls[:2] == [completed_url, results_url]
+    assert driver.seen_refs[1] == ["new-target"]

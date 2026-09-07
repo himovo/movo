@@ -18,11 +18,6 @@ from app.enterprise_capabilities.browser.engine.workflow_cache.service import Br
 from app.enterprise_capabilities.runtime.execution_contracts import CapabilityTask
 from app.enterprise_capabilities.browser.engine.workflow_cache.identity import build_workflow_identity
 from app.enterprise_capabilities.browser.engine.workflow_cache.matching import request_fingerprint
-from app.enterprise_capabilities.browser.engine.workflow_cache.semantic_selector import (
-    SemanticWorkflowSelection,
-    WorkflowSelectionResponse,
-    WorkflowSemanticSelector,
-)
 from app.enterprise_capabilities.browser.engine.agent_loop.protocol import Decision, Observation, StepRecord
 
 
@@ -622,36 +617,6 @@ class _LookupRepository:
         return next((item for item in self.candidates if item.workflow_id == workflow_id), None)
 
 
-class _ChoosingSelector:
-    def __init__(self, workflow_id: str = "", *, fail: bool = False) -> None:
-        self.workflow_id = workflow_id
-        self.fail = fail
-        self.calls = []
-
-    async def select(self, **kwargs):
-        self.calls.append(kwargs)
-        if self.fail:
-            raise RuntimeError("semantic model unavailable")
-        workflow = next(
-            (item for item in kwargs["candidates"] if item.workflow_id == self.workflow_id),
-            None,
-        )
-        if workflow is None:
-            return None
-        return SemanticWorkflowSelection(workflow=workflow, confidence=0.93, reason="same operation")
-
-
-class _StructuredSelectionLLM:
-    def __init__(self, response: WorkflowSelectionResponse) -> None:
-        self.response = response
-        self.messages = []
-
-    async def ainvoke_structured(self, messages, schema, **kwargs):
-        self.messages = list(messages)
-        assert schema is WorkflowSelectionResponse
-        return self.response
-
-
 def test_navigation_only_success_is_cached_without_input_candidates() -> None:
     repository = _RecordingRepository()
     service = BrowserWorkflowCacheService(repository=repository)
@@ -712,7 +677,7 @@ def test_success_capture_recovers_missing_site_from_successful_trace() -> None:
     assert repository.saved[0]["identity"].site_id == "portal.example.internal"
 
 
-def test_unknown_task_matches_site_candidate_locally_with_new_parameter() -> None:
+def test_unknown_task_does_not_guess_a_different_cached_operation() -> None:
     old_context = BrowserInputContext(original_request="处理客户张三")
     page = _obs("https://example.test/customers", "a", [
         {"ref": "search", "role": "searchbox", "name": "客户", "selector": "#customer"},
@@ -728,10 +693,7 @@ def test_unknown_task_matches_site_candidate_locally_with_new_parameter() -> Non
         "request_fingerprint": "old",
         "completion": CachedCompletionContract(capability_id="browser.automation"),
     })
-    service = BrowserWorkflowCacheService(
-        repository=_LookupRepository([cached]),
-        semantic_selector=_ChoosingSelector(cached.workflow_id),
-    )
+    service = BrowserWorkflowCacheService(repository=_LookupRepository([cached]))
     node = CapabilityTask(
         node_id="unknown",
         goal="处理客户李四",
@@ -744,11 +706,10 @@ def test_unknown_task_matches_site_candidate_locally_with_new_parameter() -> Non
         input_context=BrowserInputContext(original_request="处理客户李四"),
     ))
 
-    assert matched is not None
-    assert matched.workflow_id == cached.workflow_id
+    assert matched is None
 
 
-def test_missing_site_scope_uses_bounded_semantic_cross_site_fallback() -> None:
+def test_missing_site_scope_skips_cache_without_cross_site_model_guessing() -> None:
     request = "请到内容运营平台创建文章并保存草稿"
     cached = CachedBrowserWorkflow(
         workflow_id="content-platform-draft",
@@ -766,11 +727,7 @@ def test_missing_site_scope_uses_bounded_semantic_cross_site_fallback() -> None:
         completion=CachedCompletionContract(capability_id="browser.submit"),
     )
     repository = _LookupRepository([cached])
-    selector = _ChoosingSelector(cached.workflow_id)
-    service = BrowserWorkflowCacheService(
-        repository=repository,
-        semantic_selector=selector,
-    )
+    service = BrowserWorkflowCacheService(repository=repository)
     node = CapabilityTask(
         node_id="save", goal="创建文章并保存草稿", assigned_agent="agent.browser",
         meta={"capability_id": "browser.publish_or_submit"},
@@ -781,10 +738,8 @@ def test_missing_site_scope_uses_bounded_semantic_cross_site_fallback() -> None:
         input_context=BrowserInputContext(original_request=request),
     ))
 
-    assert matched is not None
-    assert matched.workflow_id == cached.workflow_id
-    assert repository.candidate_queries == [{"all_sites": True, "user_id": "u1"}]
-    assert selector.calls[0]["site_id"] == ""
+    assert matched is None
+    assert repository.candidate_queries == []
 
 
 def test_resume_keeps_checkpoint_workflow_across_operation_label_drift() -> None:
@@ -822,7 +777,7 @@ def test_resume_keeps_checkpoint_workflow_across_operation_label_drift() -> None
     assert matched.workflow_id == "wf-original"
 
 
-def test_site_wide_ranking_prefers_repaired_candidate_over_degraded_exact_label() -> None:
+def test_local_ranking_never_crosses_operation_boundary_for_health() -> None:
     request = "保存本次文章草稿"
     base = {
         "identity": WorkflowIdentity(
@@ -839,7 +794,8 @@ def test_site_wide_ranking_prefers_repaired_candidate_over_degraded_exact_label(
         "quality_score": 80,
     }
     degraded = CachedBrowserWorkflow(
-        workflow_id="old", status="degraded", failure_count=1, **base,
+        workflow_id="old", admission_revision=3,
+        status="degraded", failure_count=1, **base,
     )
     repaired = CachedBrowserWorkflow(
         workflow_id="repaired", status="candidate",
@@ -852,7 +808,6 @@ def test_site_wide_ranking_prefers_repaired_candidate_over_degraded_exact_label(
     )
     service = BrowserWorkflowCacheService(
         repository=_LookupRepository([degraded, repaired]),
-        semantic_selector=_ChoosingSelector(repaired.workflow_id),
     )
     node = CapabilityTask(
         node_id="save", goal=request, assigned_agent="agent.browser",
@@ -865,10 +820,10 @@ def test_site_wide_ranking_prefers_repaired_candidate_over_degraded_exact_label(
     ))
 
     assert matched is not None
-    assert matched.workflow_id == "repaired"
+    assert matched.workflow_id == "old"
 
 
-def test_semantic_selector_chooses_across_planner_capability_drift() -> None:
+def test_deterministic_selector_allows_capability_drift_with_same_operation() -> None:
     request = "在微信公众号创建文章并保存到草稿箱"
     cached = CachedBrowserWorkflow(
         workflow_id="wechat-save-draft",
@@ -887,11 +842,7 @@ def test_semantic_selector_chooses_across_planner_capability_drift() -> None:
         quality_score=80,
     )
     repository = _LookupRepository([cached])
-    selector = _ChoosingSelector(cached.workflow_id)
-    service = BrowserWorkflowCacheService(
-        repository=repository,
-        semantic_selector=selector,
-    )
+    service = BrowserWorkflowCacheService(repository=repository)
     # The product name was resolved by the planner into site_context; the user
     # did not need to include a literal URL in the request.
     node = CapabilityTask(
@@ -909,11 +860,9 @@ def test_semantic_selector_chooses_across_planner_capability_drift() -> None:
 
     assert matched is cached
     assert repository.candidate_queries == [{"user_id": "u1", "site_id": "mp.weixin.qq.com"}]
-    assert selector.calls[0]["site_id"] == "mp.weixin.qq.com"
-    assert selector.calls[0]["current_capability_id"] == "browser.publish_or_submit"
 
 
-def test_semantic_no_match_does_not_force_local_cache_replay() -> None:
+def test_different_operation_does_not_force_local_cache_replay() -> None:
     request = "删除这篇文章"
     cached = CachedBrowserWorkflow(
         workflow_id="publish-only",
@@ -927,10 +876,7 @@ def test_semantic_no_match_does_not_force_local_cache_replay() -> None:
         request_fingerprint=request_fingerprint(request),
         completion=CachedCompletionContract(capability_id="browser.publish"),
     )
-    service = BrowserWorkflowCacheService(
-        repository=_LookupRepository([cached]),
-        semantic_selector=_ChoosingSelector(),
-    )
+    service = BrowserWorkflowCacheService(repository=_LookupRepository([cached]))
     node = CapabilityTask(
         node_id="delete", goal=request, assigned_agent="agent.browser",
         meta={"capability_id": "browser.delete", "browser_site_scope": "example.test"},
@@ -962,11 +908,7 @@ def test_pre_semantic_revision_manual_workflow_is_not_replayed() -> None:
         created_from_run_id="manual_old",
     )
     repository = _LookupRepository([old_manual])
-    selector = _ChoosingSelector(old_manual.workflow_id)
-    service = BrowserWorkflowCacheService(
-        repository=repository,
-        semantic_selector=selector,
-    )
+    service = BrowserWorkflowCacheService(repository=repository)
     node = CapabilityTask(
         node_id="comment", goal=request, assigned_agent="agent.browser",
         meta={
@@ -981,10 +923,9 @@ def test_pre_semantic_revision_manual_workflow_is_not_replayed() -> None:
     ))
 
     assert matched is None
-    assert selector.calls == []
 
 
-def test_semantic_selector_failure_falls_back_without_capability_hard_rejection() -> None:
+def test_deterministic_selector_matches_without_a_model_dependency() -> None:
     request = "保存文章草稿"
     cached = CachedBrowserWorkflow(
         workflow_id="local-fallback",
@@ -998,10 +939,7 @@ def test_semantic_selector_failure_falls_back_without_capability_hard_rejection(
         request_fingerprint=request_fingerprint(request),
         completion=CachedCompletionContract(capability_id="browser.submit"),
     )
-    service = BrowserWorkflowCacheService(
-        repository=_LookupRepository([cached]),
-        semantic_selector=_ChoosingSelector(fail=True),
-    )
+    service = BrowserWorkflowCacheService(repository=_LookupRepository([cached]))
     node = CapabilityTask(
         node_id="save", goal=request, assigned_agent="agent.browser",
         meta={"capability_id": "browser.publish_or_submit", "browser_site_scope": "example.test"},
@@ -1015,83 +953,7 @@ def test_semantic_selector_failure_falls_back_without_capability_hard_rejection(
     assert matched is cached
 
 
-def test_semantic_selector_prompt_contains_resolved_site_and_value_free_route_summary() -> None:
-    request = "在微信公众号保存一篇新文章草稿"
-    cached = CachedBrowserWorkflow(
-        workflow_id="wf-safe-summary",
-        identity=WorkflowIdentity(
-            user_id="u1", site_id="mp.weixin.qq.com", operation_id="article.save_draft",
-            capability_id="browser.submit", signature_hash="safe-summary",
-        ),
-        steps=[CachedWorkflowStep(
-            tool="browser_fill",
-            locator={"role": "textbox", "name": "标题"},
-            arg_bindings={},
-        ), CachedWorkflowStep(
-            tool="browser_click", locator={"role": "button", "name": "保存为草稿"},
-        )],
-        request_fingerprint=request_fingerprint(request),
-        completion=CachedCompletionContract(capability_id="browser.submit"),
-        dynamic_input_roles=["title", "body", "images"],
-    )
-    llm = _StructuredSelectionLLM(WorkflowSelectionResponse(
-        selected_workflow_id=cached.workflow_id,
-        confidence=0.91,
-        reason="same site and save-draft outcome",
-    ))
-    selector = WorkflowSemanticSelector(llm=llm)
-
-    selection = asyncio.run(selector.select(
-        site_id="mp.weixin.qq.com",
-        context=BrowserInputContext(original_request=request),
-        current_operation_id="article.save_draft",
-        current_capability_id="browser.publish_or_submit",
-        candidates=[cached],
-    ))
-
-    assert selection is not None and selection.workflow is cached
-    prompt = str(llm.messages[-1].content)
-    assert '"resolved_site": "mp.weixin.qq.com"' in prompt
-    assert '"workflow_id": "wf-safe-summary"' in prompt
-    assert '"name": "保存为草稿"' in prompt
-
-
-def test_semantic_selector_does_not_reject_explicit_match_on_uncalibrated_confidence() -> None:
-    request = "在微信公众号创建文章、粘贴图片并保存为草稿"
-    cached = CachedBrowserWorkflow(
-        workflow_id="wf-low-confidence",
-        identity=WorkflowIdentity(
-            user_id="u1", site_id="mp.weixin.qq.com",
-            operation_id="article.save_draft", capability_id="browser.submit",
-            signature_hash="low-confidence",
-        ),
-        steps=[CachedWorkflowStep(
-            tool="browser_click", locator={"role": "button", "name": "保存为草稿"},
-        )],
-        request_fingerprint=request_fingerprint(request),
-        completion=CachedCompletionContract(capability_id="browser.submit"),
-    )
-    llm = _StructuredSelectionLLM(WorkflowSelectionResponse(
-        selected_workflow_id=cached.workflow_id,
-        matching_workflow_ids=[cached.workflow_id],
-        confidence=0.68,
-        reason="same save-draft operation",
-    ))
-
-    selection = asyncio.run(WorkflowSemanticSelector(llm=llm).select(
-        site_id="mp.weixin.qq.com",
-        context=BrowserInputContext(original_request=request),
-        current_operation_id="article.save_draft",
-        current_capability_id="browser.submit",
-        candidates=[cached],
-    ))
-
-    assert selection is not None
-    assert selection.workflow is cached
-    assert selection.confidence == 0.68
-
-
-def test_semantic_group_is_ranked_locally_by_route_health() -> None:
+def test_same_operation_group_is_ranked_locally_by_route_health() -> None:
     request = "在微信公众号创建文章并保存为草稿"
     identity = WorkflowIdentity(
         user_id="u1", site_id="mp.weixin.qq.com",
@@ -1111,15 +973,8 @@ def test_semantic_group_is_ranked_locally_by_route_health() -> None:
         "workflow_id": "healthy-route", "status": "candidate",
         "quality_score": 75, "consecutive_failures": 0,
     })
-    llm = _StructuredSelectionLLM(WorkflowSelectionResponse(
-        selected_workflow_id=degraded.workflow_id,
-        matching_workflow_ids=[degraded.workflow_id, healthy.workflow_id],
-        confidence=0.68,
-        reason="both routes perform article save draft",
-    ))
     service = BrowserWorkflowCacheService(
         repository=_LookupRepository([degraded, healthy]),
-        semantic_selector=WorkflowSemanticSelector(llm=llm),
     )
     node = CapabilityTask(
         node_id="save", goal=request, assigned_agent="agent.browser",
@@ -1132,37 +987,6 @@ def test_semantic_group_is_ranked_locally_by_route_health() -> None:
     ))
 
     assert matched is healthy
-
-
-def test_semantic_selector_keeps_empty_group_as_no_match() -> None:
-    request = "删除文章"
-    cached = CachedBrowserWorkflow(
-        workflow_id="publish-route",
-        identity=WorkflowIdentity(
-            user_id="u1", site_id="example.test", operation_id="article.publish",
-            capability_id="browser.publish", signature_hash="publish-only",
-        ),
-        steps=[CachedWorkflowStep(
-            tool="browser_click", locator={"role": "button", "name": "发布"},
-        )],
-        request_fingerprint=request_fingerprint(request),
-    )
-    llm = _StructuredSelectionLLM(WorkflowSelectionResponse(
-        selected_workflow_id="",
-        matching_workflow_ids=[],
-        confidence=0.97,
-        reason="delete and publish are different operations",
-    ))
-
-    selection = asyncio.run(WorkflowSemanticSelector(llm=llm).select(
-        site_id="example.test",
-        context=BrowserInputContext(original_request=request),
-        current_operation_id="article.delete",
-        current_capability_id="browser.delete",
-        candidates=[cached],
-    ))
-
-    assert selection is None
 
 
 def test_cache_failure_reporter_persists_feedback() -> None:

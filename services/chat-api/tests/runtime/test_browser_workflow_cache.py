@@ -297,28 +297,8 @@ def test_learned_driver_resolves_new_ref_then_hands_dynamic_form_to_fallback() -
     assert fallback.calls == 1
 
 
-def test_factory_prefers_explicit_skill_then_learned_workflow() -> None:
+def test_factory_prefers_explicit_skill_over_form_exploration() -> None:
     context = _input_context("标题", "正文", "/tmp/one.png")
-    identity = build_workflow_identity(
-        user_id="u1", main_id="m1", node=_publish_node(), input_context=context,
-    )
-    assert identity is not None
-    learned = CachedBrowserWorkflow(
-        workflow_id="wf1",
-        identity=identity,
-        steps=[CachedWorkflowStep(tool="browser_navigate", args={"url": "https://mp.weixin.qq.com/"})],
-    )
-
-    selected = select_driver(
-        lang="zh",
-        enterprise_sites=None,
-        output_spec={},
-        input_context=context,
-        capability_id="browser.publish",
-        learned_workflow=learned,
-    )
-    assert selected.kind.startswith("learned_workflow")
-
     explicit = select_driver(
         lang="zh",
         enterprise_sites=None,
@@ -329,6 +309,5 @@ def test_factory_prefers_explicit_skill_then_learned_workflow() -> None:
         },
         input_context=context,
         capability_id="browser.publish",
-        learned_workflow=learned,
     )
     assert explicit.kind.startswith("skill_driven")

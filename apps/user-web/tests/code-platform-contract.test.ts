@@ -79,7 +79,7 @@ assert.deepEqual(diffLines.map(line => [line.oldLine, line.newLine, line.kind]),
   [null, null, 'hunk'], [10, 20, 'context'], [11, null, 'delete'], [null, 21, 'add'],
 ])
 
-// A suggested recent Workspace is still a draft choice. The new-session
+// A selected or inherited Workspace is still a draft choice. The new-session
 // context exposes project, direct editing (the default), worktree creation,
 // current branch, a selectable starting ref, and a copyable path. Once locked,
 // draft mode and branch controls are hidden.

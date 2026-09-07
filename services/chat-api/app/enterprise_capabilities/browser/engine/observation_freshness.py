@@ -11,6 +11,7 @@ from app.enterprise_capabilities.browser.engine.agent_loop.protocol import Obser
 
 STATE_CHANGING_TOOLS = frozenset({
     "browser_navigate",
+    "browser_execute_plan",
     "browser_tab_new",
     "browser_click",
     "browser_click_at",

@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
 
 from app.llm.configured_models import reset_configured_model_context, set_configured_model_context
-from app.llm.types import LLMResponse, Message, Role
+from app.llm.types import Message
 from app.enterprise_capabilities.browser.engine.agent_loop.model_input import build_browser_model_input
 from app.enterprise_capabilities.browser.engine.agent_loop.planner import Planner
 from app.enterprise_capabilities.browser.engine.agent_loop.protocol import Observation
+from app.enterprise_capabilities.browser.engine.agent_loop.structured_output import (
+    BrowserPlannerOutput,
+)
 
 
 def test_text_model_does_not_receive_browser_screenshot():
@@ -35,20 +37,16 @@ def test_vision_model_receives_browser_screenshot():
 
 class _RejectingVisionClient:
     def __init__(self) -> None:
-        self.plain_calls: list[list[Message]] = []
+        self.calls: list[list[Message]] = []
 
-    async def ainvoke_structured(self, _messages, _schema, **_kwargs):
-        raise ValueError("structured output unavailable")
-
-    async def ainvoke(self, messages: list[Message], **_kwargs: Any) -> LLMResponse:
-        self.plain_calls.append(messages)
+    async def ainvoke_structured(self, messages, _schema, **_kwargs):
+        self.calls.append(messages)
         if isinstance(messages[-1].content, list):
             raise ValueError("unknown variant image_url, expected text")
-        return LLMResponse(
-            message=Message(
-                role=Role.ASSISTANT,
-                content='{"tool":"browser_done","args":{"summary":"done"},"rationale":"ok"}',
-            )
+        return BrowserPlannerOutput(
+            kind="done",
+            summary="done",
+            data={"result": {"status": "done"}},
         )
 
 
@@ -75,6 +73,6 @@ def test_planner_downgrades_to_dom_when_vision_payload_is_rejected():
         reset_configured_model_context(previous)
 
     assert decision.tool == "browser_done"
-    assert len(client.plain_calls) == 2
-    assert isinstance(client.plain_calls[0][-1].content, list)
-    assert isinstance(client.plain_calls[1][-1].content, str)
+    assert len(client.calls) == 2
+    assert isinstance(client.calls[0][-1].content, list)
+    assert isinstance(client.calls[1][-1].content, str)

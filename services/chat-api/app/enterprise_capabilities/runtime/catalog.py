@@ -272,11 +272,12 @@ class InternalCapabilityCatalog:
             ),
             _definition(
                 capability_ref="browser.task@v1", tool_name="browser_task", domain="browser",
-                display_name="浏览器任务", description="Delegate one bounded public website mission to MOVO's native-CDP Browser Agent. Use read when page content is needed, including when target_url is supplied; use navigate only when the requested outcome is opening a page. Internal MOVO artifact URLs are not browser targets: pass their object_path to the matching document or image tool. The Browser Agent owns navigation, interaction, recovery, human assistance and effect verification.",
+                display_name="浏览器任务", description="Delegate one bounded public website mission to MOVO's native-CDP Browser Agent. For a new mission on a named website, supply its grounded absolute URL in target_url; omit target_url only when the task explicitly continues the browser's current live page. Never guess a URL from target_name. Use read when page content is needed, including when target_url is supplied; use navigate only when the requested outcome is opening a page. Internal MOVO artifact URLs are not browser targets: pass their object_path to the matching document or image tool. If the tool returns entry_url_required, repair the call by supplying target_url instead of asking the user to manipulate a blank page. The Browser Agent owns navigation, interaction, recovery, human assistance and effect verification.",
                 input_schema=_object({
                     "objective": {"type": "string", "minLength": 1},
                     "operation": {"type": "string", "enum": ["read", "navigate", "submit", "modify", "delete", "file_transfer", "publish"], "description": "Requested outcome. A target_url does not imply navigate: choose read whenever information must be returned."},
-                    "target_name": {"type": "string"}, "target_url": {"type": "string"},
+                    "target_name": {"type": "string", "description": "Human-readable destination or task label; never use it as evidence for inventing a domain."},
+                    "target_url": {"type": "string", "format": "uri", "description": "Grounded absolute entry URL. Required for a new named-site mission; omit only to continue the current live browser page."},
                     "inputs": {"type": "object"},
                 }, ("objective", "operation")), risk_level="dangerous", approval_required=False,
                 approval_argument="operation", approval_values=("submit", "modify", "delete", "file_transfer", "publish"),

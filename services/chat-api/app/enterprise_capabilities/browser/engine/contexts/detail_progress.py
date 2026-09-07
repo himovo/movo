@@ -112,11 +112,15 @@ def capture_detail_target(
             )
     content_context_id = str((target or {}).get("contentContextId") or "").strip()
     scope_lockable = bool((target or {}).get("scopeLockable"))
+    ax_link_identity = bool(
+        str((target or {}).get("role") or "").casefold() == "link"
+        and (target or {}).get("backendNodeId")
+    )
     labels = _target_labels(target or {})
     # Plain toolbar/filter buttons are UI transitions, not list resources.
     # Label-only targets remain supported when they belong to a deliberately
     # narrow, lockable content scope (for example a same-URL detail overlay).
-    if not target_url and not content_context_id and not scope_lockable:
+    if not target_url and not content_context_id and not scope_lockable and not ax_link_identity:
         return None
     if not target_url and not content_context_id and not labels:
         return None
@@ -181,8 +185,17 @@ def _target_scope_identity(target: dict[str, Any]) -> str:
         or target.get("scopeSelector")
         or target.get("componentOwnerSelector")
         or target.get("selector")
+        or _ax_target_identity(target)
         or ""
     ).strip()
+
+
+def _ax_target_identity(target: dict[str, Any]) -> str:
+    backend_id = str(target.get("backendNodeId") or "").strip()
+    if not backend_id:
+        return ""
+    frame_depth = str(target.get("frameDepth") or 0).strip()
+    return f"ax:{frame_depth}:{backend_id}"
 
 
 def _nearest_related_resource_url(

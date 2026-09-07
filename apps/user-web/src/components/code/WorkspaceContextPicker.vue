@@ -114,8 +114,13 @@ onBeforeUnmount(() => {
         <button type="button" :class="{ active: worktree }" @click="setMode(true)"><span class="radio"><i></i></span><span><strong>{{ locale === 'en' ? 'New local worktree' : '新建本地工作树' }}</strong><small>{{ locale === 'en' ? 'Create an isolated folder from the selected starting branch; no branch is created yet.' : '从所选起始分支创建隔离目录，暂不创建新分支。' }}</small></span></button>
       </fieldset>
       <div v-if="!locked" class="menu-actions">
-        <button type="button" @click="emit('choose'); open = false">{{ locale === 'en' ? 'Choose another folder…' : '选择其他文件夹…' }}</button>
-        <button type="button" class="clear" @click="emit('clear'); open = false">{{ locale === 'en' ? 'Remove project' : '移除项目' }}</button>
+        <button type="button" @click="emit('choose'); open = false">{{ locale === 'en' ? 'Switch project…' : '切换项目…' }}</button>
+        <button
+          type="button"
+          class="regular-chat"
+          :title="locale === 'en' ? 'Disconnect this draft only; project files are not deleted.' : '仅解除当前草稿的项目关联，不会删除项目或本地文件。'"
+          @click="emit('clear'); open = false"
+        >{{ locale === 'en' ? 'Use regular chat' : '设为普通对话' }}</button>
       </div>
     </div>
   </div>

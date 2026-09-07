@@ -18,6 +18,7 @@ import type { DshCodeSession, DshExecutionEvent, DshPendingApproval, DshWorkspac
 import type { ExternalTurnHandle } from '../useChatRuntimeStore'
 import { getLocale } from '../i18n'
 import { codeRuntimeErrorMessage } from './codeRuntimeErrors'
+import { inheritedDraftProjectContext } from './draftProjectContext'
 
 export type CodePaneState = {
   draftId: string
@@ -83,21 +84,6 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
       panes.set(key, state)
     }
     return state
-  }
-
-  function recommendRecent(state: CodePaneState, authorized: readonly DshWorkspace[]) {
-    const recent = [...authorized]
-      .filter(item => item.status === 'ok')
-      .sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at))[0]
-    if (!state.workspace && !state.session && recent) {
-      state.workspace = recent
-      state.sourceRef = recent.git_branch ? `refs/heads/${recent.git_branch}` : 'HEAD'
-    }
-  }
-
-  function recommend(key: string, authorized: readonly DshWorkspace[] = []) {
-    const state = stateFor(key)
-    if (capabilities.localWorkspacePicker) recommendRecent(state, authorized)
   }
 
   async function choose(key: string, modelId?: string) {
@@ -174,6 +160,17 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
     state.workspace = workspace
     state.worktree = worktree
     state.sourceRef = workspace.git_branch ? `refs/heads/${workspace.git_branch}` : 'HEAD'
+  }
+
+  function inheritDraftProject(fromKey: string, toKey: string): boolean {
+    const target = stateFor(toKey)
+    if (target.session) throw new Error('a started Code task cannot inherit a Workspace')
+    const inherited = inheritedDraftProjectContext(stateFor(fromKey))
+    if (!inherited) return false
+    target.workspace = inherited.workspace
+    target.worktree = inherited.worktree
+    target.sourceRef = inherited.sourceRef
+    return true
   }
 
   function transferDraft(fromKey: string, toKey: string) {
@@ -278,5 +275,5 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
     for (const sessionId of subscribed) void unsubscribeDshCodeEvents(sessionId)
   })
 
-  return { stateFor, recommend, attach, choose, clear, setWorktree, setSourceRef, setWorkspaceBranch, setDraftProject, transferDraft, send, stop, decide, needsAssistance, activeSessions, reset }
+  return { stateFor, attach, choose, clear, setWorktree, setSourceRef, setWorkspaceBranch, setDraftProject, inheritDraftProject, transferDraft, send, stop, decide, needsAssistance, activeSessions, reset }
 }

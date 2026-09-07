@@ -17,6 +17,9 @@ from typing import Any, Dict, List
 from . import matchers as M
 from .candidate_set import CandidateSet
 from .tokens import ADD, EDIT, DELETE, VIEW, CONFIRM
+from app.enterprise_capabilities.browser.engine.agent_loop.observation_compactor import (
+    find_target_matches,
+)
 
 
 def _search_named_then_icon(
@@ -53,11 +56,7 @@ def find_read(
     # Fallback: elements whose name matches target (row or link)
     hits: List[Dict[str, Any]] = []
     if target:
-        try:
-            from app.enterprise_capabilities.browser.engine.agent_loop.planner import _find_target_matches
-            hits = list(_find_target_matches(elements, target))
-        except Exception:
-            hits = []
+        hits = list(find_target_matches(elements, target))
     if hits:
         hits.sort(key=lambda m: 0 if str(m.get("role") or "") in ("row", "link") else 1)
         return CandidateSet(op="read", tier=2, items=hits[:8], reason="read:target_row")

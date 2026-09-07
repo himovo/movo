@@ -36,6 +36,7 @@ from app.enterprise_capabilities.browser.engine.agent_loop.protocol import (
 )
 from app.enterprise_capabilities.browser.engine.contexts import factory as context_factory
 from app.enterprise_capabilities.browser.engine.contexts.action_transition import BrowserActionTransition
+from app.enterprise_capabilities.browser.engine.context_action_transitions import context_action_transitions
 from app.enterprise_capabilities.browser.engine.contexts.done_recovery import DoneBlockRecovery
 from app.enterprise_capabilities.browser.engine.drivers import (
     apply_driver_resume_signal,
@@ -90,6 +91,13 @@ from app.enterprise_capabilities.browser.engine.effect_receipt_flow import (
 )
 from app.enterprise_capabilities.browser.engine.effect_business_failure import build_effect_business_failure_events
 from app.enterprise_capabilities.browser.engine.action_history import BrowserActionHistory
+from app.enterprise_capabilities.browser.engine.alternative_target_recovery import (
+    AlternativeTargetRecovery,
+)
+from app.enterprise_capabilities.browser.engine.completed_target_recovery import (
+    CompletedTargetRecovery,
+)
+from app.enterprise_capabilities.browser.engine.target_history_policy import TargetHistoryState
 from app.enterprise_capabilities.browser.engine.business_action import BusinessActionLedger
 from app.enterprise_capabilities.browser.engine.observation_freshness import (
     complete_observation,
@@ -97,9 +105,13 @@ from app.enterprise_capabilities.browser.engine.observation_freshness import (
     requires_fresh_observation,
 )
 from app.enterprise_capabilities.browser.engine.initial_observation import acquire_initial_observation
+from app.enterprise_capabilities.browser.engine.initial_entry_navigation import initial_entry_url
+from app.enterprise_capabilities.browser.engine.entry_preflight import assess_entry_preflight
 from app.enterprise_capabilities.browser.engine.progress_signature import browser_progress_signature
 from app.enterprise_capabilities.browser.engine.loop_observation_policy import (
     READ_ONLY_TOOLS,
+    is_technical_recovery_observation,
+    observe_count_for_current_interaction_state,
     post_action_observation_check,
     read_count_for_current_state,
 )
@@ -142,6 +154,7 @@ from app.enterprise_capabilities.browser.engine.recovery_router import (
     OUTPUT_CONTRACT_EXHAUSTED,
     RESUME_RECONCILIATION_UNAVAILABLE,
     BrowserRecoveryPlan,
+    recovery_source_for_browser_fail,
     route_browser_recovery,
 )
 from app.enterprise_capabilities.browser.engine.navigation_provenance import assess_navigation_provenance
@@ -291,7 +304,7 @@ def _domain(url: str) -> str | None:
 
 def _build_enterprise_sites_map(profiles: List[Dict[str, Any]]) -> Dict[str, str]:
     """Turn the user-visible site profiles into the flat {name: line} shape
-    that ``system_prompt(enterprise_sites=...)`` formats.
+    consumed by the browser planner.
 
     Each site collapses into one line that surfaces everything the LLM
     needs to navigate without guessing: host, entry URL, auth method,
@@ -332,6 +345,25 @@ def _digest(tool: str, result: Any) -> str:
         return f"{result.get('url','')} [{len(result.get('elements') or [])} els]"
     if tool == "browser_navigate":
         return str(result.get("url") or "")
+    if tool == "browser_execute_plan":
+        failed = next(
+            (
+                item for item in list(result.get("receipts") or [])
+                if isinstance(item, dict) and item.get("status") == "failed"
+            ),
+            {},
+        )
+        failure = ""
+        if failed:
+            failure = (
+                f"; failed_tool={str(failed.get('tool') or '')[:80]}"
+                f"; action_error={str(failed.get('error') or '')[:200]}"
+            )
+        return (
+            f"action-plan={str(result.get('status') or 'unknown')}; "
+            f"completed={int(result.get('completed_actions') or 0)}; "
+            f"reason={str(result.get('reason') or '')[:160]}{failure}"
+        )
     if tool == "browser_wait_for":
         # Surface matched_ref / clickable_ref in history digest so subsequent
         # LLM turns see "my last wait_for gave me ref=X" instead of a blank
@@ -412,7 +444,7 @@ def _obs_from_payload(payload: Any) -> Observation | None:
         revision=str(payload.get("revision") or ""),
         screenshot=payload.get("screenshot"),
         clean_dom=payload.get("cleanDom") or payload.get("clean_dom"),
-        dom_diff=payload.get("domDiff") or payload.get("dom_diff"),
+        dom_diff=payload.get("domDiff") or payload.get("dom_diff") or payload.get("axDelta") or payload.get("ax_delta"),
         page_text=page_text,
         auth=payload.get("auth") if isinstance(payload.get("auth"), dict) else None,
         frame_count=max(1, int(payload.get("frameCount") or payload.get("frame_count") or 1)),
@@ -431,7 +463,7 @@ def _obs_from_payload(payload: Any) -> Observation | None:
 def _update_obs(current: Observation, tool: str, result: Any) -> Observation:
     if not isinstance(result, dict):
         return current
-    if tool == "browser_observe":
+    if tool in {"browser_observe", "browser_execute_plan"}:
         return _obs_from_payload(result) or current
     if tool == "browser_navigate":
         # The agent (see agent/src/tools/browser_tools.ts::browser_navigate)
@@ -812,25 +844,6 @@ class DesktopAgentBrowserExecutor:
         )
         if resume_checkpoint and resume_checkpoint.context_state:
             task_context.restore_checkpoint_state(resume_checkpoint.context_state)
-        resume_workflow_id = str(
-            (resume_checkpoint.driver_state if resume_checkpoint else {}).get("workflow_id") or ""
-        )
-        learned_workflow = None
-        if not resume_checkpoint or resume_workflow_id:
-            # Resume only the exact workflow version whose cursor was saved.
-            # An exploration-only task must not acquire a newly-created cache
-            # halfway through its run.
-            learned_workflow = await browser_workflow_cache.lookup(
-                user_id=self.user_id,
-                main_id=str(runtime_output_spec.get("main_id") or "default"),
-                node=node,
-                input_context=input_context,
-                preferred_workflow_id=resume_workflow_id,
-                allow_quarantined_preferred=bool(
-                    resume_workflow_id
-                    and not bool((resume_checkpoint.driver_state or {}).get("replay_failed"))
-                ),
-            )
         context_tracks_state = bool(
             task_context.active or getattr(task_context, "stateful", False)
         )
@@ -838,6 +851,14 @@ class DesktopAgentBrowserExecutor:
             original_user_request,
             visible_sites,
             expected_site=resolved_site_id,
+            target_url=str(
+                (
+                    (node.meta or {}).get("semantic_config")
+                    if isinstance((node.meta or {}).get("semantic_config"), dict)
+                    else {}
+                ).get("targetUrl")
+                or ""
+            ),
         )
         candidate_block = _format_candidate_entries(candidate_entries, lang)
         logger.debug(
@@ -916,7 +937,7 @@ class DesktopAgentBrowserExecutor:
         }}, {}
 
         fast_path_seed: Dict[str, Any] | None = None
-        fast_path_request = None if (resume_checkpoint or learned_workflow is not None) else prepare_skill_fast_path(
+        fast_path_request = None if resume_checkpoint else prepare_skill_fast_path(
             node=node,
             inputs=inputs,
             goal=goal,
@@ -984,11 +1005,9 @@ class DesktopAgentBrowserExecutor:
             "kind": "analyze",
             "message": (
                 (f"继续浏览器任务：{step_goal_for_display[:80]}" if resume_checkpoint else
-                 f"命中已学习流程，优先快速执行：{step_goal_for_display[:80]}" if learned_workflow is not None else
                  f"开始浏览器任务：{step_goal_for_display[:80]}")
                 if lang == "zh"
                 else (f"Resuming browser task: {step_goal_for_display[:80]}" if resume_checkpoint else
-                      f"Learned workflow matched; replaying first: {step_goal_for_display[:80]}" if learned_workflow is not None else
                       f"Starting browser task: {step_goal_for_display[:80]}")
             ),
         }}, {}
@@ -1015,12 +1034,16 @@ class DesktopAgentBrowserExecutor:
             output_spec=runtime_output_spec,
             input_context=input_context,
             capability_id=action_capability_id,
-            learned_workflow=learned_workflow,
-            on_learned_workflow_failure=browser_workflow_cache.failure_reporter(learned_workflow),
         )
         if resume_checkpoint and resume_checkpoint.driver_state:
             planner.restore_checkpoint_state(resume_checkpoint.driver_state)
-        logger.info("browser driver selected", extra={"event": "browser.driver_selected", "driver": planner.kind})
+        logger.info(
+            "browser driver selected",
+            extra={
+                "event": "browser.driver_selected",
+                "driver": planner.kind,
+            },
+        )
         history: List[StepRecord] = resume_checkpoint.restore_history() if resume_checkpoint else []
         learning_trace = WorkflowLearningTrace.restore(
             resume_checkpoint.learning_trace if resume_checkpoint else None,
@@ -1242,6 +1265,9 @@ class DesktopAgentBrowserExecutor:
             original_request=original_user_request,
             lang=lang,
         )
+        alternative_target_recovery = AlternativeTargetRecovery()
+        completed_target_recovery = CompletedTargetRecovery()
+        target_history = TargetHistoryState()
         business_actions = BusinessActionLedger()
         form_transaction = FormTransactionTracker()
         fill_retry_policy = FillRetryPolicy()
@@ -1267,6 +1293,15 @@ class DesktopAgentBrowserExecutor:
         fill_retry_policy.restore_state(
             dict(runtime_checkpoint_state.get("fill_retry_policy") or {}),
         )
+        alternative_target_recovery.restore_state(
+            dict(runtime_checkpoint_state.get("alternative_target_recovery") or {}),
+        )
+        completed_target_recovery.restore_state(
+            dict(runtime_checkpoint_state.get("completed_target_recovery") or {}),
+        )
+        target_history.restore_state(
+            dict(runtime_checkpoint_state.get("target_history") or {}),
+        )
         deferred_payload = runtime_checkpoint_state.get("deferred_success_receipt")
         deferred_success_receipt: Any | None = (
             EffectReceipt.model_validate(deferred_payload)
@@ -1283,7 +1318,15 @@ class DesktopAgentBrowserExecutor:
 
         async def persist_confirmed_effect(receipt: Any, observation: Observation) -> None:
             try:
-                persisted = await action_history.record(receipt, observation)
+                source_url = alternative_target_recovery.source_url_from_history(
+                    history=history,
+                    target_id=observation.url,
+                )
+                persisted = await action_history.record(
+                    receipt,
+                    observation,
+                    source_url=source_url,
+                )
                 if persisted is not None:
                     logger.info(
                         "browser action history persisted",
@@ -1292,6 +1335,7 @@ class DesktopAgentBrowserExecutor:
                             "business_key": persisted.business_key,
                             "operation": persisted.operation_id,
                             "target": persisted.target_id,
+                            "target_alias_count": len(persisted.target_aliases),
                         },
                     )
             except Exception as exc:
@@ -1304,6 +1348,68 @@ class DesktopAgentBrowserExecutor:
 
         visible_tool_step = resume_checkpoint.visible_tool_step if resume_checkpoint else 0
         start_step = resume_checkpoint.next_step if resume_checkpoint else 1
+
+        entry_preflight = assess_entry_preflight(
+            current_url=current_obs.url,
+            candidates=candidate_entries,
+        )
+        logger.info(
+            "browser entry preflight completed",
+            extra={
+                "event": "browser.entry_preflight",
+                "ready": entry_preflight.ready,
+                "code": entry_preflight.code,
+                "current_url": current_obs.url,
+                "candidate_count": len(candidate_entries),
+            },
+        )
+        if not entry_preflight.ready:
+            message = (
+                "浏览器当前处于空白或错误页，且任务没有可信入口地址。"
+                "请使用 target_url 重新发起 browser_task；这不是需要人工处理的网页状态。"
+                if lang == "zh" else
+                "The browser is on a blank/error page and the task has no grounded entry URL. "
+                "Reissue browser_task with target_url; this is not a human-assistance state."
+            )
+            failure = browser_failure_receipt(
+                error=entry_preflight.reason,
+                status=entry_preflight.code,
+            )
+            failure.update({
+                "code": entry_preflight.code,
+                "retryable": True,
+                "required_argument": "target_url",
+            })
+            logger.warning(
+                "browser entry preflight rejected ungrounded blank page",
+                extra={
+                    "event": "browser.entry_preflight_rejected",
+                    "code": entry_preflight.code,
+                    "current_url": current_obs.url,
+                },
+            )
+            yield {"type": "activity", "content": {
+                "kind": "error",
+                "message": message,
+            }}, {}
+            yield {"type": "subagent_done", "content": {
+                "subagent_id": subagent_id,
+                "node_id": node.node_id,
+                "status": "failed_terminal",
+            }}, {
+                "browser_receipt": failure,
+                "browser_result": build_browser_result(
+                    objective=step_goal_for_display,
+                    summary=message,
+                    data={
+                        "code": entry_preflight.code,
+                        "retryable": True,
+                        "required_argument": "target_url",
+                    },
+                    status=entry_preflight.code,
+                ),
+            }
+            return
 
         async def save_checkpoint(*, phase: str, next_step: int, status: str = "running") -> None:
             if not self.checkpoint_session:
@@ -1332,6 +1438,9 @@ class DesktopAgentBrowserExecutor:
                     "effect_tracker": effect_tracker.export_state(),
                     "form_transaction": form_transaction.export_state(),
                     "fill_retry_policy": fill_retry_policy.export_state(),
+                    "alternative_target_recovery": alternative_target_recovery.export_state(),
+                    "completed_target_recovery": completed_target_recovery.export_state(),
+                    "target_history": target_history.export_state(),
                     "automatic_assistance_counts": dict(automatic_assistance_counts),
                     "human_recording_id": active_human_recording_id,
                     "deferred_success_receipt": (
@@ -1386,17 +1495,12 @@ class DesktopAgentBrowserExecutor:
                 input_context=input_context,
                 history=learned_history,
                 run_id=str(runtime_output_spec.get("run_id") or ""),
-                replayed=bool(getattr(
-                    planner,
-                    "replay_completed",
-                    getattr(planner, "replayed_any", False),
-                )),
-                matched_workflow=learned_workflow,
+                replayed=False,
                 trace_complete=(
                     distilled_path.complete
                     and learning_trace.legacy_gap_count == 0
                 ),
-                replay_failed=bool(getattr(planner, "replay_failed", False)),
+                replay_failed=False,
             )
 
         async def suspend_for_authentication(
@@ -1879,13 +1983,13 @@ class DesktopAgentBrowserExecutor:
                     current_obs,
                     lang=lang,
                 )
-            if (
-                forced_decision is None
-                and step == 1
-                and len(candidate_entries) == 1
-                and str(current_obs.url or "").strip() in ("", "about:blank")
-            ):
-                forced_url = candidate_entries[0]["url"]
+            forced_url = initial_entry_url(
+                step=step,
+                candidates=candidate_entries,
+                current_url=current_obs.url,
+                resuming=bool(resume_checkpoint),
+            )
+            if forced_decision is None and forced_url:
                 try:
                     forced_domain = urlparse(forced_url).hostname or ""
                 except Exception:
@@ -1899,6 +2003,32 @@ class DesktopAgentBrowserExecutor:
                     ),
                 )
                 logger.info("browser first step short-circuit", extra={"event": "browser.first_step_short_circuit", "url": forced_url, "source": candidate_entries[0].get("source")})
+
+            # A resumed run can restore the history policy while the browser
+            # is still on a target completed by an earlier run. Recover before
+            # page-specific rules or another planner turn can operate on it.
+            await target_history.synchronize(
+                store=action_receipt_store,
+                actor_id=self.user_id,
+                recovery=alternative_target_recovery,
+            )
+            if forced_decision is None and target_history.excludes_completed:
+                forced_decision = completed_target_recovery.recovery_decision(
+                    observation=current_obs,
+                    history=history,
+                    candidate_entries=candidate_entries,
+                    recovery=alternative_target_recovery,
+                )
+                if forced_decision is not None:
+                    logger.info(
+                        "browser completed current target recovery selected",
+                        extra={
+                            "event": "browser.completed_target_recovery",
+                            "operation": target_history.operation,
+                            "current_url": current_obs.url,
+                            "recovery_url": str(forced_decision.args.get("url") or ""),
+                        },
+                    )
             # System-owned navigation: when the flow requires a known
             # page (e.g. after create lands on a detail route and the
             # next sub-phase needs the list), let the context synthesize
@@ -1922,7 +2052,9 @@ class DesktopAgentBrowserExecutor:
             # through to the planner with the usual ledger context.
             if context_tracks_state and forced_decision is None:
                 try:
-                    rule_dec = task_context.suggest_next_action(current_obs)
+                    rule_dec = task_context.suggest_next_action(
+                        alternative_target_recovery.planning_observation(current_obs),
+                    )
                 except Exception:
                     rule_dec = None
                 if rule_dec is not None:
@@ -1955,10 +2087,89 @@ class DesktopAgentBrowserExecutor:
                     "notes": notes,
                     "pinned_refs": list(dict.fromkeys(pinned_refs)),
                 })
+            _ledger = alternative_target_recovery.augment_state_ledger(_ledger)
+            planning_obs = alternative_target_recovery.planning_observation(current_obs)
             decision_is_system_owned = forced_decision is not None
             decision = forced_decision or await planner.next_step(
-                goal, history, current_obs, state_ledger=_ledger,
+                goal, history, planning_obs, state_ledger=_ledger,
             )
+            await target_history.synchronize(
+                store=action_receipt_store,
+                actor_id=self.user_id,
+                recovery=alternative_target_recovery,
+                decision=decision,
+            )
+            completed_recovery_decision = (
+                completed_target_recovery.recovery_decision(
+                    observation=current_obs,
+                    history=history,
+                    candidate_entries=candidate_entries,
+                    recovery=alternative_target_recovery,
+                )
+                if target_history.excludes_completed else None
+            )
+            if completed_recovery_decision is not None:
+                history_hint = (
+                    "当前页面已完成本次要求的业务操作，正在返回可信候选入口并改选其他目标。"
+                    if lang == "zh" else
+                    "The current page already has the requested business action; "
+                    "returning through a grounded candidate entry to choose another target."
+                )
+                history.append(StepRecord(
+                    observation=current_obs,
+                    decision=decision,
+                    ok=False,
+                    error=history_hint,
+                    result_digest="completed current target recovered before dispatch",
+                ))
+                yield {"type": "activity", "content": {
+                    "kind": "analyze", "message": history_hint,
+                }}, {}
+                logger.info(
+                    "browser completed current target recovery selected",
+                    extra={
+                        "event": "browser.completed_target_recovery",
+                        "operation": target_history.operation,
+                        "current_url": current_obs.url,
+                        "recovery_url": str(
+                            completed_recovery_decision.args.get("url") or ""
+                        ),
+                    },
+                )
+                decision = completed_recovery_decision
+                decision_is_system_owned = True
+            blocked_target_ref = target_history.blocked_selection_ref(
+                decision,
+                current_obs,
+                alternative_target_recovery,
+            )
+            if blocked_target_ref:
+                history_hint = (
+                    "该候选已完成当前要求的业务操作，已在选择阶段排除并改选其他目标。"
+                    if lang == "zh" else
+                    "This candidate already has the requested business action; it was excluded before navigation."
+                )
+                history.append(StepRecord(
+                    observation=current_obs,
+                    decision=decision,
+                    ok=False,
+                    error=history_hint,
+                    result_digest=f"excluded_ref={blocked_target_ref}",
+                ))
+                yield {"type": "activity", "content": {
+                    "kind": "analyze", "message": history_hint,
+                }}, {}
+                logger.info(
+                    "browser completed target excluded before selection",
+                    extra={
+                        "event": "browser.target_history_selection_blocked",
+                        "policy": target_history.policy,
+                        "operation": target_history.operation,
+                        "ref": blocked_target_ref,
+                    },
+                )
+                consecutive_failures = 0
+                continue
             done_block_recovery.record_action(decision)
             # Reuse an immediately preceding screenshot when the page and
             # capture scope are unchanged. This runs before timeline emission,
@@ -2082,6 +2293,7 @@ class DesktopAgentBrowserExecutor:
                     "browser_click", "browser_click_at", "browser_press",
                     "browser_upload_file", "browser_paste_image",
                     "browser_execute_workflow",
+                    "browser_execute_plan",
                 }
             ):
                 replay_guard_emitted = True
@@ -2658,7 +2870,7 @@ class DesktopAgentBrowserExecutor:
             if decision.tool == "browser_fail":
                 reason = str(decision.args.get("reason") or "")
                 recovery = terminal_recovery_plan(
-                    source=MODEL_FAILURE,
+                    source=recovery_source_for_browser_fail(decision.args),
                     error=reason,
                 )
                 if recovery_assistance_available(recovery):
@@ -2689,7 +2901,11 @@ class DesktopAgentBrowserExecutor:
                 and current_obs.url
                 and not is_fill_reconciliation(decision)
             ):
-                same_count = read_count_for_current_state(history, current_obs)
+                same_count = (
+                    observe_count_for_current_interaction_state(history, current_obs)
+                    if decision.tool == "browser_observe"
+                    else read_count_for_current_state(history, current_obs)
+                )
                 if same_count >= BROWSER_MAX_READS_PER_STATE:
                     yield {"type": "activity", "content": {
                         "kind": "error",
@@ -3433,14 +3649,29 @@ class DesktopAgentBrowserExecutor:
                             await action_history.preflight(
                                 contract=prepared_effect.contract,
                                 observation=current_obs,
+                                semantic_operation=target_history.operation,
                             )
                             if prepared_effect is not None else None
                         )
                         if history_preflight is not None and history_preflight.blocked:
+                            alternative_recovery = alternative_target_recovery.recovery_decision(
+                                history=history,
+                                target_id=history_preflight.intent.target_id,
+                            )
                             history_hint = (
-                                f"{history_preflight.reason} 请离开当前业务对象并选择其他未处理目标。"
+                                f"{history_preflight.reason} "
+                                + (
+                                    "正在返回候选列表并排除当前目标。"
+                                    if alternative_recovery is not None else
+                                    "当前历史中没有可证明的候选列表，不会猜测其他目标。"
+                                )
                                 if lang == "zh" else
-                                f"{history_preflight.reason} Leave this object and choose another unprocessed target."
+                                f"{history_preflight.reason} "
+                                + (
+                                    "Returning to the proven candidate list and excluding this target."
+                                    if alternative_recovery is not None else
+                                    "No candidate list is proven by history; no alternative target will be guessed."
+                                )
                             )
                             history.append(StepRecord(
                                 observation=current_obs,
@@ -3467,7 +3698,26 @@ class DesktopAgentBrowserExecutor:
                                     "business_key": history_preflight.intent.business_key,
                                     "operation": history_preflight.intent.operation_id,
                                     "target": history_preflight.intent.target_id,
+                                    "recovery": (
+                                        alternative_recovery.tool
+                                        if alternative_recovery is not None else "none"
+                                    ),
+                                    "recovery_url": (
+                                        str(alternative_recovery.args.get("url") or "")
+                                        if alternative_recovery is not None else ""
+                                    ),
+                                    "excluded_target_count": len(
+                                        alternative_target_recovery.excluded_target_ids
+                                    ),
                                 },
+                            )
+                            pending_resolved_decision = (
+                                alternative_recovery
+                                or Decision(
+                                    tool="browser_observe",
+                                    args={},
+                                    rationale="verify the prior durable action without replaying it",
+                                )
                             )
                             consecutive_failures = 0
                             continue
@@ -3629,6 +3879,59 @@ class DesktopAgentBrowserExecutor:
                     interaction_target_recovery.record_success(decision, dispatch_before_obs)
                 else:
                     interaction_target_recovery.record_failure(decision, dispatch_before_obs, err)
+                    _failed_click_ref = str((decision.args or {}).get("ref") or "")
+                    _failed_click_target = next((
+                        item for item in dispatch_before_obs.elements
+                        if isinstance(item, dict) and str(item.get("ref") or "") == _failed_click_ref
+                    ), {})
+                    logger.warning(
+                        "browser click dispatch failed",
+                        extra={
+                            "event": "browser.click_dispatch_failed",
+                            "ref": _failed_click_ref,
+                            "revision": str(dispatch_before_obs.revision or ""),
+                            "selector": str(_failed_click_target.get("selector") or "")[:500],
+                            "backend_node_id": _failed_click_target.get("backendNodeId"),
+                            "role": str(_failed_click_target.get("role") or ""),
+                            "target_name": str(_failed_click_target.get("name") or "")[:240],
+                            "href": str(_failed_click_target.get("href") or "")[:1000],
+                            "content_context_id": str(
+                                _failed_click_target.get("contentContextId") or ""
+                            )[:500],
+                            "error": str(err or "unknown click failure")[:4000],
+                        },
+                    )
+            if decision.tool == "browser_fill" and not ok:
+                _failed_fill_ref = str((decision.args or {}).get("ref") or "")
+                _failed_fill_target = next((
+                    item for item in dispatch_before_obs.elements
+                    if isinstance(item, dict) and str(item.get("ref") or "") == _failed_fill_ref
+                ), {})
+                logger.warning(
+                    "browser fill dispatch failed",
+                    extra={
+                        "event": "browser.fill_dispatch_failed",
+                        "ref": _failed_fill_ref,
+                        "revision": str(dispatch_before_obs.revision or ""),
+                        "selector": str(_failed_fill_target.get("selector") or ""),
+                        "role": str(_failed_fill_target.get("role") or ""),
+                        "error": str(err or "unknown fill failure")[:1000],
+                    },
+                )
+            if decision.tool == "browser_execute_plan" and not ok:
+                logger.warning(
+                    "browser action plan dispatch failed",
+                    extra={
+                        "event": "browser.action_plan_dispatch_failed",
+                        "revision": str(dispatch_before_obs.revision or ""),
+                        "error": str(err or "unknown action-plan failure")[:1000],
+                        "result_digest": _digest(decision.tool, result)[:4000],
+                        "receipts": (
+                            list(result.get("receipts") or [])[:8]
+                            if isinstance(result, dict) else []
+                        ),
+                    },
+                )
             yield {"type": "tool_completed", "content": {
                 "tool": decision.tool, "ok": ok, "result": result,
                 **({"error": err} if not ok and err else {}),
@@ -4072,16 +4375,20 @@ class DesktopAgentBrowserExecutor:
             # observed action transition.
             if context_tracks_state:
                 try:
-                    task_context.after_transition(
-                        BrowserActionTransition.capture(
-                            decision,
-                            before=dispatch_before_obs,
-                            after=current_obs,
-                        ),
-                        result,
-                        ok,
+                    for context_transition in context_action_transitions(
+                        decision,
+                        result=result,
+                        ok=ok,
                         error=err,
-                    )
+                        before=dispatch_before_obs,
+                        after=current_obs,
+                    ):
+                        task_context.after_transition(
+                            context_transition.transition,
+                            context_transition.result,
+                            context_transition.ok,
+                            error=context_transition.error,
+                        )
                 except Exception as exc:
                     logger.warning(
                         "browser context after step failed",
@@ -4140,7 +4447,7 @@ class DesktopAgentBrowserExecutor:
             _progress_tools = {
                 "browser_click", "browser_press", "browser_select",
                 "browser_fill", "browser_upload_file",
-                "browser_paste_image",
+                "browser_paste_image", "browser_execute_plan",
             }
             if ok and decision.tool in _progress_tools:
                 post_action_ledger = None
@@ -4474,7 +4781,7 @@ class DesktopAgentBrowserExecutor:
                         "subagent_id": subagent_id, "node_id": node.node_id, "status": "failed_terminal",
                     }}, {"browser_receipt": browser_failure_receipt(error=err or "repeated failures")}
                     return
-            else:
+            elif not is_technical_recovery_observation(decision):
                 consecutive_failures = 0
 
             await save_checkpoint(phase="running", next_step=step + 1)
@@ -4580,6 +4887,7 @@ class DesktopAgentBrowserExecutor:
 
     async def _dispatch(self, decision: Decision):
         args = dict(decision.args or {})
+        args["__observation_mode"] = "accessibility"
         # `domain` is a meta field — which pool context the call runs against —
         # not a tool arg. Pull it out of args and promote it to the frame's
         # top-level ``domain`` so the agent can key the right browser context.
@@ -4598,7 +4906,16 @@ class DesktopAgentBrowserExecutor:
             )
             ok = bool(result.get("ok"))
             err = result.get("error") if not ok else None
-            return result.get("result"), ok, err
+            payload = result.get("result")
+            if (
+                ok
+                and decision.tool == "browser_execute_plan"
+                and isinstance(payload, dict)
+                and str(payload.get("status") or "") != "completed"
+            ):
+                ok = False
+                err = str(payload.get("reason") or "action plan stopped")
+            return payload, ok, err
         except AgentNotConnected:
             return None, False, "agent-disconnected"
         except Exception as exc:

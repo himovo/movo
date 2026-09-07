@@ -6,7 +6,7 @@ from typing import Iterable
 
 from app.enterprise_capabilities.browser.engine.form_input.input_context import BrowserInputContext
 
-from .contracts import CachedBrowserWorkflow
+from .contracts import CachedBrowserWorkflow, WorkflowIdentity
 from .parameters import RuntimeParameterResolver, resolve_request_slots
 
 
@@ -34,6 +34,36 @@ def select_matching_workflow(
         return None
     ranked.sort(key=lambda item: (item[0], item[1]), reverse=True)
     return ranked[0][2]
+
+
+def select_strong_matching_workflow(
+    workflows: Iterable[CachedBrowserWorkflow],
+    *,
+    identity: WorkflowIdentity | None,
+    context: BrowserInputContext,
+    capability_id: str,
+) -> CachedBrowserWorkflow | None:
+    """Select only a locally provable replay route.
+
+    A cache lookup is an optimization, so uncertainty must fall through to
+    normal DSH exploration instead of invoking another model.  Site and
+    operation identity are hard boundaries; request templates/fingerprints
+    and runtime bindings then prove that every cached input can be resolved.
+    """
+    if identity is None:
+        return None
+    exact_operation = (
+        workflow
+        for workflow in workflows
+        if workflow.identity.user_id == identity.user_id
+        and workflow.identity.site_id == identity.site_id
+        and workflow.identity.operation_id == identity.operation_id
+    )
+    return select_matching_workflow(
+        exact_operation,
+        context=context,
+        capability_id=capability_id,
+    )
 
 
 def workflow_match_score(
@@ -131,6 +161,7 @@ def _capability_family(capability_id: str) -> str:
 __all__ = [
     "request_fingerprint",
     "select_matching_workflow",
+    "select_strong_matching_workflow",
     "workflow_match_score",
     "workflow_runtime_compatible",
 ]

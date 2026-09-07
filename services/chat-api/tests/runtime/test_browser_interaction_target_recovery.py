@@ -12,6 +12,7 @@ def test_classifies_live_click_target_failures_but_not_business_errors():
     assert is_stale_interaction_target_error("Click target kept moving during pointer correction: e89") is True
     assert is_stale_interaction_target_error("Click target has no usable point: e89") is True
     assert is_stale_interaction_target_error("Click target resolves to a page container: e89") is True
+    assert is_stale_interaction_target_error("stale_target_rebind_missing: ax-0-41") is True
     assert is_stale_interaction_target_error("permission denied") is False
 
 

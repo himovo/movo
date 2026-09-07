@@ -55,7 +55,7 @@ def test_unique_send_wins_over_cancel_and_carousel_controls() -> None:
     resolution = _resolve(observation)
 
     assert resolution.kind == "click"
-    assert resolution.decision.args == {"ref": "send"}
+    assert resolution.decision.args == {"ref": "send", "__verified_form_commit": True}
 
 
 def test_disabled_commit_requests_one_fresh_observation() -> None:
@@ -77,7 +77,7 @@ def test_disabled_commit_requests_one_fresh_observation() -> None:
     assert first.kind == "refresh"
     assert first.decision.tool == "browser_observe"
     assert second.kind == "click"
-    assert second.decision.args == {"ref": "send-new"}
+    assert second.decision.args == {"ref": "send-new", "__verified_form_commit": True}
 
 
 def test_disabled_send_remains_structural_commit_evidence() -> None:
@@ -172,7 +172,10 @@ def test_unique_commit_in_sibling_toolbar_is_resolved_from_shared_component() ->
 
     assert resolution.kind == "click"
     assert resolution.decision is not None
-    assert resolution.decision.args == {"ref": "publish-answer"}
+    assert resolution.decision.args == {
+        "ref": "publish-answer",
+        "__verified_form_commit": True,
+    }
 
 
 def test_unique_commit_in_large_editor_toolbar_ignores_scope_action_limit() -> None:
@@ -224,4 +227,7 @@ def test_unique_commit_in_large_editor_toolbar_ignores_scope_action_limit() -> N
 
     assert resolution.kind == "click"
     assert resolution.decision is not None
-    assert resolution.decision.args == {"ref": "publish-answer"}
+    assert resolution.decision.args == {
+        "ref": "publish-answer",
+        "__verified_form_commit": True,
+    }

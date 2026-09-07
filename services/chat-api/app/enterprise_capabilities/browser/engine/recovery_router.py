@@ -9,7 +9,7 @@ form, media, authentication, and graph recovery policies.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, Mapping, Optional
+from typing import Any, Literal, Mapping, Optional
 
 from app.enterprise_capabilities.browser.engine.form_human_assistance import (
     build_form_repair_assistance_decision,
@@ -202,6 +202,13 @@ def _assist(
     )
 
 
+def recovery_source_for_browser_fail(args: Mapping[str, Any] | None) -> str:
+    """Keep planner/protocol faults out of page-level human assistance."""
+    payload = args or {}
+    error_code = str(payload.get("error_code") or "").strip()
+    return INTERNAL_FAILURE if error_code.startswith("planner_") else MODEL_FAILURE
+
+
 def _assistance_family(category: str) -> str:
     normalized = str(category or "browser").strip().lower()
     if normalized.startswith("form_") or normalized == "media_upload":
@@ -256,5 +263,6 @@ __all__ = [
     "MODEL_FAILURE",
     "OUTPUT_CONTRACT_EXHAUSTED",
     "RESUME_RECONCILIATION_UNAVAILABLE",
+    "recovery_source_for_browser_fail",
     "route_browser_recovery",
 ]
