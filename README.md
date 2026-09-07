@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.himovo.com/en/">Official website</a> ·
+  <a href="https://www.himovo.com">Official website: https://www.himovo.com</a> ·
   <a href="https://www.himovo.com/en/guide/introduction.html">Documentation</a> ·
   <a href="https://www.himovo.com/en/guide/getting-started.html">Quick start</a>
 </p>
@@ -23,6 +23,16 @@ MOVO brings DSH Agents from development experiments into enterprise production. 
 > **In one sentence:** DSH runs the Agent; MOVO brings the Agent into enterprise production.
 
 This repository contains the self-hosted Community Edition and is the shared source foundation used by MOVO cloud and future enterprise distributions.
+
+## Product demo
+
+See MOVO in action in the complete product walkthrough:
+
+<p align="center">
+  <a href="https://movo.oss-cn-beijing.aliyuncs.com/5E22C353-55F1-45AB-B606-0ED16CC99833.mp4"><strong>▶ Watch the MOVO demo video</strong></a>
+</p>
+
+The video opens in your browser and can be played directly without downloading it first.
 
 ## Why MOVO
 

@@ -24,6 +24,16 @@ MOVO 帮助企业将 DSH Agent 从开发验证推进到生产使用。它在 DSH
 
 本仓库包含可私有化部署的 MOVO 社区版，也是 MOVO 云服务和未来企业版本共同依赖的源码基础。
 
+## 产品演示
+
+通过完整的产品演示视频了解 MOVO：
+
+<p align="center">
+  <a href="https://movo.oss-cn-beijing.aliyuncs.com/5E22C353-55F1-45AB-B606-0ED16CC99833.mp4"><strong>▶ 播放 MOVO 产品演示</strong></a>
+</p>
+
+视频将在浏览器中打开，无需提前下载即可直接播放。
+
 ## 为什么选择 MOVO
 
 让 Agent 完成一次演示，与让一个 Agent 平台真正服务团队是两件事。MOVO 在 DSH 周围提供完整的产品与基础设施层，让你无需自行拼装身份、知识、管理、治理和交付系统，就能进入真实使用。
