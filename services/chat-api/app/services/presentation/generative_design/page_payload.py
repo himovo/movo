@@ -6,8 +6,11 @@ from app.services.presentation.contracts import ConstraintBundle, DeckBrief, Pag
 from app.services.presentation.layout_archetypes.catalog import archetype_by_id
 from app.services.presentation.icon_library import available_icon_names
 
+from .composition_references import composition_references
 from .content_packet import build_content_packet
 from .contracts import DeckVisualPlan
+from .surface_rhythm import surface_brief_for_page
+from .visual_contract import visual_contract_payload
 
 
 def build_page_composition_payload(
@@ -35,6 +38,12 @@ def build_page_composition_payload(
             constraint_bundle=constraint_bundle,
         ),
         "page_visual_direction": direction.model_dump() if direction is not None else {},
+        "visual_contract": visual_contract_payload(page_brief, direction),
+        "composition_references": composition_references(spec.archetype_id),
+        "surface_rhythm": surface_brief_for_page(
+            deck_brief,
+            str(page_brief.page_id or "").strip(),
+        ),
         "assigned_layout": {
             "archetype_id": spec.archetype_id,
             "family": spec.family,

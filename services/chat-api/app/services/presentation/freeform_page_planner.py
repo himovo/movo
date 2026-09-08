@@ -45,13 +45,14 @@ from app.services.presentation.theme_factory_catalog import (
     infer_theme_spec,
     theme_catalog_prompt_text,
 )
-from app.services.presentation.layout_archetypes import LayoutAssignmentPlanner, archetype_by_id
+from app.services.presentation.layout_archetypes import LayoutAssignmentPlanner
 from app.services.presentation.layout_archetypes.conformance import (
     layout_conformance_issues,
 )
 from app.services.presentation.generative_design import DeckVisualDirector, DeckVisualPlan
 from app.services.presentation.generative_design.composition_grammar import fallback_deck_visual_plan
 from app.services.presentation.generative_design.page_payload import build_page_composition_payload
+from app.services.presentation.generative_design.page_strategy import build_page_strategy_brief
 from app.services.presentation.generative_design.prompts import build_page_composition_prompt
 from app.services.presentation.execution.freeform_pages import FreeformPageExecutionCoordinator
 from app.services.presentation.execution.session import PresentationExecutionSession
@@ -644,68 +645,6 @@ class FreeformPagePlanner:
     def _fragmented_framework_pattern(self, blocks: List[FreeformBlock]) -> bool:
         return self._large_region_count(blocks) == 0 and self._small_region_count(blocks) >= 4 and self._page_occupancy(blocks) < 0.24
 
-    def _page_layout_budget(self, page_brief: PageBrief) -> Dict[str, Any]:
-        return {
-            "max_primary_regions": 2,
-            "max_supporting_regions": 6,
-            "max_text_boxes": 10,
-            "max_body_lines_per_region": 4,
-            "min_body_width": 0.24,
-            "min_body_height": 0.10,
-            "headline_width": 0.70,
-            "prefer_full_width_for_long_text": True,
-        }
-
-    def _layout_budget_brief(self, page_brief: PageBrief) -> str:
-        budget = self._page_layout_budget(page_brief)
-        return (
-            "Layout budget: "
-            f"max_primary_regions={budget['max_primary_regions']}; "
-            f"max_supporting_regions={budget['max_supporting_regions']}; "
-            f"max_text_boxes={budget['max_text_boxes']}; "
-            f"max_body_lines_per_region={budget['max_body_lines_per_region']}; "
-            f"min_body_width={budget['min_body_width']:.2f}; "
-            f"min_body_height={budget['min_body_height']:.2f}; "
-            f"headline_width>={budget['headline_width']:.2f}; "
-            f"prefer_full_width_for_long_text={str(bool(budget['prefer_full_width_for_long_text'])).lower()}."
-        )
-
-    def _page_strategy_guidance(self, page_brief: PageBrief) -> str:
-        assigned_id = str(page_brief.layout_archetype_id or "").strip()
-        if not assigned_id:
-            raise ValueError(f"page {page_brief.page_id} has no MOVO layout assignment")
-        spec = archetype_by_id(assigned_id)
-        profile = str(getattr(page_brief, "validation_profile", "") or "").strip().lower()
-        intent = str(getattr(page_brief, "composition_intent", "") or getattr(page_brief, "visual_intent", "") or "").strip()
-        guidance: List[str] = [
-            f"MOVO assigned layout archetype '{spec.archetype_id}' in family '{spec.family}'.",
-            spec.prompt_brief,
-            "Required structure: " + " | ".join(spec.must_do),
-            "Avoid: " + (" | ".join(spec.must_avoid) if spec.must_avoid else "No additional archetype-specific restrictions."),
-            "The deck visual director selected this archetype. Treat it as the structural grammar while freely composing coordinates, proportions, typography, colors, icons, and decoration.",
-            f"Write layout_type exactly as '{spec.archetype_id}'.",
-            self._layout_budget_brief(page_brief),
-            "First make the page geometrically solid: readable text containers, a clear primary anchor, and occupied space. Only then add decorative refinement.",
-            "Do not let important copy live in edge strips, narrow micro-columns, or isolated labels. If space becomes tight, merge blocks and simplify the composition.",
-        ]
-        if profile in {"introduce_topic", "ask_for_decision", "close_gratitude"}:
-            guidance.append(
-                "This page needs one large dominant panel, slab, or headline region. Do not scatter the message across multiple equal-weight islands."
-            )
-        if profile in {"show_architecture", "show_roadmap", "process_diagram"} or any(
-            token in intent for token in ("架构", "路线", "流程", "阶段", "roadmap", "architecture", "process", "timeline")
-        ):
-            guidance.append(
-                "If you use layers, steps, or connectors, place them inside substantial containers or bands. Lines and nodes alone cannot be the main occupied area."
-            )
-        if profile in {"frame_problem", "show_metrics", "introduce_topic"} or any(
-            token in intent for token in ("矩阵", "框架", "总结", "治理", "决策", "matrix", "framework", "summary", "governance")
-        ):
-            guidance.append(
-                "For abstract frameworks, consolidate the logic into one or two strong regions. Avoid many small detached boxes that leave the page feeling like a sketch."
-            )
-        return " ".join(guidance)
-
     def _collect_block_ids(self, blocks: List[FreeformBlock]) -> Set[str]:
         ids: Set[str] = set()
         for block in list(blocks or []):
@@ -794,7 +733,7 @@ class FreeformPagePlanner:
         theme_reference = self._theme_reference_markdown(deck_brief.theme_factory_name)
         if theme_reference:
             payload["deck_context"]["theme_reference"] = theme_reference[:4000]
-        payload["page_strategy_brief"] = self._page_strategy_guidance(page_brief)
+        payload["page_strategy_brief"] = build_page_strategy_brief(page_brief)
         if repair_issues:
             payload["repair_brief"] = repair_brief_text or (
                 "This page had problems in the last attempt. "

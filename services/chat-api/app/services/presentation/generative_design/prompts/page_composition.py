@@ -19,12 +19,21 @@ DESIGN STANDARD
 - The page must have one dominant visual argument, not many equal-weight boxes.
 - Use the supplied page_visual_direction as the creative north star and the
   assigned_layout as structural intent. Exact geometry remains your decision.
+- Treat visual_contract as a hard production contract. Realize every required
+  role and obey its counting rules; empty circles, random dots, thin separators,
+  borders, empty rectangles, and UI tabs never count as meaningful visuals.
+- Use composition_references as quality grammar, not coordinate templates. Select
+  and adapt the reference whose visual logic best explains this page's claim.
+- Follow surface_rhythm for canvas contrast and massing while preserving the deck
+  palette. Do not force every page into the same dark or light surface.
 - Implement every item in page_visual_direction.required_visual_elements. The
   primary required element must be visibly large, and the page must contain at
   least page_visual_direction.minimum_visual_blocks meaningful visual blocks.
   Thin separators, borders, and empty containers do not count.
 - Establish a clear reading path with 1-3 substantial regions. Use scale contrast,
   alignment, whitespace, directional relationships, and one visual anchor.
+- Make one semantic anchor occupy roughly 28-55% of the canvas. Build that anchor
+  before support copy and decoration so the page cannot collapse into a wireframe.
 - Adjacent-page context is supplied so this page changes silhouette and focal point.
 - Prefer large editable vector symbols, integrated process diagrams, layers, bands,
   oversized numbers, typographic statements, arrows, and restrained geometry.
@@ -33,6 +42,8 @@ DESIGN STANDARD
 - A group is a semantic container, not automatically a card. It may be transparent.
 - Use cards only when ideas are genuinely peer-based. Do not produce a dashboard,
   a wall of identical rounded rectangles, or repeated colored side rails.
+- Do not imitate app chrome: no tabs, buttons, browser frames, nav bars, or settings
+  panels unless the source content explicitly documents an interface.
 - Do not decorate every region with the same radius, shadow, border, gradient, or icon.
 - Gradients are optional and purposeful; flat fields and open whitespace are valid.
 - Do not invent facts. Use only the content packet, creative briefs, and evidence.

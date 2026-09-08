@@ -10,6 +10,8 @@ from app.services.presentation.layout_archetypes.catalog import ARCHETYPE_CATALO
 from .composition_grammar import fallback_deck_visual_plan, fallback_page_direction
 from .contracts import DeckVisualPlan, PageVisualDirection
 from .prompts import build_deck_visual_direction_prompt
+from .surface_rhythm import build_surface_rhythm
+from .visual_contract import enforce_visual_contract
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +46,7 @@ class DeckVisualDirector:
                 "design_tokens": deck_brief.design_tokens.model_dump(),
             },
             "pages": pages,
+            "surface_rhythm": build_surface_rhythm(deck_brief),
             "allowable_archetypes": [
                 {"archetype_id": item.archetype_id, "family": item.family, "brief": item.prompt_brief}
                 for item in ARCHETYPE_CATALOG
@@ -73,8 +76,7 @@ class DeckVisualDirector:
                 direction.recommended_archetype = fallback_direction.recommended_archetype
             if not direction.required_visual_elements:
                 direction.required_visual_elements = fallback_direction.required_visual_elements
-            direction.minimum_visual_blocks = max(1, int(direction.minimum_visual_blocks or 1))
-            completed.append(direction)
+            completed.append(enforce_visual_contract(page, direction))
         candidate.deck_id = str(deck_brief.deck_id or "presentation").strip() or "presentation"
         candidate.page_directions = completed
         if not candidate.design_language:

@@ -9,9 +9,15 @@ Create one coherent visual language for the whole deck, then give every page a
 distinct whole-page composition. The target is an editorial infographic, not a
 dashboard, web UI, or collection of reusable cards.
 
+The payload includes a deck-level surface_rhythm. Treat it as the contrast and
+massing plan: preserve the palette but intentionally alternate dark, light,
+accent, and image-led pages where requested.
+
 For every page direction:
 - Keep page_id exactly as supplied and return one direction for every page.
 - Translate the page's claim into one visual story and one dominant visual anchor.
+- Name a semantic hero that represents the subject itself. An empty ring, random
+  dots, a thin divider, or a generic rounded rectangle is decoration, not a hero.
 - Describe 1-3 substantial regions and an obvious reading flow.
 - Vary silhouette, anchor position, scale, and relationship grammar across adjacent pages.
 - Prefer integrated diagrams, oversized typography, layered fields, large symbols,
@@ -31,6 +37,8 @@ For every page direction:
 - Set minimum_visual_blocks to the minimum number of icon/image/chart/diagrammatic
   shape/connector blocks needed to realize that page. Never satisfy it with thin
   separator lines or decorative borders.
+- Build the semantic system, path, comparison, evidence, or metaphor first. Add
+  decoration only after that visual argument is complete.
 - A visual requirement must describe its purpose, content, placement, and scale.
   Do not request a metric or chart unless supplied evidence contains real numbers.
 - Across the deck, do not repeat three equal columns, two equal panels, or a bottom

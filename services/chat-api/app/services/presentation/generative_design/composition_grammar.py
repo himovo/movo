@@ -5,6 +5,7 @@ from typing import Dict
 from app.services.presentation.contracts import DeckBrief, PageBrief
 
 from .contracts import DeckVisualPlan, PageVisualDirection, VisualElementRequirement
+from .visual_contract import enforce_visual_contract
 
 
 _COMPOSITIONS: Dict[str, dict[str, str]] = {
@@ -175,7 +176,7 @@ def fallback_page_direction(page: PageBrief) -> PageVisualDirection:
         if page_type in {"cover", "section_divider", "thank_you"}
         else "use cards only for genuinely peer content; otherwise use open regions, bands, symbols, or relationships"
     )
-    return PageVisualDirection(
+    direction = PageVisualDirection(
         page_id=str(page.page_id or "").strip(),
         composition=spec["composition"],
         visual_story=str(page.composition_intent or page.visual_intent or page.key_takeaway or "").strip(),
@@ -202,6 +203,7 @@ def fallback_page_direction(page: PageBrief) -> PageVisualDirection:
         ],
         minimum_visual_blocks=1,
     )
+    return enforce_visual_contract(page, direction)
 
 
 def fallback_deck_visual_plan(deck: DeckBrief) -> DeckVisualPlan:

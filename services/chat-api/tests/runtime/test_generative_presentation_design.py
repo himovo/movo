@@ -114,6 +114,12 @@ def test_generation_prompts_prioritize_composition_over_validation() -> None:
     assert "Treat icon and copy as one semantic unit" in page_prompt
     assert "65-85%" in page_prompt
     assert "iconography rhythm" in deck_prompt
+    assert "surface_rhythm" in deck_prompt
+    assert "semantic hero" in deck_prompt
+    assert "visual_contract" in page_prompt
+    assert "composition_references" in page_prompt
+    assert "28-55%" in page_prompt
+    assert "no tabs, buttons, browser frames" in page_prompt
 
 
 def test_visual_director_can_override_deterministic_layout() -> None:
