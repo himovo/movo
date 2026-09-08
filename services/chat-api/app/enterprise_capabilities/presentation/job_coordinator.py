@@ -28,14 +28,12 @@ class PresentationJobCoordinator:
         *,
         arguments: dict[str, Any],
         context: CapabilityExecutionContext,
-        generation_mode: str,
     ) -> PresentationJobOpenResult:
         identity = build_presentation_job_identity(
             tenant_id=context.tenant_id,
             user_id=context.user_id,
             conversation_id=context.conversation_id,
             message_id=context.message_id,
-            generation_mode=generation_mode,
             arguments=arguments,
         )
         claim = await self.repository.claim(
@@ -44,7 +42,6 @@ class PresentationJobCoordinator:
             user_id=context.user_id,
             conversation_id=context.conversation_id,
             message_id=context.message_id,
-            generation_mode=generation_mode,
             action_id=context.action_id,
         )
         snapshot = claim.snapshot

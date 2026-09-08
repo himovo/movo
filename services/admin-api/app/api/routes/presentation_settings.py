@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any
 
 from bson.errors import InvalidId
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -19,20 +19,23 @@ router = APIRouter()
 
 
 class PresentationSettingsPayload(BaseModel):
-    generationMode: Literal["llm", "image_rebuild"] = "llm"
     llmModelId: str = Field(min_length=1, max_length=120)
-    imageModelId: str = Field(default="", max_length=120)
-    visionModelId: str = Field(default="", max_length=120)
+    imageModelId: str = Field(min_length=1, max_length=120)
+    visionModelId: str = Field(min_length=1, max_length=120)
 
 
 def _serialize(doc: dict[str, Any] | None) -> dict[str, Any]:
+    source = doc or {}
     return {
-        "configured": bool(doc),
-        "generationMode": str((doc or {}).get("generation_mode") or "llm"),
-        "llmModelId": str((doc or {}).get("llm_model_id") or ""),
-        "imageModelId": str((doc or {}).get("image_model_id") or ""),
-        "visionModelId": str((doc or {}).get("vision_model_id") or ""),
-        "updatedAt": utc_iso((doc or {}).get("updated_at")),
+        "configured": all(str(source.get(key) or "").strip() for key in (
+            "llm_model_id",
+            "image_model_id",
+            "vision_model_id",
+        )),
+        "llmModelId": str(source.get("llm_model_id") or ""),
+        "imageModelId": str(source.get("image_model_id") or ""),
+        "visionModelId": str(source.get("vision_model_id") or ""),
+        "updatedAt": utc_iso(source.get("updated_at")),
     }
 
 
@@ -72,12 +75,10 @@ async def put_settings(
 ) -> dict[str, Any]:
     main_id = str(current_user.get("main_id") or "default")
     await _require_model(main_id, payload.llmModelId, "chat", "PPT 内容与布局模型")
-    if payload.generationMode == "image_rebuild":
-        await _require_model(main_id, payload.imageModelId, "image_generation", "PPT 图片生成模型")
-        await _require_model(main_id, payload.visionModelId, "vision", "PPT 视觉重建模型")
+    await _require_model(main_id, payload.imageModelId, "image_generation", "PPT 图片生成模型")
+    await _require_model(main_id, payload.visionModelId, "vision", "PPT 视觉重建模型")
     saved = await save_presentation_settings(
         main_id=main_id,
-        generation_mode=payload.generationMode,
         llm_model_id=payload.llmModelId,
         image_model_id=payload.imageModelId,
         vision_model_id=payload.visionModelId,

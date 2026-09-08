@@ -18,13 +18,13 @@ from app.services.presentation.contracts import (
     PageRepairReport,
     StoryDeckPlan,
 )
-from app.services.presentation.freeform_page_planner import FreeformPagePlanner
 from app.services.presentation.image_native.blueprint_mapper import (
     BlueprintComposer,
     fallback_page_from_analysis,
 )
 from app.services.presentation.image_native.blueprint_postprocess import postprocess_image_native_page
 from app.services.presentation.image_native.contracts import ImageNativePagePlan
+from app.services.presentation.image_native.deck_brief_planner import DeckBriefPlanner
 from app.services.presentation.image_native.image_generator import (
     FullSlideImageGenerator,
     ImageNativeAssetGenerator,
@@ -33,6 +33,13 @@ from app.services.presentation.image_native.icon_generator import ImageNativeIco
 from app.services.presentation.image_native.prompt_builder import (
     build_page_plan_prompt,
     constrain_full_slide_prompt,
+)
+from app.services.presentation.image_native.page_utils import progress_page_label, renumber_pages
+from app.services.presentation.image_native.request_context import (
+    extract_generation_guidance,
+    extract_message_text,
+    extract_user_outline,
+    story_payload,
 )
 from app.services.presentation.image_native.visual_analyzer import VisualSemanticAnalyzer
 from app.services.presentation.theme_factory_catalog import build_freeform_theme_from_design_tokens
@@ -49,7 +56,7 @@ class ImageNativePagePlanner:
     """
 
     def __init__(self) -> None:
-        self._legacy_helper = FreeformPagePlanner()
+        self._deck_planner = DeckBriefPlanner()
         self._brief_compiler = BriefCompiler()
         self._responses = ConfiguredMultimodalClient()
         self._slide_generator = FullSlideImageGenerator()
@@ -82,9 +89,9 @@ class ImageNativePagePlanner:
         user_id = str(output_spec.get("user_id") or "anonymous").strip() or "anonymous"
         session_id = str(output_spec.get("session_id") or output_spec.get("task_id") or story_plan.deck_id or "").strip()
 
-        user_outline = self._legacy_helper._extract_user_outline(messages=messages, output_spec=output_spec)
-        generation_guidance = self._legacy_helper._extract_generation_guidance(messages=messages, output_spec=output_spec)
-        user_message_context = self._legacy_helper._extract_message_text(messages)
+        user_outline = extract_user_outline(messages=messages, output_spec=output_spec)
+        generation_guidance = extract_generation_guidance(messages=messages, output_spec=output_spec)
+        user_message_context = extract_message_text(messages)
         constraint_bundle = self._brief_compiler.build_constraint_bundle(
             output_spec=output_spec,
             user_outline=user_outline,
@@ -95,12 +102,12 @@ class ImageNativePagePlanner:
         try:
             deck_brief = DeckBrief.model_validate(restored_planning["image_native_deck_brief"])
         except Exception:
-            deck_brief = await self._legacy_helper._build_deck_brief(
+            deck_brief = await self._deck_planner.build(
                 story_plan=story_plan,
                 constraint_bundle=constraint_bundle,
                 user_message_context=user_message_context,
             )
-            deck_brief = self._legacy_helper._resolve_deck_theme(deck_brief, constraint_bundle=constraint_bundle)
+            deck_brief = self._deck_planner.resolve_theme(deck_brief, constraint_bundle=constraint_bundle)
             if execution_session is not None:
                 await execution_session.checkpoint_planning({
                     "image_native_deck_brief": deck_brief.model_dump(),
@@ -149,7 +156,7 @@ class ImageNativePagePlanner:
                     continue
                 if execution_session is not None:
                     execution_session.raise_if_cancelled()
-                page_label = self._legacy_helper._progress_page_label(page_brief, idx + 1)
+                page_label = progress_page_label(page_brief, idx + 1)
                 await self._emit_progress(
                     progress_callback,
                     {
@@ -206,7 +213,7 @@ class ImageNativePagePlanner:
                     return
                 if execution_session is not None:
                     execution_session.raise_if_cancelled()
-                page_label = self._legacy_helper._progress_page_label(page_brief, idx + 1)
+                page_label = progress_page_label(page_brief, idx + 1)
                 await self._emit_progress(
                     progress_callback,
                     {
@@ -264,13 +271,13 @@ class ImageNativePagePlanner:
         )
         blueprint.runtime = {
             "source": "presentation_image_native_rebuild",
-            "story_outline": json.dumps(self._legacy_helper._story_payload(story_plan=story_plan), ensure_ascii=False),
+            "story_outline": json.dumps(story_payload(story_plan), ensure_ascii=False),
             "deck_brief": deck_brief.model_dump(),
             "constraint_bundle": constraint_bundle.model_dump(),
             "repair_reports": [report.model_dump() for report in repair_reports],
             "image_native_artifacts": page_artifacts,
         }
-        return self._legacy_helper._renumber_pages(blueprint)
+        return renumber_pages(blueprint)
 
     @staticmethod
     def _repair_report(page: FreeformPageBlueprint) -> PageRepairReport:
@@ -318,7 +325,7 @@ class ImageNativePagePlanner:
             prior_pages=built_pages,
             bundle=constraint_bundle,
         )
-        theme_reference = self._legacy_helper._theme_reference_markdown(str(deck_brief.theme_factory_name or "").strip())
+        theme_reference = self._deck_planner.theme_reference_markdown(str(deck_brief.theme_factory_name or "").strip())
         page_session_id = f"{session_id}::{str(page_brief.page_id or '').strip() or f'page_{page_idx + 1:02d}'}"
 
         page_plan_payload = await self._responses.call_json(

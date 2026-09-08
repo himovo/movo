@@ -55,7 +55,6 @@ class PresentationJobRepository:
         user_id: str,
         conversation_id: str,
         message_id: str,
-        generation_mode: str,
         action_id: str,
     ) -> PresentationJobClaim:
         collection = get_db()[self.COLLECTION]
@@ -71,7 +70,6 @@ class PresentationJobRepository:
                 "user_id": user_id,
                 "conversation_id": conversation_id,
                 "message_id": message_id,
-                "generation_mode": generation_mode,
                 "owner_action_id": "",
                 "status": "pending",
                 "stage": "pending",

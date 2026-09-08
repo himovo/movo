@@ -20,15 +20,11 @@ def build_presentation_job_identity(
     user_id: str,
     conversation_id: str,
     message_id: str,
-    generation_mode: str,
     arguments: dict[str, Any],
 ) -> PresentationJobIdentity:
     """Build a stable identity that survives DSH action-id retries."""
 
-    request_payload = {
-        "generation_mode": str(generation_mode or "llm").strip().lower(),
-        "arguments": _normalized(arguments),
-    }
+    request_payload = {"arguments": _normalized(arguments)}
     request_json = json.dumps(
         request_payload,
         ensure_ascii=False,

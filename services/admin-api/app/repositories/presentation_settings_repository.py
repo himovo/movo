@@ -20,7 +20,6 @@ async def get_presentation_settings(main_id: str) -> dict[str, Any] | None:
 async def save_presentation_settings(
     *,
     main_id: str,
-    generation_mode: str,
     llm_model_id: str,
     image_model_id: str,
     vision_model_id: str,
@@ -31,7 +30,6 @@ async def save_presentation_settings(
         {"main_id": main_id},
         {
             "$set": {
-                "generation_mode": generation_mode,
                 "llm_model_id": llm_model_id,
                 "image_model_id": image_model_id,
                 "vision_model_id": vision_model_id,
@@ -39,6 +37,7 @@ async def save_presentation_settings(
                 "updated_at": now,
             },
             "$setOnInsert": {"main_id": main_id, "created_at": now},
+            "$unset": {"generation_mode": ""},
         },
         upsert=True,
     )

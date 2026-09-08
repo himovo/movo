@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class FullSlideImageGenerator:
-    """Generate and upload complete slide visuals with gpt-image-2."""
+    """Generate complete slide visuals with the tenant-configured image model."""
 
     async def generate(
         self,

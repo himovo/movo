@@ -29,7 +29,6 @@ class PresentationJobSnapshot(BaseModel):
     user_id: str
     conversation_id: str
     message_id: str
-    generation_mode: str = "llm"
     owner_action_id: str = ""
     status: PresentationJobStatus = "pending"
     stage: str = "pending"

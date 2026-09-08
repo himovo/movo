@@ -17,7 +17,6 @@ def test_presentation_identity_survives_action_retry_but_not_new_message() -> No
         user_id="user-a",
         conversation_id="conversation-a",
         message_id="message-a",
-        generation_mode="llm",
         arguments=arguments,
     )
     retried = build_presentation_job_identity(
@@ -25,7 +24,6 @@ def test_presentation_identity_survives_action_retry_but_not_new_message() -> No
         user_id="user-a",
         conversation_id="conversation-a",
         message_id="message-a",
-        generation_mode="llm",
         arguments={**arguments, "request": "生成 8 页 MOVO 汇报"},
     )
     next_message = build_presentation_job_identity(
@@ -33,7 +31,6 @@ def test_presentation_identity_survives_action_retry_but_not_new_message() -> No
         user_id="user-a",
         conversation_id="conversation-a",
         message_id="message-b",
-        generation_mode="llm",
         arguments=arguments,
     )
 

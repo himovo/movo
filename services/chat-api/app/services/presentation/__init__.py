@@ -14,7 +14,9 @@ from app.services.presentation.contracts import (
     PageRepairReport,
     SkillConstraint,
 )
-from app.services.presentation.pipeline import PresentationPipeline
+from app.services.presentation.image_native.pipeline import ImageNativePresentationPipeline
+
+PresentationPipeline = ImageNativePresentationPipeline
 
 __all__ = [
     "BriefCompiler",

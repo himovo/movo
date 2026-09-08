@@ -12,33 +12,7 @@ def _instance(*capabilities: str) -> dict:
     return {"status": "active", "capabilities": list(capabilities)}
 
 
-def test_llm_mode_validates_only_the_selected_chat_model(monkeypatch) -> None:
-    calls: list[str] = []
-
-    async def find_model(model_id: str, main_id: str):
-        calls.append(model_id)
-        assert main_id == "tenant-a"
-        return _instance("chat")
-
-    async def save_settings(**kwargs):
-        return {**kwargs, "updated_at": None}
-
-    monkeypatch.setattr(module, "find_instance_by_id", find_model)
-    monkeypatch.setattr(module, "save_presentation_settings", save_settings)
-    result = asyncio.run(module.put_settings(
-        module.PresentationSettingsPayload(
-            generationMode="llm",
-            llmModelId="llm-a",
-        ),
-        {"main_id": "tenant-a", "username": "admin"},
-    ))
-
-    assert calls == ["llm-a"]
-    assert result["generationMode"] == "llm"
-    assert result["configured"] is True
-
-
-def test_image_rebuild_validates_all_three_capabilities(monkeypatch) -> None:
+def test_settings_validate_all_three_capabilities(monkeypatch) -> None:
     capabilities = {
         "llm-a": _instance("chat"),
         "image-a": _instance("image_generation"),
@@ -57,7 +31,6 @@ def test_image_rebuild_validates_all_three_capabilities(monkeypatch) -> None:
     monkeypatch.setattr(module, "save_presentation_settings", save_settings)
     result = asyncio.run(module.put_settings(
         module.PresentationSettingsPayload(
-            generationMode="image_rebuild",
             llmModelId="llm-a",
             imageModelId="image-a",
             visionModelId="vision-a",
@@ -66,10 +39,11 @@ def test_image_rebuild_validates_all_three_capabilities(monkeypatch) -> None:
     ))
 
     assert calls == ["llm-a", "image-a", "vision-a"]
-    assert result["generationMode"] == "image_rebuild"
+    assert "generationMode" not in result
+    assert result["configured"] is True
 
 
-def test_image_rebuild_rejects_model_without_required_capability(monkeypatch) -> None:
+def test_settings_reject_model_without_required_capability(monkeypatch) -> None:
     capabilities = {
         "llm-a": _instance("chat"),
         "image-a": _instance("chat"),
@@ -82,10 +56,16 @@ def test_image_rebuild_rejects_model_without_required_capability(monkeypatch) ->
     with pytest.raises(HTTPException, match="image_generation"):
         asyncio.run(module.put_settings(
             module.PresentationSettingsPayload(
-                generationMode="image_rebuild",
                 llmModelId="llm-a",
                 imageModelId="image-a",
                 visionModelId="vision-a",
             ),
             {"main_id": "tenant-a", "username": "admin"},
         ))
+
+
+def test_legacy_partial_settings_are_reported_as_incomplete() -> None:
+    result = module._serialize({"llm_model_id": "llm-a", "generation_mode": "llm"})
+
+    assert result["configured"] is False
+    assert "generationMode" not in result

@@ -13,7 +13,6 @@ async def get_presentation_generation_settings(main_id: str) -> dict[str, Any] |
     if not doc:
         return None
     return {
-        "generation_mode": str(doc.get("generation_mode") or "llm").strip(),
         "llm_model_id": str(doc.get("llm_model_id") or "").strip(),
         "image_model_id": str(doc.get("image_model_id") or "").strip(),
         "vision_model_id": str(doc.get("vision_model_id") or "").strip(),

@@ -51,8 +51,7 @@ class ImageNativePresentationPipeline:
         execution_session: PresentationExecutionSession | None = None,
     ) -> Dict[str, Any]:
         enriched_output_spec = dict(output_spec or {})
-        enriched_output_spec["presentation_pipeline_version"] = "image_rebuild"
-        enriched_output_spec["presentation_generation_mode"] = "image_rebuild"
+        enriched_output_spec["presentation_pipeline_version"] = "image_native"
 
         await self._emit_progress(
             progress_callback,

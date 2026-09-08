@@ -9,9 +9,13 @@ import pytest
 from app.dsh_runtime.events.projection import KernelEventProjector
 from app.dsh_runtime.profile.tools import ToolProfileCompiler
 from app.enterprise_capabilities.artifacts import service as artifact_service
-from app.enterprise_capabilities.presentation.service import PresentationCreationCapability
+from app.enterprise_capabilities.presentation.service import (
+    PresentationCreationCapability,
+    build_presentation_pipeline,
+)
 from app.enterprise_capabilities.runtime import CapabilityExecutionContext, InternalCapabilityCatalog
 from app.enterprise_capabilities.runtime.adapters import build_default_registry
+from app.services.presentation.image_native.pipeline import ImageNativePresentationPipeline
 
 
 def _context(progress: list[dict], **turn_context) -> CapabilityExecutionContext:
@@ -88,7 +92,21 @@ def _default_presentation_settings(monkeypatch):
     monkeypatch.setattr(
         module,
         "get_presentation_generation_settings",
-        lambda *args: _async_value(None),
+        lambda *args: _async_value({
+            "llm_model_id": "model-a",
+            "image_model_id": "image-a",
+            "vision_model_id": "vision-a",
+        }),
+    )
+    monkeypatch.setattr(
+        module,
+        "get_model_config_by_capability",
+        lambda model_id, *args, **kwargs: _async_value({"id": model_id}),
+    )
+    monkeypatch.setattr(
+        module,
+        "get_image_model_config",
+        lambda model_id, *args, **kwargs: _async_value({"id": model_id}),
     )
 
 
@@ -105,6 +123,10 @@ def test_presentation_is_one_business_level_dsh_tool() -> None:
     assert "never construct, guess, export, or trial internal Blueprint JSON" in definition.description
     assert "minimum" not in str(definition.output_schema)
     assert build_default_registry().require("presentation.create@v1") is not None
+
+
+def test_presentation_factory_has_one_image_native_pipeline() -> None:
+    assert isinstance(build_presentation_pipeline({}), ImageNativePresentationPipeline)
 
 
 def test_presentation_tool_compiles_once_and_spreadsheet_scope_is_explicit() -> None:
@@ -167,7 +189,7 @@ def test_presentation_reuses_pipeline_and_returns_one_editable_bundle(monkeypatc
     assert "url" not in artifact["bundle"]["html_preview"]
     assert "必须生成且仅生成 3 页幻灯片" in pipeline.messages[0]["content"]
     assert pipeline.output_spec["tool_observations"][0]["source_label"] == "MOVO 官网"
-    assert pipeline.output_spec["presentation_generation_mode"] == "llm"
+    assert "presentation_generation_mode" not in pipeline.output_spec
     assert progress[0]["payload"]["text"] == "正在生成PPT故事线"
 
 
@@ -292,7 +314,6 @@ def test_presentation_rejects_before_pipeline_when_no_vision_model(monkeypatch) 
     pipeline = _Pipeline(slide_count=3)
     capability = PresentationCreationCapability(lambda output_spec: pipeline)
     monkeypatch.setattr(module, "get_presentation_generation_settings", lambda *args: _async_value({
-        "generation_mode": "image_rebuild",
         "llm_model_id": "model-a",
         "image_model_id": "image-a",
         "vision_model_id": "vision-a",
@@ -312,13 +333,12 @@ def test_presentation_rejects_before_pipeline_when_no_vision_model(monkeypatch) 
     assert pipeline.messages is None
 
 
-def test_presentation_uses_models_selected_in_image_rebuild_settings(monkeypatch) -> None:
+def test_presentation_uses_all_models_selected_in_settings(monkeypatch) -> None:
     from app.enterprise_capabilities.presentation import service as module
 
     pipeline = _Pipeline(slide_count=3)
     capability = PresentationCreationCapability(lambda output_spec: pipeline)
     monkeypatch.setattr(module, "get_presentation_generation_settings", lambda *args: _async_value({
-        "generation_mode": "image_rebuild",
         "llm_model_id": "model-a",
         "image_model_id": "image-a",
         "vision_model_id": "vision-a",
@@ -338,37 +358,8 @@ def test_presentation_uses_models_selected_in_image_rebuild_settings(monkeypatch
     ))
 
     assert result["success"] is True
-    assert pipeline.output_spec["presentation_generation_mode"] == "image_rebuild"
-
-
-def test_presentation_llm_mode_does_not_switch_when_image_models_exist(monkeypatch) -> None:
-    from app.enterprise_capabilities.presentation import service as module
-
-    pipeline = _Pipeline(slide_count=3)
-    capability = PresentationCreationCapability(lambda output_spec: pipeline)
-    monkeypatch.setattr(module, "get_presentation_generation_settings", lambda *args: _async_value({
-        "generation_mode": "llm",
-        "llm_model_id": "model-a",
-        "image_model_id": "image-a",
-        "vision_model_id": "vision-a",
-    }))
-    monkeypatch.setattr(
-        module,
-        "get_model_config_by_capability",
-        lambda *args, **kwargs: _async_value({"id": "model-a", "capabilities": ["chat"]}),
-    )
-
-    async def unexpected(*args, **kwargs):
-        raise AssertionError("LLM mode must not resolve image or vision models")
-
-    monkeypatch.setattr(module, "get_image_model_config", unexpected)
-    result = asyncio.run(capability.run(
-        {"request": "生成三页 PPT", "page_count": 3},
-        _context([]),
-    ))
-
     assert result["success"] is True
-    assert pipeline.output_spec["presentation_generation_mode"] == "llm"
+    assert "presentation_generation_mode" not in pipeline.output_spec
 
 
 def test_pptx_export_rejects_empty_deck_and_links_valid_blueprint(monkeypatch) -> None:

@@ -1,11 +1,8 @@
 import { apiClient } from './client';
 
 
-export type PresentationGenerationMode = 'llm' | 'image_rebuild';
-
 export interface PresentationSettings {
   configured: boolean;
-  generationMode: PresentationGenerationMode;
   llmModelId: string;
   imageModelId: string;
   visionModelId: string;
@@ -13,7 +10,6 @@ export interface PresentationSettings {
 }
 
 export interface PresentationSettingsPayload {
-  generationMode: PresentationGenerationMode;
   llmModelId: string;
   imageModelId: string;
   visionModelId: string;

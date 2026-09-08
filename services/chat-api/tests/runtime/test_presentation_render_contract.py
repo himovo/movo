@@ -4,7 +4,6 @@ from zipfile import ZipFile
 from PIL import Image
 
 from app.services.presentation.contracts import FreeformDeckBlueprint, FreeformPageBlueprint, FreeformBlock
-from app.services.presentation.cover_image_composer import CoverImageComposer
 from app.services.presentation.image_layout import crop_image_bytes_to_aspect
 from app.services.presentation.pptx_compiler import PptxCompiler
 from app.services.presentation.style_contract import PresentationStyleContract
@@ -65,16 +64,6 @@ def test_pptx_writes_vertical_anchor_and_four_side_margins() -> None:
     assert 'rIns="203200"' in slide_xml
     assert 'tIns="101600"' in slide_xml
     assert 'bIns="152400"' in slide_xml
-
-
-def test_cover_background_injection_preserves_authored_blocks() -> None:
-    page = FreeformPageBlueprint(
-        page_id="cover",
-        blocks=[FreeformBlock(id="authored-title", type="text_box", role="headline", content="MOVO")],
-    )
-    updated = CoverImageComposer()._inject_background_image(page, "https://example.com/cover.png")
-    assert updated.blocks[0].role == "background"
-    assert any(block.id == "authored-title" for block in updated.blocks)
 
 
 def test_image_cover_crop_preserves_target_aspect_ratio() -> None:

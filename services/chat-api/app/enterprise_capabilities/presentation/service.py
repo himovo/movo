@@ -16,7 +16,7 @@ from app.llm.configured_models import (
 )
 from app.llm.configured_image_models import get_image_model_config
 from app.infrastructure.request_context import reset_request_context, set_request_context
-from app.services.presentation.pipeline_selector import build_presentation_pipeline
+from app.services.presentation.image_native.pipeline import ImageNativePresentationPipeline
 from app.services.presentation.settings import get_presentation_generation_settings
 from app.services.conversation_evidence_service import (
     ConversationEvidenceUnavailable,
@@ -27,6 +27,12 @@ from .contracts import normalize_presentation_arguments
 from .evidence import presentation_tool_observations
 from .progress import PresentationTimelineProjector
 from .job_coordinator import PresentationJobCoordinator
+
+
+def build_presentation_pipeline(_: dict[str, Any] | None = None) -> ImageNativePresentationPipeline:
+    """Build MOVO's single supported presentation pipeline."""
+
+    return ImageNativePresentationPipeline()
 
 
 class PresentationCreationCapability:
@@ -53,27 +59,21 @@ class PresentationCreationCapability:
         if not args["request"]:
             return self._rejected("presentation request is empty", requested=args["page_count"])
         presentation_settings = await get_presentation_generation_settings(context.tenant_id)
-        generation_mode = str((presentation_settings or {}).get("generation_mode") or "llm")
-        if generation_mode not in {"llm", "image_rebuild"}:
-            return self._rejected("PPT generation mode is invalid; update it in admin settings", requested=args["page_count"])
         model_config = await self._model_config(context, presentation_settings)
         if model_config is None:
             return self._rejected("PPT content model is unavailable; update it in admin settings", requested=args["page_count"])
-        image_model_config = None
-        vision_model_config = None
-        if generation_mode == "image_rebuild":
-            image_model_config = await self._image_model_config(context, presentation_settings)
-            if image_model_config is None:
-                return self._rejected(
-                    "PPT image generation model is unavailable; update it in admin settings",
-                    requested=args["page_count"],
-                )
-            vision_model_config = await self._vision_model_config(context, presentation_settings)
-            if vision_model_config is None:
-                return self._rejected(
-                    "PPT vision rebuild model is unavailable; update it in admin settings",
-                    requested=args["page_count"],
-                )
+        image_model_config = await self._image_model_config(context, presentation_settings)
+        if image_model_config is None:
+            return self._rejected(
+                "PPT image generation model is unavailable; update it in admin settings",
+                requested=args["page_count"],
+            )
+        vision_model_config = await self._vision_model_config(context, presentation_settings)
+        if vision_model_config is None:
+            return self._rejected(
+                "PPT vision rebuild model is unavailable; update it in admin settings",
+                requested=args["page_count"],
+            )
 
         request_context = {
             "main_id": context.tenant_id,
@@ -81,15 +81,13 @@ class PresentationCreationCapability:
             "configured_model": model_config,
             "model_instance_id": context.model_instance_id,
         }
-        if vision_model_config:
-            request_context["vision_model_config"] = vision_model_config
-        if image_model_config:
-            request_context["image_model_id"] = str(image_model_config.get("id") or "")
+        request_context["vision_model_config"] = vision_model_config
+        request_context["image_model_id"] = str(image_model_config.get("id") or "")
         previous_request = set_request_context(request_context)
         previous_model = set_configured_model_context(model_config)
         try:
             resolved_context = await self._with_conversation_evidence(args, context)
-            return await self._run_pipeline(args, resolved_context, generation_mode=generation_mode)
+            return await self._run_pipeline(args, resolved_context)
         finally:
             reset_configured_model_context(previous_model)
             reset_request_context(previous_request)
@@ -127,16 +125,13 @@ class PresentationCreationCapability:
         self,
         args: dict[str, Any],
         context: CapabilityExecutionContext,
-        *,
-        generation_mode: str,
     ) -> dict[str, Any]:
-        output_spec = self._output_spec(args, context, generation_mode=generation_mode)
+        output_spec = self._output_spec(args, context)
         execution_session = None
         if self._job_coordinator is not None:
             opened = await self._job_coordinator.open(
                 arguments=args,
                 context=context,
-                generation_mode=generation_mode,
             )
             if opened.terminal_result is not None:
                 return opened.terminal_result
@@ -241,8 +236,6 @@ class PresentationCreationCapability:
     def _output_spec(
         args: dict[str, Any],
         context: CapabilityExecutionContext,
-        *,
-        generation_mode: str,
     ) -> dict[str, Any]:
         sections = list(args["required_sections"])
         section_specs = [
@@ -257,7 +250,6 @@ class PresentationCreationCapability:
             "language": str(context.turn_context.get("language") or "zh"),
             "target_audience": args["audience"],
             "presentation_context": args["request"],
-            "presentation_generation_mode": generation_mode,
             "use_agenda": args["use_agenda"],
             "grounding_strictness": args["grounding_mode"],
             "tool_observations": presentation_tool_observations(context.turn_context),
