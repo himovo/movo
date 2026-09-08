@@ -13,7 +13,7 @@ RUN npm ci --legacy-peer-deps
 COPY . .
 RUN npm run build
 
-FROM nginx:1.29.8-alpine
+FROM nginx:1.31.5-alpine
 
 RUN apk upgrade --no-cache
 
