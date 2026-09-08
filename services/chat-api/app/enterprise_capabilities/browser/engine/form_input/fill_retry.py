@@ -17,6 +17,8 @@ class _PendingFill:
     decision: Decision
     target: Dict[str, Any]
     stable_key: str
+    origin_url: str = ""
+    missing_reads: int = 0
 
 
 @dataclass
@@ -54,6 +56,7 @@ class FillRetryPolicy:
             decision=decision,
             target=target,
             stable_key=key,
+            origin_url=str(before.url or "") if before else "",
         )
         return Decision(
             tool="browser_observe",
@@ -68,6 +71,11 @@ class FillRetryPolicy:
         pending = self._pending
         if pending is None:
             return None
+        if not observation.fresh:
+            return Decision("browser_observe", {}, f"{FILL_RECONCILIATION_TAG} fresh field evidence required")
+        if pending.origin_url and observation.url != pending.origin_url:
+            self._pending = None
+            return _unresolved("页面已经切换，无法确认上一页面的输入结果；不会把原内容填入新页面。")
         original_args = dict(pending.decision.args or {})
         target = find_field(
             observation.elements,
@@ -83,14 +91,23 @@ class FillRetryPolicy:
             self._pending = None
             return None
         if target is None:
+            if pending.missing_reads == 0:
+                pending.missing_reads += 1
+                return Decision(
+                    "browser_observe", {"with_screenshot": True},
+                    f"{FILL_RECONCILIATION_TAG} 原输入框已消失，获取当前画面和控件以确认替换状态；尚未确认填写，不能提交。",
+                )
             self._pending = None
-            return None
+            return _unresolved("填写后原输入框已消失，重新观察仍无法确认对应控件和内容。请确认输入结果后继续。")
         # A non-empty mismatch proves that the previous mutation changed the
         # field without replacing its old value. Retrying would append the
         # same text again and make recovery progressively harder.
         if _normalize(target.get("value")):
             self._pending = None
-            return None
+            return _unresolved("输入框当前内容与要求不一致，已停止重复输入和提交，请确认需要保留的内容。")
+        if target.get("disabled") or target.get("visible") is False or not target.get("editable"):
+            self._pending = None
+            return _unresolved("原输入框当前不可编辑，无法继续填写；请检查页面限制或控件状态。")
         original_args["ref"] = str(target.get("ref") or original_args.get("ref") or "")
         self._pending = None
         return Decision(
@@ -136,6 +153,8 @@ class FillRetryPolicy:
                     },
                     "target": dict(pending.target),
                     "stable_key": pending.stable_key,
+                    "origin_url": pending.origin_url,
+                    "missing_reads": pending.missing_reads,
                 }
                 if pending is not None else None
             ),
@@ -158,6 +177,8 @@ class FillRetryPolicy:
                 ),
                 target=dict(pending.get("target") or {}),
                 stable_key=str(pending.get("stable_key") or ""),
+                origin_url=str(pending.get("origin_url") or ""),
+                missing_reads=int(pending.get("missing_reads") or 0),
             )
             if isinstance(pending, dict) and isinstance(decision, dict)
             else None
@@ -192,11 +213,19 @@ def _is_retryable(error: Optional[str]) -> bool:
         "target_not_focused",
         "target_not_found",
         "value_not_applied",
+        "stale_target_rebind_",
+        "unknown or stale element ref",
+        "target_not_editable",
+        "fill target is absent",
     ))
 
 
 def is_fill_reconciliation(decision: Decision) -> bool:
     return FILL_RECONCILIATION_TAG in str(decision.rationale or "")
+
+
+def _unresolved(question: str) -> Decision:
+    return Decision("browser_ask_user", {"question": question}, f"{FILL_RECONCILIATION_TAG} {question}")
 
 
 __all__ = ["FillRetryPolicy", "is_fill_reconciliation"]

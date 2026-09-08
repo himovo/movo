@@ -18,21 +18,18 @@ from app.services.presentation.contracts import (
     PageRepairReport,
     StoryDeckPlan,
 )
-from app.services.presentation.image_native.blueprint_mapper import (
-    BlueprintComposer,
-    fallback_page_from_analysis,
-)
-from app.services.presentation.image_native.blueprint_postprocess import postprocess_image_native_page
-from app.services.presentation.image_native.contracts import ImageNativePagePlan
+from app.services.presentation.image_native.contracts import ImageNativePagePlan, PlannedText
 from app.services.presentation.image_native.deck_brief_planner import DeckBriefPlanner
-from app.services.presentation.image_native.image_generator import (
-    FullSlideImageGenerator,
-    ImageNativeAssetGenerator,
-)
-from app.services.presentation.image_native.icon_generator import ImageNativeIconSvgGenerator
+from app.services.presentation.image_native.image_page_builder import ImagePageBuilder, is_image_only_page
+from app.services.presentation.image_native.image_generator import FullSlideImageGenerator
+from app.services.presentation.image_native.page_copy import normalized_final_texts, source_texts_from_page
 from app.services.presentation.image_native.prompt_builder import (
     build_page_plan_prompt,
     constrain_full_slide_prompt,
+)
+from app.services.presentation.image_native.progress_narration import (
+    page_generation_summary,
+    visual_plan_summary,
 )
 from app.services.presentation.image_native.page_utils import progress_page_label, renumber_pages
 from app.services.presentation.image_native.request_context import (
@@ -41,7 +38,6 @@ from app.services.presentation.image_native.request_context import (
     extract_user_outline,
     story_payload,
 )
-from app.services.presentation.image_native.visual_analyzer import VisualSemanticAnalyzer
 from app.services.presentation.theme_factory_catalog import build_freeform_theme_from_design_tokens
 from app.services.presentation.execution.session import PresentationExecutionSession
 
@@ -49,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 
 class ImageNativePagePlanner:
-    """Page planner that uses gpt-image-2 as the visual design source.
+    """Page planner that uses the configured image model as the design source.
 
     It preserves the production deck/story planning contracts and emits the
     same FreeformDeckBlueprint consumed by preview, editor, and PPTX export.
@@ -60,10 +56,7 @@ class ImageNativePagePlanner:
         self._brief_compiler = BriefCompiler()
         self._responses = ConfiguredMultimodalClient()
         self._slide_generator = FullSlideImageGenerator()
-        self._visual_analyzer = VisualSemanticAnalyzer()
-        self._asset_generator = ImageNativeAssetGenerator()
-        self._icon_generator = ImageNativeIconSvgGenerator()
-        self._blueprint_composer = BlueprintComposer()
+        self._image_builder = ImagePageBuilder()
 
     async def _emit_progress(
         self,
@@ -113,30 +106,30 @@ class ImageNativePagePlanner:
                     "image_native_deck_brief": deck_brief.model_dump(),
                 })
 
+        page_briefs = list(deck_brief.page_briefs or [])
+        page_count = len(page_briefs)
+        page_concurrency = self._page_concurrency(page_count)
         await self._emit_progress(
             progress_callback,
             {
                 "stage": "deck_planning",
-                "status": "running",
+                "status": "completed",
                 "kind": "analyze",
-                "message": "正在规划 image-native PPT 视觉路线",
+                "message": visual_plan_summary(deck_brief, concurrency=page_concurrency),
             },
         )
 
         built_pages: List[FreeformPageBlueprint] = []
         repair_reports: List[PageRepairReport] = []
         page_artifacts: List[Dict[str, Any]] = []
-        page_briefs = list(deck_brief.page_briefs or [])
-        page_count = len(page_briefs)
-        page_concurrency = self._page_concurrency(page_count)
         restored_pages: Dict[str, tuple[FreeformPageBlueprint, Dict[str, Any]]] = {}
         if execution_session is not None:
             for page_id, checkpoint in execution_session.pages.items():
                 try:
-                    restored_pages[page_id] = (
-                        FreeformPageBlueprint.model_validate(checkpoint.get("blueprint", checkpoint)),
-                        dict(checkpoint.get("metadata") or {}),
-                    )
+                    restored_page = FreeformPageBlueprint.model_validate(checkpoint.get("blueprint", checkpoint))
+                    if not is_image_only_page(restored_page):
+                        continue
+                    restored_pages[page_id] = (restored_page, dict(checkpoint.get("metadata") or {}))
                 except Exception:
                     logger.warning(
                         "presentation_image_native_checkpoint_invalid job_id=%s page_id=%s",
@@ -167,7 +160,11 @@ class ImageNativePagePlanner:
                         "page_total": page_count,
                         "page_id": str(page_brief.page_id or "").strip(),
                         "page_label": page_label,
-                        "message": f"正在用 image-native 路线生成第{idx + 1}页：{page_label}",
+                        "message": page_generation_summary(
+                            page_brief,
+                            index=idx + 1,
+                            total=page_count,
+                        ),
                     },
                 )
                 page, artifact = await self._build_one_page(
@@ -224,7 +221,11 @@ class ImageNativePagePlanner:
                         "page_total": page_count,
                         "page_id": str(page_brief.page_id or "").strip(),
                         "page_label": page_label,
-                        "message": f"正在用 image-native 路线生成第{idx + 1}页：{page_label}",
+                        "message": page_generation_summary(
+                            page_brief,
+                            index=idx + 1,
+                            total=page_count,
+                        ),
                     },
                 )
                 prior_pages = [page for page in realized_pages[:idx] if page is not None]
@@ -270,7 +271,7 @@ class ImageNativePagePlanner:
             pages=built_pages,
         )
         blueprint.runtime = {
-            "source": "presentation_image_native_rebuild",
+            "source": "presentation_image_native_full_slide",
             "story_outline": json.dumps(story_payload(story_plan), ensure_ascii=False),
             "deck_brief": deck_brief.model_dump(),
             "constraint_bundle": constraint_bundle.model_dump(),
@@ -345,7 +346,17 @@ class ImageNativePagePlanner:
         page_plan = ImageNativePagePlan.model_validate(page_plan_payload)
         page_plan.page_id = str(page_plan.page_id or page_brief.page_id).strip() or str(page_brief.page_id).strip()
         page_plan.page_index = int(page_plan.page_index or page_brief.page_index or 0)
-        page_plan.full_slide_prompt = constrain_full_slide_prompt(page_plan.full_slide_prompt)
+        page_plan.planned_texts = [
+            PlannedText.model_validate(item)
+            for item in normalized_final_texts(
+                list(page_plan.planned_texts or []),
+                fallback=source_texts_from_page(page_brief),
+            )
+        ]
+        page_plan.full_slide_prompt = constrain_full_slide_prompt(
+            page_plan.full_slide_prompt,
+            final_texts=[item.model_dump() for item in page_plan.planned_texts],
+        )
         page_plan_dict = page_plan.model_dump()
 
         generated = await self._slide_generator.generate(
@@ -354,53 +365,9 @@ class ImageNativePagePlanner:
             page_id=str(page_plan.page_id or "page"),
             log_context={"page_id": page_plan.page_id, "stage": "full_slide"},
         )
-        analysis = await self._visual_analyzer.analyze(
+        page = self._image_builder.build(
             page_plan=page_plan_dict,
-            image_bytes=bytes(generated["bytes"]),
-            user_id=user_id,
-            session_id=page_session_id,
-        )
-        analysis_dict = analysis.model_dump()
-        asset_map = await self._asset_generator.generate_assets(
-            analysis=analysis_dict,
-            user_id=user_id,
-            page_id=page_plan.page_id,
-        )
-        icon_svg_map = await self._icon_generator.generate_icons(
-            analysis=analysis_dict,
-            user_id=user_id,
-            session_id=page_session_id,
-            page_id=page_plan.page_id,
-        )
-        try:
-            page = await self._blueprint_composer.compose(
-                deck_brief=deck_brief.model_dump(),
-                page_plan=page_plan_dict,
-                visual_analysis=analysis_dict,
-                image_asset_map=asset_map,
-                icon_svg_map=icon_svg_map,
-                source_slide_image_url=str(generated.get("url") or ""),
-                user_id=user_id,
-                session_id=page_session_id,
-            )
-        except Exception:
-            logger.warning(
-                "presentation_image_native_blueprint_compose_failed page_id=%s",
-                page_plan.page_id,
-                exc_info=True,
-            )
-            page = fallback_page_from_analysis(
-                page_plan=page_plan_dict,
-                analysis=analysis_dict,
-                image_asset_map=asset_map,
-                icon_svg_map=icon_svg_map,
-                source_slide_image_url=str(generated.get("url") or ""),
-            )
-        page = postprocess_image_native_page(
-            page,
             source_slide_image_url=str(generated.get("url") or ""),
-            image_asset_map=asset_map,
-            allow_source_slide_background=_allows_source_slide_background(page_plan_dict),
         )
 
         artifact = {
@@ -409,13 +376,6 @@ class ImageNativePagePlanner:
             "full_slide_image_object_path": str(generated.get("object_path") or ""),
             "full_slide_prompt": page_plan.full_slide_prompt,
             "page_plan": page_plan_dict,
-            "visual_analysis": analysis_dict,
-            "image_asset_map": asset_map,
-            "icon_svg_map": icon_svg_map,
+            "delivery_mode": "full_slide_image",
         }
         return page, artifact
-
-
-def _allows_source_slide_background(page_plan: Dict[str, Any]) -> bool:
-    page_type = str((page_plan or {}).get("page_type") or "").strip().lower()
-    return page_type in {"cover", "closing", "thank_you", "thankyou", "back_cover"}

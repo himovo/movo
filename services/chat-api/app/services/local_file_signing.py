@@ -13,6 +13,8 @@ def sign_local_file_url(
     secret: str,
     ttl_seconds: int,
 ) -> str:
+    if not str(secret or "").strip():
+        raise ValueError("Local file signing secret is required")
     expires_at = int(time.time()) + max(1, int(ttl_seconds))
     signature = _signature(object_path, expires_at, secret)
     separator = "&" if "?" in base_url else "?"

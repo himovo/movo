@@ -53,14 +53,14 @@ _READ_ONLY_INTENT = re.compile(
 
 class _DiscoveredContract(DecisionOutput):
     is_commit: bool | None = None
-    action_name: Any = ""
-    operation_family: Any = "custom"
-    entity: Any = ""
-    side_effect: Any = None
-    completes_goal: Any = False
-    fingerprint: Any = Field(default_factory=dict)
-    expected_effects: Any = Field(default_factory=list)
-    verification_hints: Any = Field(default_factory=list)
+    action_name: str = ""
+    operation_family: str = "custom"
+    entity: str = ""
+    side_effect: str | None = None
+    completes_goal: bool = False
+    fingerprint: Dict[str, str] = Field(default_factory=dict)
+    expected_effects: list[str] = Field(default_factory=list)
+    verification_hints: list[str] = Field(default_factory=list)
 
 
 async def discover_effect_contract(

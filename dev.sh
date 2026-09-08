@@ -17,6 +17,10 @@ ASKAI_REDIS_URL="${ASKAI_REDIS_URL:-redis://127.0.0.1:6379/0}"
 BACKEND_PYTHON_BIN=""
 DOC_PROCESSING_PYTHON_BIN=""
 
+# One credential must be shared by admin-api and chat-api in local source mode.
+# shellcheck source=scripts/dev/internal_service_auth.sh
+source "$ROOT_DIR/scripts/dev/internal_service_auth.sh"
+
 kill_port() {
     local port="$1"
     local pids
@@ -148,6 +152,7 @@ start_admin_web() {
 }
 
 echo "Starting AskAI Platform..."
+movo_prepare_internal_service_auth
 cleanup_ports
 ensure_backend_venv
 ensure_document_processing_venv

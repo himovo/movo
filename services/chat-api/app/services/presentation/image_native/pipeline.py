@@ -9,6 +9,12 @@ from app.services.presentation.geometry_collision_detector import detect_deck_co
 from app.services.presentation.html_renderer import HtmlRenderer
 from app.services.presentation.image_filler import ImageFiller
 from app.services.presentation.image_native.page_planner import ImageNativePagePlanner
+from app.services.presentation.image_native.progress_narration import (
+    presentation_ready_summary,
+    preview_assembly_summary,
+    story_plan_summary,
+    story_planning_introduction,
+)
 from app.services.presentation.preview_bundle import PreviewBundleBuilder
 from app.services.presentation.story_planner import StoryPlanner
 from app.services.presentation.structural_sanitizer import sanitize_deck
@@ -19,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class ImageNativePresentationPipeline:
-    """End-to-end PPT pipeline using complete image visual -> semantic rebuild."""
+    """End-to-end PPT pipeline that delivers one finished image per slide."""
 
     def __init__(self) -> None:
         self._story_planner = StoryPlanner()
@@ -59,7 +65,7 @@ class ImageNativePresentationPipeline:
                 "stage": "story_planning",
                 "status": "running",
                 "kind": "analyze",
-                "message": "正在生成PPT故事线",
+                "message": story_planning_introduction(),
             },
         )
         story_plan = None
@@ -81,6 +87,15 @@ class ImageNativePresentationPipeline:
             str(story_plan.deck_id or "").strip(),
             len(list(story_plan.pages or [])),
         )
+        await self._emit_progress(
+            progress_callback,
+            {
+                "stage": "story_ready",
+                "status": "completed",
+                "kind": "analyze",
+                "message": story_plan_summary(story_plan),
+            },
+        )
 
         blueprint = await self._page_planner.build(
             story_plan=story_plan,
@@ -90,15 +105,9 @@ class ImageNativePresentationPipeline:
         )
         blueprint = sanitize_deck(blueprint)
 
-        await self._emit_progress(
-            progress_callback,
-            {
-                "stage": "image_generation",
-                "status": "running",
-                "kind": "render",
-                "message": "正在补齐页面图片资源",
-            },
-        )
+        # Full-slide image pages already contain their final image URL. Keep
+        # ImageFiller as a compatibility safety net, but do not expose its
+        # usual no-op as a user-facing generation stage.
         blueprint = await self._image_filler.fill(
             blueprint,
             user_id=str(enriched_output_spec.get("user_id") or "anonymous"),
@@ -110,7 +119,7 @@ class ImageNativePresentationPipeline:
                 "stage": "preview_render",
                 "status": "running",
                 "kind": "render",
-                "message": "正在生成PPT预览",
+                "message": preview_assembly_summary(len(list(blueprint.pages or []))),
             },
         )
         html_preview = self._html_renderer.compile(blueprint=blueprint)
@@ -149,6 +158,15 @@ class ImageNativePresentationPipeline:
             "presentation_image_native_stage stage=preview_ready deck_id=%s slide_count=%s",
             str(blueprint.deck_id or "").strip(),
             len(list(blueprint.pages or [])),
+        )
+        await self._emit_progress(
+            progress_callback,
+            {
+                "stage": "presentation_ready",
+                "status": "completed",
+                "kind": "render",
+                "message": presentation_ready_summary(len(list(blueprint.pages or []))),
+            },
         )
         return {
             "story_plan": story_plan,

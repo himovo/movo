@@ -58,17 +58,17 @@ const riskLabel = computed(() => {
 </template>
 
 <style scoped>
-.approval-panel { display:flex; gap:12px; margin-top:12px; border:1px solid #f0c36a; border-radius:12px; background:#fffbeb; padding:14px; color:#3f3f46; }
-.approval-icon { display:flex; width:32px; height:32px; flex:none; align-items:center; justify-content:center; border-radius:9px; background:#fef3c7; color:#a16207; }
-.approval-icon svg { width:18px; height:18px; }
+.approval-panel { display:flex; box-sizing:border-box; width:min(100%, 620px); gap:10px; margin-top:10px; border:1px solid #f0c36a; border-radius:11px; background:#fffbeb; padding:11px 12px; color:#3f3f46; }
+.approval-icon { display:flex; width:28px; height:28px; flex:none; align-items:center; justify-content:center; border-radius:8px; background:#fef3c7; color:#a16207; }
+.approval-icon svg { width:16px; height:16px; }
 .approval-content { min-width:0; flex:1; }
-.approval-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; color:#27272a; font-size:14px; }
-.approval-risk { flex:none; border-radius:999px; background:#fde68a; padding:2px 8px; color:#854d0e; font-size:11px; font-weight:600; }
-.approval-content p { margin:5px 0 0; font-size:13px; line-height:1.6; }
+.approval-heading { display:flex; align-items:center; justify-content:flex-start; flex-wrap:wrap; gap:6px; min-height:28px; color:#27272a; font-size:13px; }
+.approval-risk { flex:none; border-radius:999px; background:#fde68a; padding:1px 7px; color:#854d0e; font-size:10px; font-weight:600; line-height:18px; }
+.approval-content p { margin:2px 0 0; font-size:12px; line-height:1.5; }
 .approval-description { color:#71717a; }
 .approval-error { color:#b91c1c; }
-.approval-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
-.approval-button { display:inline-flex; min-width:84px; min-height:44px; cursor:pointer; align-items:center; justify-content:center; gap:7px; border-radius:9px; padding:8px 16px; font-size:13px; font-weight:600; transition:background-color .18s ease,border-color .18s ease,color .18s ease; }
+.approval-actions { display:flex; justify-content:flex-start; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.approval-button { display:inline-flex; min-width:72px; min-height:40px; cursor:pointer; align-items:center; justify-content:center; gap:6px; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:600; transition:background-color .18s ease,border-color .18s ease,color .18s ease; }
 .approval-button:focus-visible { outline:2px solid #2563eb; outline-offset:2px; }
 .approval-button:disabled { cursor:not-allowed; opacity:.6; }
 .approval-button.secondary { border:1px solid #d4d4d8; background:#fff; color:#52525b; }
@@ -78,5 +78,5 @@ const riskLabel = computed(() => {
 .approval-spinner { width:13px; height:13px; border:2px solid rgba(255,255,255,.45); border-top-color:#fff; border-radius:50%; animation:approval-spin .8s linear infinite; }
 @keyframes approval-spin { to { transform:rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .approval-spinner { animation:none; } }
-@media (max-width: 480px) { .approval-panel { padding:12px; } .approval-actions { flex-direction:column-reverse; } .approval-button { width:100%; } }
+@media (max-width: 480px) { .approval-panel { padding:10px; } .approval-actions { display:grid; grid-template-columns:1fr 1fr; } .approval-button { width:100%; } .approval-button.primary { grid-column:1 / -1; } }
 </style>

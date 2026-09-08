@@ -8,6 +8,7 @@ import { capabilities } from '../../platform'
 import { useDesktopToolPanelSize } from '../../composables/desktop/useDesktopToolPanelSize'
 import { useEmbeddedBrowserState } from '../../composables/browser/embeddedBrowserState'
 import { t } from '../../composables/i18n'
+import { canDisplayEmbeddedBrowserSurface } from '../../composables/browser/browserSurfaceVisibility'
 
 const props = defineProps<{
   active: boolean
@@ -34,10 +35,13 @@ const sessionMatches = computed(() => Boolean(
   props.sessionId
   && embeddedState.value.session_id === props.sessionId,
 ))
-const useElectron = computed(() => capabilities.embeddedBrowser
-  && props.active
-  && embeddedState.value.active
-  && sessionMatches.value)
+const useElectron = computed(() => canDisplayEmbeddedBrowserSurface({
+  embeddedBrowser: capabilities.embeddedBrowser,
+  activePane: props.active,
+  browserActive: embeddedState.value.active,
+  purpose: embeddedState.value.purpose,
+  sessionMatches: sessionMatches.value,
+}))
 const hasPreview = computed(() => useElectron.value)
 const panelOpen = computed(() => props.enabled !== false && props.active && props.open && props.activeKind === 'browser' && hasPreview.value)
 const dismissedSession = ref('')

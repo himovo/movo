@@ -17,6 +17,16 @@ def test_generation_endpoint_matches_poc_v1_shape():
     assert client.image_generation_endpoint("generations") == "https://example-resource.openai.azure.com/openai/v1/images/generations"
 
 
+def test_generation_endpoint_accepts_base_url_that_already_contains_openai_v1():
+    client = AzureGptImageClient(config=AzureGptImageConfig(
+        endpoint="https://example-resource.openai.azure.com/openai/v1/",
+        api_key="secret",
+        deployment="gpt-image-2",
+    ))
+
+    assert client.image_generation_endpoint("generations") == "https://example-resource.openai.azure.com/openai/v1/images/generations"
+
+
 def test_generate_image_uses_poc_a_request_shape(monkeypatch):
     client = AzureGptImageClient(config=AzureGptImageConfig(
         endpoint="https://example-resource.openai.azure.com/",

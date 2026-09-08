@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from app.services.documents import document_service
 from app.api.principal import require_end_user_principal
 from app.services.local_file_signing import verify_local_file_signature
+from app.services.local_file_secret import resolve_local_file_signing_secret
 
 router = APIRouter()
 
@@ -291,11 +292,16 @@ async def get_stored_file(
         raise HTTPException(status_code=404, detail="File proxy is only available for local storage")
     uploader = ObjectStorageClient()
     path = unquote(object_path)
+    settings = get_settings()
+    signing_secret = resolve_local_file_signing_secret(
+        configured_secret=str(settings.END_USER_AUTH_SECRET or ""),
+        storage_root=settings.LOCAL_STORAGE_PATH,
+    )
     if not verify_local_file_signature(
         path,
         expires_at=expires,
         signature=signature,
-        secret=str(get_settings().END_USER_AUTH_SECRET or ""),
+        secret=signing_secret,
     ):
         raise HTTPException(status_code=403, detail="Invalid or expired file URL")
     file_path = uploader.local_file_path(path)

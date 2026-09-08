@@ -43,6 +43,34 @@ def test_settings_validate_all_three_capabilities(monkeypatch) -> None:
     assert result["configured"] is True
 
 
+def test_settings_accept_legacy_image_capability(monkeypatch) -> None:
+    capabilities = {
+        "llm-a": _instance("chat"),
+        "image-a": _instance("image"),
+        "vision-a": _instance("vision"),
+    }
+
+    async def find_model(model_id: str, main_id: str):
+        return capabilities.get(model_id)
+
+    async def save_settings(**kwargs):
+        return {**kwargs, "updated_at": None}
+
+    monkeypatch.setattr(module, "find_instance_by_id", find_model)
+    monkeypatch.setattr(module, "save_presentation_settings", save_settings)
+
+    result = asyncio.run(module.put_settings(
+        module.PresentationSettingsPayload(
+            llmModelId="llm-a",
+            imageModelId="image-a",
+            visionModelId="vision-a",
+        ),
+        {"main_id": "tenant-a", "username": "admin"},
+    ))
+
+    assert result["configured"] is True
+
+
 def test_settings_reject_model_without_required_capability(monkeypatch) -> None:
     capabilities = {
         "llm-a": _instance("chat"),

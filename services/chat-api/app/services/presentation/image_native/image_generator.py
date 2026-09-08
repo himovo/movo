@@ -40,7 +40,6 @@ class FullSlideImageGenerator:
         return {
             "url": uploader.sign_url(object_path),
             "object_path": object_path,
-            "bytes": image_bytes,
             "response": result.response,
             "model_id": result.model_id,
             "model_name": result.model_name,
@@ -67,58 +66,3 @@ class FullSlideImageGenerator:
             logger.warning("presentation_image_native_image_event", extra=log_payload)
         else:
             logger.info("presentation_image_native_image_event", extra=log_payload)
-
-
-class ImageNativeAssetGenerator:
-    """Generate no-text assets requested by visual semantic analysis."""
-
-    async def generate_assets(
-        self,
-        *,
-        analysis: Dict[str, Any],
-        user_id: str,
-        page_id: str,
-        max_assets: int = 4,
-    ) -> Dict[str, str]:
-        assets = []
-        for item in list((analysis or {}).get("image_assets") or []):
-            if not isinstance(item, dict):
-                continue
-            asset_id = str(item.get("id") or "").strip()
-            prompt = str(item.get("prompt") or "").strip()
-            if asset_id and prompt:
-                assets.append((asset_id, prompt))
-            if len(assets) >= max_assets:
-                break
-        if not assets:
-            return {}
-
-        uploader = AliyunOSSUploader()
-        out: Dict[str, str] = {}
-        for asset_id, prompt in assets:
-            try:
-                result = await generate_image(prompt=prompt, user_id=user_id)
-                image_bytes = self._normalize_asset_bytes(result.image_bytes)
-                _public, object_path = uploader.upload_bytes_with_path(
-                    image_bytes,
-                    user_id=str(user_id or "anonymous").strip() or "anonymous",
-                    file_name=f"presentation_image_native_asset_{page_id}_{asset_id}_{uuid.uuid4().hex[:8]}.png",
-                    content_type="image/png",
-                )
-                out[asset_id] = uploader.sign_url(object_path)
-            except Exception:
-                logger.warning(
-                    "presentation_image_native_asset_failed page_id=%s asset_id=%s",
-                    page_id,
-                    asset_id,
-                    exc_info=True,
-                )
-        return out
-
-    @staticmethod
-    def _normalize_asset_bytes(image_bytes: bytes) -> bytes:
-        with Image.open(BytesIO(image_bytes)) as img:
-            rgb = img.convert("RGB")
-            out = BytesIO()
-            rgb.save(out, format="PNG")
-            return out.getvalue()

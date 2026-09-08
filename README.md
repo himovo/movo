@@ -22,6 +22,8 @@ MOVO brings DSH Agents from development experiments into enterprise production. 
 
 > **In one sentence:** DSH runs the Agent; MOVO brings the Agent into enterprise production.
 
+![How DeepSeek Harness and MOVO divide responsibilities](docs/assets/dsh-movo-responsibilities-en.png)
+
 This repository contains the self-hosted Community Edition and is the shared source foundation used by MOVO cloud and future enterprise distributions.
 
 ## Product demo

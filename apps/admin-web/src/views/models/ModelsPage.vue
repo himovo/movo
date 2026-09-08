@@ -193,6 +193,14 @@
               <n-select v-model:value="form.capabilities" multiple :options="capabilityOptions" />
             </n-form-item>
           </n-grid-item>
+          <n-grid-item v-if="hasImageCapability" :span="2">
+            <ImageModelRuntimeFields
+              v-model:runtimeKind="form.runtimeKind"
+              v-model:imageSettings="form.imageSettings"
+              :provider-code="currentProvider?.code || ''"
+              :provider-type="currentProvider?.providerType || ''"
+            />
+          </n-grid-item>
         </n-grid>
         <div class="form-hint">
           {{ t('保存后仅返回脱敏 Key。编辑已有模型时，API Key 留空会保留原值。') }}
@@ -237,6 +245,12 @@
         <div class="test-result" :class="{ success: testResultType === 'success', failed: testResultType === 'failed' }">
           {{ testResultText }}
         </div>
+        <img
+          v-if="testImageUrl"
+          class="test-image-preview"
+          :src="testImageUrl"
+          :alt="t('图片模型测试结果')"
+        />
       </aside>
     </div>
 
@@ -261,17 +275,21 @@ import { useDialog, useMessage } from 'naive-ui';
 import PageIntro from '@/components/PageIntro.vue';
 import { t } from '@/composables/i18n';
 import { formatAdminDateTime } from '@/composables/adminTimezone';
+import ImageModelRuntimeFields from '@/components/models/ImageModelRuntimeFields.vue';
 import {
   createModelInstance,
   deleteModelInstance,
   fetchModelInstances,
   fetchModelProviders,
   streamModelInstanceTest,
+  testImageModelInstance,
   updateModelInstance,
   type ModelInstanceItem,
   type ModelInstancePayload,
   type ModelProviderItem,
   type ModelStatus,
+  type ImageModelSettings,
+  type ImageRuntimeKind,
 } from '@/api/models';
 import { fetchTrafficAllocationOverview } from '@/api/traffic-allocations';
 
@@ -279,6 +297,8 @@ import { fetchTrafficAllocationOverview } from '@/api/traffic-allocations';
 interface ModelForm extends ModelInstancePayload {
   id: string;
   apiKeyMasked: string;
+  runtimeKind: ImageRuntimeKind | '';
+  imageSettings: ImageModelSettings;
 }
 
 const loading = ref(false);
@@ -295,6 +315,7 @@ const suppressProviderChange = ref(false);
 const testPrompt = ref('请用一句话回复当前模型连接测试。');
 const testResultText = ref('保存模型配置后可测试。');
 const testResultType = ref<'idle' | 'success' | 'failed'>('idle');
+const testImageUrl = ref('');
 
 const filters = ref({
   keyword: '',
@@ -313,6 +334,8 @@ const defaultForm = (): ModelForm => ({
   apiKey: '',
   apiKeyMasked: '',
   capabilities: ['chat'],
+  runtimeKind: '',
+  imageSettings: {},
   status: 'active',
   isDefault: false,
 });
@@ -331,7 +354,7 @@ const capabilityOptions = computed(() => [
   { label: t('视觉 Vision'), value: 'vision' },
   { label: t('向量 Embedding'), value: 'embedding' },
   { label: t('重排 Rerank'), value: 'rerank' },
-  { label: t('图像 Image'), value: 'image' },
+  { label: t('图片生成 Image Generation'), value: 'image_generation' },
 ]);
 
 const providerOptions = computed(() =>
@@ -346,13 +369,16 @@ const providerOptions = computed(() =>
 const providerMap = computed(() => new Map(providers.value.map((item) => [item.id, item])));
 const currentProvider = computed(() => providerMap.value.get(form.value.providerId));
 const isAzureProvider = computed(() => currentProvider.value?.providerType === 'azure_openai');
+const hasImageCapability = computed(() => form.value.capabilities.includes('image_generation'));
 const editorTitle = computed(() => (editorMode.value === 'create' ? t('新增模型配置') : t('模型配置详情')));
 const apiKeyPlaceholder = computed(() =>
   editorMode.value === 'create' ? t('请输入 API Key') : t('留空则保留当前 Key'),
 );
 const modelFieldLabel = computed(() => (isAzureProvider.value ? t('Deployment 名称') : t('模型 ID')));
 const modelFieldPlaceholder = computed(() =>
-  isAzureProvider.value ? t('如: gpt-4o-mini-prod（Azure 部署名）') : t('如: gpt-4.1 / qwen-plus / deepseek-chat'),
+  hasImageCapability.value
+    ? (isAzureProvider.value ? t('如: gpt-image-2-prod（Azure 部署名）') : t('如: qwen-image-plus / gpt-image-1'))
+    : (isAzureProvider.value ? t('如: gpt-4o-mini-prod（Azure 部署名）') : t('如: gpt-4.1 / qwen-plus / deepseek-chat')),
 );
 const baseUrlPlaceholder = computed(() =>
   isAzureProvider.value ? 'https://YOUR-RESOURCE-NAME.openai.azure.com' : 'https://api.openai.com/v1',
@@ -404,6 +430,13 @@ function providerInitial(name: string) {
 function resetTestState(text = t('保存模型配置后可测试。')) {
   testResultText.value = text;
   testResultType.value = 'idle';
+  testImageUrl.value = '';
+}
+
+function recommendedImageRuntime(provider?: ModelProviderItem): ImageRuntimeKind {
+  if (provider?.providerType === 'azure_openai') return 'azure_openai_images';
+  if (provider?.code === 'qwen' || provider?.defaultBaseUrl.includes('dashscope.aliyuncs.com')) return 'dashscope_image';
+  return 'openai_images';
 }
 
 function defaultProviderDisplayName(provider: ModelProviderItem) {
@@ -434,6 +467,10 @@ function handleProviderChange(providerId: string, previousProviderId?: string) {
   }
   if (provider.providerType === 'azure_openai' && !form.value.apiVersion) {
     form.value.apiVersion = '2024-10-21';
+  }
+  if (hasImageCapability.value) {
+    form.value.runtimeKind = recommendedImageRuntime(provider);
+    form.value.imageSettings = {};
   }
   if (isAutoProviderDisplayName(form.value.displayName, previousProvider)) {
     form.value.displayName = defaultProviderDisplayName(provider);
@@ -475,6 +512,8 @@ function openEdit(row: ModelInstanceItem) {
     apiKey: '',
     apiKeyMasked: row.apiKeyMasked,
     capabilities: [...row.capabilities],
+    runtimeKind: row.runtimeKind || recommendedImageRuntime(providerMap.value.get(row.providerId)),
+    imageSettings: { ...(row.imageSettings || {}) },
     status: row.status,
     isDefault: false,
   };
@@ -507,6 +546,8 @@ async function saveModel() {
       apiVersion: form.value.apiVersion.trim(),
       apiKey: form.value.apiKey.trim(),
       capabilities: form.value.capabilities.length ? form.value.capabilities : ['chat'],
+      runtimeKind: hasImageCapability.value ? form.value.runtimeKind || recommendedImageRuntime(currentProvider.value) : '',
+      imageSettings: hasImageCapability.value ? { ...form.value.imageSettings } : {},
       maxContextTokens: 0,
       status: form.value.status,
       isDefault: false,
@@ -556,7 +597,16 @@ async function runEditorTest() {
   testing.value = true;
   testResultText.value = '';
   testResultType.value = 'idle';
+  testImageUrl.value = '';
   try {
+    if (hasImageCapability.value) {
+      const result = await testImageModelInstance(form.value.id, testPrompt.value);
+      testResultText.value = result.message || (result.success ? t('图片生成测试成功。') : t('图片生成测试失败。'));
+      testResultType.value = result.success ? 'success' : 'failed';
+      testImageUrl.value = result.imageUrl || '';
+      await reload();
+      return;
+    }
     await streamModelInstanceTest(form.value.id, testPrompt.value, (event) => {
       if (event.type === 'start') {
         testResultText.value = event.message || t('正在连接模型...');
@@ -659,6 +709,21 @@ watch(
       return;
     }
     handleProviderChange(providerId, previousProviderId);
+  },
+);
+
+watch(
+  () => hasImageCapability.value,
+  (enabled) => {
+    if (enabled) {
+      form.value.runtimeKind = form.value.runtimeKind || recommendedImageRuntime(currentProvider.value);
+      if (testPrompt.value === '请用一句话回复当前模型连接测试。') {
+        testPrompt.value = '生成一张简洁的科技感演示文稿封面，不要文字。';
+      }
+    } else if (testPrompt.value === '生成一张简洁的科技感演示文稿封面，不要文字。') {
+      testPrompt.value = '请用一句话回复当前模型连接测试。';
+    }
+    resetTestState(editorMode.value === 'edit' ? t('可在右侧测试当前已保存的配置。') : t('保存模型配置后可测试。'));
   },
 );
 
@@ -916,6 +981,15 @@ onMounted(reload);
 .test-summary span {
   color: #7a8797;
   font-size: 12px;
+}
+
+.test-image-preview {
+  width: 100%;
+  max-height: 260px;
+  border: 1px solid #e6ebf5;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #f8fafc;
 }
 
 .test-summary strong {

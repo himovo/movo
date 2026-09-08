@@ -17,6 +17,7 @@ def test_confirmed_atomic_fill_updates_only_current_value() -> None:
         args={"ref": "e1", "value": "员工服务台"},
         result={"fill_receipt": {"status": "confirmed"}},
         ok=True,
+        before=observation,
     )
 
     assert updated.elements[0]["value"] == "员工服务台"

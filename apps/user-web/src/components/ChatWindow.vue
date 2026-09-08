@@ -74,6 +74,7 @@ const props = defineProps<{
   codeHistoryProject?: { workspace_id: string; git_branch: string; worktree: boolean } | null
   desktopWorkspaceRequest?: number
   desktopBrowserRequest?: number
+  browserSessionId?: string
   desktopToolTabs?: DesktopToolTab[]
   desktopActiveTool?: string | null
   desktopAvailableTools?: DesktopToolLauncherKind[]
@@ -1900,7 +1901,7 @@ function formatErrorMessage(raw: string): string {
     :active-kind="desktopActiveTab?.kind"
     :available-tools="props.desktopAvailableTools || []"
     :locale="locale === 'en' ? 'en' : 'zh'"
-    :session-id="props.sessionId"
+    :session-id="props.browserSessionId || props.sessionId"
     :user-id="props.userId"
     :main-id="props.mainId"
     @update:open="(value) => { isPreviewExpanded = value; if (!value) emit('close-code-panel') }"

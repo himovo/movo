@@ -3,6 +3,8 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.core.internal_service_auth import resolve_backend_service_token
+
 
 class Settings(BaseSettings):
     app_env: str = "development"
@@ -86,6 +88,7 @@ def _read_env_file_value(key: str) -> str:
 
 
 settings = Settings()
+settings.backend_service_token = resolve_backend_service_token(settings.backend_service_token)
 if not settings.mongodb_uri:
     settings.mongodb_uri = settings.effective_mongodb_uri
 if not settings.mongodb_db:

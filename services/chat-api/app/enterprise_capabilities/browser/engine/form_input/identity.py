@@ -49,31 +49,36 @@ def find_field(
     target: Dict[str, Any],
     fallback_ref: str = "",
 ) -> Optional[Dict[str, Any]]:
-    candidates = [item for item in elements if isinstance(item, dict)]
+    candidates = [
+        item for item in elements if isinstance(item, dict)
+        and int(item.get("frameDepth") or 0) == int(target.get("frameDepth") or 0)
+        and all(not target.get(key) or item.get(key) == target[key]
+                for key in ("frameId", "scopeSelector"))
+    ]
     selector = str(target.get("selector") or "").strip()
     frame_depth = int(target.get("frameDepth") or 0)
-    if selector:
-        match = next((
-            item for item in candidates
-            if str(item.get("selector") or "").strip() == selector
-            and int(item.get("frameDepth") or 0) == frame_depth
-        ), None)
-        if match is not None:
-            return match
     backend_node_id = target.get("backendNodeId")
     if backend_node_id not in (None, ""):
-        match = next((
+        matches = [
             item for item in candidates
             if item.get("backendNodeId") == backend_node_id
             and int(item.get("frameDepth") or 0) == frame_depth
-        ), None)
-        if match is not None:
-            return match
+        ]
+        if matches:
+            return matches[0] if len(matches) == 1 else None
+    if selector:
+        matches = [item for item in candidates
+                   if str(item.get("selector") or "").strip() == selector]
+        return matches[0] if len(matches) == 1 else None
+    # Never reinterpret a stale ref after a known node disappeared.
+    if backend_node_id not in (None, ""):
+        return None
     if fallback_ref:
-        return next((
+        matches = [
             item for item in candidates
             if str(item.get("ref") or "") == fallback_ref
-        ), None)
+        ]
+        return matches[0] if len(matches) == 1 else None
     return None
 
 

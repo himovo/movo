@@ -50,16 +50,20 @@ services:
           echo "DSH_RUNTIME_HOST_TOKEN=$$(random_hex)" >> "$$temp_file"
           mv "$$temp_file" "$$secret_file"
         fi
-        if ! grep -q '^ADMIN_BACKEND_SERVICE_TOKEN=' "$$secret_file"; then
-          admin_backend_service_token="$$(random_hex)"
-          {
-            echo "ADMIN_BACKEND_SERVICE_TOKEN=$$admin_backend_service_token"
-            echo "ASKAI_ADMIN_BACKEND_SERVICE_TOKEN=$$admin_backend_service_token"
-          } >> "$$secret_file"
-        elif ! grep -q '^ASKAI_ADMIN_BACKEND_SERVICE_TOKEN=' "$$secret_file"; then
-          admin_backend_service_token="$$(sed -n 's/^ADMIN_BACKEND_SERVICE_TOKEN=//p' "$$secret_file" | head -n 1)"
-          echo "ASKAI_ADMIN_BACKEND_SERVICE_TOKEN=$$admin_backend_service_token" >> "$$secret_file"
+        admin_backend_service_token="$$(sed -n 's/^ADMIN_BACKEND_SERVICE_TOKEN=//p' "$$secret_file" | head -n 1)"
+        if [ -z "$$admin_backend_service_token" ]; then
+          admin_backend_service_token="$$(sed -n 's/^ASKAI_ADMIN_BACKEND_SERVICE_TOKEN=//p' "$$secret_file" | head -n 1)"
         fi
+        if [ -z "$$admin_backend_service_token" ]; then
+          admin_backend_service_token="$$(random_hex)"
+        fi
+        temp_file="$${secret_file}.tmp"
+        sed '/^ADMIN_BACKEND_SERVICE_TOKEN=/d; /^ASKAI_ADMIN_BACKEND_SERVICE_TOKEN=/d' "$$secret_file" > "$$temp_file"
+        {
+          echo "ADMIN_BACKEND_SERVICE_TOKEN=$$admin_backend_service_token"
+          echo "ASKAI_ADMIN_BACKEND_SERVICE_TOKEN=$$admin_backend_service_token"
+        } >> "$$temp_file"
+        mv "$$temp_file" "$$secret_file"
         echo "MOVO deployment secrets are ready."
         echo "After services become healthy, open http://localhost:$${MOVO_PORT:-3000}/admin/setup"
 

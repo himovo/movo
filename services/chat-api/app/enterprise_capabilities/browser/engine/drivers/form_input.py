@@ -44,6 +44,7 @@ from app.enterprise_capabilities.browser.engine.form_input import (
     resolve_requested_media_paste,
 )
 from app.enterprise_capabilities.browser.engine.form_input.stage import FormInteractionStage
+from app.enterprise_capabilities.browser.engine.form_input.fill_outcome import resolve_fill_outcome
 from app.enterprise_capabilities.browser.engine.form_input.field_phase import (
     augment_pending_field_ledger,
     is_direct_media_mutation,
@@ -348,6 +349,8 @@ class FormInputDriver(BrowserDriver):
         observation_after: Observation,
         result: Any = None,
     ) -> None:
+        if decision.tool == "browser_fill":
+            ok = resolve_fill_outcome(result=result, ok=ok).status == "confirmed"
         self._stage.record_transition(
             decision=decision,
             ok=ok,

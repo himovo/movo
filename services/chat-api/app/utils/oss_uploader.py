@@ -12,6 +12,7 @@ import oss2
 
 from app.core.config import get_settings
 from app.services.local_file_signing import sign_local_file_url
+from app.services.local_file_secret import resolve_local_file_signing_secret
 
 
 class _LocalBucketProxy:
@@ -186,7 +187,7 @@ class ObjectStorageClient:
             return sign_local_file_url(
                 self._build_public_url(object_path, absolute=False),
                 object_path,
-                secret=str(self._settings.END_USER_AUTH_SECRET or ""),
+                secret=self._local_file_signing_secret(),
                 ttl_seconds=ttl,
             )
         ttl = expires if expires is not None else get_settings().OSS_SIGN_EXPIRE_SECONDS
@@ -198,10 +199,16 @@ class ObjectStorageClient:
             return sign_local_file_url(
                 self._build_public_url(object_path, absolute=True),
                 object_path,
-                secret=str(self._settings.END_USER_AUTH_SECRET or ""),
+                secret=self._local_file_signing_secret(),
                 ttl_seconds=self._settings.OSS_SIGN_EXPIRE_SECONDS,
             )
         return self.sign_url(object_path)
+
+    def _local_file_signing_secret(self) -> str:
+        return resolve_local_file_signing_secret(
+            configured_secret=str(self._settings.END_USER_AUTH_SECRET or ""),
+            storage_root=self.local_storage_path,
+        )
 
     def object_path_from_url(self, url: str) -> str:
         value = str(url or "").strip()

@@ -18,6 +18,12 @@ from app.core.tenant import resolve_main_id
 from app.llm.configured_image_models import get_default_image_model_config, get_image_model_config
 from app.llm.configured_models import ModelConfigError
 from app.llm.providers.azure_gpt_image import AzureGptImageClient, AzureGptImageConfig
+from app.llm.image_model_runtime import (
+    dashscope_native_endpoint,
+    default_image_quality,
+    default_image_size,
+    resolve_image_runtime_kind,
+)
 from app.infrastructure.request_context import get_request_context
 from app.utils.oss_uploader import AliyunOSSUploader
 
@@ -233,11 +239,7 @@ class ConfiguredImageGenerationService:
         log_hook: LogHook | None,
     ) -> ImageGenerationResult:
         settings = _normalize_settings(config)
-        provider_type = str(config.get("provider_type") or "openai_compatible").strip() or "openai_compatible"
-        runtime_kind = (
-            str(config.get("runtime_kind") or "").strip()
-            or ("azure_openai_images" if provider_type == "azure_openai" else "openai_images")
-        )
+        runtime_kind = resolve_image_runtime_kind(config)
         if runtime_kind == "azure_openai_images":
             return await self._generate_with_azure_config(
                 config=config,
@@ -290,8 +292,15 @@ class ConfiguredImageGenerationService:
                 api_key=str(config.get("api_key") or ""),
                 api_version=str(config.get("api_version") or settings.get("api_version") or "2024-02-01"),
                 deployment=str(config.get("model_name") or ""),
-                size=_normalize_size(size or settings.get("size") or "1536x864", runtime_kind="azure_openai_images"),
-                quality=str(quality or settings.get("quality") or "low"),
+                size=_normalize_size(
+                    size or settings.get("size") or default_image_size("azure_openai_images", str(config.get("model_name") or "")),
+                    runtime_kind="azure_openai_images",
+                ),
+                quality=str(
+                    quality
+                    or settings.get("quality")
+                    or default_image_quality("azure_openai_images", str(config.get("model_name") or ""))
+                ),
                 api_style=str(settings.get("generation_api_style") or settings.get("api_style") or "v1"),
                 include_api_version=bool(settings.get("include_api_version")),
                 max_retries=int(settings.get("max_retries") or 3),
@@ -340,8 +349,15 @@ class ConfiguredImageGenerationService:
         payload = {
             "model": str(config.get("model_name") or "").strip(),
             "prompt": prompt,
-            "size": _normalize_size(size or settings.get("size") or "1024x1024", runtime_kind="openai_images"),
-            "quality": str(quality or settings.get("quality") or "standard"),
+            "size": _normalize_size(
+                size or settings.get("size") or default_image_size("openai_images", str(config.get("model_name") or "")),
+                runtime_kind="openai_images",
+            ),
+            "quality": str(
+                quality
+                or settings.get("quality")
+                or default_image_quality("openai_images", str(config.get("model_name") or ""))
+            ),
             "n": 1,
             "output_format": resolved_format,
         }
@@ -390,11 +406,15 @@ class ConfiguredImageGenerationService:
         model_name = str(config.get("model_name") or "").strip()
         if not model_name:
             raise ModelConfigError("图片模型 ID 不能为空")
-        resolved_size = _normalize_size(size or settings.get("size") or "1216*2176", runtime_kind="dashscope_image")
+        resolved_size = _normalize_size(
+            size or settings.get("size") or default_image_size("dashscope_image", model_name),
+            runtime_kind="dashscope_image",
+        )
         timeout_value = float(timeout_seconds or settings.get("timeout_seconds") or 90.0)
-        if model_name in {"qwen-image-max", "qwen-image-plus"}:
+        if model_name.startswith("qwen-image") and "edit" not in model_name:
             data = await self._call_dashscope_v1(
                 api_key=api_key,
+                base_url=str(config.get("base_url") or ""),
                 prompt=prompt,
                 negative_prompt=negative_prompt,
                 model_name=model_name,
@@ -437,13 +457,14 @@ class ConfiguredImageGenerationService:
         self,
         *,
         api_key: str,
+        base_url: str,
         prompt: str,
         negative_prompt: str,
         model_name: str,
         size: str,
         timeout_seconds: float,
     ) -> dict[str, Any]:
-        endpoint = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
+        endpoint = dashscope_native_endpoint(base_url)
         payload = {
             "model": model_name,
             "input": {

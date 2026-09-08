@@ -169,9 +169,15 @@ class AzureGptImageClient:
         style = self._config.api_style.strip().lower() or "v1"
         api_version = self._config.api_version
         if style == "v1":
+            if endpoint.endswith("/openai/v1"):
+                base = endpoint
+            elif endpoint.endswith("/openai"):
+                base = f"{endpoint}/v1"
+            else:
+                base = f"{endpoint}/openai/v1"
             if include_version_in_v1:
-                return f"{endpoint}/openai/v1/images/{path}?api-version={api_version}"
-            return f"{endpoint}/openai/v1/images/{path}"
+                return f"{base}/images/{path}?api-version={api_version}"
+            return f"{base}/images/{path}"
         return f"{endpoint}/openai/deployments/{deployment}/images/{path}?api-version={api_version}"
 
     @staticmethod

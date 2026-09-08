@@ -12,6 +12,7 @@ from pymongo.errors import OperationFailure
 
 from app.core.config import settings
 from app.core.db import get_db
+from app.services.image_model_configuration import normalize_capabilities
 
 PROVIDER_COLLECTION = "admin_model_providers"
 INSTANCE_COLLECTION = "admin_model_instances"
@@ -148,7 +149,7 @@ async def create_instance(payload: dict[str, Any]) -> str:
         "api_secret_encrypted": encrypt_secret(payload.get("api_secret") or ""),
         "api_secret_masked": mask_secret(payload.get("api_secret") or ""),
         "api_version": str(payload.get("api_version") or "").strip(),
-        "capabilities": payload.get("capabilities") or ["chat"],
+        "capabilities": normalize_capabilities(payload.get("capabilities") or ["chat"]),
         "max_context_tokens": int(payload.get("max_context_tokens") or 0),
         "status": payload.get("status") or "active",
         "health_status": "unknown",
@@ -158,6 +159,9 @@ async def create_instance(payload: dict[str, Any]) -> str:
         "created_at": now,
         "updated_at": now,
     }
+    if payload.get("runtime_kind"):
+        doc["runtime_kind"] = str(payload.get("runtime_kind") or "").strip()
+        doc["settings"] = dict(payload.get("settings") or {})
     result = await db[INSTANCE_COLLECTION].insert_one(doc)
     if doc["is_default"]:
         await set_default_instance(str(result.inserted_id), payload["main_id"])
@@ -173,13 +177,16 @@ async def update_instance(instance_id: str, payload: dict[str, Any]) -> bool:
         "model_name": payload["model_name"],
         "base_url": payload.get("base_url") or "",
         "api_version": str(payload.get("api_version") or "").strip(),
-        "capabilities": payload.get("capabilities") or ["chat"],
+        "capabilities": normalize_capabilities(payload.get("capabilities") or ["chat"]),
+        "runtime_kind": str(payload.get("runtime_kind") or "").strip(),
         "max_context_tokens": int(payload.get("max_context_tokens") or 0),
         "status": payload.get("status") or "active",
         "is_default": bool(payload.get("is_default", False)),
         "priority": int(payload.get("priority") or 100),
         "updated_at": utcnow(),
     }
+    if payload.get("settings") is not None:
+        set_doc["settings"] = dict(payload.get("settings") or {})
     if payload.get("api_key"):
         set_doc["api_key_encrypted"] = encrypt_secret(payload["api_key"])
         set_doc["api_key_masked"] = mask_secret(payload["api_key"])

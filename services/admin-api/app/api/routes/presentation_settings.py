@@ -13,6 +13,7 @@ from app.repositories.presentation_settings_repository import (
     get_presentation_settings,
     save_presentation_settings,
 )
+from app.services.image_model_configuration import normalize_capabilities
 
 
 router = APIRouter()
@@ -52,7 +53,7 @@ async def _require_model(main_id: str, model_id: str, capability: str, label: st
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"请选择有效的{label}",
         ) from exc
-    capabilities = set(instance.get("capabilities") or []) if instance else set()
+    capabilities = set(normalize_capabilities(instance.get("capabilities") or [])) if instance else set()
     if instance is None or instance.get("status") != "active" or capability not in capabilities:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

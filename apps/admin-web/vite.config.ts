@@ -30,6 +30,11 @@ export default defineConfig(({ command }) => ({
         changeOrigin: true,
         rewrite: (sourcePath) => sourcePath.replace(/^\/admin-api/, ''),
       },
+      '/askai-api': {
+        target: process.env.VITE_CHAT_API_TARGET || 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        rewrite: (sourcePath) => sourcePath.replace(/^\/askai-api/, ''),
+      },
     },
   },
 }));

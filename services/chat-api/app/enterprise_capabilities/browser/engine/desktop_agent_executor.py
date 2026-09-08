@@ -48,9 +48,10 @@ from app.enterprise_capabilities.browser.engine.drivers import (
 )
 from app.enterprise_capabilities.browser.engine.form_input import BrowserInputContext
 from app.enterprise_capabilities.browser.engine.form_input.fill_retry import FillRetryPolicy, is_fill_reconciliation
-from app.enterprise_capabilities.browser.engine.form_input.observation_update import apply_confirmed_fill
+from app.enterprise_capabilities.browser.engine.form_input.step_reconciliation import reconcile_input_step
+from app.enterprise_capabilities.browser.engine.obstruction_evidence import obstruction_evidence, OBSTRUCTION_GUIDANCE
+from app.enterprise_capabilities.browser.engine.passive_wait_recovery import recover_passive_wait
 from app.enterprise_capabilities.browser.engine.form_input.target_preflight import (
-    is_stale_fill_target_error,
     validate_fill_target,
 )
 from app.enterprise_capabilities.browser.engine.post_action_observation import (
@@ -137,7 +138,6 @@ from app.enterprise_capabilities.browser.engine.form_human_assistance import (
     FORM_EFFECT_VERIFY_CATEGORY,
     FORM_TASK_COMPLETION_CATEGORY,
     build_effect_verification_decision,
-    build_fill_assistance_decision,
     build_task_completion_confirmation_decision,
     manual_commit_receipt,
     manual_effect_receipt,
@@ -2052,9 +2052,9 @@ class DesktopAgentBrowserExecutor:
             # through to the planner with the usual ledger context.
             if context_tracks_state and forced_decision is None:
                 try:
-                    rule_dec = task_context.suggest_next_action(
-                        alternative_target_recovery.planning_observation(current_obs),
-                    )
+                    rule_observation = alternative_target_recovery.planning_observation(current_obs)
+                    rule_observation = interaction_target_recovery.planning_observation(rule_observation)
+                    rule_dec = task_context.suggest_next_action(rule_observation)
                 except Exception:
                     rule_dec = None
                 if rule_dec is not None:
@@ -2089,6 +2089,18 @@ class DesktopAgentBrowserExecutor:
                 })
             _ledger = alternative_target_recovery.augment_state_ledger(_ledger)
             planning_obs = alternative_target_recovery.planning_observation(current_obs)
+            quarantined_refs = interaction_target_recovery.quarantined_refs(planning_obs)
+            planning_obs = interaction_target_recovery.planning_observation(planning_obs)
+            _ledger = interaction_target_recovery.augment_state_ledger(_ledger)
+            if quarantined_refs:
+                logger.info(
+                    "browser quarantined failed interaction targets from planning",
+                    extra={
+                        "event": "browser.interaction_targets_quarantined",
+                        "refs": list(quarantined_refs),
+                        "url": str(current_obs.url or "")[:1000],
+                    },
+                )
             decision_is_system_owned = forced_decision is not None
             decision = forced_decision or await planner.next_step(
                 goal, history, planning_obs, state_ledger=_ledger,
@@ -3036,6 +3048,10 @@ class DesktopAgentBrowserExecutor:
             # Pre-dispatch gate: reject repeated browser_wait_for on a
             # text query we've already missed MAX times. Otherwise the
             # LLM burns MAX_STEPS × 10s on the same impossible lookup.
+            wait_recovery = recover_passive_wait(decision, current_obs, history)
+            if wait_recovery is not decision:
+                logger.info("passive wait redirected to observation", extra={"event": "browser.passive_wait_recovery", "revision": current_obs.revision})
+                decision = wait_recovery
             if (
                 decision.tool == "browser_wait_for"
                 and isinstance(decision.args, dict)
@@ -4015,98 +4031,32 @@ class DesktopAgentBrowserExecutor:
                 ok=ok,
             )
             if decision.tool in {"browser_click", "browser_click_at"} and not ok and is_stale_interaction_target_error(err):
+                covered = obstruction_evidence(err)
                 pending_resolved_decision = Decision(
                     tool="browser_observe",
-                    args={},
-                    rationale="click target changed during dispatch; refresh DOM before resolving another target",
+                    args={"with_screenshot": True} if covered else {},
+                    rationale=OBSTRUCTION_GUIDANCE if covered else "click target changed during dispatch; refresh DOM before resolving another target",
                 )
                 yield {"type": "activity", "content": {
                     "kind": "warning",
                     "message": (
-                        "点击目标已发生变化，正在重新读取当前页面，不再使用旧元素编号"
+                        ("目标存在但被覆盖，正在检查覆盖层；不会继续点击底层控件。" if covered else "点击目标已发生变化，正在重新读取当前页面，不再使用旧元素编号")
                         if lang == "zh" else
                         "The click target changed; refreshing the page instead of reusing the stale ref"
                     ),
                 }}, {}
-            elif decision.tool == "browser_fill" and not ok and is_stale_fill_target_error(err):
-                # The DOM changed after the backend preflight but before the
-                # sidecar mutation. This is a stale target, not a failed
-                # business-field write, so do not poison the form transaction.
-                pending_resolved_decision = Decision(
-                    tool="browser_observe",
-                    args={},
-                    rationale="fill target changed during dispatch; refresh DOM and resolve it again",
+            if decision.tool in {"browser_fill", "browser_observe"}:
+                reconciliation = reconcile_input_step(
+                    decision=decision, before=dispatch_before_obs, after=current_obs,
+                    result=result, ok=ok, error=err,
+                    transaction=form_transaction, retry=fill_retry_policy, lang=lang,
                 )
-                yield {"type": "activity", "content": {
-                    "kind": "warning",
-                    "message": (
-                        "输入框在填写前发生变化，已重新读取页面，避免继续使用旧元素编号"
-                        if lang == "zh" else
-                        "The input changed before fill; observing again instead of reusing the stale ref"
-                    ),
-                }}, {}
-            elif decision.tool == "browser_fill":
-                current_obs = apply_confirmed_fill(
-                    current_obs,
-                    args=dict(decision.args or {}),
-                    result=result,
-                    ok=ok,
-                )
-                fill_receipt = form_transaction.record_fill(
-                    args=dict(decision.args or {}),
-                    result=result,
-                    ok=ok,
-                    error=err,
-                    before=dispatch_before_obs,
-                    after=current_obs,
-                )
-                if fill_receipt.status != "confirmed":
-                    fill_hint = (
-                        f"字段“{fill_receipt.label}”填写后尚未确认，提交前将重新核验"
-                        if lang == "zh" else
-                        f"Fill for {fill_receipt.label!r} is unverified and must be checked before commit"
-                    )
+                current_obs = reconciliation.observation
+                if reconciliation.next_decision is not None:
+                    pending_resolved_decision = reconciliation.next_decision
+                if reconciliation.message:
                     yield {"type": "activity", "content": {
-                        "kind": "warning", "message": fill_hint,
-                    }}, {}
-                retry_decision = fill_retry_policy.after_result(
-                    decision,
-                    ok=ok,
-                    error=err,
-                    before=dispatch_before_obs,
-                )
-                if retry_decision is not None:
-                    pending_resolved_decision = retry_decision
-                    yield {"type": "activity", "content": {
-                        "kind": "analyze",
-                        "message": (
-                            "填写结果未返回，正在先读取字段当前值，避免重复输入"
-                            if lang == "zh" else
-                            "Fill was not confirmed; observing the current value before any retry"
-                        ),
-                    }}, {}
-                elif not ok and fill_retry_policy.assistance_required(
-                    decision,
-                    error=err,
-                    before=dispatch_before_obs,
-                ):
-                    pending_resolved_decision = build_fill_assistance_decision(
-                        decision=decision,
-                        before=dispatch_before_obs,
-                        error=str(err or ""),
-                        lang=lang,
-                    )
-            elif decision.tool == "browser_observe" and ok:
-                reconciled_retry = fill_retry_policy.after_observation(current_obs)
-                if reconciled_retry is not None:
-                    pending_resolved_decision = reconciled_retry
-                    yield {"type": "activity", "content": {
-                        "kind": "analyze",
-                        "message": (
-                            "最新页面确认字段仍未写入，将对同一字段进行有限重试"
-                            if lang == "zh" else
-                            "Fresh state confirms the field is still empty; retrying the same field"
-                        ),
+                        "kind": "analyze", "message": reconciliation.message,
                     }}, {}
             history.append(StepRecord(
                 observation=current_obs, decision=decision, ok=ok, error=err,

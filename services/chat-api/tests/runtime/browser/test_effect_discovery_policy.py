@@ -2,7 +2,18 @@ from __future__ import annotations
 
 import asyncio
 
-from app.enterprise_capabilities.browser.engine.effect_verification.discovery import discover_effect_contract
+from app.enterprise_capabilities.browser.engine.effect_verification.discovery import (
+    _DiscoveredContract,
+    discover_effect_contract,
+)
+
+
+def test_discovered_contract_exposes_concrete_json_schema_types() -> None:
+    properties = _DiscoveredContract.model_json_schema()["properties"]
+    assert properties["action_name"]["type"] == "string"
+    assert properties["operation_family"]["type"] == "string"
+    assert properties["fingerprint"]["type"] == "object"
+    assert properties["expected_effects"]["type"] == "array"
 
 
 def test_read_only_search_button_is_not_treated_as_commit() -> None:

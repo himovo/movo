@@ -387,7 +387,7 @@ function requestDesktopBrowser(): void {
 
 const desktopAvailableTools = computed<DesktopToolLauncherKind[]>(() => {
   const tools: DesktopToolLauncherKind[] = []
-  if (canUseBrowser.value && currentSessionId.value) tools.push('browser')
+  if (canUseBrowser.value && activeChatKey.value) tools.push('browser')
   if (activeCodeState.value.session && capabilities.codeInspector) {
     if (desktopWorkspaceSummary.value?.git_available === true) tools.push('changes')
     if (capabilities.workspaceFiles) tools.push('files')
@@ -416,7 +416,7 @@ const {
   onActivate: tab => {
     if (tab.kind === 'browser') {
       desktopBrowserRequest.value += 1
-      const sessionId = currentSessionId.value
+      const sessionId = currentSessionId.value || activeChatKey.value
       if (sessionId && capabilities.embeddedBrowser) {
         void selectEmbeddedBrowserSession(sessionId)
           .then(() => activateEmbeddedBrowserSession(sessionId))
@@ -1400,6 +1400,16 @@ async function openAdminConsole(mainId = getMainId()) {
     }
     const adminUrl = buildAdminSsoUrl(result.ssoToken)
     if (capabilities.embeddedBrowser) {
+      if (activeChatKey.value) navigateTo('chat')
+      else startLocalSession()
+      revealDesktopTool('browser')
+      const browserSessionId = currentSessionId.value || activeChatKey.value
+      if (browserSessionId) {
+        await selectEmbeddedBrowserSession(browserSessionId)
+        await activateEmbeddedBrowserSession(browserSessionId)
+      }
+      await nextTick()
+      await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()))
       await openResource(adminUrl, 'internal')
     } else if (adminWindow) {
       adminWindow.location.href = adminUrl
@@ -2465,6 +2475,7 @@ onBeforeUnmount(() => {
               :code-history-project="pane.codeProject"
               :desktop-workspace-request="desktopWorkspaceRequest"
               :desktop-browser-request="desktopBrowserRequest"
+              :browser-session-id="pane.sessionId || pane.key"
               :desktop-tool-tabs="desktopToolTabsFor(pane.key)"
               :desktop-active-tool="desktopActiveToolFor(pane.key)"
               :desktop-available-tools="pane.key === activeChatKey ? desktopAvailableTools : []"

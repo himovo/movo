@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Literal, Optional
 from app.enterprise_capabilities.browser.engine.agent_loop.protocol import Decision, Observation
 from app.enterprise_capabilities.browser.engine.form_input.identity import field_label, find_field, stable_field_key
 from app.enterprise_capabilities.browser.engine.form_input.value_equivalence import field_values_equivalent
+from app.enterprise_capabilities.browser.engine.form_input.fill_outcome import resolve_fill_outcome
 
 from .contracts import EffectContract, EffectEvidence, EffectReceipt
 from .form_scope import FormScopeLock, ScopeBlocker
@@ -71,25 +72,14 @@ class FormTransactionTracker:
         value = str(args.get("value") or "")
         key = stable_field_key(target) if target else f"ref:{ref}"
         label = field_label(target, ref)
-        local = result.get("fill_receipt") if isinstance(result, dict) else None
-        local_status = str(local.get("status") or "") if isinstance(local, dict) else ""
-        if ok and local_status == "ambiguous":
-            status: FillStatus = "ambiguous"
-            reason = str(local.get("reason") or "filled value could not be verified")
-        elif ok:
-            # Older sidecars only returned success after their own value check.
-            status = "confirmed"
-            reason = str(local.get("reason") or "fill completed and was verified by the browser agent") if isinstance(local, dict) else "fill completed"
-        else:
-            status = "ambiguous" if _is_post_input_identity_error(error) else "failed"
-            reason = str(error or "fill failed")
+        outcome = resolve_fill_outcome(result=result, ok=ok, error=error)
         receipt = FieldReceipt(
             field_key=key,
             label=label,
             expected_value=value,
             value_hash=_value_hash(value),
-            status=status,
-            reason=reason,
+            status=outcome.status,
+            reason=outcome.reason,
             baseline_result_count=_result_occurrences(before, value),
             origin_url=str(before.url or ""),
             scope_id=str(target.get("scopeId") or ""),
@@ -517,11 +507,6 @@ def _interaction_purpose(target: Dict[str, Any]) -> str:
     if target.get("searchContext") or str(target.get("role") or "").strip().lower() == "searchbox":
         return "search"
     return ""
-
-
-def _is_post_input_identity_error(error: Optional[str]) -> bool:
-    text = str(error or "").lower()
-    return "target_not_found" in text and "after input" in text
 
 
 def _observation_corpus(observation: Observation) -> str:

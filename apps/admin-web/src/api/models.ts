@@ -3,6 +3,16 @@ import { useAuthStore } from '@/stores/auth';
 
 export type ModelStatus = 'active' | 'disabled';
 export type HealthStatus = 'unknown' | 'healthy' | 'failed';
+export type ImageRuntimeKind = 'openai_images' | 'azure_openai_images' | 'dashscope_image';
+
+const IMAGE_MODEL_TEST_TIMEOUT_MS = 10 * 60 * 1000;
+
+export interface ImageModelSettings {
+  size?: string;
+  quality?: string;
+  apiStyle?: 'v1' | 'deployment';
+  includeApiVersion?: boolean;
+}
 
 export interface ModelProviderItem {
   id: string;
@@ -30,6 +40,8 @@ export interface ModelInstanceItem {
   apiKeyMasked: string;
   apiSecretMasked: string;
   capabilities: string[];
+  runtimeKind: ImageRuntimeKind | '';
+  imageSettings: ImageModelSettings;
   maxContextTokens: number;
   status: ModelStatus;
   healthStatus: HealthStatus;
@@ -49,6 +61,8 @@ export interface ModelInstancePayload {
   apiKey: string;
   apiSecret?: string;
   capabilities: string[];
+  runtimeKind?: ImageRuntimeKind | '';
+  imageSettings?: ImageModelSettings;
   maxContextTokens?: number;
   status: ModelStatus;
   isDefault: boolean;
@@ -89,6 +103,18 @@ export async function testModelInstance(id: string) {
   const { data } = await apiClient.post<{ success: boolean; status: string; message: string }>(
     `/api/models/instances/${id}/test`,
   );
+  return data;
+}
+
+export async function testImageModelInstance(id: string, prompt: string) {
+  const { data } = await apiClient.post<{
+    success: boolean;
+    status: string;
+    message: string;
+    imageUrl?: string;
+    providerType?: string;
+    runtimeKind?: string;
+  }>(`/api/models/instances/${id}/test-image`, { prompt }, { timeout: IMAGE_MODEL_TEST_TIMEOUT_MS });
   return data;
 }
 

@@ -16,6 +16,7 @@ from app.enterprise_capabilities.presentation.service import (
 from app.enterprise_capabilities.runtime import CapabilityExecutionContext, InternalCapabilityCatalog
 from app.enterprise_capabilities.runtime.adapters import build_default_registry
 from app.services.presentation.image_native.pipeline import ImageNativePresentationPipeline
+from app.services.presentation.image_native.progress_narration import story_planning_introduction
 
 
 def _context(progress: list[dict], **turn_context) -> CapabilityExecutionContext:
@@ -48,7 +49,7 @@ class _Pipeline:
         await progress_callback({
             "stage": "story_planning",
             "kind": "analyze",
-            "message": "正在生成PPT故事线",
+            "message": story_planning_introduction(),
         })
         bundle = {
             "slide_count": self.slide_count,
@@ -190,7 +191,7 @@ def test_presentation_reuses_pipeline_and_returns_one_editable_bundle(monkeypatc
     assert "必须生成且仅生成 3 页幻灯片" in pipeline.messages[0]["content"]
     assert pipeline.output_spec["tool_observations"][0]["source_label"] == "MOVO 官网"
     assert "presentation_generation_mode" not in pipeline.output_spec
-    assert progress[0]["payload"]["text"] == "正在生成PPT故事线"
+    assert progress[0]["payload"]["text"] == story_planning_introduction()
 
 
 def test_presentation_tool_result_does_not_embed_full_deck_ir() -> None:

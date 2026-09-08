@@ -36,6 +36,13 @@ from app.repositories.model_repository import (
     update_instance,
 )
 from app.services.model_connectivity import backend_model_test_events, next_event
+from app.services.image_model_configuration import (
+    infer_image_runtime_kind,
+    normalize_capabilities,
+    normalize_image_settings,
+    serialize_image_settings,
+)
+from app.services.model_image_connectivity import run_saved_image_model_test
 
 router = APIRouter()
 
@@ -60,6 +67,18 @@ def _format_provider(doc: dict[str, Any]) -> dict[str, object]:
 def _format_instance(doc: dict[str, Any], provider_map: dict[str, dict[str, Any]]) -> dict[str, object]:
     provider_id = str(doc.get("provider_id", ""))
     provider = provider_map.get(provider_id, {})
+    capabilities = normalize_capabilities(doc.get("capabilities", []))
+    runtime_kind = infer_image_runtime_kind(
+        provider=provider,
+        requested=str(doc.get("runtime_kind") or ""),
+        capabilities=capabilities,
+        base_url=str(doc.get("base_url") or ""),
+    )
+    image_settings = normalize_image_settings(
+        runtime_kind=runtime_kind,
+        model_name=str(doc.get("model_name") or ""),
+        raw=doc.get("settings"),
+    )
     return {
         "id": str(doc["_id"]),
         "mainId": doc.get("main_id", ""),
@@ -74,7 +93,9 @@ def _format_instance(doc: dict[str, Any], provider_map: dict[str, dict[str, Any]
         "apiVersion": doc.get("api_version", ""),
         "apiKeyMasked": doc.get("api_key_masked", ""),
         "apiSecretMasked": doc.get("api_secret_masked", ""),
-        "capabilities": doc.get("capabilities", []),
+        "capabilities": capabilities,
+        "runtimeKind": runtime_kind,
+        "imageSettings": serialize_image_settings(image_settings),
         "maxContextTokens": doc.get("max_context_tokens", 0),
         "status": doc.get("status", "active"),
         "healthStatus": doc.get("health_status", "unknown"),
@@ -95,6 +116,8 @@ class ModelInstancePayload(BaseModel):
     apiKey: str = Field(default="", max_length=600)
     apiSecret: str = Field(default="", max_length=600)
     capabilities: list[str] = Field(default_factory=lambda: ["chat"])
+    runtimeKind: str = Field(default="", max_length=40)
+    imageSettings: dict[str, Any] = Field(default_factory=dict)
     maxContextTokens: int = Field(default=0, ge=0, le=5000000)
     status: str = Field(default="active", pattern=r"^(active|disabled)$")
     isDefault: bool = False
@@ -167,6 +190,18 @@ async def post_model_instance(
     if not payload.apiKey.strip():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="API Key 不能为空")
 
+    capabilities = normalize_capabilities(payload.capabilities)
+    runtime_kind = infer_image_runtime_kind(
+        provider=provider,
+        requested=payload.runtimeKind,
+        capabilities=capabilities,
+        base_url=payload.baseUrl,
+    )
+    image_settings = normalize_image_settings(
+        runtime_kind=runtime_kind,
+        model_name=payload.modelName,
+        raw=payload.imageSettings,
+    )
     try:
         instance_id = await create_instance(
             {
@@ -179,6 +214,9 @@ async def post_model_instance(
                 "api_version": payload.apiVersion,
                 "api_key": payload.apiKey,
                 "api_secret": payload.apiSecret,
+                "capabilities": capabilities,
+                "runtime_kind": runtime_kind,
+                "settings": image_settings if runtime_kind else None,
                 "max_context_tokens": payload.maxContextTokens,
                 "is_default": payload.isDefault,
                 "main_id": main_id,
@@ -208,6 +246,18 @@ async def put_model_instance(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="供应商ID无效") from exc
     if provider is None or provider.get("status") != "active":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="供应商不存在或已禁用")
+    capabilities = normalize_capabilities(payload.capabilities)
+    runtime_kind = infer_image_runtime_kind(
+        provider=provider,
+        requested=payload.runtimeKind,
+        capabilities=capabilities,
+        base_url=payload.baseUrl,
+    )
+    image_settings = normalize_image_settings(
+        runtime_kind=runtime_kind,
+        model_name=payload.modelName,
+        raw=payload.imageSettings,
+    )
 
     try:
         ok = await update_instance(
@@ -222,6 +272,9 @@ async def put_model_instance(
                 "api_version": payload.apiVersion,
                 "api_key": payload.apiKey,
                 "api_secret": payload.apiSecret,
+                "capabilities": capabilities,
+                "runtime_kind": runtime_kind,
+                "settings": image_settings if runtime_kind else None,
                 "max_context_tokens": payload.maxContextTokens,
                 "is_default": payload.isDefault,
                 "main_id": main_id,
@@ -301,6 +354,45 @@ async def test_model_instance(
         "success": True,
         "status": "healthy",
         "message": result_text or "模型连接测试成功。",
+    }
+
+
+@router.post("/instances/{instance_id}/test-image")
+async def test_image_model_instance(
+    instance_id: str,
+    payload: ModelTestPayload | None = None,
+    current_user: dict = Depends(get_current_admin_user),
+) -> dict[str, object]:
+    main_id = str(current_user.get("main_id", "default"))
+    try:
+        instance = await find_instance_by_id(instance_id, main_id)
+    except InvalidId as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="模型配置ID无效") from exc
+    if instance is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="模型配置不存在")
+    capabilities = normalize_capabilities(instance.get("capabilities"))
+    if "image_generation" not in capabilities:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="当前模型未启用图片生成能力")
+    prompt = (payload.prompt if payload else "") or "生成一张简洁的科技感演示文稿封面，不要文字。"
+    try:
+        result = await run_saved_image_model_test(instance_id, main_id, prompt=prompt)
+    except Exception as exc:
+        message = str(exc)
+        await update_instance_health(instance_id, main_id, "failed", message)
+        return {"success": False, "status": "failed", "message": message}
+    if not bool(result.get("success")):
+        message = str(result.get("message") or "图片模型连接测试失败")
+        await update_instance_health(instance_id, main_id, "failed", message)
+        return {"success": False, "status": "failed", "message": message}
+    await update_instance_health(instance_id, main_id, "healthy", "")
+    return {
+        "success": True,
+        "status": "healthy",
+        "message": "图片生成测试成功。",
+        "imageUrl": str(result.get("image_url") or ""),
+        "providerType": str(result.get("provider_type") or ""),
+        "runtimeKind": str(result.get("runtime_kind") or ""),
+        "modelSource": str(result.get("model_source") or ""),
     }
 
 

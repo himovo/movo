@@ -1,11 +1,13 @@
 """Classify live-DOM target failures that require a fresh observation."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+import re
 from typing import Any, Optional
 
 from app.enterprise_capabilities.browser.engine.effect_verification.decision_target import resolve_coordinate_target
 from app.enterprise_capabilities.browser.engine.agent_loop.protocol import Decision, Observation
+from .obstruction_evidence import obstruction_evidence, OBSTRUCTION_GUIDANCE
 
 _STALE_TARGET_MARKERS = (
     "stale_target_rebind_",
@@ -40,14 +42,16 @@ class InteractionTargetRecovery:
         self.max_failures = max(1, max_failures)
         self._page_key = ""
         self._failures: dict[str, int] = {}
+        self._occluded: dict[str, dict[str, Any]] = {}
 
     def blocker(self, decision: Decision, observation: Observation) -> str | None:
         self._reconcile_page(observation)
         if decision.tool != "browser_click":
             return None
         target = _target_by_ref(observation, str((decision.args or {}).get("ref") or ""))
-        identity = _target_identity(target)
-        if not identity or self._failures.get(identity, 0) < self.max_failures:
+        if target and (target.get("hitTestable") is False or any(key in self._occluded for key in _target_aliases(target))):
+            return OBSTRUCTION_GUIDANCE
+        if not target or not self._is_quarantined(target):
             return None
         if target and target.get("editable"):
             return (
@@ -69,8 +73,13 @@ class InteractionTargetRecovery:
             return
         self._reconcile_page(observation)
         target = _target_by_ref(observation, str((decision.args or {}).get("ref") or ""))
-        identity = _target_identity(target)
-        if identity:
+        covered = obstruction_evidence(error)
+        if covered:
+            covered["revision"] = observation.revision
+            for identity in _target_aliases(target):
+                self._occluded[identity] = covered
+            return
+        for identity in _target_aliases(target):
             self._failures[identity] = self._failures.get(identity, 0) + 1
 
     def record_success(self, decision: Decision, observation: Observation) -> None:
@@ -78,14 +87,90 @@ class InteractionTargetRecovery:
         if decision.tool != "browser_click":
             return
         target = _target_by_ref(observation, str((decision.args or {}).get("ref") or ""))
-        identity = _target_identity(target)
-        if identity:
+        for identity in _target_aliases(target):
             self._failures.pop(identity, None)
+            self._occluded.pop(identity, None)
+
+    def planning_observation(self, observation: Observation) -> Observation:
+        """Remove quarantined click targets from the next planning turn.
+
+        Editable targets remain visible because the safe recovery for a covered
+        editor is browser_fill, not selecting a different field.  Non-editable
+        targets are removed so a planner cannot repeatedly choose the same
+        broken card through a fresh ephemeral ref.
+        """
+        self._reconcile_page(observation)
+        for item in observation.elements:
+            if observation.fresh and item.get("hitTestable") is True:
+                for identity in _target_aliases(item):
+                    evidence = self._occluded.get(identity)
+                    if evidence and observation.revision and observation.revision != evidence.get("revision"):
+                        self._occluded.pop(identity, None)
+        elements = [
+            item for item in list(observation.elements or [])
+            if not (
+                isinstance(item, dict)
+                and not item.get("editable")
+                and self._is_quarantined(item)
+            )
+        ]
+        elements = [
+            {**item, "hitTestable": False} if any(
+                key in self._occluded for key in _target_aliases(item)
+            ) else item for item in elements
+        ]
+        if not self._occluded and len(elements) == len(observation.elements or []):
+            return observation
+        return replace(observation, elements=elements)
+
+    def quarantined_refs(self, observation: Observation) -> tuple[str, ...]:
+        return tuple(
+            str(item.get("ref") or "")
+            for item in list(observation.elements or [])
+            if (
+                isinstance(item, dict)
+                and not item.get("editable")
+                and self._is_quarantined(item)
+                and str(item.get("ref") or "")
+            )
+        )
+
+    def augment_state_ledger(self, ledger: dict[str, Any] | None) -> dict[str, Any] | None:
+        quarantined = sorted(
+            identity for identity, failures in self._failures.items()
+            if failures >= self.max_failures
+        )
+        if not quarantined and not self._occluded:
+            return ledger
+        updated = dict(ledger or {})
+        constraints = list(updated.get("action_constraints") or [])
+        if self._occluded:
+            constraints.append(OBSTRUCTION_GUIDANCE)
+        if quarantined:
+            constraints.append(
+                "Targets quarantined after repeated live interaction failures are absent from the "
+                "current element list; choose another visible target or change the page state."
+            )
+        notes = list(updated.get("notes") or [])
+        if self._occluded:
+            notes.append({"occluded_targets": list(self._occluded.items())[:6]})
+        if quarantined:
+            notes.append({"quarantined_interaction_targets": quarantined[:12]})
+        updated["action_constraints"] = constraints
+        updated["notes"] = notes
+        return updated
+
+    def _is_quarantined(self, target: dict[str, Any]) -> bool:
+        return any(
+            self._failures.get(identity, 0) >= self.max_failures
+            for identity in _target_aliases(target)
+        )
 
     def _reconcile_page(self, observation: Observation) -> None:
         key = f"{observation.url}\x00{observation.title}"
         if self._page_key and key != self._page_key:
             self._failures.clear()
+            self._occluded.clear()
         self._page_key = key
 
 
@@ -151,20 +236,29 @@ def _target_by_ref(observation: Observation, ref: str) -> Optional[dict[str, Any
     ), None)
 
 
-def _target_identity(target: Optional[dict[str, Any]]) -> str:
+def _target_aliases(target: Optional[dict[str, Any]]) -> set[str]:
+    """Stable aliases survive AX ref/backend-node replacement on one page."""
     if not target:
-        return ""
+        return set()
     frame = str(target.get("frameDepth") or 0)
-    for key in ("backendNodeId", "selector", "href"):
+    aliases: set[str] = set()
+    for key in ("contentContextId", "href"):
         value = str(target.get(key) or "").strip()
         if value:
-            return f"{frame}:{key}:{value}"
-    scope = str(target.get("scopeId") or "").strip()
-    semantic = "|".join(
-        str(target.get(key) or "").strip().casefold()
-        for key in ("role", "name", "text")
-    )
-    return f"{frame}:scope:{scope}:{semantic}" if scope or semantic else ""
+            aliases.add(f"{frame}:{key}:{value.casefold()}")
+    selector = str(target.get("selector") or "").strip()
+    if re.fullmatch(r"#[A-Za-z][\w:-]*", selector):
+        aliases.add(f"{frame}:selector:{selector.casefold()}")
+    scope = str(target.get("scopeId") or target.get("scopeSelector") or "").strip().casefold()
+    role = str(target.get("role") or "").strip().casefold()
+    label = " ".join(str(target.get(key) or "").strip() for key in ("name", "text"))
+    label = " ".join(label.casefold().split())[:240]
+    if label:
+        aliases.add(f"{frame}:semantic:{scope}:{role}:{label}")
+    backend_node_id = str(target.get("backendNodeId") or "").strip()
+    if backend_node_id:
+        aliases.add(f"{frame}:backendNodeId:{backend_node_id}")
+    return aliases
 
 
 def _is_interactive(target: dict[str, Any]) -> bool:

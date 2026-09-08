@@ -127,7 +127,7 @@ async def get_default_model_config_by_capability(
         {
             "main_id": main_id,
             "status": "active",
-            "capabilities": capability,
+            "capabilities": _capability_query_value(capability),
         },
         sort=[("priority", 1), ("updated_at", -1)],
     )
@@ -151,7 +151,7 @@ async def list_model_options(
         {
             "main_id": main_id,
             "status": "active",
-            "capabilities": capability,
+            "capabilities": _capability_query_value(capability),
         }
     ).sort([("priority", 1), ("updated_at", -1)])
     instances = await cursor.to_list(length=200)
@@ -209,6 +209,7 @@ def _to_runtime_config(
         "display_name": str(instance.get("display_name") or ""),
         "provider_type": provider_type,
         "provider_name": str(provider.get("name") or ""),
+        "provider_code": str(provider.get("code") or ""),
         "model_name": str(instance.get("model_name") or "").strip(),
         "base_url": str(instance.get("base_url") or provider.get("default_base_url") or "").strip(),
         "api_version": str(instance.get("api_version") or "").strip(),
@@ -232,10 +233,23 @@ def _to_runtime_config(
 
 def _normalize_capabilities(raw: Any) -> list[str]:
     if isinstance(raw, str):
-        return [raw] if raw else []
-    if isinstance(raw, (list, tuple, set)):
-        return [str(item).strip() for item in raw if str(item).strip()]
-    return []
+        values = [raw] if raw else []
+    elif isinstance(raw, (list, tuple, set)):
+        values = [str(item).strip() for item in raw if str(item).strip()]
+    else:
+        values = []
+    normalized: list[str] = []
+    for value in values:
+        token = "image_generation" if value == "image" else value
+        if token and token not in normalized:
+            normalized.append(token)
+    return normalized
+
+
+def _capability_query_value(capability: str) -> str | dict[str, list[str]]:
+    if capability == "image_generation":
+        return {"$in": ["image_generation", "image"]}
+    return capability
 
 
 def _validate_runtime_config(

@@ -110,3 +110,87 @@ def test_repeated_covered_target_is_quarantined_by_stable_identity():
 
     assert blocker is not None
     assert "browser_fill" in blocker
+
+
+def test_quarantined_card_is_removed_from_planning_even_after_ref_replacement():
+    recovery = InteractionTargetRecovery(max_failures=2)
+    original = Observation(
+        url="https://example.test/search?q=agent",
+        title="Search",
+        elements=[{
+            "ref": "ax-old", "backendNodeId": 41, "role": "button",
+            "scopeId": "results", "name": "Enterprise agent deployment guide",
+            "visible": True,
+        }],
+    )
+    decision = Decision(tool="browser_click", args={"ref": "ax-old"})
+    recovery.record_failure(decision, original, "Click target moved or is covered: ax-old")
+    recovery.record_failure(decision, original, "Click target moved or is covered: ax-old")
+
+    refreshed = Observation(
+        url=original.url,
+        title=original.title,
+        elements=[
+            {
+                "ref": "ax-new", "backendNodeId": 99, "role": "button",
+                "scopeId": "results", "name": "Enterprise agent deployment guide",
+                "visible": True,
+            },
+            {
+                "ref": "ax-other", "backendNodeId": 100, "role": "link",
+                "scopeId": "results", "name": "Another result", "visible": True,
+            },
+        ],
+    )
+
+    planning = recovery.planning_observation(refreshed)
+
+    assert [item["ref"] for item in planning.elements] == ["ax-other"]
+    assert recovery.quarantined_refs(refreshed) == ("ax-new",)
+    assert len(refreshed.elements) == 2
+
+
+def test_quarantined_editor_remains_visible_for_fill_recovery():
+    recovery = InteractionTargetRecovery(max_failures=1)
+    observation = Observation(
+        url="https://example.test/form",
+        title="Form",
+        elements=[{
+            "ref": "editor", "selector": "#editor", "role": "textbox",
+            "editable": True, "visible": True,
+        }],
+    )
+    recovery.record_failure(
+        Decision(tool="browser_click", args={"ref": "editor"}),
+        observation,
+        "Click target moved or is covered: editor",
+    )
+
+    assert recovery.planning_observation(observation).elements == observation.elements
+
+
+def test_shared_class_selector_does_not_quarantine_other_list_items():
+    recovery = InteractionTargetRecovery(max_failures=1)
+    original = Observation(
+        url="https://example.test/search",
+        title="Search",
+        elements=[{
+            "ref": "first", "selector": ".result-card", "role": "button",
+            "scopeId": "results", "name": "First result", "visible": True,
+        }],
+    )
+    recovery.record_failure(
+        Decision(tool="browser_click", args={"ref": "first"}),
+        original,
+        "Click target moved or is covered: first",
+    )
+    refreshed = Observation(
+        url=original.url,
+        title=original.title,
+        elements=[{
+            "ref": "second", "selector": ".result-card", "role": "button",
+            "scopeId": "results", "name": "Second result", "visible": True,
+        }],
+    )
+
+    assert recovery.planning_observation(refreshed).elements == refreshed.elements

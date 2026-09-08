@@ -98,7 +98,7 @@ def test_mismatched_non_empty_value_is_not_appended_again() -> None:
     retry = policy.after_observation(_obs("员工服务台AI助手", ref="e7"))
 
     assert observe is not None and observe.tool == "browser_observe"
-    assert retry is None
+    assert retry is not None and retry.tool == "browser_ask_user"
 
 
 def test_rich_text_reconciliation_does_not_retry_editor_normalization() -> None:

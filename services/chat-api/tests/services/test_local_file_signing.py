@@ -1,5 +1,7 @@
 from urllib.parse import parse_qs, urlparse
 
+import pytest
+
 from app.services.local_file_signing import sign_local_file_url, verify_local_file_signature
 
 
@@ -48,3 +50,13 @@ def test_signed_local_file_url_rejects_tampering_and_expiry(monkeypatch) -> None
         secret="test-secret",
         now=1061,
     )
+
+
+def test_signed_local_file_url_rejects_empty_secret() -> None:
+    with pytest.raises(ValueError, match="signing secret"):
+        sign_local_file_url(
+            "/api/files/user/report.pdf",
+            "user/report.pdf",
+            secret="",
+            ttl_seconds=60,
+        )
