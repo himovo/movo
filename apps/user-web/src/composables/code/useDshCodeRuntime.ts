@@ -19,6 +19,7 @@ import type { ExternalTurnHandle } from '../useChatRuntimeStore'
 import { getLocale } from '../i18n'
 import { codeRuntimeErrorMessage } from './codeRuntimeErrors'
 import { inheritedDraftProjectContext } from './draftProjectContext'
+import { createClientUuid } from '../../utils/clientUuid'
 
 export type CodePaneState = {
   draftId: string
@@ -40,7 +41,7 @@ type ChatRuntimeBoundary = {
 
 function draftState(): CodePaneState {
   return reactive({
-    draftId: crypto.randomUUID(), workspace: null, session: null, worktree: false, sourceRef: '',
+    draftId: createClientUuid(), workspace: null, session: null, worktree: false, sourceRef: '',
     busy: false, error: '', cursor: -1, events: [], approvals: [], approvalBusy: {},
   })
 }

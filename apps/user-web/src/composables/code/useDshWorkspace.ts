@@ -1,10 +1,11 @@
 import { computed, ref, shallowRef } from 'vue'
 import { capabilities, createDshCodeSession, selectDshWorkspace } from '../../platform'
 import type { DshCodeSession, DshWorkspace } from '../../platform/types'
+import { createClientUuid } from '../../utils/clientUuid'
 
 /** Draft-only workspace choice; immutable only after the first local Session exists. */
 export function useDshWorkspace() {
-  const draftId = crypto.randomUUID()
+  const draftId = createClientUuid()
   const selected = shallowRef<DshWorkspace | null>(null)
   const session = shallowRef<DshCodeSession | null>(null)
   const busy = ref(false)
