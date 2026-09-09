@@ -200,6 +200,14 @@ PUBLIC_BASE_URL=https://movo.example.com
 - [维护者发布流程](docs/release-process.md)
 - 安全问题、商业授权与支持：`support@himovo.com`
 
+### 加入 MOVO 咨询群
+
+扫描下方企业微信活码加入咨询群，获取产品咨询与社区交流支持。
+
+<p align="center">
+  <img src="docs/assets/wecom-support-group-qr.png" alt="MOVO 企业微信咨询群二维码" width="240">
+</p>
+
 提交改动前，请按 [CONTRIBUTING.md](CONTRIBUTING.md) 运行对应检查。至少应执行仓库开源卫生检查：
 
 ```bash
