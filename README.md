@@ -55,7 +55,7 @@ If you only need a low-level Agent runtime, DSH may be enough. Choose MOVO when 
 | DSH-native Agent runtime | Use planning, tool calls, Skills, sub-agents and governed execution through the bundled DSH Runtime Host. |
 | Enterprise knowledge and research | Search internal documents and public sources, run multi-round research, retain citations and inspect supporting evidence. |
 | Document and multimodal intelligence | Parse PDF, DOCX, XLSX, PPTX, CSV and Markdown files, including images, charts and other visual content. |
-| Content and file generation | Create reports, articles, editable presentations, spreadsheets, PDFs and Markdown deliverables. |
+| Content and file generation | Create reports, articles, PPTX presentation files, spreadsheets, PDFs and Markdown deliverables. |
 | Skills, Tools and MCP | Reuse workflows and connect HTTP or MCP services to business systems. |
 | Automation and governance | Schedule tasks, require approval for sensitive tool actions, trace executions and retain generated artifacts. |
 | Enterprise administration | Manage organizations, users, roles, models, knowledge, Skills, Tools, audit records and runtime health. |
