@@ -22,7 +22,9 @@ MOVO 帮助企业将 DSH Agent 从开发验证推进到生产使用。它在 DSH
 
 > **一句话理解 MOVO：** DSH 负责智能体如何运行，MOVO 负责智能体如何进入企业生产环境。
 
-![DeepSeek Harness 与 MOVO 的职责分工](docs/assets/dsh-movo-responsibilities-zh-cn.png)
+<p align="center">
+  <img src="docs/assets/dsh-movo-responsibilities-zh-cn.png" alt="DeepSeek Harness 与 MOVO 的职责分工" width="760">
+</p>
 
 本仓库包含可私有化部署的 MOVO 社区版，也是 MOVO 云服务和未来企业版本共同依赖的源码基础。
 
