@@ -2,6 +2,7 @@ export class SkillInvocationTracker {
   #skillsByName
   #manualBySession = new Map()
   #observedBySession = new Map()
+  #activeBySession = new Map()
 
   constructor(skillProfile) {
     this.#skillsByName = new Map(
@@ -21,17 +22,20 @@ export class SkillInvocationTracker {
   observe(sessionId, event) {
     if (event?.type === 'turn/start') {
       this.#observedBySession.delete(sessionId)
+      this.#activeBySession.delete(sessionId)
       return undefined
     }
     if (event?.type === 'turn/end') {
       this.#manualBySession.delete(sessionId)
       this.#observedBySession.delete(sessionId)
+      this.#activeBySession.delete(sessionId)
       return undefined
     }
     const skillName = this.#invokedSkillName(event)
     if (!skillName) return undefined
     const skill = this.#skillsByName.get(skillName)
     if (skill === undefined) return undefined
+    this.#activeBySession.set(sessionId, skillName)
     const observed = this.#observedBySession.get(sessionId) ?? new Set()
     if (observed.has(skillName)) return undefined
     observed.add(skillName)
@@ -39,6 +43,10 @@ export class SkillInvocationTracker {
     const manual = this.#manualBySession.get(sessionId) === skillName
     if (manual) this.#manualBySession.delete(sessionId)
     return { ...skill, selectionMode: manual ? 'manual' : 'automatic' }
+  }
+
+  current(sessionId) {
+    return this.#activeBySession.get(sessionId)
   }
 
   #invokedSkillName(event) {
@@ -58,5 +66,6 @@ export class SkillInvocationTracker {
   clear(sessionId) {
     this.#manualBySession.delete(sessionId)
     this.#observedBySession.delete(sessionId)
+    this.#activeBySession.delete(sessionId)
   }
 }

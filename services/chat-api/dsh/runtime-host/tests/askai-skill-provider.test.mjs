@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import test from 'node:test'
+import { strToU8, zipSync } from 'fflate'
 
 import { AskaiSkillProvider } from '../src/askai-skill-provider.mjs'
 import { normalizeTurnContext, renderTurnContext } from '../src/runtime-turn-context.mjs'
@@ -24,6 +29,33 @@ test('ASKAI provider exposes immutable DSH candidates and bodies', async () => {
   const definition = await provider.get(candidates[0])
   assert.equal(definition.content, '# Steps\nUse governed tools.')
   assert.equal(definition.resourceBase.kind, 'opaque')
+})
+
+test('bundled Skill resources are exposed through the provider-managed reader', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'movo-provider-resource-'))
+  const archive = Buffer.from(zipSync({
+    'foshan/SKILL.md': strToU8('# Foshan'),
+    'foshan/assets/contacts.json': strToU8('{"phone":"0757-123456"}'),
+  }))
+  const bundledProfile = { skills: [{
+    ...profile.skills[0], name: 'foshan-guide', bundle_root: 'foshan/',
+    bundle_digest: createHash('sha256').update(archive).digest('hex'),
+    bundle_archive_base64: archive.toString('base64'),
+  }] }
+  try {
+    const provider = new AskaiSkillProvider(bundledProfile, { storageRoot: root })
+    const definition = await provider.get((await provider.list())[0])
+    assert.equal(definition.resourceBase.kind, 'opaque')
+    assert.match(definition.resourceBase.description, /skill_resource_read/)
+    assert.deepEqual(await provider.readTextResource('foshan-guide', {
+      path: 'assets/contacts.json',
+    }), {
+      skill: 'foshan-guide', path: 'assets/contacts.json', content: '{"phone":"0757-123456"}',
+      startLine: 1, endLine: 1, totalLines: 1, truncated: false,
+    })
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
 })
 
 test('writing standard prompt is explicitly scoped to writing only', () => {

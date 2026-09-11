@@ -25,6 +25,7 @@ import { DesktopApprovalBroker } from './desktop-approval-broker.mjs'
 import { registerAskaiSkillProvider } from './askai-skill-provider.mjs'
 import { invokeSelectedSkill, resolveSkillTurnContext } from './skill-turn-selection.mjs'
 import { SkillInvocationTracker } from './skill-invocation-tracker.mjs'
+import { registerSkillResourceTool } from './skill-resource-tool.mjs'
 
 export class KernelRuntime {
   #ctx
@@ -43,6 +44,7 @@ export class KernelRuntime {
   #workspaces
   #desktopApprovals
   #skillProviderDispose
+  #skillResourceToolDispose
   #skillInvocations
 
   constructor({ runtimeId, isolationKey, profileVersion, storageRoot, modelProfile }) {
@@ -65,9 +67,16 @@ export class KernelRuntime {
     this.#ctx = ctx
     this.#temporalContext.install(ctx)
     this.#turnContext.install(ctx)
-    this.#skillProviderDispose = registerAskaiSkillProvider(
+    const skillProviderRegistration = registerAskaiSkillProvider(
       ctx, this.modelProfile?.skillProfile, { storageRoot: this.storageRoot },
     )
+    this.#skillProviderDispose = skillProviderRegistration?.dispose
+    this.#skillResourceToolDispose = skillProviderRegistration === undefined
+      ? undefined
+      : registerSkillResourceTool(ctx, {
+          provider: skillProviderRegistration.provider,
+          invocations: this.#skillInvocations,
+        })
     if (this.modelProfile?.toolProfile !== undefined) {
       this.#webSearchProvider = new AskaiWebSearchProvider(ctx, {
         ...this.modelProfile.toolProfile,
@@ -315,6 +324,7 @@ export class KernelRuntime {
     this.#desktopApprovals?.dispose()
     this.#toolBridge?.dispose()
     this.#webSearchDispose?.()
+    this.#skillResourceToolDispose?.()
     this.#skillProviderDispose?.()
     this.#temporalContext.dispose()
     this.#turnContext.dispose()

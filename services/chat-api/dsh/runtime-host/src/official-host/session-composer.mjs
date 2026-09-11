@@ -3,6 +3,7 @@ import { SessionId } from '@deepseek-ai/dsh-session'
 
 import { ASKAI_ENTERPRISE_PRESET_ID } from './overlay.mjs'
 import { resolveNativePreset } from './api-compat.mjs'
+import { SKILL_RESOURCE_READ_TOOL } from '../skill-resource-tool.mjs'
 
 function selectedPreset(meta, events) {
   let value = typeof meta?.agentPreset === 'string' ? meta.agentPreset : undefined
@@ -16,13 +17,17 @@ function selectedPreset(meta, events) {
 
 export function enterpriseToolNames(modelProfile) {
   const profile = modelProfile?.toolProfile
-  if (profile === undefined) return modelProfile?.skillProfile?.skills?.length > 0 ? ['skill'] : []
+  const skills = modelProfile?.skillProfile?.skills ?? []
+  const skillTools = []
+  if (skills.length > 0) skillTools.push('skill')
+  if (skills.some(skill => Boolean(skill.bundle_archive_base64))) skillTools.push(SKILL_RESOURCE_READ_TOOL)
+  if (profile === undefined) return skillTools
   const replaced = new Set(profile.nativeReplacements ?? [])
   const names = profile.tools
     .map(tool => tool.name)
     .filter(name => typeof name === 'string' && name && !replaced.has(name))
   if (replaced.has('external_search')) names.push('web_search')
-  if (modelProfile?.skillProfile?.skills?.length > 0) names.push('skill')
+  names.push(...skillTools)
   return [...new Set(names)].sort()
 }
 

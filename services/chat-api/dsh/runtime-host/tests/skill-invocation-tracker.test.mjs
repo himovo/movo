@@ -29,6 +29,7 @@ test('classifies the DSH skill tool call as an automatic invocation', () => {
     sourceId: 'skill-7', displayName: 'Generic capability', sourceScope: 'personal',
     selectionMode: 'automatic',
   })
+  assert.equal(tracker.current('session-a'), 'generic-capability-a1')
 })
 
 test('emits a Skill only once when DSH exposes multiple invocation events in one turn', () => {
@@ -38,6 +39,7 @@ test('emits a Skill only once when DSH exposes multiple invocation events in one
   })
   assert.equal(tracker.observe('session-a', invocation), undefined)
   tracker.observe('session-a', { type: 'turn/end', data: {} })
+  assert.equal(tracker.current('session-a'), undefined)
   assert.equal(tracker.observe('session-a', invocation)?.selectionMode, 'automatic')
 })
 
