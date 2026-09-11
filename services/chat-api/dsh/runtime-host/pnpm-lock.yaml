@@ -65,6 +65,9 @@ importers:
       '@deepseek-ai/dsh-user-approval':
         specifier: 0.1.2-alpha.2
         version: 0.1.2-alpha.2(9cdc226149e6d0b272bb0eb03937b6d5)
+      fflate:
+        specifier: 0.8.3
+        version: 0.8.3
       '@deepseek-ai/dsh-web':
         specifier: 0.1.2-alpha.2
         version: 0.1.2-alpha.2(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.2-alpha.2(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-llm@0.1.2-alpha.2(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.2-alpha.2(@deepseek-ai/cordis@4.0.2)))

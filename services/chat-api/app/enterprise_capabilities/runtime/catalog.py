@@ -122,6 +122,35 @@ class InternalCapabilityCatalog:
         }, ("name", "type"))
         self._definitions = (
             _definition(
+                capability_ref="skills.install_skillhub@v1",
+                tool_name="skillhub_install",
+                domain="skills",
+                display_name="安装 SkillHub Skill",
+                description=(
+                    "Install a Skill from SkillHub into the current user's personal Skills. "
+                    "Call this only when the user explicitly asks to install a SkillHub coordinate, "
+                    "for example @publisher/skill-name. Pass that exact coordinate; optionally pass "
+                    "an exact version. If the request also contains skillhub.cn/install/skillhub.md, "
+                    "treat it as installation guidance and call this tool directly instead of fetching "
+                    "that page or printing CLI commands. The tool downloads through MOVO, validates the package, and "
+                    "uses the same personal Skill persistence path as ZIP installation. Never use "
+                    "this tool to create an organization Skill."
+                ),
+                input_schema=_object({
+                    "coordinate": {
+                        "type": "string", "minLength": 1, "maxLength": 258,
+                        "description": "Exact SkillHub coordinate, such as @publisher/skill-name, or a public slug.",
+                    },
+                    "version": {
+                        "type": "string", "maxLength": 32,
+                        "description": "Optional exact SkillHub version. Omit to install the latest version.",
+                    },
+                }, ("coordinate",)),
+                risk_level="write",
+                approval_required=False,
+                timeout_ms=120_000,
+            ),
+            _definition(
                 capability_ref="knowledge.search@v1", tool_name="knowledge_search", domain="knowledge",
                 display_name="内部知识检索",
                 description="Search MOVO's server-authorized internal knowledge for enterprise-specific facts, policies, documents, or prior internal context. Use web_search for a bounded public lookup, progressive_research for multi-source public research, and combine internal and public evidence only when the user asks for a comparison. Tenant and knowledge-base scope are injected by MOVO; never ask for or supply them as arguments.",

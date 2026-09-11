@@ -113,6 +113,57 @@ def test_legacy_personal_workflow_falls_back_to_config_nodes():
     assert "执行已配置的数据处理脚本" in compiled.skills[0].content
 
 
+def test_imported_bundle_digest_versions_the_native_dsh_skill():
+    base = {
+        "id": "personal-package", "name": "Search Package", "description": "Search",
+        "skill_type": "ordinary", "role": "execution", "skill_markdown": "Use the bundled reference.",
+        "package_slug": "multi-search-engine", "model_invocable": False, "user_invocable": True,
+        "package_digest": "a" * 64, "runtime_bundle_root": "search/", "runtime_bundle_base64": "YWJj",
+    }
+    first = asyncio.run(SkillProfileCompiler(FakeSkillCatalog([base])).compile(
+        tenant_id="tenant-a", user_id="user-a", tools=(),
+    )).skills[0]
+    changed = asyncio.run(SkillProfileCompiler(FakeSkillCatalog([{**base, "package_digest": "b" * 64}])).compile(
+        tenant_id="tenant-a", user_id="user-a", tools=(),
+    )).skills[0]
+    assert first.kind == "ordinary"
+    assert first.display_name == "Search Package"
+    assert first.name.startswith("multi-search-engine-")
+    assert first.model_invocable is False
+    assert first.user_invocable is True
+    assert first.bundle_digest == "a" * 64
+    assert first.bundle_root == "search/"
+    assert first.bundle_archive_base64 == "YWJj"
+    assert first.version != changed.version
+
+
+def test_expert_package_is_one_dsh_skill_with_internal_children_only_in_content():
+    row = {
+        "id": "expert-package-1",
+        "name": "心理咨询陪伴",
+        "description": "按专家包定义调度内部能力",
+        "visibility": "personal",
+        "source": "user_db",
+        "skill_type": "expert_package",
+        "package_kind": "expert_package",
+        "package_slug": "lifestyle-mental-counseling",
+        "skill_markdown": (
+            "Follow the expert orchestration.\n"
+            '<child_skill name="mental-health">Internal instructions.</child_skill>'
+        ),
+        "package_children": [{"slug": "mental-health", "name": "Mental Health"}],
+    }
+    compiled = asyncio.run(SkillProfileCompiler(FakeSkillCatalog([row])).compile(
+        tenant_id="tenant-a", user_id="user-a", tools=(),
+    ))
+    assert len(compiled.skills) == 1
+    assert compiled.skills[0].kind == "ordinary"
+    assert compiled.skills[0].display_name == "心理咨询陪伴"
+    assert compiled.skills[0].name.startswith("lifestyle-mental-counseling-")
+    assert '<child_skill name="mental-health">' in compiled.skills[0].content
+    assert all(item.name != "mental-health" for item in compiled.skills)
+
+
 def test_workflow_marks_spreadsheet_handoff_internal_before_final_export():
     row = {
         "id": "workflow-delivery", "name": "汇总并导出报告", "skill_type": "composite_task",

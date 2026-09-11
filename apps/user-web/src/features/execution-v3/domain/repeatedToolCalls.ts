@@ -17,6 +17,7 @@ export type ToolCapabilityKey =
   | 'execution.v3.activity.search_code'
   | 'execution.v3.activity.use_browser'
   | 'execution.v3.activity.search_web'
+  | 'execution.v3.activity.install_skill'
   | 'execution.v3.activity.update_plan'
   | 'execution.v3.activity.call_tools'
 
@@ -25,6 +26,7 @@ function toolCapability(item: ExecutionItemV3): ToolCapabilityKey | null {
   if (/(?:^|_)(todo_write|update_plan|write_plan)(?:_|$)/.test(name)) return 'execution.v3.activity.update_plan'
   if (/(?:^|_)(browser|navigate|click|fill|press|screenshot)(?:_|$)/.test(name)) return 'execution.v3.activity.use_browser'
   if (/(?:^|_)(web_search|search_web|internet_search|external_search)(?:_|$)/.test(name)) return 'execution.v3.activity.search_web'
+  if (/(?:^|_)(skillhub_install)(?:_|$)/.test(name)) return 'execution.v3.activity.install_skill'
   if (/(?:^|_)(apply_patch|patch|edit|write|create_file|delete_file|move_file|rename_file|multi_edit)(?:_|$)/.test(name)) return 'execution.v3.activity.edit_files'
   if (/(?:^|_)(bash|shell|terminal|exec|run_command|powershell|command|job_output|job_kill)(?:_|$)/.test(name)) return 'execution.v3.activity.run_commands'
   if (/(?:^|_)(grep|glob|ripgrep|search_files|find_files|list_files)(?:_|$)/.test(name)) return 'execution.v3.activity.search_code'

@@ -31,6 +31,7 @@ const icons: Record<string, Component> = {
   verify: ShieldCheckmarkOutline,
   repair: ConstructOutline,
   visual: SparklesOutline,
+  skill: SparklesOutline,
   tool: BuildOutline,
   subagent: PeopleOutline,
   approval: LockClosedOutline,

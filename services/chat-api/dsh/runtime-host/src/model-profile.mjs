@@ -25,6 +25,7 @@ function validateSkillProfile(profile) {
     if (skill === null || typeof skill !== 'object' || Array.isArray(skill) ||
         !nonEmptyString(skill.name) || !nonEmptyString(skill.version) ||
         !nonEmptyString(skill.source_id) || !nonEmptyString(skill.content) ||
+        (skill.display_name !== undefined && typeof skill.display_name !== 'string') ||
         !['personal', 'organization'].includes(skill.source_scope) ||
         !['ordinary', 'workflow'].includes(skill.kind) || names.has(skill.name)) {
       throw new Error('skillProfile contains an invalid Skill definition')

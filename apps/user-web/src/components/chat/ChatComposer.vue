@@ -238,6 +238,8 @@ function onGlobalPointerDown(event: Event) {
 
 function skillTypeLabel(type: SelectableSkillItem['type']) {
   if (type === 'workflow') return locale.value === 'zh' ? '工作流' : 'Workflow'
+  if (type === 'ordinary') return locale.value === 'zh' ? '普通 Skill' : 'Standard Skill'
+  if (type === 'expert_package') return locale.value === 'zh' ? '专家包' : 'Expert Package'
   return locale.value === 'zh' ? '写作规范' : 'Writing'
 }
 

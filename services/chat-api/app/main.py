@@ -121,6 +121,7 @@ from app.api.endpoints import (
     sessions,
     site_profiles,
     skills,
+    skill_package_install,
     tasks,
     token_usage,
 )
@@ -140,6 +141,7 @@ app.include_router(product.router, prefix="/api")
 app.include_router(sessions.router, prefix="/api")
 app.include_router(tasks.router, prefix="/api")
 app.include_router(skills.router, prefix="/api")
+app.include_router(skill_package_install.router, prefix="/api")
 app.include_router(site_profiles.router, prefix="/api")
 app.include_router(token_usage.router, prefix="/api")
 app.include_router(quota.router, prefix="/api")
@@ -215,6 +217,13 @@ async def startup_event() -> None:
     await db.chat_messages.create_index([("main_id", 1), ("user_id", 1), ("session_id", 1), ("seq", 1)])
     await db.execution_logs.create_index([("main_id", 1), ("session_id", 1), ("message_id", 1)])
     await db.user_skills.create_index([("main_id", 1), ("user_id", 1), ("created_at", -1)])
+    await db.user_skills.create_index(
+        [("main_id", 1), ("user_id", 1), ("package_slug", 1)],
+        unique=True,
+        partialFilterExpression={"source_kind": "zip"},
+        name="personal_zip_skill_slug",
+    )
+    await db.skill_packages.create_index([("main_id", 1), ("owner_scope", 1), ("owner_id", 1), ("digest", 1)])
     await db.site_profiles.create_index([("main_id", 1), ("owner_user_id", 1), ("updated_at", -1)])
     await db.external_tools.create_index([("main_id", 1), ("updated_at", -1)])
     await db.external_tools.create_index([("main_id", 1), ("status", 1), ("type", 1)])

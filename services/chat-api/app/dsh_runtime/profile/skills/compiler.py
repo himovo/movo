@@ -88,9 +88,10 @@ class SkillProfileCompiler:
         description = str(row.get("description") or row.get("summary") or row.get("name") or "Skill").strip()[:2000]
         when_to_use = str(row.get("notes") or row.get("applicable_scenarios") or description)[:4000]
         source_scope = self._scope(row)
-        native_name = self._native_name(str(row.get("name") or "skill"), source_id)
+        native_name = self._native_name(str(row.get("package_slug") or row.get("name") or "skill"), source_id)
         payload = {
             "name": native_name,
+            "display_name": str(row.get("name") or native_name).strip()[:256],
             "source_id": source_id,
             "source_scope": source_scope,
             "kind": kind,
@@ -98,9 +99,11 @@ class SkillProfileCompiler:
             "when_to_use": when_to_use,
             "content": content,
             "capability_refs": capability_refs,
+            "bundle_digest": str(row.get("package_digest") or ""),
         }
         return DshSkillDefinition(
             name=native_name,
+            display_name=payload["display_name"],
             version=f"skill-v-{self._digest(payload)[:24]}",
             source_id=source_id,
             source_scope=source_scope,
@@ -109,6 +112,11 @@ class SkillProfileCompiler:
             when_to_use=when_to_use,
             content=content[:100_000],
             capability_refs=capability_refs,
+            bundle_digest=str(row.get("package_digest") or ""),
+            bundle_root=str(row.get("runtime_bundle_root") or ""),
+            bundle_archive_base64=str(row.get("runtime_bundle_base64") or ""),
+            model_invocable=bool(row.get("model_invocable", True)),
+            user_invocable=bool(row.get("user_invocable", True)),
         )
 
     @staticmethod

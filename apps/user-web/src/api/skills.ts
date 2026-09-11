@@ -5,7 +5,47 @@ const api = createApiClient({
   timeout: 120000,
 })
 
-export type SkillType = 'writing_style' | 'workflow'
+export type SkillType = 'writing_style' | 'workflow' | 'ordinary' | 'expert_package'
+
+export interface ExpertPackageChild {
+  slug: string
+  name: string
+  description: string
+  version: string
+}
+
+export interface SkillPackageInfo {
+  slug: string
+  version: string
+  digest: string
+  files: Array<{ path: string; size: number; sha256: string }>
+  warnings: Array<{ code: string; message: string; tool?: string; packageVersion?: string; skillVersion?: string }>
+  kind: 'ordinary' | 'expert_package'
+  children: ExpertPackageChild[]
+}
+
+export interface SkillInstallResult {
+  id: string
+  name: string
+  slug: string
+  description: string
+  version: string
+  type: 'ordinary' | 'expert_package'
+  enabled: boolean
+  duplicate: boolean
+  updated: boolean
+  fileCount: number
+  digest: string
+  warnings: Array<{ code: string; message: string; tool?: string; packageVersion?: string; skillVersion?: string; childSlug?: string; declaredName?: string; skillName?: string }>
+  childCount: number
+  children: ExpertPackageChild[]
+  compatibility: {
+    status: 'compatible' | 'warning'
+    declaredTools: string[]
+    referencedTools: string[]
+    warnings: Array<{ code: string; message: string; tool?: string; packageVersion?: string; skillVersion?: string }>
+  }
+}
 
 export interface SkillItem {
   id: string
@@ -18,6 +58,7 @@ export interface SkillItem {
   enabled: boolean
   createdAt: string
   updatedAt: string
+  package?: SkillPackageInfo | null
 }
 
 export interface SkillPayload {
@@ -244,6 +285,15 @@ export async function deleteSkill(id: string, userId: string, mainId = 'default'
 export async function setSkillEnabled(id: string, userId: string, mainId: string, enabled: boolean): Promise<SkillItem> {
   const res = await api.patch(`/skills/${id}/enabled`, { enabled }, { params: params(userId, mainId) })
   return dataOf<SkillItem>(res)
+}
+
+export async function installPersonalSkillZip(file: File): Promise<SkillInstallResult> {
+  const form = new FormData()
+  form.append('file', file)
+  const res = await api.post('/skills/install-zip', form, {
+    headers: { 'Content-Type': 'multipart/form-data' }, timeout: 90000,
+  })
+  return dataOf<SkillInstallResult>(res)
 }
 
 export async function generateWorkflowSteps(payload: {

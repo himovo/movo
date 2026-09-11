@@ -25,7 +25,17 @@ const stateText = computed(() => {
 })
 const text = computed(() => {
   const payload = props.item.payload || {}
-  if (props.item.kind === 'activity') return String(payload.label || '')
+  if (props.item.kind === 'activity') {
+    if (category.value === 'skill') {
+      const automatic = payload.selection_mode === 'automatic'
+      const organization = payload.source_scope === 'organization'
+      const key = automatic
+        ? (organization ? 'execution.v3.skill_auto_selected_organization' : 'execution.v3.skill_auto_selected_personal')
+        : (organization ? 'execution.v3.skill_selected_organization' : 'execution.v3.skill_selected_personal')
+      return t(key, { name: String(payload.skill_name || '') })
+    }
+    return String(payload.label || '')
+  }
   if (props.item.kind === 'tool') {
     return t(toolActionLabelKey(props.item))
   }

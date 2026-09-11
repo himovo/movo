@@ -6,7 +6,7 @@ import { isRef, reactive } from 'vue'
 import { useAuthoritativeMessages } from '../src/components/chat/useAuthoritativeMessages'
 import { refreshAfterRun } from '../src/composables/chatRuntimeRefresh'
 import { activityOutcome, activityStateMessageKey, hasActiveRunningLeaf, runningContainerIds } from '../src/features/execution-v3/domain/activityPresentation'
-import { collapseRepeatedToolCalls, toolCallDetail, toolCallSummary, toolCapabilityKeys } from '../src/features/execution-v3/domain/repeatedToolCalls'
+import { collapseRepeatedToolCalls, toolActionLabelKey, toolCallDetail, toolCallSummary, toolCapabilityKeys } from '../src/features/execution-v3/domain/repeatedToolCalls'
 import { elapsedRunMs, formatRunDuration } from '../src/features/execution-v3/domain/runTiming'
 import { applyAssistantContentEvent } from '../src/features/execution-v3/domain/assistantContent'
 import { decideToolApproval, listPendingToolApprovals } from '../src/api/toolApprovals'
@@ -90,6 +90,13 @@ function event(overrides: Partial<ExecutionEventV3>): ExecutionEventV3 {
   assert.deepEqual(toolCapabilityKeys([
     { ...items[3], payload: { name: 'todo_write', args: { todos: [{ content: 'private plan' }] } } },
   ] as any), ['execution.v3.activity.update_plan'])
+  const skillHubInstall = {
+    ...items[3],
+    id: 'skillhub-install',
+    payload: { name: 'skillhub_install', args: { coordinate: '@owner/birdwatching' } },
+  } as any
+  assert.equal(toolActionLabelKey(skillHubInstall), 'execution.v3.activity.install_skill')
+  assert.equal(toolCallSummary(skillHubInstall), 'coordinate: @owner/birdwatching')
 }
 
 {

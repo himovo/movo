@@ -112,7 +112,7 @@ class AdminShapeSkillPayload(BaseModel):
     name: str = Field(..., min_length=1, max_length=120)
     description: str = ""
     scenario: str = ""
-    type: str = Field(default="writing_style", pattern=r"^(writing_style|workflow)$")
+    type: str = Field(default="writing_style", pattern=r"^(writing_style|workflow|ordinary)$")
     config: Dict[str, Any] = Field(default_factory=dict)
     enabled: bool = False
 
@@ -499,8 +499,9 @@ def _admin_shape_payload_to_user_payload(
 def _admin_shape_skill(skill: Dict[str, Any]) -> Dict[str, Any]:
     config = _safe_dict(skill.get("config"))
     raw_type = str(skill.get("type") or "").strip().lower()
-    if raw_type not in {"writing_style", "workflow"}:
-        raw_type = "workflow" if str(skill.get("skill_type") or "").strip().lower() == "composite_task" else "writing_style"
+    if raw_type not in {"writing_style", "workflow", "ordinary", "expert_package"}:
+        normalized_skill_type = str(skill.get("skill_type") or "").strip().lower()
+        raw_type = "workflow" if normalized_skill_type == "composite_task" else "ordinary" if normalized_skill_type in {"ordinary", "execution"} else "writing_style"
     if not config:
         if raw_type == "writing_style":
             config = {
@@ -521,12 +522,21 @@ def _admin_shape_skill(skill: Dict[str, Any]) -> Dict[str, Any]:
         "enabled": _safe_bool(skill.get("enabled"), _safe_bool(skill.get("is_active"), True)),
         "createdAt": _time_text(skill.get("created_at")),
         "updatedAt": _time_text(skill.get("updated_at")),
+        "package": {
+            "slug": str(skill.get("package_slug") or ""),
+            "version": str(skill.get("package_version") or ""),
+            "digest": str(skill.get("package_digest") or ""),
+            "files": list(skill.get("package_files") or []),
+            "warnings": list(skill.get("package_warnings") or []),
+            "kind": str(skill.get("package_kind") or raw_type or "ordinary"),
+            "children": list(skill.get("package_children") or []),
+        } if skill.get("package_id") else None,
     }
 
 
 def _selectable_skill_type(skill: Dict[str, Any]) -> str:
     raw_type = str(skill.get("type") or "").strip().lower()
-    if raw_type in {"writing_style", "workflow"}:
+    if raw_type in {"writing_style", "workflow", "ordinary", "expert_package"}:
         return raw_type
     return "workflow" if str(skill.get("skill_type") or "").strip().lower() == "composite_task" else "writing_style"
 
@@ -1944,8 +1954,6 @@ async def list_skills(
 ) -> ApiResponse:
     main_id = main_id_snake or main_id
     skills = await user_skill_service.list_skills(user_id, main_id=main_id)
-    policy = await MongoEmployeePolicyResolver().resolve(main_id, user_id)
-    skills = [item for item in skills if policy.allows_skill(str(item.get("id") or item.get("_id") or ""))]
     return ApiResponse(code=0, message="success", data=[_admin_shape_skill(item) for item in skills])
 
 
@@ -1981,7 +1989,7 @@ async def list_selectable_skills(
         if not _safe_bool(skill.get("enabled"), _safe_bool(skill.get("is_active"), True)):
             continue
         skill_id = str(skill.get("id") or skill.get("_id") or "").strip()
-        if not policy.allows_skill(skill_id):
+        if _skill_source_scope(skill) == "organization" and not policy.allows_skill(skill_id):
             continue
         if not skill_id or skill_id in seen:
             continue
@@ -2065,16 +2073,9 @@ async def set_skill_enabled(
     current = await user_skill_service.get_skill(user_id, skill_id, main_id=resolved_main_id)
     if not current:
         raise HTTPException(status_code=404, detail="Skill not found")
-    admin_payload = AdminShapeSkillPayload(
-        name=str(current.get("name") or "Untitled Skill"),
-        description=str(current.get("description") or ""),
-        scenario=str(current.get("scenario") or current.get("notes") or ""),
-        type=str(current.get("type") or ("workflow" if str(current.get("skill_type") or "") == "composite_task" else "writing_style")),
-        config=_safe_dict(current.get("config")),
-        enabled=bool(payload.enabled),
+    updated = await user_skill_service.set_skill_enabled(
+        user_id, skill_id, bool(payload.enabled), main_id=resolved_main_id,
     )
-    updates = _admin_shape_payload_to_user_payload(admin_payload, user_id=user_id, main_id=resolved_main_id)
-    updated = await user_skill_service.update_skill(user_id, skill_id, updates, main_id=resolved_main_id)
     if not updated:
         raise HTTPException(status_code=404, detail="Skill not found")
     return ApiResponse(code=0, message="success", data=_admin_shape_skill(updated))

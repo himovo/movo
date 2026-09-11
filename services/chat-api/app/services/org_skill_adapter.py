@@ -767,6 +767,32 @@ def _adapt_writing_style(doc: Dict[str, Any]) -> Dict[str, Any] | None:
     )
 
 
+def _adapt_ordinary(doc: Dict[str, Any]) -> Dict[str, Any] | None:
+    markdown = str(doc.get("skill_markdown") or "").strip()
+    if not markdown:
+        return None
+    payload = _base_payload(
+        doc,
+        skill_type="ordinary",
+        role="execution",
+        skill_markdown=markdown,
+        skill_contract={},
+    )
+    payload.update({
+        "package_id": str(doc.get("package_id") or ""),
+        "package_slug": str(doc.get("package_slug") or ""),
+        "package_version": str(doc.get("package_version") or ""),
+        "package_digest": str(doc.get("package_digest") or ""),
+        "package_files": list(doc.get("package_files") or []),
+        "package_warnings": list(doc.get("package_warnings") or []),
+        "package_kind": str(doc.get("package_kind") or "ordinary"),
+        "package_children": list(doc.get("package_children") or []),
+        "model_invocable": bool(doc.get("model_invocable", True)),
+        "user_invocable": bool(doc.get("user_invocable", True)),
+    })
+    return payload
+
+
 class OrganizationSkillAdapter:
     async def list_runtime_skills(self, *, main_id: str) -> List[Dict[str, Any]]:
         db = get_db()
@@ -783,6 +809,8 @@ class OrganizationSkillAdapter:
                 adapted = _adapt_workflow(doc)
             elif raw_type == "writing_style":
                 adapted = _adapt_writing_style(doc)
+            elif raw_type in {"ordinary", "expert_package"}:
+                adapted = _adapt_ordinary(doc)
             else:
                 adapted = None
             if adapted:

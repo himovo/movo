@@ -29,6 +29,7 @@
     "@deepseek-ai/dsh-user-approval": "0.1.2-alpha.2",
     "@deepseek-ai/dsh-web": "0.1.2-alpha.2",
     "@deepseek-ai/dsh-tool-web": "0.1.2-alpha.2",
-    "@deepseek-ai/dsh-tool-skill": "0.1.2-alpha.2"
+    "@deepseek-ai/dsh-tool-skill": "0.1.2-alpha.2",
+    "fflate": "0.8.3"
   }
 }

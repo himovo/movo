@@ -122,6 +122,11 @@ class Settings(BaseSettings):
     DSH_MODEL_GATEWAY_URL: str = "http://127.0.0.1:8000/internal/dsh/model/generate"
     DSH_RUNTIME_HTTP_TIMEOUT_SECONDS: float = 5.0
 
+    # SkillHub is a server-owned distribution source. Model-supplied URLs are
+    # never fetched; only validated slugs are sent to this configured API.
+    SKILLHUB_API_BASE_URL: str = "https://api.skillhub.cn"
+    SKILLHUB_DOWNLOAD_TIMEOUT_SECONDS: float = 45.0
+
     # Optional demo APIs are excluded from production by default.
     ENABLE_DEMO_ENDPOINTS: bool = False
     # Upload limits. Defaults are intentionally generous to preserve existing

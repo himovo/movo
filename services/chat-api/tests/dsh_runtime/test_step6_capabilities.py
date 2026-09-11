@@ -47,6 +47,10 @@ def test_internal_catalog_compiles_to_dsh_tools_and_excludes_retired_legacy_tool
     assert "enterprise-specific" in by_name["knowledge_search"].description
     assert "web_search" in by_name["knowledge_search"].description
     assert "progressive_research" in by_name
+    assert by_name["skillhub_install"].capability_ref == "skills.install_skillhub@v1"
+    assert by_name["skillhub_install"].risk_level == "write"
+    assert by_name["skillhub_install"].approval_required is False
+    assert set(by_name["skillhub_install"].input_schema["required"]) == {"coordinate"}
     assert "evidence is sufficient" in by_name["progressive_research"].description
     assert by_name["pdf_retain_pages"].capability_ref == "document.pdf_retain_pages@v1"
     assert "performs no semantic selection" in by_name["pdf_retain_pages"].description

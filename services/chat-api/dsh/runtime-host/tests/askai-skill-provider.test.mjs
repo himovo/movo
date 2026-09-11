@@ -8,6 +8,7 @@ import { invokeSelectedSkill, resolveSkillTurnContext } from '../src/skill-turn-
 const profile = {
   skills: [{
     name: 'research-report-a1', version: 'skill-v1', source_id: 'workflow-1',
+    display_name: 'Research report',
     source_scope: 'organization', kind: 'workflow', description: 'Research report',
     when_to_use: 'Use for research reports', content: '# Steps\nUse governed tools.',
     capability_refs: ['research.progressive@v1'],
@@ -45,6 +46,9 @@ test('manual selection uses DSH native slash invocation and rejects stale profil
     selected_skill_id: 'workflow-1', selected_writing_skill_id: 'style-1',
   })
   assert.equal(invokeSelectedSkill(selected.skillName, 'do it'), '/research-report-a1\ndo it')
+  assert.deepEqual(selected.selectedSkill, {
+    sourceId: 'workflow-1', displayName: 'Research report', sourceScope: 'organization',
+  })
   assert.equal(selected.context.writing_style.instructions, 'Concise.')
   assert.throws(
     () => resolveSkillTurnContext(modelProfile, { selected_skill_id: 'stale' }),

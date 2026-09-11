@@ -7,6 +7,7 @@ from typing import Any, Protocol
 from app.governance.position_policy import EmployeePolicyResolver
 from app.services.org_skill_adapter import organization_skill_adapter
 from app.services.skills import user_skill_service
+from app.core.db import get_db
 
 
 class SkillCatalog(Protocol):
@@ -31,9 +32,25 @@ class MongoSkillCatalog:
                 continue
             if item.get("enabled", item.get("is_active", True)) is False:
                 continue
-            if policy is not None and not policy.allows_skill(source_id):
+            is_organization = str(item.get("visibility") or "").lower() == "organization" or str(item.get("source") or "") == "org_db"
+            if is_organization and policy is not None and not policy.allows_skill(source_id):
                 continue
             seen.add(source_id)
             rows.append(dict(item))
+        package_ids = [str(item.get("package_id") or "") for item in rows if item.get("package_id")]
+        if package_ids:
+            packages = await get_db().skill_packages.find({
+                "_id": {"$in": package_ids}, "main_id": tenant_id,
+            }).to_list(length=len(package_ids))
+            by_id = {str(item.get("_id") or ""): item for item in packages}
+            for row in rows:
+                package = by_id.get(str(row.get("package_id") or ""))
+                if package:
+                    resource_files = [
+                        item for item in package.get("files") or []
+                        if str(item.get("path") or "") not in {"SKILL.md", "_meta.json"}
+                    ]
+                    if resource_files:
+                        row["runtime_bundle_base64"] = str(package.get("archive_base64") or "")
+                        row["runtime_bundle_root"] = str(package.get("root_prefix") or "")
         return rows
-

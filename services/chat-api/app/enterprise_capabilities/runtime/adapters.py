@@ -38,6 +38,7 @@ from app.enterprise_capabilities.content import content_production
 from app.enterprise_capabilities.images import generate_images
 from app.enterprise_capabilities.presentation import presentation_create
 from app.enterprise_capabilities.pdf_editing import pdf_retain_pages
+from app.enterprise_capabilities.skills import skillhub_install
 from app.enterprise_capabilities.evidence import (
     admit_knowledge_evidence,
     build_document_evidence_bundle,
@@ -279,6 +280,7 @@ async def compute_metrics(arguments: dict[str, Any], context: CapabilityExecutio
 def build_default_registry() -> CapabilityHandlerRegistry:
     registry = CapabilityHandlerRegistry()
     registry.register("knowledge.search@v1", knowledge_search)
+    registry.register("skills.install_skillhub@v1", skillhub_install)
     registry.register("document.parse@v1", document_parse)
     registry.register("document.extract_resources@v1", document_extract_resources)
     registry.register("document.pdf_retain_pages@v1", pdf_retain_pages)

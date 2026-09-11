@@ -1,5 +1,5 @@
 <template>
-  <div class="page-stack skills-page">
+  <div class="page-stack skills-page" @dragover.prevent @drop.prevent="handlePageDrop">
     <div class="metrics-row">
       <n-card v-for="item in metricCards" :key="item.key" class="metric-card" :bordered="false" size="small">
         <div class="metric-main">
@@ -32,6 +32,7 @@
               </template>
               {{ t('刷新') }}
             </n-button>
+            <n-button secondary @click="installVisible = true">{{ t('从 ZIP 安装') }}</n-button>
             <n-button type="primary" strong @click="openCreateModal">
               <template #icon>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -54,11 +55,11 @@
               class="skill-card"
               :class="{ 'skill-card-disabled': !row.enabled }"
               type="button"
-              @click="goToConfig(row.id)"
+              @click="openSkill(row)"
             >
               <div class="card-head">
                 <div class="card-tags">
-                  <n-tag size="small" :bordered="false" :type="row.type === 'workflow' ? 'warning' : 'info'">
+                  <n-tag size="small" :bordered="false" :type="row.type === 'workflow' ? 'warning' : row.type === 'expert_package' ? 'success' : 'info'">
                     {{ typeText(row.type) }}
                   </n-tag>
                   <n-tag size="small" :bordered="false" :type="row.enabled ? 'success' : 'default'">
@@ -82,7 +83,7 @@
                       @update:value="handleEnabledUpdate(row, $event)"
                     />
                   </div>
-                  <n-button class="icon-only-btn" size="small" quaternary circle :title="t('编辑基础信息')" @click.stop="openEditModal(row)">
+                  <n-button v-if="row.type === 'writing_style' || row.type === 'workflow'" class="icon-only-btn" size="small" quaternary circle :title="t('编辑基础信息')" @click.stop="openEditModal(row)">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M12 20h9" />
                       <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
@@ -111,6 +112,7 @@
             <div class="empty-title">{{ t('暂未创建 Skill') }}</div>
             <div class="empty-desc">{{ t('先创建基础字段，然后点击卡片进入配置页。') }}</div>
             <n-space justify="center">
+              <n-button @click="installVisible = true">{{ t('从 ZIP 安装') }}</n-button>
               <n-button type="primary" @click="openCreateModal">{{ t('创建 Skill') }}</n-button>
             </n-space>
           </div>
@@ -146,6 +148,12 @@
         <n-button type="primary" :loading="creating" @click="submitCreate">{{ t('创建') }}</n-button>
       </n-space>
     </template>
+  </n-modal>
+
+  <SkillZipInstaller ref="zipInstallerRef" v-model:show="installVisible" @installed="loadRows" />
+
+  <n-modal v-model:show="detailsVisible" preset="card" :title="selectedPackage?.name || 'Skill'" style="width: 620px">
+    <SkillPackageDetails v-if="selectedPackage" :skill="selectedPackage" />
   </n-modal>
 
   <n-modal v-model:show="editVisible" preset="card" :title="t('编辑 Skill 基础信息')" style="width: 640px">
@@ -210,6 +218,8 @@ import { useMessage, type FormInst, type FormRules } from 'naive-ui';
 import { t } from '@/composables/i18n';
 import { formatAdminDateTime, parseAdminDate } from '@/composables/adminTimezone';
 import { createSkill, deleteSkill, fetchSkills, setSkillEnabled, updateSkill, type SkillItem, type SkillPayload, type SkillType } from '@/api/skills';
+import SkillZipInstaller from './SkillZipInstaller.vue';
+import SkillPackageDetails from './SkillPackageDetails.vue';
 
 const router = useRouter();
 const message = useMessage();
@@ -220,6 +230,10 @@ const updating = ref(false);
 const deleting = ref(false);
 const rows = ref<SkillItem[]>([]);
 const switchingIds = ref<Set<string>>(new Set());
+const installVisible = ref(false);
+const detailsVisible = ref(false);
+const selectedPackage = ref<SkillItem | null>(null);
+const zipInstallerRef = ref<{ select: (file?: File) => void } | null>(null);
 
 const createVisible = ref(false);
 const createFormRef = ref<FormInst | null>(null);
@@ -265,6 +279,8 @@ const filters = ref({
 const typeOptions = computed(() => [
   { label: t('写作规范'), value: 'writing_style' },
   { label: t('工作流'), value: 'workflow' },
+  { label: t('普通 Skill'), value: 'ordinary' },
+  { label: t('skills.type.expert_package'), value: 'expert_package' },
 ]);
 
 const createRules: FormRules = {
@@ -307,7 +323,9 @@ const metricCards = computed(() => {
 });
 
 function typeText(type: SkillType): string {
-  return type === 'workflow' ? t('工作流') : t('写作规范');
+  if (type === 'workflow') return t('工作流');
+  if (type === 'expert_package') return t('skills.type.expert_package');
+  return type === 'ordinary' ? t('普通 Skill') : t('写作规范');
 }
 
 function resetCreateForm() {
@@ -341,6 +359,19 @@ function openEditModal(row: SkillItem) {
 
 function goToConfig(skillId: string) {
   router.push(`/skills/${skillId}/config`);
+}
+
+function openSkill(row: SkillItem) {
+  if (row.type !== 'ordinary' && row.type !== 'expert_package') return goToConfig(row.id);
+  selectedPackage.value = row;
+  detailsVisible.value = true;
+}
+
+function handlePageDrop(event: DragEvent) {
+  const file = event.dataTransfer?.files?.[0];
+  if (!file?.name.toLowerCase().endsWith('.zip')) return;
+  installVisible.value = true;
+  zipInstallerRef.value?.select(file);
 }
 
 function askDelete(row: SkillItem) {

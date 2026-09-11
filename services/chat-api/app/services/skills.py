@@ -133,6 +133,8 @@ def _normalize_skill_type(skill_type: Optional[str], *, role: Optional[str] = No
         "composite": "composite_task",
         "browser_task": "composite_task",
         "workflow": "composite_task",
+        "ordinary": "execution",
+        "expert_package": "expert_package",
     }
     normalized = aliases.get(raw, "")
     if normalized:
@@ -1044,8 +1046,26 @@ class UserSkillService:
 
     async def delete_skill(self, user_id: str, skill_id: str, main_id: str = "default") -> bool:
         db = get_db()
+        current = await db.user_skills.find_one(
+            add_main_scope({"_id": skill_id, "user_id": str(user_id)}, main_id),
+            {"package_id": 1, "previous_package_ids": 1},
+        )
         result = await db.user_skills.delete_one(add_main_scope({"_id": skill_id, "user_id": str(user_id)}, main_id))
+        if result.deleted_count and current:
+            package_ids = [str(current.get("package_id") or ""), *[str(item) for item in current.get("previous_package_ids") or []]]
+            await db.skill_packages.delete_many({"_id": {"$in": [item for item in package_ids if item]}})
         return result.deleted_count > 0
+
+    async def set_skill_enabled(self, user_id: str, skill_id: str, enabled: bool, main_id: str = "default") -> Optional[Dict[str, Any]]:
+        db = get_db()
+        query = add_main_scope({"_id": skill_id, "user_id": str(user_id)}, main_id)
+        result = await db.user_skills.update_one(query, {"$set": {
+            "enabled": bool(enabled), "is_active": bool(enabled), "updated_at": datetime.datetime.utcnow(),
+        }})
+        if not result.matched_count:
+            return None
+        doc = await db.user_skills.find_one(query)
+        return self._serialize(doc) if doc else None
 
     async def create_skill(self, user_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         db = get_db()
@@ -2071,6 +2091,16 @@ class UserSkillService:
             "created_at": doc.get("created_at"),
             "updated_at": doc.get("updated_at"),
             "is_active": doc.get("is_active", True),
+            "package_id": str(doc.get("package_id") or ""),
+            "package_slug": str(doc.get("package_slug") or ""),
+            "package_version": str(doc.get("package_version") or ""),
+            "package_digest": str(doc.get("package_digest") or ""),
+            "package_files": list(doc.get("package_files") or []),
+            "package_warnings": list(doc.get("package_warnings") or []),
+            "package_kind": str(doc.get("package_kind") or "ordinary"),
+            "package_children": list(doc.get("package_children") or []),
+            "model_invocable": bool(doc.get("model_invocable", True)),
+            "user_invocable": bool(doc.get("user_invocable", True)),
         }
 
 

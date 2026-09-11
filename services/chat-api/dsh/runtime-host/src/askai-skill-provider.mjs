@@ -1,13 +1,16 @@
+import { SkillBundleMaterializer } from './skill-bundle-materializer.mjs'
+
 const PROVIDER_NAME = 'askai-enterprise'
 
 export class AskaiSkillProvider {
   #skills
   #byName
 
-  constructor(skillProfile) {
+  constructor(skillProfile, { storageRoot } = {}) {
     this.name = PROVIDER_NAME
     this.#skills = Object.freeze([...(skillProfile?.skills ?? [])].map(skill => Object.freeze(structuredClone(skill))))
     this.#byName = new Map(this.#skills.map(skill => [skill.name, skill]))
+    this.materializer = storageRoot === undefined ? undefined : new SkillBundleMaterializer(storageRoot)
   }
 
   async list() {
@@ -15,7 +18,10 @@ export class AskaiSkillProvider {
       name: skill.name,
       description: skill.description,
       ...(skill.when_to_use ? { whenToUse: skill.when_to_use } : {}),
-      invocation: { modelInvocable: true, userInvocable: true },
+      invocation: {
+        modelInvocable: skill.model_invocable !== false,
+        userInvocable: skill.user_invocable !== false,
+      },
       source: `askai:${skill.source_scope}`,
       rank: 100,
       provider: PROVIDER_NAME,
@@ -32,21 +38,27 @@ export class AskaiSkillProvider {
   async get(candidate) {
     const skill = this.#byName.get(candidate?.locator?.name)
     if (skill === undefined || candidate?.locator?.version !== skill.version) return undefined
+    const directory = await this.materializer?.materialize(skill)
     return {
       name: skill.name,
       description: skill.description,
       ...(skill.when_to_use ? { whenToUse: skill.when_to_use } : {}),
-      invocation: { modelInvocable: true, userInvocable: true },
+      invocation: {
+        modelInvocable: skill.model_invocable !== false,
+        userInvocable: skill.user_invocable !== false,
+      },
       source: `askai:${skill.source_scope}`,
       provider: PROVIDER_NAME,
-      resourceBase: { kind: 'opaque', description: `MOVO immutable Skill ${skill.version}` },
+      resourceBase: directory === undefined
+        ? { kind: 'opaque', description: `MOVO immutable Skill ${skill.version}` }
+        : { kind: 'directory', path: directory },
       metadata: candidate.metadata,
       content: skill.content,
     }
   }
 }
 
-export function registerAskaiSkillProvider(ctx, skillProfile) {
+export function registerAskaiSkillProvider(ctx, skillProfile, options = {}) {
   if (!Array.isArray(skillProfile?.skills) || skillProfile.skills.length === 0) return undefined
-  return ctx.skills.registerProvider(() => new AskaiSkillProvider(skillProfile))
+  return ctx.skills.registerProvider(() => new AskaiSkillProvider(skillProfile, options))
 }

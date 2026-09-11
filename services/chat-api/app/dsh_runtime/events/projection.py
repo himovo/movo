@@ -32,6 +32,25 @@ class KernelEventProjector:
 
         if event_type == "turn.started":
             projected_type, payload = "run.started", {"kernel": "dsh"}
+        elif event_type == "skill.selected":
+            source_id = str(event.payload.get("sourceId") or event.payload.get("source_id") or "").strip()
+            skill_name = str(event.payload.get("displayName") or event.payload.get("display_name") or "").strip()
+            source_scope = str(event.payload.get("sourceScope") or event.payload.get("source_scope") or "").strip()
+            selection_mode = str(event.payload.get("selectionMode") or event.payload.get("selection_mode") or "manual").strip()
+            if (
+                not source_id or not skill_name
+                or source_scope not in {"personal", "organization"}
+                or selection_mode not in {"manual", "automatic"}
+            ):
+                return None
+            projected_type, item_kind = "item.completed", "activity"
+            item_id = f"{message_id}:selected-skill:{source_id}"
+            payload = {
+                "category": "skill",
+                "skill_name": skill_name,
+                "source_scope": source_scope,
+                "selection_mode": selection_mode,
+            }
         elif event_type == "agent.message.delta":
             text = self._delta_text(event.payload)
             if not text:
@@ -59,6 +78,11 @@ class KernelEventProjector:
         elif event_type == "tool.call.started":
             call_id = str(event.payload.get("callId") or event.event_id)
             name = str(event.payload.get("name") or "tool")
+            if name == "skill":
+                # DSH exposes automatic Skill loading as an internal tool call.
+                # The Runtime Host emits the user-facing skill.selected activity.
+                self._tool_calls[(event.session_id, call_id)] = {"name": name, "internal": True}
+                return None
             presentation = dict((tool_presentations or {}).get(name) or {})
             tool_payload = {
                 "callId": call_id,
@@ -75,6 +99,8 @@ class KernelEventProjector:
         elif event_type == "tool.call.completed":
             call_id = self._tool_result_call_id(event.payload) or event.event_id
             started = self._tool_calls.pop((event.session_id, call_id), {})
+            if started.get("internal"):
+                return None
             name = str(started.get("name") or event.payload.get("name") or "tool")
             presentation = dict((tool_presentations or {}).get(name) or {})
             ok, summary, error, result_value = self._tool_result(event.payload)

@@ -16,6 +16,7 @@ NATIVE_EVENT_TYPES: dict[str, str] = {
     "tool/result": "tool.call.completed",
     "tool/code-dispatch-start": "tool.call.started",
     "tool/code-dispatch": "tool.call.completed",
+    "skill/selected": "skill.selected",
     "approval/asked": "tool.approval.requested",
     "approval/decided": "tool.approval.decided",
     "turn/start": "turn.started",

@@ -60,6 +60,63 @@ def test_projects_only_stable_v3_answer_and_terminal_fields() -> None:
     assert terminal["stream_seq"] == 2
 
 
+def test_projects_selected_skill_as_generic_activity() -> None:
+    mapper = DshEventMapper(kernel_version="0.1.2-alpha.2")
+    native = mapper.map_event(
+        {
+            "cursor": 2,
+            "nativeType": "skill/selected",
+            "time": 1_700_000_000_000,
+            "data": {
+                "sourceId": "personal-skill-7",
+                "displayName": "Example capability",
+                "sourceScope": "personal",
+                "selectionMode": "automatic",
+            },
+        },
+        runtime_id="runtime",
+        session_id="session",
+        profile_version="profile",
+    )
+    projected = KernelEventProjector().project(native, message_id="message-a")
+
+    assert native.type == "skill.selected"
+    assert projected is not None
+    assert projected["type"] == "item.completed"
+    assert projected["item_kind"] == "activity"
+    assert projected["item_id"] == "message-a:selected-skill:personal-skill-7"
+    assert projected["payload"] == {
+        "category": "skill",
+        "skill_name": "Example capability",
+        "source_scope": "personal",
+        "selection_mode": "automatic",
+    }
+
+
+def test_hides_internal_dsh_skill_tool_call_from_the_execution_timeline() -> None:
+    projector = KernelEventProjector()
+    started = projector.project(
+        _event(
+            "tool.call.started",
+            {"callId": "skill-1", "name": "skill", "arguments": '{"name":"anti-fraud"}'},
+            cursor=3,
+        ),
+        message_id="message-a",
+    )
+    completed = projector.project(
+        _event(
+            "tool.call.completed",
+            {"message": {"source": {"callId": "skill-1"}, "content": [{
+                "type": "tool-result", "toolCallId": "skill-1", "content": [],
+            }]}},
+            cursor=4,
+        ),
+        message_id="message-a",
+    )
+    assert started is None
+    assert completed is None
+
+
 def test_tool_step_text_becomes_commentary_and_tool_completion_keeps_metadata() -> None:
     projector = KernelEventProjector()
     presentation = {

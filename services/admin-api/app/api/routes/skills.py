@@ -8,17 +8,18 @@ import urllib.request
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
 
 from app.api.deps import get_current_admin_user
 from app.api.time_utils import utc_iso
 from app.core.config import settings
 from app.core.db import get_db
+from app.services.skill_package_proxy import install_organization_skill_zip
 
 router = APIRouter()
 
-SKILL_TYPES = {"writing_style", "workflow"}
+SKILL_TYPES = {"writing_style", "workflow", "ordinary", "expert_package"}
 
 
 def _now() -> datetime.datetime:
@@ -64,6 +65,15 @@ def _serialize(doc: dict[str, Any]) -> dict[str, Any]:
         "enabled": _safe_bool(doc.get("enabled"), True),
         "createdAt": _time_text(doc.get("created_at")),
         "updatedAt": _time_text(doc.get("updated_at")),
+        "package": {
+            "slug": str(doc.get("package_slug") or ""),
+            "version": str(doc.get("package_version") or ""),
+            "digest": str(doc.get("package_digest") or ""),
+            "files": _safe_list(doc.get("package_files")),
+            "warnings": _safe_list(doc.get("package_warnings")),
+            "kind": str(doc.get("package_kind") or doc.get("type") or "ordinary"),
+            "children": _safe_list(doc.get("package_children")),
+        } if doc.get("package_id") else None,
     }
 
 
@@ -129,7 +139,7 @@ def _normalize_payload(payload: dict[str, Any], *, partial: bool = False) -> dic
     if not partial or "type" in payload:
         skill_type = str(payload.get("type") or "writing_style").strip().lower()
         if skill_type not in SKILL_TYPES:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="技能类型只支持 writing_style 或 workflow")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="技能类型无效")
         patch["type"] = skill_type
     if not partial or "config" in payload:
         patch["config"] = _safe_dict(payload.get("config"))
@@ -142,7 +152,7 @@ class SkillPayload(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     description: str = ""
     scenario: str = ""
-    type: str = Field(default="writing_style", pattern=r"^(writing_style|workflow)$")
+    type: str = Field(default="writing_style", pattern=r"^(writing_style|workflow|ordinary)$")
     config: dict[str, Any] = Field(default_factory=dict)
     enabled: bool = False
 
@@ -414,6 +424,28 @@ async def enrich_writing_style(payload: WritingStyleEnrichPayload, current_user:
     }
 
 
+@router.post("/install-zip", status_code=status.HTTP_201_CREATED)
+async def install_skill_zip(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_admin_user),
+) -> dict[str, Any]:
+    filename = str(file.filename or "").strip()
+    if not filename.lower().endswith(".zip"):
+        raise HTTPException(status_code=400, detail={
+            "code": "zip_required", "message": "请选择 ZIP 格式的 Skill 安装包", "file": filename,
+        })
+    content = await file.read(5 * 1024 * 1024 + 1)
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail={
+            "code": "archive_too_large", "message": "Skill ZIP 不能超过 5 MiB",
+        })
+    return install_organization_skill_zip(
+        main_id=str(current_user.get("main_id") or "default"),
+        filename=filename,
+        content=content,
+    )
+
+
 @router.get("/{skill_id}")
 async def get_skill(skill_id: str, current_user: dict = Depends(get_current_admin_user)) -> dict[str, Any]:
     main_id = str(current_user.get("main_id") or "default")
@@ -467,9 +499,15 @@ async def set_skill_enabled(
 async def delete_skill(skill_id: str, current_user: dict = Depends(get_current_admin_user)) -> dict[str, str]:
     main_id = str(current_user.get("main_id") or "default")
     db = get_db()
+    existing = await db.skills.find_one(
+        {"_id": str(skill_id), "main_id": main_id}, {"package_id": 1, "previous_package_ids": 1},
+    )
     result = await db.skills.delete_one({"_id": str(skill_id), "main_id": main_id})
     if not result.deleted_count:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="技能不存在")
+    if existing:
+        package_ids = [str(existing.get("package_id") or ""), *[str(item) for item in existing.get("previous_package_ids") or []]]
+        await db.skill_packages.delete_many({"_id": {"$in": [item for item in package_ids if item]}})
     return {"id": skill_id}
 
 
@@ -478,3 +516,7 @@ async def ensure_indexes() -> None:
     await db.skills.create_index([("main_id", 1), ("updated_at", -1)], name="skills_main_updated")
     await db.skills.create_index([("main_id", 1), ("name", 1)], name="skills_main_name")
     await db.skills.create_index([("main_id", 1), ("enabled", 1), ("updated_at", -1)], name="skills_main_enabled_updated")
+    await db.skills.create_index(
+        [("main_id", 1), ("package_slug", 1)], unique=True,
+        partialFilterExpression={"source_kind": "zip"}, name="organization_zip_skill_slug",
+    )

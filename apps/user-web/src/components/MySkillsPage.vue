@@ -1,5 +1,5 @@
 <template>
-  <div class="page-stack skills-page">
+  <div class="page-stack skills-page" @dragover.prevent @drop.prevent="handlePageDrop">
     <header class="skills-header">
       <div class="skills-header-left">
         <n-button secondary @click="emit('back')">
@@ -42,6 +42,7 @@
               </template>
               {{ t('ui.refresh') }}
             </n-button>
+            <n-button secondary @click="installVisible = true">{{ t('skills.install_zip') }}</n-button>
             <n-button type="primary" strong @click="openCreateModal">
               <template #icon>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -64,11 +65,11 @@
               class="skill-card"
               :class="{ 'skill-card-disabled': !row.enabled }"
               type="button"
-              @click="goToConfig(row.id)"
+              @click="openSkill(row)"
             >
               <div class="card-head">
                 <div class="card-tags">
-                  <n-tag size="small" :bordered="false" :type="row.type === 'workflow' ? 'warning' : 'info'">
+                  <n-tag size="small" :bordered="false" :type="row.type === 'workflow' ? 'warning' : row.type === 'expert_package' ? 'success' : 'info'">
                     {{ typeText(row.type) }}
                   </n-tag>
                   <n-tag size="small" :bordered="false" :type="row.enabled ? 'success' : 'default'">
@@ -92,7 +93,7 @@
                       @update:value="handleEnabledUpdate(row, $event)"
                     />
                   </div>
-                  <n-button class="icon-only-btn" size="small" quaternary circle :title="t('skills.edit_info')" @click.stop="openEditModal(row)">
+                  <n-button v-if="row.type === 'writing_style' || row.type === 'workflow'" class="icon-only-btn" size="small" quaternary circle :title="t('skills.edit_info')" @click.stop="openEditModal(row)">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M12 20h9" />
                       <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
@@ -121,6 +122,7 @@
             <div class="empty-title">{{ t('skills.no_skills') }}</div>
             <div class="empty-desc">{{ t('skills.empty_hint') }}</div>
             <n-space justify="center">
+              <n-button @click="installVisible = true">{{ t('skills.install_zip') }}</n-button>
               <n-button type="primary" @click="openCreateModal">{{ t('skills.btn_create') }}</n-button>
             </n-space>
           </div>
@@ -156,6 +158,12 @@
         <n-button type="primary" :loading="creating" @click="submitCreate">{{ t('ui.create') }}</n-button>
       </n-space>
     </template>
+  </n-modal>
+
+  <SkillZipInstaller v-model:show="installVisible" @installed="handleInstalled" />
+
+  <n-modal v-model:show="detailsVisible" preset="card" :title="selectedPackage?.name || 'Skill'" style="width: 620px">
+    <SkillPackageDetails v-if="selectedPackage" :skill="selectedPackage" />
   </n-modal>
 
   <n-modal v-model:show="editVisible" preset="card" :title="t('skills.edit_title')" style="width: 640px">
@@ -221,6 +229,9 @@ import { ArrowBackOutline } from '@vicons/ionicons5';
 import { createSkill, deleteSkill, fetchSkills, setSkillEnabled, updateSkill, type SkillItem, type SkillPayload, type SkillType } from '../api/skills';
 import { t } from '../composables/i18n';
 import { formatAppDateTime, parseAppDate } from '../composables/appTimezone';
+import SkillZipInstaller from './skills/SkillZipInstaller.vue';
+import SkillPackageDetails from './skills/SkillPackageDetails.vue';
+import { openSkillZipInstaller } from '../composables/skillZipInstallBridge';
 
 const props = defineProps<{
   userId: string | null
@@ -240,6 +251,9 @@ const updating = ref(false);
 const deleting = ref(false);
 const rows = ref<SkillItem[]>([]);
 const switchingIds = ref<Set<string>>(new Set());
+const installVisible = ref(false);
+const detailsVisible = ref(false);
+const selectedPackage = ref<SkillItem | null>(null);
 
 const createVisible = ref(false);
 const createFormRef = ref<FormInst | null>(null);
@@ -281,6 +295,8 @@ const filters = ref({
 const typeOptions = computed(() => [
   { label: t('skills.type.style'), value: 'writing_style' },
   { label: t('skills.type.workflow'), value: 'workflow' },
+  { label: t('skills.type.ordinary'), value: 'ordinary' },
+  { label: t('skills.type.expert_package'), value: 'expert_package' },
 ]);
 
 const createRules = computed<FormRules>(() => ({
@@ -324,7 +340,9 @@ const metricCards = computed(() => {
 });
 
 function typeText(type: SkillType): string {
-  return type === 'workflow' ? t('skills.type.workflow') : t('skills.type.style');
+  if (type === 'workflow') return t('skills.type.workflow');
+  if (type === 'expert_package') return t('skills.type.expert_package');
+  return type === 'ordinary' ? t('skills.type.ordinary') : t('skills.type.style');
 }
 
 function resetCreateForm() {
@@ -359,6 +377,21 @@ function openEditModal(row: SkillItem) {
 function goToConfig(skillId: string) {
   const row = rows.value.find((item) => item.id === skillId);
   if (row) emit('configure', row);
+}
+
+function openSkill(row: SkillItem) {
+  if (row.type !== 'ordinary' && row.type !== 'expert_package') return goToConfig(row.id);
+  selectedPackage.value = row;
+  detailsVisible.value = true;
+}
+
+async function handleInstalled() {
+  await loadRows();
+}
+
+function handlePageDrop(event: DragEvent) {
+  const file = event.dataTransfer?.files?.[0];
+  if (file?.name.toLowerCase().endsWith('.zip')) openSkillZipInstaller(file);
 }
 
 function askDelete(row: SkillItem) {

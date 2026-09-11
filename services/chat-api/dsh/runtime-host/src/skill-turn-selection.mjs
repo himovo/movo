@@ -3,10 +3,16 @@ export function resolveSkillTurnContext(modelProfile, value) {
   const profile = modelProfile?.skillProfile
   let skillName
   const selectedSkillId = String(input.selected_skill_id || '')
+  let selectedSkill
   if (selectedSkillId) {
     const skill = profile?.skills?.find(item => item.source_id === selectedSkillId)
     if (skill === undefined) throw new Error('selected Skill is unavailable in this immutable Runtime Profile')
     skillName = skill.name
+    selectedSkill = {
+      sourceId: skill.source_id,
+      displayName: String(skill.display_name || skill.name),
+      sourceScope: skill.source_scope,
+    }
   }
   const selectedStyleId = String(input.selected_writing_skill_id || '')
   if (selectedStyleId) {
@@ -16,7 +22,7 @@ export function resolveSkillTurnContext(modelProfile, value) {
   }
   delete input.selected_skill_id
   delete input.selected_writing_skill_id
-  return { context: input, skillName }
+  return { context: input, skillName, selectedSkill }
 }
 
 export function invokeSelectedSkill(skillName, text) {

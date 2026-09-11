@@ -11,6 +11,7 @@ class DshSkillDefinition(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     name: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{0,126}[a-z0-9]$|^[a-z0-9]$")
+    display_name: str = Field(default="", max_length=256)
     version: str = Field(min_length=1, max_length=128)
     source_id: str = Field(min_length=1, max_length=256)
     source_scope: Literal["personal", "organization"]
@@ -19,6 +20,11 @@ class DshSkillDefinition(BaseModel):
     when_to_use: str = Field(default="", max_length=4000)
     content: str = Field(min_length=1, max_length=100_000)
     capability_refs: tuple[str, ...] = ()
+    bundle_digest: str = Field(default="", max_length=64)
+    bundle_root: str = Field(default="", max_length=512)
+    bundle_archive_base64: str = ""
+    model_invocable: bool = True
+    user_invocable: bool = True
 
 
 class WritingStyleDefinition(BaseModel):
@@ -38,4 +44,3 @@ class CompiledSkillProfile(BaseModel):
 
     skills: tuple[DshSkillDefinition, ...] = ()
     writing_styles: tuple[WritingStyleDefinition, ...] = ()
-

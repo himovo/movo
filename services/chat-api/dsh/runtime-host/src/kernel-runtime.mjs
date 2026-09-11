@@ -24,6 +24,7 @@ import { cancelSessionWork } from './session-cancellation.mjs'
 import { DesktopApprovalBroker } from './desktop-approval-broker.mjs'
 import { registerAskaiSkillProvider } from './askai-skill-provider.mjs'
 import { invokeSelectedSkill, resolveSkillTurnContext } from './skill-turn-selection.mjs'
+import { SkillInvocationTracker } from './skill-invocation-tracker.mjs'
 
 export class KernelRuntime {
   #ctx
@@ -42,12 +43,14 @@ export class KernelRuntime {
   #workspaces
   #desktopApprovals
   #skillProviderDispose
+  #skillInvocations
 
   constructor({ runtimeId, isolationKey, profileVersion, storageRoot, modelProfile }) {
     this.runtimeId = runtimeId
     this.isolationKey = isolationKey
     this.profileVersion = profileVersion
     this.modelProfile = modelProfile === undefined ? undefined : Object.freeze(structuredClone(modelProfile))
+    this.#skillInvocations = new SkillInvocationTracker(this.modelProfile?.skillProfile)
     const storageKey = createHash('sha256').update(isolationKey).digest('hex')
     this.storageRoot = resolve(storageRoot, storageKey)
   }
@@ -62,7 +65,9 @@ export class KernelRuntime {
     this.#ctx = ctx
     this.#temporalContext.install(ctx)
     this.#turnContext.install(ctx)
-    this.#skillProviderDispose = registerAskaiSkillProvider(ctx, this.modelProfile?.skillProfile)
+    this.#skillProviderDispose = registerAskaiSkillProvider(
+      ctx, this.modelProfile?.skillProfile, { storageRoot: this.storageRoot },
+    )
     if (this.modelProfile?.toolProfile !== undefined) {
       this.#webSearchProvider = new AskaiWebSearchProvider(ctx, {
         ...this.modelProfile.toolProfile,
@@ -92,6 +97,8 @@ export class KernelRuntime {
 
     ctx.on('session/event', (session, event) => {
       this.#journal.append(session.id, event.type, event.data, event.seq)
+      const selection = this.#skillInvocations.observe(session.id, event)
+      if (selection !== undefined) this.#journal.append(session.id, 'skill/selected', selection)
     }, { global: true })
     ctx.on('agent/status', ({ agent, status }) => {
       this.#journal.append(agent.id, 'agent/status', { status })
@@ -170,6 +177,7 @@ export class KernelRuntime {
     this.#temporalContext.update(sessionId, temporalContext)
     const resolvedTurnContext = resolveSkillTurnContext(this.modelProfile, turnContext)
     this.#turnContext.update(sessionId, resolvedTurnContext.context)
+    this.#skillInvocations.expectManual(sessionId, resolvedTurnContext.skillName)
     const message = createUserMessage({
       content: content.map((block, index) => {
         if (block.type !== 'text') throw new Error(`this Runtime Profile only accepts text content: ${block.type}`)
@@ -178,8 +186,13 @@ export class KernelRuntime {
       }),
       source: { kind: 'user' },
     })
-    if (mode === 'steer') agent.steer(message)
-    else agent.followup(message)
+    try {
+      if (mode === 'steer') agent.steer(message)
+      else agent.followup(message)
+    } catch (error) {
+      this.#skillInvocations.clear(sessionId)
+      throw error
+    }
     return { accepted: true, messageId: message.id }
   }
 
