@@ -118,6 +118,8 @@ chmod +x movo
 
 `./movo up` pulls the published MOVO images, starts the complete stack, waits for health checks and prints the first-run setup address. Normal users do **not** need to build the images locally.
 
+You can also start the same official prebuilt images directly with `docker compose up -d`, including from Windows PowerShell or Command Prompt. Neither command requires an `.env` file. To build and start local images from source instead, use `./movo up --build`.
+
 Open:
 
 ```text

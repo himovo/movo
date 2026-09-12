@@ -35,7 +35,7 @@ jobs:
           MOVO_IMAGE_PREFIX: ghcr.io/example/movo
           MOVO_VERSION: ${{ github.ref_name }}
         run: |
-          docker compose config --quiet
+          bash scripts/check_compose_image_modes.sh
           docker compose -f docker-compose.yml -f docker-compose.build.yml config --quiet
 
   plan-release:

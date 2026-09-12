@@ -10,12 +10,11 @@ cd movo
 ./movo up
 ```
 
-`./movo` derives the image prefix from the GitHub `origin` remote and pulls seven
-MOVO images from `ghcr.io/owner/repository-*`. Set `MOVO_VERSION` in `.env` to
-the same release tag. Release archives without an origin remote must also set:
+Both `./movo up` and `docker compose up -d` pull the seven official MOVO images
+from `ghcr.io/himovo/movo-*` by default. Neither command requires an `.env`
+file. To pin a production deployment to the checked-out release, set:
 
 ```env
-MOVO_IMAGE_PREFIX=ghcr.io/owner/repository
 MOVO_VERSION=vX.Y.Z
 ```
 

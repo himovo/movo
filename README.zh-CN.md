@@ -118,6 +118,8 @@ chmod +x movo
 
 `./movo up` 会拉取已发布的 MOVO 镜像、启动完整服务、等待健康检查，并输出首次初始化地址。普通用户**不需要在本地构建镜像**。
 
+也可以直接执行 `docker compose up -d` 启动同一套官方预构建镜像，包括在 Windows PowerShell 或命令提示符中使用。这两种方式默认都不需要 `.env` 文件。如需从源码构建本地镜像并启动，请使用 `./movo up --build`。
+
 打开：
 
 ```text

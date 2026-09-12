@@ -117,7 +117,7 @@ services:
       start_period: 30s
 
   dsh-runtime-host:
-    image: ${MOVO_IMAGE_PREFIX:-movo}-dsh-runtime-host:${MOVO_VERSION:-latest}
+    image: ${MOVO_IMAGE_PREFIX:-ghcr.io/himovo/movo}-dsh-runtime-host:${MOVO_VERSION:-latest}
     pull_policy: ${MOVO_PULL_POLICY:-missing}
     restart: unless-stopped
     volumes:
@@ -140,7 +140,7 @@ services:
       start_period: 20s
 
   chat-api:
-    image: ${MOVO_IMAGE_PREFIX:-movo}-chat-api:${MOVO_VERSION:-latest}
+    image: ${MOVO_IMAGE_PREFIX:-ghcr.io/himovo/movo}-chat-api:${MOVO_VERSION:-latest}
     pull_policy: ${MOVO_PULL_POLICY:-missing}
     restart: unless-stopped
     environment:
@@ -182,7 +182,7 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=3).read()"]
 
   admin-api:
-    image: ${MOVO_IMAGE_PREFIX:-movo}-admin-api:${MOVO_VERSION:-latest}
+    image: ${MOVO_IMAGE_PREFIX:-ghcr.io/himovo/movo}-admin-api:${MOVO_VERSION:-latest}
     pull_policy: ${MOVO_PULL_POLICY:-missing}
     restart: unless-stopped
     environment:
@@ -220,7 +220,7 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/health', timeout=3).read()"]
 
   document-api:
-    image: ${MOVO_DOCUMENT_API_IMAGE:-${MOVO_IMAGE_PREFIX:-movo}-document-parser:${MOVO_VERSION:-latest}}
+    image: ${MOVO_DOCUMENT_API_IMAGE:-${MOVO_IMAGE_PREFIX:-ghcr.io/himovo/movo}-document-parser:${MOVO_VERSION:-latest}}
     pull_policy: ${MOVO_PULL_POLICY:-missing}
     restart: unless-stopped
     command: ["api"]
@@ -258,7 +258,7 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8200/api/health', timeout=3).read()"]
 
   document-worker:
-    image: ${MOVO_DOCUMENT_WORKER_IMAGE:-${MOVO_IMAGE_PREFIX:-movo}-document-parser:${MOVO_VERSION:-latest}}
+    image: ${MOVO_DOCUMENT_WORKER_IMAGE:-${MOVO_IMAGE_PREFIX:-ghcr.io/himovo/movo}-document-parser:${MOVO_VERSION:-latest}}
     pull_policy: ${MOVO_PULL_POLICY:-missing}
     restart: unless-stopped
     command: ["worker"]
@@ -280,7 +280,7 @@ services:
       - backend
 
   user-web:
-    image: ${MOVO_IMAGE_PREFIX:-movo}-user-web:${MOVO_VERSION:-latest}
+    image: ${MOVO_IMAGE_PREFIX:-ghcr.io/himovo/movo}-user-web:${MOVO_VERSION:-latest}
     pull_policy: ${MOVO_PULL_POLICY:-missing}
     restart: unless-stopped
     networks:
@@ -292,7 +292,7 @@ services:
       retries: 20
 
   admin-web:
-    image: ${MOVO_IMAGE_PREFIX:-movo}-admin-web:${MOVO_VERSION:-latest}
+    image: ${MOVO_IMAGE_PREFIX:-ghcr.io/himovo/movo}-admin-web:${MOVO_VERSION:-latest}
     pull_policy: ${MOVO_PULL_POLICY:-missing}
     restart: unless-stopped
     networks:
@@ -304,7 +304,7 @@ services:
       retries: 20
 
   gateway:
-    image: ${MOVO_IMAGE_PREFIX:-movo}-gateway:${MOVO_VERSION:-latest}
+    image: ${MOVO_IMAGE_PREFIX:-ghcr.io/himovo/movo}-gateway:${MOVO_VERSION:-latest}
     pull_policy: ${MOVO_PULL_POLICY:-missing}
     restart: unless-stopped
     ports:

@@ -81,6 +81,6 @@ jobs:
           PYTHONPATH=services/chat-api python -m pytest -q \
             services/chat-api/tests/core/test_product_edition.py
       - name: Validate prebuilt-image Compose
-        run: docker compose config --quiet
+        run: bash scripts/check_compose_image_modes.sh
       - name: Validate source-build Compose
         run: docker compose -f docker-compose.yml -f docker-compose.build.yml config --quiet
