@@ -12,7 +12,10 @@ cd movo
 
 Both `./movo up` and `docker compose up -d` pull the seven official MOVO images
 from `ghcr.io/himovo/movo-*` by default. Neither command requires an `.env`
-file. To pin a production deployment to the checked-out release, set:
+file. The MOVO launcher pulls images sequentially and retries transient registry
+failures before starting containers; native Compose retains Docker's default
+parallel pull behavior. To pin a production deployment to the checked-out
+release, set:
 
 ```env
 MOVO_VERSION=vX.Y.Z

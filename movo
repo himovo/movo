@@ -27,6 +27,8 @@ movo_detect_locale
 source "${ROOT_DIR}/deploy/cli/dsh-version.sh"
 # shellcheck source=deploy/cli/images.sh
 source "${ROOT_DIR}/deploy/cli/images.sh"
+# shellcheck source=deploy/cli/pull.sh
+source "${ROOT_DIR}/deploy/cli/pull.sh"
 # shellcheck source=deploy/cli/backup.sh
 source "${ROOT_DIR}/deploy/cli/backup.sh"
 
@@ -168,15 +170,26 @@ command_up() {
     movo_configure_images false
   fi
   retire_legacy_compose_project
-  movo_msg starting
   if movo_has_build_flag "$@"; then
+    movo_msg starting
     movo_print_dsh_build_target
-  fi
-  if ! movo_compose up -d "$@"; then
-    movo_msg start_failed >&2
-    movo_compose ps >&2 || true
-    movo_msg logs_hint >&2
-    return 1
+    if ! movo_compose up -d "$@"; then
+      movo_msg start_failed >&2
+      movo_compose ps >&2 || true
+      movo_msg logs_hint >&2
+      return 1
+    fi
+  else
+    if ! movo_pull_images_serially missing; then
+      return 1
+    fi
+    movo_msg starting
+    if ! movo_compose up -d --pull never "$@"; then
+      movo_msg start_failed >&2
+      movo_compose ps >&2 || true
+      movo_msg logs_hint >&2
+      return 1
+    fi
   fi
   refresh_gateway_resolution
   wait_until_ready
@@ -205,8 +218,8 @@ command_update() {
   movo_msg updating
   MOVO_PULL_POLICY=always
   export MOVO_PULL_POLICY
-  movo_compose pull
-  movo_compose up -d
+  movo_pull_images_serially always
+  movo_compose up -d --pull never
   refresh_gateway_resolution
   wait_until_ready
   movo_print_running_dsh_version

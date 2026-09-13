@@ -82,5 +82,7 @@ jobs:
             services/chat-api/tests/core/test_product_edition.py
       - name: Validate prebuilt-image Compose
         run: bash scripts/check_compose_image_modes.sh
+      - name: Validate serial image pulling
+        run: bash scripts/test_serial_image_pull.sh
       - name: Validate source-build Compose
         run: docker compose -f docker-compose.yml -f docker-compose.build.yml config --quiet

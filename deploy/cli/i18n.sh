@@ -71,6 +71,12 @@ movo_msg() {
     en:building) printf 'Building MOVO images from source...\n' ;;
     zh:updating) printf '正在拉取 MOVO 镜像并更新服务...\n' ;;
     en:updating) printf 'Pulling MOVO images and updating services...\n' ;;
+    zh:pulling_images) printf '正在串行拉取镜像（第 %s/%s 次）...\n' "$1" "$2" ;;
+    en:pulling_images) printf 'Pulling images sequentially (attempt %s/%s)...\n' "$1" "$2" ;;
+    zh:pull_retry) printf '第 %s/%s 次拉取失败，%s 秒后继续重试。\n' "$1" "$2" "$3" ;;
+    en:pull_retry) printf 'Image pull attempt %s/%s failed; retrying in %s seconds.\n' "$1" "$2" "$3" ;;
+    zh:pull_failed) printf '镜像拉取失败。请检查 Docker Hub/GHCR 网络后重试。\n' ;;
+    en:pull_failed) printf 'Image pull failed. Check Docker Hub/GHCR connectivity and try again.\n' ;;
     zh:backup_stopping) printf '正在停止服务并创建一致性数据卷备份...\n' ;;
     en:backup_stopping) printf 'Stopping services to create a consistent volume backup...\n' ;;
     zh:backup_failed) printf '备份失败，正在尝试恢复服务。\n' ;;

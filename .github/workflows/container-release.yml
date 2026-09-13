@@ -36,6 +36,7 @@ jobs:
           MOVO_VERSION: ${{ github.ref_name }}
         run: |
           bash scripts/check_compose_image_modes.sh
+          bash scripts/test_serial_image_pull.sh
           docker compose -f docker-compose.yml -f docker-compose.build.yml config --quiet
 
   plan-release:
