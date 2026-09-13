@@ -2,28 +2,27 @@
 
 movo_pull_images_serially() {
   local policy="${1:-missing}"
-  local max_attempts="${MOVO_PULL_RETRIES:-3}"
   local retry_delay="${MOVO_PULL_RETRY_DELAY_SECONDS:-3}"
-  local attempt
+  local attempt=1
+  local pull_status
 
-  if [[ ! "${max_attempts}" =~ ^[1-9][0-9]*$ ]]; then
-    max_attempts=3
-  fi
   if [[ ! "${retry_delay}" =~ ^[0-9]+$ ]]; then
     retry_delay=3
   fi
 
-  for ((attempt = 1; attempt <= max_attempts; attempt += 1)); do
-    movo_msg pulling_images "${attempt}" "${max_attempts}"
+  while true; do
+    movo_msg pulling_images "${attempt}"
     if movo_compose --parallel 1 pull --policy "${policy}"; then
       return 0
+    else
+      pull_status=$?
     fi
-    if ((attempt < max_attempts)); then
-      movo_msg pull_retry "${attempt}" "${max_attempts}" "${retry_delay}" >&2
-      sleep "${retry_delay}"
+    if [[ "${pull_status}" -eq 130 || "${pull_status}" -eq 143 ]]; then
+      return "${pull_status}"
     fi
-  done
 
-  movo_msg pull_failed >&2
-  return 1
+    movo_msg pull_retry "${attempt}" "${retry_delay}" >&2
+    sleep "${retry_delay}"
+    attempt=$((attempt + 1))
+  done
 }
