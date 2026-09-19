@@ -139,14 +139,30 @@ class KernelBindingRepository:
             }
         )
 
-    async def by_message(self, message_id: str, *, tenant_id: str, user_id: str) -> dict[str, Any] | None:
+    async def by_message(self, message_id: str, *, tenant_id: str) -> dict[str, Any] | None:
+        # Conversation-scoped: the write stamps attribute a binding to its
+        # author, but any member's poll must find it so the terminal/crash
+        # recovery (ingest_once) runs for every member of the conversation
+        # (session-sharing plan todo 7). user_id was dropped from the filter.
         return await self._collection.find_one(
             {
                 "tenant_id": tenant_id,
-                "user_id": user_id,
                 "active_turn.message_id": message_id,
             }
         )
+
+    async def list_for_conversation(self, conversation_id: str, *, tenant_id: str) -> list[dict[str, Any]]:
+        # Conversation-scoped read (session-sharing plan todo 12): every
+        # binding row for the conversation, current or not — the owner-delete
+        # cascade disposes all of them, and the viewer filter must not hide
+        # a rotated binding from the deleter.
+        cursor = self._collection.find(
+            {
+                "tenant_id": tenant_id,
+                "conversation_id": conversation_id,
+            }
+        ).sort("created_at", 1)
+        return [row async for row in cursor]
 
     async def by_kernel_session(
         self, kernel_session_id: str, *, tenant_id: str, user_id: str

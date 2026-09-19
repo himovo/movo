@@ -156,12 +156,15 @@ class KernelEventRepository:
         user_id: str,
         after_cursor: int = 0,
     ) -> list[dict[str, Any]]:
+        # Conversation-scoped: events are attributed to the run's author at
+        # write time, but every member of the conversation may read them
+        # (session-sharing plan todo 7). user_id stays in the signature for
+        # call-shape compatibility with the runtime callers (turn_recovery).
         result: list[dict[str, Any]] = []
         cursor = self._projections.find(
             {
                 "message_id": message_id,
                 "tenant_id": tenant_id,
-                "user_id": user_id,
                 "stream_seq": {"$gt": max(0, int(after_cursor))},
             },
             {"_id": 0, "tenant_id": 0, "user_id": 0, "conversation_id": 0, "message_id": 0, "kernel_session_id": 0, "created_at": 0},

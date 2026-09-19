@@ -347,7 +347,7 @@ class DshChatService:
         )
         if message is None:
             raise LookupError("message_not_found")
-        binding = await self._bindings.by_message(message_id, tenant_id=tenant_id, user_id=user_id)
+        binding = await self._bindings.by_message(message_id, tenant_id=tenant_id)
         if binding and str((binding.get("active_turn") or {}).get("status")) == "running":
             try:
                 binding = await self._coordinator.restore(binding)
@@ -389,22 +389,25 @@ class DshChatService:
 
     async def dispose_conversation(self, conversation_id: str, *, tenant_id: str, user_id: str) -> None:
         await self._conversations.owned(conversation_id, tenant_id=tenant_id, user_id=user_id)
-        binding = await self._bindings.current(conversation_id, tenant_id=tenant_id, user_id=user_id)
-        if binding is None:
-            return
-        try:
-            binding = await self._coordinator.restore(binding)
-            if str((binding.get("active_turn") or {}).get("status")) == "running":
-                await self._gateway.cancel(
-                    CancelSessionRequest(
-                        session_id=str(binding["kernel_session_id"]), cause="conversation_deleted"
+        # Conversation-scoped dispose (session-sharing plan todo 12): every
+        # binding row for the conversation is disposed, not just the
+        # owner-scoped current() one — belt-and-suspenders, since rotation
+        # predecessors are already disposed by profile/synchronizer.py.
+        bindings = await self._bindings.list_for_conversation(conversation_id, tenant_id=tenant_id)
+        for binding in bindings:
+            try:
+                binding = await self._coordinator.restore(binding)
+                if str((binding.get("active_turn") or {}).get("status")) == "running":
+                    await self._gateway.cancel(
+                        CancelSessionRequest(
+                            session_id=str(binding["kernel_session_id"]), cause="conversation_deleted"
+                        )
                     )
-                )
-            await self._gateway.dispose_session(str(binding["kernel_session_id"]))
-        except Exception:
-            await self._bindings.mark_disposed(str(binding["binding_id"]), pending=True)
-            return
-        await self._bindings.mark_disposed(str(binding["binding_id"]))
+                await self._gateway.dispose_session(str(binding["kernel_session_id"]))
+            except Exception:
+                await self._bindings.mark_disposed(str(binding["binding_id"]), pending=True)
+                continue
+            await self._bindings.mark_disposed(str(binding["binding_id"]))
 
     async def shutdown(self) -> None:
         tasks = list(self._tasks.values())

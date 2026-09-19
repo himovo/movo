@@ -1,20 +1,31 @@
 """Formal Chat API backed exclusively by the DSH runtime application."""
 
+# allow: SIZE_OK — pre-existing oversized endpoint module (466 pure LOC before
+# todo 7); the session-sharing plan pins it as the single-file seam by line
+# number for todos 7/15/17, so a split is a later todo's decision, not T07's.
+
 from __future__ import annotations
 
 import os
 from typing import Any, Literal
 
+from bson import ObjectId
 from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.endpoints.auth import _resolve_session_user
 from app.core.config import get_settings
+from app.core.db import get_db
 from app.core.quota_policy import QuotaExceededError, assert_quota_available
 from app.core.tenant import resolve_main_id
 from app.dsh_runtime.application import dsh_runtime_application
 from app.dsh_runtime.chat_service import ConversationBusyError
+from app.dsh_runtime.conversation import ConversationRepository
+from app.dsh_runtime.conversation.participants_repository import (
+    SessionParticipantsRepository,
+)
+from app.dsh_runtime.conversation.repository import MessageSequenceConflict
 from app.dsh_runtime.errors import DshRuntimeError
 from app.utils.oss_uploader import AliyunOSSUploader
 from app.utils.uploads import read_upload_with_limit
@@ -204,6 +215,11 @@ async def _start_chat_completions(
         raise HTTPException(
             status_code=409,
             detail={"code": "session_already_running", "message": str(exc), "session_id": conversation_id},
+        ) from exc
+    except MessageSequenceConflict as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": exc.code, "message": str(exc), "session_id": exc.conversation_id},
         ) from exc
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -425,6 +441,38 @@ async def desktop_turn_events(
     return ApiResponse(code=0, message="ok", data=data)
 
 
+async def _member_message(*, tenant_id: str, user_id: str, message_id: str) -> dict[str, Any] | None:
+    """Resolve the polled message when the viewer is a conversation member.
+
+    Membership = the conversation owner OR an active participant row
+    (session-sharing plan todo 7; the owner never gets a participant row).
+    Any other viewer - non-member, removed member, cross-tenant - cannot see
+    the message at all, so every denial is a 404 at the caller (existence
+    disclosure avoidance, pinned by todo 4's status matrix).
+    """
+    db = get_db()
+    message = await ConversationRepository(db).message(
+        message_id, tenant_id=tenant_id, user_id=user_id
+    )
+    if message is None:
+        return None
+    conversation_id = str(message.get("session_id") or "")
+    if not ObjectId.is_valid(conversation_id):
+        return None
+    session = await db.chat_sessions.find_one(
+        {"_id": ObjectId(conversation_id), "main_id": tenant_id}
+    )
+    if session is None:
+        return None
+    if str(session.get("user_id") or "") == user_id:
+        return message
+    if await SessionParticipantsRepository(db).is_member(
+        conversation_id, tenant_id=tenant_id, user_id=user_id
+    ):
+        return message
+    return None
+
+
 @router.get("/chat/messages/{message_id}/events", response_model=ApiResponse)
 async def chat_message_events(
     message_id: str,
@@ -434,6 +482,8 @@ async def chat_message_events(
 ) -> ApiResponse:
     tenant_id, user_id, _ = await _identity(authorization)
     cursor = max(0, int(after if after_cursor is None else after_cursor))
+    if await _member_message(tenant_id=tenant_id, user_id=user_id, message_id=message_id) is None:
+        raise HTTPException(status_code=404, detail="message_not_found")
     try:
         data = await dsh_runtime_application.require_chat().snapshot(
             message_id,
