@@ -1,3 +1,6 @@
+# allow: SIZE_OK — pre-existing 1000+ LOC endpoint module; the frozen plan pins
+# sessions.py as the single-file seam (todos 8-12 address it by line number) and
+# a split is a later todo's decision.
 from __future__ import annotations
 from app.infrastructure.observability.config import log_print
 
@@ -10,11 +13,14 @@ from uuid import uuid4
 
 from bson import ObjectId
 from fastapi import APIRouter, Header, HTTPException, Query
+from pymongo.errors import BulkWriteError, DuplicateKeyError
 from pydantic import AliasChoices, BaseModel, Field
 
 from app.core.db import get_db
 from app.api.endpoints.auth import _resolve_session_user
 from app.core.tenant import add_main_scope, resolve_main_id
+from app.dsh_runtime.conversation.participants_repository import SessionParticipantsRepository
+from app.dsh_runtime.conversation.repository import ConversationRepository, MessageSequenceConflict
 from app.utils.oss_uploader import AliyunOSSUploader
 from app.llm.factory import get_llm_client
 from app.llm.types import Message, Role
@@ -49,6 +55,7 @@ async def _authorized_scope(
 class MessageIn(BaseModel):
     role: str = Field(..., description="Message role: user/assistant/system")
     content: str = Field(..., description="Message content")
+    user_id: Optional[str] = Field(None, description="Message author (server-side addition on session GET)")
     plan: Optional[dict] = Field(None, description="Optional plan payload")
     progress: Optional[list] = Field(None, description="Optional progress logs")
     documents: Optional[list] = Field(None, description="Optional generated documents")
@@ -95,6 +102,13 @@ class SessionSummary(BaseModel):
 
 class SessionDetail(SessionSummary):
     messages: List[MessageIn] = Field(default_factory=list)
+    # Pinned by todo 9: the detail response captures the access fields that
+    # _serialize_session emits — pydantic's extra='ignore' would otherwise
+    # silently drop them. SessionSummary stays WITHOUT them so the owner
+    # list payload (todo 8's byte-compatible contract) is unchanged.
+    access: str = "owner"
+    owner_user_id: str = ""
+    participant_count: int = 0
 
 
 class SessionSearchResult(SessionSummary):
@@ -121,10 +135,13 @@ class ApiResponse(BaseModel):
     data: object | None = None
 
 
-def _serialize_session(doc: dict) -> dict:
+def _serialize_session(doc: dict, *, access: str = "owner", participant_count: int = 0) -> dict:
     return {
         "id": str(doc.get("_id")),
         "user_id": doc.get("user_id"),
+        "access": access,
+        "owner_user_id": doc.get("user_id"),
+        "participant_count": participant_count,
         "main_id": resolve_main_id(doc.get("main_id")),
         "title": doc.get("title"),
         "created_at": doc.get("created_at"),
@@ -197,6 +214,35 @@ async def _attach_pending_approval_counts(
         target = by_id.get(str(row.get("_id") or ""))
         if target is not None:
             target["pending_approval_count"] = int(row.get("count") or 0)
+
+
+async def _serialize_shared_sessions(
+    db: Any,
+    documents: List[Dict[str, Any]],
+    *,
+    main_id: str,
+) -> List[dict]:
+    # Active non-owner participant rows per session (owners never hold a row),
+    # matching the share response's participant_count convention.
+    by_id = {str(doc.get("_id")): doc for doc in documents if doc.get("_id") is not None}
+    count_by_id: Dict[str, int] = {}
+    if by_id:
+        pipeline = [
+            {"$match": add_main_scope(
+                {"conversation_id": {"$in": list(by_id)}, "removed_at": None}, main_id
+            )},
+            {"$group": {"_id": "$conversation_id", "count": {"$sum": 1}}},
+        ]
+        async for row in db.session_participants.aggregate(pipeline):
+            count_by_id[str(row.get("_id") or "")] = int(row.get("count") or 0)
+    return [
+        _serialize_session(
+            doc,
+            access="shared",
+            participant_count=count_by_id.get(str(doc.get("_id")) or "", 0),
+        )
+        for doc in documents
+    ]
 
 
 def _build_match_snippet(text: str, query: str, radius: int = 72) -> str:
@@ -539,6 +585,7 @@ async def list_sessions(
     user_id: str = Query(..., alias="userId"),
     main_id: str = Query("default", alias="mainId"),
     main_id_snake: Optional[str] = Query(None, alias="main_id"),
+    scope: str = Query("owner"),
     paged: bool = Query(False),
     limit: int = Query(30, ge=1, le=100),
     offset: int = Query(0, ge=0),
@@ -549,9 +596,12 @@ async def list_sessions(
     user_id, main_id = await _authorized_scope(
         authorization, claimed_user_id=user_id, claimed_main_id=main_id
     )
+    # Anything other than an exact "shared" resolves to the owner scope (pinned
+    # decision: the endpoint's lenient Query style has no strict validation).
+    shared_scope = str(scope or "").strip() == "shared"
     log_print(
-        "[perf][sessions] list_sessions:start user_id=%s main_id=%s paged=%s limit=%s offset=%s"
-        % (str(user_id), resolve_main_id(main_id), bool(paged), int(limit), int(offset)),
+        "[perf][sessions] list_sessions:start user_id=%s main_id=%s scope=%s paged=%s limit=%s offset=%s"
+        % (str(user_id), resolve_main_id(main_id), scope, bool(paged), int(limit), int(offset)),
         flush=True,
     )
     db = get_db()
@@ -571,11 +621,34 @@ async def list_sessions(
         "scheduled_unread": 1,
         "last_scheduled_run": 1,
     }
-    base_cursor = (
-        db.chat_sessions.find(add_main_scope({"user_id": str(user_id)}, main_id), projection)
-        .sort([("updated_at", -1), ("_id", -1)])
-        .hint([("user_id", 1), ("updated_at", -1), ("_id", -1)])
-    )
+    if shared_scope:
+        participants = SessionParticipantsRepository(db)
+        conversation_ids: List[str] = []
+        batch_size = 100
+        batch_offset = 0
+        while True:
+            rows = await participants.list_for_user(
+                resolve_main_id(main_id), user_id=str(user_id), limit=batch_size, offset=batch_offset
+            )
+            conversation_ids.extend(
+                str(row.get("conversation_id")) for row in rows if row.get("conversation_id")
+            )
+            if len(rows) < batch_size:
+                break
+            batch_offset += batch_size
+        base_cursor = (
+            db.chat_sessions.find(
+                add_main_scope({"_id": {"$in": [ObjectId(str(cid)) for cid in conversation_ids]}}, main_id),
+                projection,
+            )
+            .sort([("updated_at", -1), ("_id", -1)])
+        )
+    else:
+        base_cursor = (
+            db.chat_sessions.find(add_main_scope({"user_id": str(user_id)}, main_id), projection)
+            .sort([("updated_at", -1), ("_id", -1)])
+            .hint([("user_id", 1), ("updated_at", -1), ("_id", -1)])
+        )
 
     if not paged:
         documents = []
@@ -587,7 +660,10 @@ async def list_sessions(
         await attach_session_runtime_contexts(
             db, documents, tenant_id=main_id, user_id=user_id
         )
-        sessions = [SessionSummary(**_serialize_session_summary(doc)) for doc in documents]
+        if shared_scope:
+            sessions = await _serialize_shared_sessions(db, documents, main_id=main_id)
+        else:
+            sessions = [SessionSummary(**_serialize_session_summary(doc)) for doc in documents]
         duration_ms = int((time.perf_counter() - t0) * 1000)
         log_print(
             "[perf][sessions] list_sessions:done user_id=%s main_id=%s paged=false count=%s duration_ms=%s"
@@ -609,7 +685,10 @@ async def list_sessions(
     await attach_session_runtime_contexts(
         db, documents, tenant_id=main_id, user_id=user_id
     )
-    sessions = [SessionSummary(**_serialize_session_summary(doc)) for doc in documents]
+    if shared_scope:
+        sessions = await _serialize_shared_sessions(db, documents, main_id=main_id)
+    else:
+        sessions = [SessionSummary(**_serialize_session_summary(doc)) for doc in documents]
     duration_ms = int((time.perf_counter() - t0) * 1000)
     log_print(
         "[perf][sessions] list_sessions:done user_id=%s main_id=%s paged=true count=%s has_more=%s duration_ms=%s"
@@ -811,8 +890,19 @@ async def get_session(
         claimed_user_id=user_id,
         claimed_main_id=main_id_snake or main_id,
     )
-    session_doc = await db.chat_sessions.find_one(add_main_scope({"_id": oid, "user_id": str(user_id)}, main_id))
-    if not session_doc:
+    # Membership authorization. Every caller who cannot see the session — a
+    # non-member, a removed participant, a cross-tenant id — receives 404,
+    # never 403: the session's existence is not disclosed (todo 4's pinned
+    # status mapping).
+    session_doc = await db.chat_sessions.find_one(add_main_scope({"_id": oid}, main_id))
+    if session_doc is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    participants = SessionParticipantsRepository(db)
+    if str(session_doc.get("user_id") or "") == user_id:
+        role = "owner"
+    elif await participants.is_member(str(oid), tenant_id=main_id, user_id=user_id):
+        role = "participant"
+    else:
         raise HTTPException(status_code=404, detail="Session not found")
     await _attach_pending_approval_counts(
         db, [session_doc], main_id=main_id, user_id=user_id
@@ -821,16 +911,14 @@ async def get_session(
         db, [session_doc], tenant_id=main_id, user_id=user_id
     )
 
-    messages = []
-    query: Dict[str, Any] = {
-        "session_id": oid,
-        "user_id": str(user_id),
-    }
-    query = add_main_scope(query, main_id)
+    # Session-scoped read (todo 6): deliberately no viewer filter — the
+    # (main_id, session_id) query is served by the unique_main_session_seq
+    # index and every member reads the full thread.
+    rows = await ConversationRepository(db).list_messages(main_id, str(oid))
     if not include_context_summary:
         # Frontend should display original dialogue turns only.
         # Context summaries are runtime-only compression artifacts.
-        query["message_type"] = {"$ne": "context_summary"}
+        rows = [row for row in rows if row.get("message_type") != "context_summary"]
 
     uploader: Optional[AliyunOSSUploader] = None
 
@@ -867,7 +955,8 @@ async def get_session(
     except Exception as exc:
         log_print(f"[sessions] execution_events fetch failed: {exc}", flush=True)
 
-    async for msg in db.chat_messages.find(query).sort("seq", 1):
+    messages = []
+    for msg in rows:
         msg_images = msg.get("images") or []
         content = msg.get("content") or ""
 
@@ -910,6 +999,7 @@ async def get_session(
             MessageIn(
                 role=msg.get("role"),
                 content=content,
+                user_id=msg.get("user_id"),
                 plan=msg.get("plan"),
                 progress=msg.get("progress"),
                 documents=msg.get("documents"),
@@ -923,7 +1013,19 @@ async def get_session(
                 created_at=msg.get("created_at"),
             )
         )
-    data = _serialize_session(session_doc)
+    # Pinned by todo 9: the detail response carries the viewer's access
+    # ("owner" | "shared") and the active-participant count (todo 4's
+    # convention: active non-owner rows; owners never hold a row) — uniform
+    # with the scope=shared list (todo 8).
+    participant_count = len(await participants.list(str(oid), tenant_id=main_id))
+    data = _serialize_session(
+        session_doc,
+        access="owner" if role == "owner" else "shared",
+        participant_count=participant_count,
+    )
+    # scheduled_unread is the OWNER's unread signal (todo 19 owns a
+    # participant cursor): the user_id filter scopes the clear to the
+    # owner's GET — a participant's read leaves it untouched.
     if session_doc.get("scheduled_unread"):
         await db.chat_sessions.update_one(
             add_main_scope({"_id": oid, "user_id": str(user_id)}, main_id),
@@ -1000,11 +1102,16 @@ async def delete_session(
         str(oid), tenant_id=main_id, user_id=user_id
     )
     await db.chat_sessions.delete_one(add_main_scope({"_id": oid, "user_id": str(user_id)}, main_id))
-    await db.chat_messages.delete_many(add_main_scope({"session_id": oid, "user_id": str(user_id)}, main_id))
+    # Cascade (plan todo 12): chat_messages and execution_logs are removed
+    # by session_id (keeping main_id) regardless of author — the user_id
+    # filter here orphaned participant-authored rows; every
+    # session_participants row for the conversation is hard-deleted too.
+    await db.chat_messages.delete_many(add_main_scope({"session_id": oid}, main_id))
     try:
-        await db.execution_logs.delete_many(add_main_scope({"session_id": str(oid), "user_id": str(user_id)}, main_id))
+        await db.execution_logs.delete_many(add_main_scope({"session_id": str(oid)}, main_id))
     except Exception as exc:
         log_print(f"[sessions] delete execution_logs failed: {exc}", flush=True)
+    await SessionParticipantsRepository(db).delete_for_conversation(str(oid), tenant_id=main_id)
 
     return ApiResponse(
         code=0,
@@ -1028,6 +1135,33 @@ async def append_messages(
     user_id, main_id = await _authorized_scope(
         authorization, claimed_user_id=str(payload.user_id), claimed_main_id=payload.main_id
     )
+    # Guard (plan todo 10): the legacy max(seq)+1 writer below is
+    # per-(session,user) (sessions.py:_next_seq) — in a shared thread it would
+    # mint sequence numbers that collide with the DSH writer's session-scoped
+    # counter. Block it for ANY session with an active participant, regardless
+    # of runtime_owner; single-member sessions keep today's behaviour.
+    guard_db = get_db()
+    guard_session = await guard_db.chat_sessions.find_one(
+        add_main_scope({"_id": ObjectId(session_id)}, main_id)
+    )
+    if guard_session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    active_participants = await SessionParticipantsRepository(guard_db).list(
+        str(session_id), tenant_id=main_id
+    )
+    if active_participants:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "session_shared_legacy_append_blocked",
+                "message": (
+                    "this session has an active participant; the legacy append"
+                    " writer is per-(session,user) and would duplicate sequence"
+                    " numbers - use the DSH chat path"
+                ),
+                "session_id": session_id,
+            },
+        )
     try:
         session_doc = await session_persistence_service.append_messages(
             session_id=session_id,
@@ -1037,4 +1171,25 @@ async def append_messages(
         )
     except LookupError as exc:
         raise HTTPException(status_code=404, detail="Session not found") from exc
+    except DuplicateKeyError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": MessageSequenceConflict.code,
+                "message": str(exc),
+                "session_id": session_id,
+            },
+        ) from exc
+    except BulkWriteError as exc:
+        write_errors = list(exc.details.get("writeErrors") or [])
+        if not any(int(item.get("code") or 0) == 11000 for item in write_errors):
+            raise
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": MessageSequenceConflict.code,
+                "message": str(exc),
+                "session_id": session_id,
+            },
+        ) from exc
     return ApiResponse(code=0, message="success", data=_serialize_session(session_doc))
