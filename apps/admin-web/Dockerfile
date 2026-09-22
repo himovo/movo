@@ -15,7 +15,7 @@ RUN npm run build
 
 # Keep this runtime aligned with user-web and gateway. The Debian/glibc variant
 # avoids the Alpine musl pwritev2 path rejected by older container hosts.
-FROM nginx:1.31.5-trixie
+FROM nginx:1.31.6-trixie
 
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
