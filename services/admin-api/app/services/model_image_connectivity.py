@@ -2,18 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import json
-import ssl
 import urllib.error
 import urllib.parse
 import urllib.request
 from typing import Any
 
-try:
-    import certifi
-except Exception:  # pragma: no cover - optional dependency
-    certifi = None
-
 from app.core.config import settings
+from app.services.model_test_tls import build_model_test_ssl_context
 
 
 async def run_saved_image_model_test(
@@ -50,7 +45,7 @@ def _request_image_test(instance_id: str, main_id: str, prompt: str) -> dict[str
         method="POST",
     )
     try:
-        with urllib.request.urlopen(request, timeout=900, context=_build_ssl_context()) as response:
+        with urllib.request.urlopen(request, timeout=900, context=build_model_test_ssl_context()) as response:
             payload = json.loads(response.read().decode("utf-8", errors="replace"))
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
@@ -61,22 +56,4 @@ def _request_image_test(instance_id: str, main_id: str, prompt: str) -> dict[str
     if not isinstance(data, dict):
         raise RuntimeError("图片模型运行时返回了无效响应")
     return data
-
-
-def _build_ssl_context() -> ssl.SSLContext:
-    if settings.model_test_insecure_skip_verify:
-        context = ssl.create_default_context()
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
-        return context
-    if settings.model_test_ca_bundle.strip():
-        return ssl.create_default_context(cafile=settings.model_test_ca_bundle.strip())
-    if certifi is not None:
-        try:
-            return ssl.create_default_context(cafile=certifi.where())
-        except Exception:
-            pass
-    return ssl.create_default_context()
-
-
 __all__ = ["run_saved_image_model_test"]

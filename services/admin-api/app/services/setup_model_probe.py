@@ -6,6 +6,8 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
+from app.services.model_test_tls import build_model_test_ssl_context, format_model_test_url_error
+
 
 class SetupModelProbeError(RuntimeError):
     pass
@@ -96,13 +98,13 @@ def _post_json(url: str, headers: dict[str, str], payload: dict[str, Any]) -> di
         method="POST",
     )
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
+        with urllib.request.urlopen(request, timeout=30, context=build_model_test_ssl_context()) as response:
             body = json.loads(response.read().decode("utf-8") or "{}")
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
         raise SetupModelProbeError(f"Model service returned HTTP {exc.code}: {detail[:500]}") from exc
     except urllib.error.URLError as exc:
-        raise SetupModelProbeError(f"Unable to reach model service: {exc.reason}") from exc
+        raise SetupModelProbeError(format_model_test_url_error(exc, service_name="模型服务")) from exc
     if not isinstance(body, dict):
         raise SetupModelProbeError("Model service returned an invalid response.")
     return body

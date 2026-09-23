@@ -235,11 +235,15 @@
         </div>
 
         <n-input
+          v-if="modelTestKind === 'chat' || modelTestKind === 'image'"
           v-model:value="testPrompt"
           type="textarea"
           :rows="4"
           :placeholder="t('测试提示词，后续接入 runtime 后用于发起一次轻量调用')"
         />
+        <n-alert v-else type="info" :bordered="false">
+          {{ modelTestKind === 'embedding' ? t('将调用 Embedding 接口并校验返回向量。') : t('将调用 Rerank 接口并校验排序结果。') }}
+        </n-alert>
         <n-button block type="primary" secondary :loading="testing" :disabled="!form.id" @click="runEditorTest">
           {{ t('测试当前配置') }}
         </n-button>
@@ -284,6 +288,7 @@ import {
   fetchModelProviders,
   streamModelInstanceTest,
   testImageModelInstance,
+  testKnowledgeModelInstance,
   updateModelInstance,
   type ModelInstanceItem,
   type ModelInstancePayload,
@@ -295,6 +300,7 @@ import {
 import { fetchTrafficAllocationOverview } from '@/api/traffic-allocations';
 import { capabilityLabel } from '@/components/models/capabilityLabels';
 import { providerLabel } from '@/components/models/providerLabels';
+import { resolveModelTestKind } from '@/components/models/modelTestKind';
 import ModelAccessExtensionPanel from '@/components/models/ModelAccessExtensionPanel.vue';
 import { useModelAccessExtension } from '@/composables/useModelAccessExtension';
 
@@ -378,6 +384,7 @@ const providerMap = computed(() => new Map(providers.value.map((item) => [item.i
 const currentProvider = computed(() => providerMap.value.get(form.value.providerId));
 const isAzureProvider = computed(() => currentProvider.value?.providerType === 'azure_openai');
 const hasImageCapability = computed(() => form.value.capabilities.includes('image_generation'));
+const modelTestKind = computed(() => resolveModelTestKind(form.value.capabilities));
 const isUserSelectableModel = computed(() => form.value.capabilities.some((item) => ['chat', 'text', 'image_generation'].includes(item)));
 const editorTitle = computed(() => (editorMode.value === 'create' ? t('新增模型配置') : t('模型配置详情')));
 const apiKeyPlaceholder = computed(() =>
@@ -636,11 +643,18 @@ async function runEditorTest() {
   testResultType.value = 'idle';
   testImageUrl.value = '';
   try {
-    if (hasImageCapability.value) {
+    if (modelTestKind.value === 'image') {
       const result = await testImageModelInstance(form.value.id, testPrompt.value);
       testResultText.value = result.message || (result.success ? t('图片生成测试成功。') : t('图片生成测试失败。'));
       testResultType.value = result.success ? 'success' : 'failed';
       testImageUrl.value = result.imageUrl || '';
+      await reload();
+      return;
+    }
+    if (modelTestKind.value === 'embedding' || modelTestKind.value === 'rerank') {
+      const result = await testKnowledgeModelInstance(form.value.id, modelTestKind.value);
+      testResultText.value = result.message || (result.success ? t('模型连接测试成功。') : t('测试失败'));
+      testResultType.value = result.success ? 'success' : 'failed';
       await reload();
       return;
     }

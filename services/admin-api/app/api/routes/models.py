@@ -1,18 +1,12 @@
 from __future__ import annotations
 
 import json
-import ssl
 import urllib.error
 import urllib.parse
 import urllib.request
 import asyncio
 from datetime import datetime
 from typing import Any, Iterator
-
-try:
-    import certifi
-except Exception:  # pragma: no cover - optional dependency
-    certifi = None
 
 from bson.errors import InvalidId
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -22,7 +16,6 @@ from starlette.responses import StreamingResponse
 
 from app.api.deps import get_current_admin_user
 from app.api.time_utils import utc_iso
-from app.core.config import settings
 from app.repositories.model_repository import (
     create_instance,
     delete_instance,
@@ -43,9 +36,12 @@ from app.services.image_model_configuration import (
     serialize_image_settings,
 )
 from app.services.model_image_connectivity import run_saved_image_model_test
+from app.services.model_test_tls import build_model_test_ssl_context
+from app.api.routes import model_knowledge_tests
 from app.product.extensions import get_admin_product_extension
 
 router = APIRouter()
+router.include_router(model_knowledge_tests.router)
 
 
 def _as_time(value: datetime | None) -> str:
@@ -476,7 +472,7 @@ def _provider_test_events(
 def _iter_sse_response_chunks(
     request: urllib.request.Request,
 ) -> Iterator[dict[str, object]]:
-    context = _build_ssl_context()
+    context = build_model_test_ssl_context()
     with urllib.request.urlopen(request, timeout=60, context=context) as response:
         for raw_line in response:
             line = raw_line.decode("utf-8", errors="replace").strip()
@@ -548,25 +544,6 @@ def _stream_chat_completion_with_token_fallback(
                 current_body["temperature"] = 1
                 continue
             raise
-
-
-def _build_ssl_context() -> ssl.SSLContext:
-    if settings.model_test_insecure_skip_verify:
-        context = ssl.create_default_context()
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
-        return context
-    if settings.model_test_ca_bundle.strip():
-        return ssl.create_default_context(cafile=settings.model_test_ca_bundle.strip())
-    # Prefer certifi bundle when available to avoid local system trust-store issues.
-    if certifi is not None:
-        try:
-            return ssl.create_default_context(cafile=certifi.where())
-        except Exception:
-            pass
-    return ssl.create_default_context()
-
-
 def _format_url_error(exc: urllib.error.URLError) -> str:
     reason_text = str(exc.reason)
     if "CERTIFICATE_VERIFY_FAILED" in reason_text:

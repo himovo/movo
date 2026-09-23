@@ -2,18 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import json
-import ssl
 import urllib.error
 import urllib.parse
 import urllib.request
 from typing import Iterator
 
-try:
-    import certifi
-except Exception:  # pragma: no cover - optional dependency
-    certifi = None
-
 from app.core.config import settings
+from app.services.model_test_tls import build_model_test_ssl_context
 
 
 def backend_model_test_events(instance_id: str, main_id: str, prompt: str) -> Iterator[dict[str, object]]:
@@ -69,7 +64,7 @@ def _consume_test_events(instance_id: str, main_id: str, prompt: str) -> tuple[b
 
 
 def _iter_backend_sse_events(request: urllib.request.Request) -> Iterator[dict[str, object]]:
-    with urllib.request.urlopen(request, timeout=120, context=_build_ssl_context()) as response:
+    with urllib.request.urlopen(request, timeout=120, context=build_model_test_ssl_context()) as response:
         for raw_line in response:
             line = raw_line.decode("utf-8", errors="replace").strip()
             if not line or line.startswith(":") or not line.startswith("data:"):
@@ -83,19 +78,3 @@ def _iter_backend_sse_events(request: urllib.request.Request) -> Iterator[dict[s
                 continue
             if isinstance(event, dict):
                 yield event
-
-
-def _build_ssl_context() -> ssl.SSLContext:
-    if settings.model_test_insecure_skip_verify:
-        context = ssl.create_default_context()
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
-        return context
-    if settings.model_test_ca_bundle.strip():
-        return ssl.create_default_context(cafile=settings.model_test_ca_bundle.strip())
-    if certifi is not None:
-        try:
-            return ssl.create_default_context(cafile=certifi.where())
-        except Exception:
-            pass
-    return ssl.create_default_context()

@@ -126,6 +126,17 @@ export async function testImageModelInstance(id: string, prompt: string) {
   return data;
 }
 
+export async function testKnowledgeModelInstance(id: string, capability: 'embedding' | 'rerank') {
+  const { data } = await apiClient.post<{
+    success: boolean;
+    status: string;
+    message: string;
+    capability: 'embedding' | 'rerank';
+    dimension?: number;
+  }>(`/api/models/instances/${id}/test-knowledge`, { capability });
+  return data;
+}
+
 export async function streamModelInstanceTest(
   id: string,
   prompt: string,

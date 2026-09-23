@@ -1009,6 +1009,8 @@ export const messages = {
   'Key 状态': { 'zh-CN': 'Key 状态', 'en-US': 'Key Status' },
   '已填写新 Key': { 'zh-CN': '已填写新 Key', 'en-US': 'New Key entered' },
   '测试提示词，后续接入 runtime 后用于发起一次轻量调用': { 'zh-CN': '测试提示词，后续接入 runtime 后用于发起一次轻量调用', 'en-US': 'Test prompt, used to trigger a light call' },
+  '将调用 Embedding 接口并校验返回向量。': { 'zh-CN': '将调用 Embedding 接口并校验返回向量。', 'en-US': 'The Embedding endpoint will be called and its vector response validated.' },
+  '将调用 Rerank 接口并校验排序结果。': { 'zh-CN': '将调用 Rerank 接口并校验排序结果。', 'en-US': 'The Rerank endpoint will be called and its ranking response validated.' },
   '测试当前配置': { 'zh-CN': '测试当前配置', 'en-US': 'Test Configuration' },
   '保存模型配置后可测试。': { 'zh-CN': '保存模型配置后可测试。', 'en-US': 'Available to test after saving configuration.' },
   '新增配置保存后可测试。': { 'zh-CN': '新增配置保存后可测试。', 'en-US': 'Available to test after saving new configuration.' },

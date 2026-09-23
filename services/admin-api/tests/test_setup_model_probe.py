@@ -31,9 +31,11 @@ class SetupModelProbeTests(TestCase):
         with patch(
             "app.services.setup_model_probe.urllib.request.urlopen",
             return_value=_Response('{"data":[{"embedding":[0.1,0.2,0.3]}]}'),
-        ):
+        ) as request:
             message = probe_knowledge_model(model, {"provider_type": "openai_compatible"})
         self.assertIn("3 dimensions", message)
+        self.assertEqual(request.call_args.args[0].full_url, "https://models.example/v1/embeddings")
+        self.assertIsNotNone(request.call_args.kwargs.get("context"))
 
     def test_qwen_rerank_probe(self) -> None:
         model = {
