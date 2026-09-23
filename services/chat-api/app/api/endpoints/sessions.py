@@ -221,6 +221,7 @@ async def _serialize_shared_sessions(
     documents: List[Dict[str, Any]],
     *,
     main_id: str,
+    read_cursors: Dict[str, int],
 ) -> List[dict]:
     # Active non-owner participant rows per session (owners never hold a row),
     # matching the share response's participant_count convention.
@@ -235,14 +236,49 @@ async def _serialize_shared_sessions(
         ]
         async for row in db.session_participants.aggregate(pipeline):
             count_by_id[str(row.get("_id") or "")] = int(row.get("count") or 0)
-    return [
-        _serialize_session(
+    # Todo 19 unread reference: the session's max message seq. DSH sessions
+    # carry next_message_seq — every DSH append mints the message's seq AS the
+    # new counter value, so after each append next_message_seq EQUALS the
+    # session's max seq and doubles as the unread reference. Legacy sessions
+    # never set the field: PINNED DECISION — fall back to the messages' max
+    # seq (one indexed aggregation for the legacy subset) so pre-feature
+    # sessions still surface unread state instead of silently reading as
+    # clear. A DSH-created session whose only appends were legacy-writer calls
+    # keeps next_message_seq 0 while messages exist; it is treated as read
+    # here, the counter self-heals on the first DSH append (todo 6's $max
+    # floor), and the frontend's appendMessages path is dead code (T10's
+    # finding), so that state requires manual API use.
+    max_seq_by_id: Dict[str, int] = {}
+    legacy_ids = [
+        doc_id for doc_id, doc in by_id.items() if doc.get("next_message_seq") is None
+    ]
+    if legacy_ids:
+        pipeline = [
+            {"$match": {
+                "main_id": resolve_main_id(main_id),
+                "session_id": {"$in": [ObjectId(doc_id) for doc_id in legacy_ids]},
+            }},
+            {"$group": {"_id": "$session_id", "max_seq": {"$max": "$seq"}}},
+        ]
+        async for row in db.chat_messages.aggregate(pipeline):
+            max_seq_by_id[str(row.get("_id") or "")] = int(row.get("max_seq") or 0)
+    items: List[dict] = []
+    for doc in documents:
+        doc_id = str(doc.get("_id"))
+        next_seq = doc.get("next_message_seq")
+        max_seq = int(next_seq or 0) if next_seq is not None else max_seq_by_id.get(doc_id, 0)
+        item = _serialize_session(
             doc,
             access="shared",
-            participant_count=count_by_id.get(str(doc.get("_id")) or "", 0),
+            participant_count=count_by_id.get(doc_id, 0),
         )
-        for doc in documents
-    ]
+        # shared_unread: the viewer's last_read_seq vs the session's max seq
+        # (todo 30's frontend dot consumes it). The owner's scheduled_unread
+        # (serialized as-is above) is untouched — the participant cursor never
+        # writes the session doc.
+        item["shared_unread"] = bool(int(read_cursors.get(doc_id) or 0) < max_seq)
+        items.append(item)
+    return items
 
 
 def _build_match_snippet(text: str, query: str, radius: int = 72) -> str:
@@ -624,6 +660,7 @@ async def list_sessions(
     if shared_scope:
         participants = SessionParticipantsRepository(db)
         conversation_ids: List[str] = []
+        read_cursors: Dict[str, int] = {}
         batch_size = 100
         batch_offset = 0
         while True:
@@ -633,13 +670,20 @@ async def list_sessions(
             conversation_ids.extend(
                 str(row.get("conversation_id")) for row in rows if row.get("conversation_id")
             )
+            read_cursors.update(
+                {
+                    str(row.get("conversation_id")): int(row.get("last_read_seq") or 0)
+                    for row in rows
+                    if row.get("conversation_id")
+                }
+            )
             if len(rows) < batch_size:
                 break
             batch_offset += batch_size
         base_cursor = (
             db.chat_sessions.find(
                 add_main_scope({"_id": {"$in": [ObjectId(str(cid)) for cid in conversation_ids]}}, main_id),
-                projection,
+                {**projection, "next_message_seq": 1},
             )
             .sort([("updated_at", -1), ("_id", -1)])
         )
@@ -661,7 +705,9 @@ async def list_sessions(
             db, documents, tenant_id=main_id, user_id=user_id
         )
         if shared_scope:
-            sessions = await _serialize_shared_sessions(db, documents, main_id=main_id)
+            sessions = await _serialize_shared_sessions(
+                db, documents, main_id=main_id, read_cursors=read_cursors
+            )
         else:
             sessions = [SessionSummary(**_serialize_session_summary(doc)) for doc in documents]
         duration_ms = int((time.perf_counter() - t0) * 1000)
@@ -686,7 +732,9 @@ async def list_sessions(
         db, documents, tenant_id=main_id, user_id=user_id
     )
     if shared_scope:
-        sessions = await _serialize_shared_sessions(db, documents, main_id=main_id)
+        sessions = await _serialize_shared_sessions(
+            db, documents, main_id=main_id, read_cursors=read_cursors
+        )
     else:
         sessions = [SessionSummary(**_serialize_session_summary(doc)) for doc in documents]
     duration_ms = int((time.perf_counter() - t0) * 1000)
@@ -915,6 +963,20 @@ async def get_session(
     # (main_id, session_id) query is served by the unique_main_session_seq
     # index and every member reads the full thread.
     rows = await ConversationRepository(db).list_messages(main_id, str(oid))
+    # Todo 19: an active participant's read advances their read cursor to the
+    # session's max seq (T2's set_read_cursor). Owners hold no participant
+    # row, and a removed participant 404s above, so the advance is
+    # participant-scoped; the owner's scheduled_unread clear below stays
+    # owner-scoped. The max seq comes from the UNFILTERED rows — the
+    # participant has read the full thread, so the context_summary filter
+    # below must not stall the cursor. A session with no messages has max seq
+    # 0: nothing to advance, and the cursor is never moved backward.
+    if role == "participant":
+        max_seq = max((int(row.get("seq") or 0) for row in rows), default=0)
+        if max_seq > 0:
+            await participants.set_read_cursor(
+                str(oid), tenant_id=main_id, user_id=user_id, last_read_seq=max_seq
+            )
     if not include_context_summary:
         # Frontend should display original dialogue turns only.
         # Context summaries are runtime-only compression artifacts.
