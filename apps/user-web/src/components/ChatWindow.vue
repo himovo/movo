@@ -36,6 +36,7 @@ import type { DshCodeSession, DshExecutionEvent, DshPendingApproval, DshTaskChan
 import { capabilities } from '../platform'
 import type { DesktopToolLauncherKind, DesktopToolTab } from './desktop/desktopToolTabs'
 import type { AgentPolicySnapshot } from '../api/auth'
+import { listSessionParticipants } from '../api/sessionSharing'
 import { resolveArtifactIcon, resolveArtifactPresentation } from '../registries'
 import { resolveArtifactKind } from '../features/execution-v3/domain/artifactKind'
 import { authenticatedJsonHeaders } from '../api/authHeaders'
@@ -146,6 +147,9 @@ interface Message {
   _backendSid?: string
   /** Stable id for this assistant turn; used to bind persisted exec log */
   message_id?: string
+  /** Message author (todo 28): present on session-GET messages, the viewer's
+   *  own user_id on optimistic pushes. Absent (legacy/system) renders as today. */
+  user_id?: string
   /** Persisted V3 events returned by GET /sessions/{id} for replay. */
   execution_events?: unknown[]
   trigger_source?: string
@@ -286,6 +290,41 @@ const displayMessages = computed(() => {
   }
   return result
 })
+
+// Author labels (todo 28): names resolve from the session members list, fetched
+// once per session and sequence-guarded against stale in-flight responses (the
+// ChatSessionHeader detail-fetch idiom).
+const memberNamesBySession = ref(new Map<string, Map<string, string>>())
+let participantsFetchSequence = 0
+watch(
+  () => props.sessionId,
+  (sessionId) => {
+    if (!sessionId || memberNamesBySession.value.has(sessionId)) return
+    const sequence = ++participantsFetchSequence
+    void (async () => {
+      const result = await listSessionParticipants(sessionId)
+      if (sequence !== participantsFetchSequence) return
+      if (result.ok === false) return
+      const names = new Map<string, string>()
+      for (const item of result.data.items) names.set(item.user_id, item.display_name)
+      memberNamesBySession.value.set(sessionId, names)
+    })()
+  },
+  { immediate: true },
+)
+
+function isOwnMessage(msg: Message): boolean {
+  if (!msg.user_id || !props.userId) return true
+  return msg.user_id === props.userId
+}
+
+function authorLabel(msg: Message): string {
+  if (msg.role !== 'user' || isOwnMessage(msg)) return ''
+  const id = msg.user_id || ''
+  const known = props.sessionId ? memberNamesBySession.value.get(props.sessionId)?.get(id) : undefined
+  const name = known?.trim()
+  return name || id.slice(0, 8)
+}
 
 const imagePreviewOpen = ref(false)
 const imagePreviewSrc = ref('')
@@ -1944,7 +1983,7 @@ function formatErrorMessage(raw: string): string {
           <div
             :ref="(el) => setMsgRef(el, msg._id || '')" 
             class="group/user-message flex w-full"
-            :class="msg.role === 'user' ? 'justify-end' : 'justify-start'"
+            :class="msg.role === 'user' && isOwnMessage(msg) ? 'justify-end' : 'justify-start'"
             :data-scroll-anchor="stickyState === 'LOCKED' && msg._id === stickyAssistantMsgId ? 'true' : undefined"
             :style="msg.role === 'assistant' ? assistantTurnStyle(msg) : undefined"
           >
@@ -2033,6 +2072,7 @@ function formatErrorMessage(raw: string): string {
               </div>
             </template>
             <template v-else>
+              <div v-if="authorLabel(msg)" class="mb-1 px-1 text-xs font-medium text-slate-500">{{ authorLabel(msg) }}</div>
               <div class="rounded-2xl rounded-br-sm bg-blue-50 p-4 shadow-sm">
                 <div v-if="msg.trigger_source === 'scheduled'" class="mb-2 inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
                   <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
