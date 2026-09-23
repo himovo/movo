@@ -130,11 +130,17 @@ class KernelBindingRepository:
         return row
 
     async def current(self, conversation_id: str, *, tenant_id: str, user_id: str) -> dict[str, Any] | None:
+        # Conversation-scoped (session-sharing plan todo 13): the partial
+        # unique index keeps ONE current binding per conversation, so every
+        # member resolves the same binding — a participant never attempts
+        # create_binding on a bound conversation, and recovery/finalize find
+        # a rotated successor even when its user_id is another speaker's.
+        # user_id stays in the signature for call-shape compatibility with
+        # the existing runtime callers, but no longer scopes the read.
         return await self._collection.find_one(
             {
                 "conversation_id": conversation_id,
                 "tenant_id": tenant_id,
-                "user_id": user_id,
                 "current": True,
             }
         )

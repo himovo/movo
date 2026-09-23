@@ -93,14 +93,23 @@ class RuntimeCoordinator:
         profile_version: str,
         model_instance_id: str,
     ) -> dict[str, Any]:
-        """Create a successor Session seeded from the completed predecessor."""
+        """Create a successor Session seeded from the completed predecessor.
+
+        The successor carries the SPEAKER's identity, not the predecessor's
+        (session-sharing plan todo 13, R1=A): ``prepare_turn`` injects
+        ``speaker_user_id``/``speaker_preset_id`` into the binding dict it
+        hands the profile synchronizer and they flow through ``restore`` into
+        this rotation — the synchronizer itself takes no speaker/preset
+        argument. Without them (direct calls) the predecessor's values are
+        kept. ``execution_location`` is always preserved.
+        """
         return await self.create_binding(
             tenant_id=str(binding["tenant_id"]),
-            user_id=str(binding["user_id"]),
+            user_id=str(binding.get("speaker_user_id") or "") or str(binding["user_id"]),
             conversation_id=str(binding["conversation_id"]),
             profile_version=profile_version,
             model_instance_id=model_instance_id,
-            preset_id=str(binding.get("preset_id") or "askai-enterprise"),
+            preset_id=str(binding.get("speaker_preset_id") or "") or str(binding.get("preset_id") or "askai-enterprise"),
             execution_location=str(binding.get("execution_location") or "server"),
             workspace_id=str(binding.get("dsh_workspace_id") or "") or None,
             device_id=str(binding.get("device_id") or "") or None,
