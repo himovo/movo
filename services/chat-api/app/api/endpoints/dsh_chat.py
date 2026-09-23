@@ -412,6 +412,19 @@ async def desktop_conversation_runtime_rebind(
     authorization: str | None = Header(default=None),
 ) -> ApiResponse:
     tenant_id, user_id, _ = await _identity(authorization)
+    if await SessionParticipantsRepository(get_db()).list(conversation_id, tenant_id=tenant_id):
+        # Session-sharing plan todo 17: rebinding to a desktop Runtime while
+        # the conversation has an active participant would strand them - their
+        # turns fail the non-server rejection (ValueError -> 400) and revoke
+        # does not remove existing participants. Refuse (409) instead of the
+        # rejected auto-revoke alternative.
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "session_shared_rebind_blocked",
+                "message": "This conversation has active participants and cannot be rebound to a desktop Runtime",
+            },
+        )
     try:
         await dsh_runtime_application.require_desktop_bindings().rebind_runtime(
             tenant_id=tenant_id, user_id=user_id, device_id=payload.device_id,
