@@ -9,6 +9,10 @@ export type ChatMessage = {
   images?: ImageInfo[]
   /** Server-minted id for this assistant turn (X-Message-Id from /chat/completions) */
   message_id?: string
+  /** Message author — user_id IS the author; no author_user_id duplicate. Present
+   *  on session-GET responses (server-side addition); absent on optimistic and
+   *  request-path messages (MessageIn.user_id is Optional and ignored on writes). */
+  user_id?: string
   /** Persisted V3 events returned by GET /sessions/{id}; used for replay. */
   execution_events?: any[]
   trigger_source?: string
@@ -54,6 +58,15 @@ export type SessionSummary = {
   scheduled_unread?: boolean
   pending_approval_count?: number
   last_scheduled_run?: { run_id: string; status: string; finished_at?: string } | null
+  /** Sharing fields (todos 8/9/19): access is the VIEWER's scope; present on
+   *  shared-scope list rows and the detail payload. The owner-scope list payload
+   *  omits them (byte-compatible owner-list contract), hence optional. */
+  access?: 'owner' | 'shared'
+  owner_user_id?: string
+  participant_count?: number
+  /** T19: the viewer's unread state on shared-scope rows only; owner rows keep
+   *  scheduled_unread and never carry this field. */
+  shared_unread?: boolean
   execution_location?: 'server' | 'desktop' | 'remote_sandbox'
   runtime_preset_id?: string
   model_instance_id?: string | null
@@ -62,6 +75,12 @@ export type SessionSummary = {
 
 export type SessionDetail = SessionSummary & {
   messages: ChatMessage[]
+  /** T9: the backend SessionDetail model always emits these (non-optional
+   *  pydantic fields, defaults "owner"/""/0), so they are REQUIRED here —
+   *  unlike the optional SessionSummary fields the owner-scope list omits. */
+  access: 'owner' | 'shared'
+  owner_user_id: string
+  participant_count: number
 }
 
 export type SessionSearchResult = SessionSummary & {
@@ -125,7 +144,7 @@ export async function listSessions(userId: string, mainId?: string, authToken?: 
 export async function listSessionsPaged(
   userId: string,
   mainId?: string,
-  options: { limit?: number; offset?: number } = {},
+  options: { limit?: number; offset?: number; scope?: 'owner' | 'shared' } = {},
   authToken?: string | null,
 ): Promise<SessionListPage> {
   const limit = options.limit ?? 30
@@ -137,6 +156,8 @@ export async function listSessionsPaged(
     offset: String(offset),
   })
   if (mainId) query.set('mainId', mainId)
+  /** scope=shared fetches the sessions the viewer actively participates in (todo 8). */
+  if (options.scope) query.set('scope', options.scope)
   const response = await client.get(`/askai-api/api/sessions?${query.toString()}`, {
     timeout: 15000, headers: authHeaders(authToken),
   })
