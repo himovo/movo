@@ -141,9 +141,14 @@ class DshChatService:
             turn_context["selected_writing_skill_id"] = str(selected_writing_skill_id)
         if selected_skill_id:
             turn_context["selected_skill_id"] = str(selected_skill_id)
+        # Server-built turn metadata (plan todo 14): the turn's initiator is
+        # recorded here — never copied from ChatRequest — and travels with the
+        # claimed turn (claim_turn) for the approval stamp and the
+        # initiator-only cancel. Absent means "unknown" and fails closed.
         turn_metadata = {
             "language": "zh" if locale.startswith("zh") else "en",
             "locale": locale,
+            "initiator_user_id": user_id,
         }
         turn_context["language"] = turn_metadata["language"]
         # This argument is only supplied by internal authenticated endpoints

@@ -321,13 +321,16 @@ class ConversationRepository:
         run_id: str,
     ) -> None:
         result = await self._sessions.update_one(
-            # Session-scoped: a participant may start a run (todo 14 records
-            # the initiator).
+            # Session-scoped: a participant may start a run. The caller's
+            # user_id IS the run's initiator (todo 14): recorded in the
+            # active_run so cancel/approve can bind to it; a legacy row
+            # without the field means "unknown" and fails closed.
             {"_id": ObjectId(conversation_id), "main_id": tenant_id},
             {"$set": {
                 "active_run": {
                     "run_id": run_id,
                     "message_id": message_id,
+                    "initiator_user_id": user_id,
                     "source": "dsh",
                     "status": "running",
                     "started_at": datetime.utcnow(),
@@ -389,6 +392,9 @@ class ConversationRepository:
                 "active_run.message_id": message_id,
             },
             {"$set": {
+                # Dotted-path update: the recorded initiator_user_id (todo 14)
+                # and the other active_run fields are preserved, not replaced —
+                # a suspended run stays attributable to its initiator.
                 "active_run.status": "suspended",
                 "active_run.suspension_id": str(intervention.get("suspension_id") or ""),
                 "active_run.node_id": str(intervention.get("node_id") or ""),
