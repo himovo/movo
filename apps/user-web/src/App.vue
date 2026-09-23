@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { darkTheme, NButton, NConfigProvider, NDialogProvider, NInput, NMessageProvider, NNotificationProvider, NSelect } from 'naive-ui'
+import { createDiscreteApi, darkTheme, NButton, NConfigProvider, NDialogProvider, NInput, NMessageProvider, NNotificationProvider, NSelect } from 'naive-ui'
 import TokenInput from './components/TokenInput.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
 import TokenUsagePage from './components/TokenUsagePage.vue'
 import ProfileModal from './components/ProfileModal.vue'
 import productUiExtension from '@movo-product-extension'
 import DesktopWindowChrome from './components/desktop/DesktopWindowChrome.vue'
+import ChatSessionHeader from './components/chat/ChatSessionHeader.vue'
 import DesktopServerSetup from './components/desktop/DesktopServerSetup.vue'
 import type { DesktopToolLauncherKind } from './components/desktop/desktopToolTabs'
 import CreateProjectDialog from './components/code/CreateProjectDialog.vue'
@@ -23,6 +24,7 @@ import {
   type SessionSummary,
 } from './api/sessions'
 import { deleteSkill, enrichSkillDraft, generateSkill, listSkills, updateSkill, uploadSkillSource } from './api/skills'
+import { joinSessionShare, type SessionShareError } from './api/sessionSharing'
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { registerProductMessages, setLocale as setAppLocale, t, useLocale, type Locale } from './composables/i18n'
 import { getBrowserTimezone, setAppTimezone } from './composables/appTimezone'
@@ -99,6 +101,22 @@ const sessions = ref<SessionSummary[]>([])
 const sessionsLoading = ref(false)
 const sessionsLoadingMore = ref(false)
 const sessionsHasMore = ref(false)
+// T26: "Shared with me" section — separate list/state from the owner-scope
+// `sessions` so the two sections poll independently and keep their own pagination.
+const sharedSessions = ref<SessionSummary[]>([])
+const sharedSessionsLoading = ref(false)
+const sharedSessionsLoadingMore = ref(false)
+const sharedSessionsHasMore = ref(false)
+// T27: share-link landing — the token captured from ?session-share= at startup,
+// stripped from the URL immediately (never left in history) and stashed until a
+// confirmed login consumes it. A 401 on the join keeps the stash so the
+// auth-expired re-login retries; a definitive share-token failure clears it.
+const pendingSessionShareToken = ref<string | null>(null)
+// T27: App.vue hosts the message providers, so useMessage() is unavailable in
+// its own setup — the discrete API is the documented way to toast from here,
+// themed to match the app's provider.
+const shareToastConfigProviderProps = computed(() => ({ theme: isDarkTheme.value ? darkTheme : null }))
+const { message: shareToast } = createDiscreteApi(['message'], { configProviderProps: shareToastConfigProviderProps })
 const sessionSearchOpen = ref(false)
 const sessionSearchQuery = ref('')
 const sessionSearchResults = ref<SessionSearchResult[]>([])
@@ -327,6 +345,16 @@ const desktopWindowTitle = computed(() => {
     return selectedSkill.value?.name || t('app.sidebar.marketplace')
   }
   return t('app.sidebar.marketplace')
+})
+// Web chat top bar's title fallback: same source as the desktop chrome's chat title.
+// T26: a shared session is not in the owner-scope `sessions` list — the shared list
+// (scope=shared) carries the owner's title, and the header's own session-detail fetch
+// fills the real title when neither list has the row yet.
+const chatHeaderTitle = computed(() => {
+  if (currentView.value !== 'chat') return ''
+  const current = sessions.value.find((session) => session.id === currentSessionId.value)
+    || sharedSessions.value.find((session) => session.id === currentSessionId.value)
+  return current ? displaySessionTitle(current) : ''
 })
 function requestDesktopWorkspace(): void {
   if (canUseCode.value && currentView.value === 'chat') desktopWorkspaceRequest.value += 1
@@ -669,6 +697,10 @@ function handleLoginSuccess(payload: { token: string; username: string; profile?
     loginOpen.value = false
     startLocalSession()
     loadSessions(true).catch(() => {})
+    void loadSharedSessions(true).catch(() => {})
+    // T27: the token login confirmed — consume the stashed share link (joins
+    // once, opens the joined session, replaces the blank pane).
+    void joinPendingSharedSession().catch(() => {})
     void syncDesktopAgentIdentity(payload.token, payload.profile.userId).then(() => {
       if (canUseCode.value) void refreshWorkspaceTitles()
     })
@@ -920,6 +952,9 @@ async function switchToTenant(mainId: string): Promise<string | null> {
     void loadBillingSummary()
     startLocalSession()
     await loadSessions(true)
+    // T26: the tenant changed — the old tenant's shared rows are stale until the
+    // next poll; refresh both scopes here for parity with the owner list.
+    void loadSharedSessions(true).catch(() => {})
     return result.token
   } finally {
     switchingTenant.value = false
@@ -1236,7 +1271,12 @@ async function refreshUserProfile(token: string, createDefaultSession = false, p
     userProfile.value = result.data
     localStorage.setItem(authUserProfileKey, JSON.stringify(result.data))
     await loadSessions(true).catch(() => {})
+    void loadSharedSessions(true).catch(() => {})
     loginOpen.value = false
+    // T27: the login/profile resolution confirmed (token login via the SSO
+    // client path, page refresh with a stored token, already-logged-in
+    // startup) — consume the stashed share link.
+    void joinPendingSharedSession().catch(() => {})
     void syncDesktopAgentIdentity(token, result.data.userId)
     return
   }
@@ -1244,6 +1284,7 @@ async function refreshUserProfile(token: string, createDefaultSession = false, p
     sessionsLoading.value = false
     console.warn('[auth] fetchUserProfile failed; keeping cached session and retrying later')
     await loadSessions(true).catch(() => {})
+    void loadSharedSessions(true).catch(() => {})
     return
   }
   // SSO failed (e.g. token already consumed, or running inside an embedded WebView
@@ -1613,6 +1654,55 @@ async function refreshSessionSummaries() {
   }
 }
 
+// T26: "Shared with me" fetch — scope=shared via the client's scope param.
+// RESET-STYLE replace (NOT mergeSessionPages, which would retain a row the
+// viewer left); the window covers everything currently loaded so the section's
+// own pagination survives the poll. The server pins the activity order (todo 8)
+// — the response replaces the list as-is, no client re-sort by join order.
+async function loadSharedSessions(reset = true) {
+  const userId = getUserId()
+  if (!userId) return
+  if (reset) {
+    sharedSessionsLoading.value = true
+    sharedSessionsHasMore.value = false
+  } else {
+    sharedSessionsLoadingMore.value = true
+  }
+  try {
+    const page = await listSessionsPaged(userId, getMainId(), {
+      limit: sessionPageSize,
+      offset: reset ? 0 : sharedSessions.value.length,
+      scope: 'shared',
+    }, authToken.value || null)
+    sharedSessions.value = reset ? page.items : [...sharedSessions.value, ...page.items]
+    sharedSessionsHasMore.value = page.has_more
+  } catch (error) {
+    if (reset) throw error
+  } finally {
+    if (reset) {
+      sharedSessionsLoading.value = false
+    } else {
+      sharedSessionsLoadingMore.value = false
+    }
+  }
+}
+
+async function refreshSharedSummaries() {
+  const userId = getUserId()
+  if (!userId || document.visibilityState === 'hidden') return
+  try {
+    const page = await listSessionsPaged(userId, getMainId(), {
+      limit: Math.max(sessionPageSize, sharedSessions.value.length),
+      offset: 0,
+      scope: 'shared',
+    }, authToken.value || null)
+    sharedSessions.value = page.items
+    sharedSessionsHasMore.value = page.has_more
+  } catch {
+    // Best-effort visibility refresh; explicit navigation still retries.
+  }
+}
+
 function openSessionSearch() {
   if (!isLoggedIn.value) {
     openLogin()
@@ -1690,9 +1780,96 @@ async function selectSession(sessionId: string) {
   if (!userId) return
   navigateTo('chat')
   if (currentSessionId.value === sessionId) return
+  // T30: a shared row's dot clears the moment the participant opens the
+  // session. The same select fires the participant GET whose server-side
+  // read-cursor advance (todo 19) makes the next shared-list poll return
+  // shared_unread false, so this local map only makes the clear instant.
+  // Only shared rows carry shared_unread (T25) — owned rows' unread
+  // affordances read sessionIsUnread/scheduled_unread and never match here,
+  // and the local in-memory unread set must never render a second dot on
+  // shared rows (they read shared_unread only, in the separate ref).
+  if (sharedSessions.value.some((session) => session.id === sessionId && session.shared_unread)) {
+    sharedSessions.value = sharedSessions.value.map((session) => (
+      session.id === sessionId ? { ...session, shared_unread: false } : session
+    ))
+  }
   const pane = await chatRuntime.selectSession(sessionId, userId, getMainId(), authToken.value || null)
   if (canUseCode.value) await codeRuntime.attach(pane.key, sessionId)
   closeSessionSearch()
+}
+
+// T24: a participant leaving via the share dialog clears the leaved session per the
+// delete convention (removeSession starts a blank pane when it was current) and
+// refreshes the sessions list. T26: the shared-list (scope=shared) refresh uses the
+// same reset-style fetch so the leaved row disappears from "Shared with me" too.
+function handleSessionLeft(sessionId: string) {
+  chatRuntime.removeSession(sessionId)
+  void loadSessions(true).catch(() => {})
+  void loadSharedSessions(true).catch(() => {})
+}
+
+// T27: the share-link landing flow. captureSessionShareToken runs at the top of
+// onMounted — BEFORE any navigateTo (navigateTo pushes only the path, and the
+// parameter must never survive in history) — strips ?session-share= from the URL
+// and stashes it. joinPendingSharedSession consumes the stash after a confirmed
+// login (token login, SSO/refresh login, auth-expired re-login) or on an
+// already-logged-in startup: joins once, selects the joined session (selectSession
+// prunes the blank pane the login flow started — the reverse of T24's removeSession
+// pattern), and refreshes the shared list so the section appears under
+// "Shared with me" (T26's post-join hook).
+function captureSessionShareToken() {
+  if (typeof window === 'undefined') return
+  const url = new URL(window.location.href)
+  const token = url.searchParams.get('session-share')
+  if (!token) return
+  pendingSessionShareToken.value = token
+  url.searchParams.delete('session-share')
+  window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+}
+
+function shareSessionErrorToastMessage(error: SessionShareError): string {
+  switch (error.code) {
+    case 'session_not_found':
+    case 'session_share_not_found':
+      return t('session.share.error_not_found')
+    case 'session_share_owner_required':
+    case 'session_share_participant_required':
+    case 'session_share_no_binding':
+    case 'session_share_not_server':
+      return t('session.share.error_generic')
+    case 'session_share_inactive':
+      return t('session.share.error_inactive')
+    case 'session_share_token_required':
+      return t('session.share.error_token_required')
+    case 'http_error':
+      return t('session.share.error_generic')
+    default: {
+      const _exhaustive: never = error.code
+      void _exhaustive
+      return t('session.share.error_generic')
+    }
+  }
+}
+
+async function joinPendingSharedSession() {
+  const token = pendingSessionShareToken.value
+  if (!token) return
+  const result = await joinSessionShare(token)
+  if (result.ok === false) {
+    if (result.error.status === 401) {
+      // The auth-expired interceptor has dispatched its event and opened the
+      // login modal; keep the stash so the re-login retries the join.
+      return
+    }
+    pendingSessionShareToken.value = null
+    shareToast.error(shareSessionErrorToastMessage(result.error))
+    return
+  }
+  pendingSessionShareToken.value = null
+  const userId = getUserId()
+  if (!userId) return
+  void loadSharedSessions(true).catch(() => {})
+  await selectSession(result.data.session_id).catch(() => {})
 }
 
 async function handlePaneSend(
@@ -1765,6 +1942,10 @@ function handleDesktopServerConnected() {
 }
 
 onMounted(async () => {
+  // T27: capture ?session-share= BEFORE any navigateTo (navigateTo pushes only
+  // the path, dropping query params) — the capture strips it from history and
+  // stashes it for the post-login join.
+  captureSessionShareToken()
   window.addEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired)
   applyThemeMode()
   systemThemeMedia = window.matchMedia('(prefers-color-scheme: dark)')
@@ -1814,7 +1995,12 @@ onMounted(async () => {
   }
   document.addEventListener('click', handleDocumentClick)
   window.addEventListener('popstate', handlePopState)
-  sessionRefreshTimer = setInterval(() => { void refreshSessionSummaries() }, 5000)
+  sessionRefreshTimer = setInterval(() => {
+    void refreshSessionSummaries()
+    // T26: the two sections poll independently — one timer tick drives both
+    // scopes; each keeps its own pagination state and fetch cycle.
+    void refreshSharedSummaries()
+  }, 5000)
 })
 
 onBeforeUnmount(() => {
@@ -2061,6 +2247,58 @@ onBeforeUnmount(() => {
         >
           {{ sessionsLoadingMore ? t('ui.loading') : t('app.sidebar.load_more') }}
         </button>
+        <!-- T26: "Shared with me" — second section below Conversations, fed by
+             scope=shared. Renders only when the viewer actively participates
+             (no empty section at zero participations). The server pins the
+             activity order (todo 8) — rows render as-is, no client re-sort.
+             Shared rows carry the owner's title and a shared_unread dot; no
+             delete/rename/leave affordances (leaving lives in the header's
+             members control). -->
+        <template v-if="sharedSessions.length">
+          <div class="mt-5 px-5 pb-1 text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">
+            {{ t('session.sharedWithMe.title') }}
+          </div>
+          <div
+            v-for="session in sharedSessions"
+            :key="session.id"
+            class="group w-full text-left px-2.5 py-1.5 rounded-lg transition-all border border-transparent"
+            :class="session.id === currentSessionId && currentView === 'chat'
+              ? 'bg-white text-blue-700 shadow-sm border-gray-200 font-semibold'
+              : 'text-gray-600 hover:bg-gray-200/50 hover:text-gray-900'"
+            @click="selectSession(session.id)"
+            @keydown.enter.prevent="selectSession(session.id)"
+            @keydown.space.prevent="selectSession(session.id)"
+            role="button"
+            tabindex="0"
+          >
+            <div class="flex min-w-0 items-center gap-2">
+              <div class="min-w-0 flex-1 text-[13px] truncate" :title="displaySessionTitle(session)">
+                {{ compactSessionTitle(session) }}
+              </div>
+              <span
+                class="shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600"
+                :aria-label="t('session.sharedWithMe.badge')"
+                :title="t('session.sharedWithMe.badge')"
+              >
+                {{ t('session.sharedWithMe.badge') }}
+              </span>
+              <span
+                v-if="session.shared_unread"
+                class="h-2 w-2 shrink-0 rounded-full bg-blue-500"
+                :aria-label="t('session.sharedWithMe.unread')"
+                :title="t('session.sharedWithMe.unread')"
+              ></span>
+            </div>
+          </div>
+          <button
+            v-if="!sharedSessionsLoading && sharedSessionsHasMore && sharedSessions.length >= sessionPageSize"
+            class="w-full text-left px-2.5 py-1 text-[11px] text-gray-400 hover:text-gray-600 disabled:opacity-60 disabled:cursor-not-allowed"
+            :disabled="sharedSessionsLoadingMore"
+            @click="loadSharedSessions(false)"
+          >
+            {{ sharedSessionsLoadingMore ? t('ui.loading') : t('app.sidebar.load_more') }}
+          </button>
+        </template>
       </div>
 
       <div v-if="canUseSkills || canUseTools" class="mt-2 px-5 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em]">{{ t('app.sidebar.skills') }}</div>
@@ -2284,6 +2522,18 @@ onBeforeUnmount(() => {
 
     <!-- MAIN CONTENT -->
     <main class="app-main flex-1 flex flex-col min-w-0 min-h-0 bg-white">
+
+      <!-- Web chat top bar: web-only (DesktopWindowChrome owns the title on desktop);
+           renders in the chat view when a session is open, for owner and participants. -->
+      <ChatSessionHeader
+        v-if="!capabilities.isDesktop && currentView === 'chat' && currentSessionId"
+        :session-id="currentSessionId"
+        :title="chatHeaderTitle"
+        :user-id="getUserId() || ''"
+        :main-id="getMainId()"
+        :auth-token="authToken"
+        @left="handleSessionLeft"
+      />
 
       <!-- Main Area -->
       <div class="flex-1 flex min-w-0 min-h-0 overflow-hidden">
