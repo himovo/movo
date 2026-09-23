@@ -4,6 +4,26 @@ import type { ExecutionEventV3 } from '../features/execution-v3/domain/protocol'
 import { notifyAuthExpiredFromResponse } from '../api/authExpiry'
 import { createStreamReadiness } from './tasks/streamReadiness'
 
+/** Server contract on POST /chat/completions 409: a concurrent run holds the session. */
+export const SESSION_ALREADY_RUNNING = 'session_already_running'
+
+/**
+ * Non-OK chat-completions response. `code` is the parsed FastAPI dict-detail
+ * error code; consumers distinguish server contracts on status + code, never
+ * on the display message.
+ */
+export class ChatStreamHttpError extends Error {
+  status: number
+  code: string | null
+
+  constructor(status: number, code: string | null, message: string) {
+    super(message)
+    this.name = 'ChatStreamHttpError'
+    this.status = status
+    this.code = code
+  }
+}
+
 export interface ChatStreamRequest {
   messages: any[]
   modelId?: string
@@ -58,6 +78,7 @@ export function startChatStream(
       notifyAuthExpiredFromResponse(resp, Boolean(opts.authToken))
       if (!resp.ok) {
         let errorMessage = `Request failed: ${resp.status}`
+        let errorCode: string | null = null
         try {
           const contentType = resp.headers.get('content-type') || ''
           if (contentType.includes('application/json')) {
@@ -67,8 +88,10 @@ export function startChatStream(
               errorMessage = detail.trim()
             } else if (detail?.message) {
               errorMessage = String(detail.message)
+              if (typeof detail.code === 'string' && detail.code.trim()) errorCode = detail.code
             } else if (payload?.message) {
               errorMessage = String(payload.message)
+              if (typeof payload?.code === 'string' && payload.code.trim()) errorCode = payload.code
             }
           } else {
             const text = (await resp.text()).trim()
@@ -77,7 +100,7 @@ export function startChatStream(
         } catch {
           // Ignore parse failures and keep the status-based fallback.
         }
-        throw new Error(errorMessage)
+        throw new ChatStreamHttpError(resp.status, errorCode, errorMessage)
       }
       const sid = resp.headers.get('X-Session-Id')
       if (sid) {
