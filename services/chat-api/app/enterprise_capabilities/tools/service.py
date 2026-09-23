@@ -93,6 +93,15 @@ class EnterpriseToolService:
         conversation_id = str(binding["conversation_id"])
         active_turn = dict(binding.get("active_turn") or {})
         message_id = str(active_turn.get("message_id") or "")
+        # Q10/T16: the approval is bound to the TURN'S INITIATOR. Today the
+        # tool-token subject IS the turn's speaker (profile sync at
+        # chat_service.py:187-192 runs before claim_turn at :229; resolver.py
+        # :40-46 issues the token with user_id=subject_user_id). turn_metadata
+        # is server-built (chat_service.py:136-139); todo 14's initiator_user_id
+        # slots in here — prefer it, fall back to the token subject. The decide
+        # gate and list_pending bind to this stamp; no check is widened.
+        turn_metadata = dict(active_turn.get("turn_metadata") or {})
+        initiator_user_id = str(turn_metadata.get("initiator_user_id") or "") or claims.user_id
         grant = await self._repository.active_session_grant(
             tenant_id=claims.tenant_id,
             user_id=claims.user_id,
@@ -112,7 +121,7 @@ class EnterpriseToolService:
         approval = await self._repository.ensure_approval(EnterpriseApproval(
             action_id=request.actionId,
             tenant_id=claims.tenant_id,
-            user_id=claims.user_id,
+            user_id=initiator_user_id,
             conversation_id=conversation_id,
             kernel_session_id=request.sessionId,
             profile_version=request.profileVersion,
