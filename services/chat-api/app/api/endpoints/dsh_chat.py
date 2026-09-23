@@ -27,6 +27,11 @@ from app.dsh_runtime.conversation.participants_repository import (
 )
 from app.dsh_runtime.conversation.repository import MessageSequenceConflict
 from app.dsh_runtime.errors import DshRuntimeError
+from app.dsh_runtime.turn_cancellation import (
+    CancelNotAllowedError,
+    assert_run_initiator,
+    member_conversation,
+)
 from app.utils.oss_uploader import AliyunOSSUploader
 from app.utils.uploads import read_upload_with_limit
 from app.dsh_runtime.desktop_binding import DesktopSessionIdentity
@@ -496,12 +501,48 @@ async def chat_message_events(
     return ApiResponse(code=0, message="ok", data=data)
 
 
+async def _require_cancel_initiator(*, tenant_id: str, user_id: str, conversation_id: str) -> None:
+    """Session-sharing plan todo 15: cancel is initiator-only, enforced
+    server-side BEFORE the approval-clearing call - require_tools()
+    .cancel_conversation's ActiveCapabilityExecutions bridge cancels every
+    in-flight execution for the conversation regardless of user, so a
+    non-initiator member (the session owner included) must never reach it.
+    Denials: 404 = cannot see (non-member, unknown/malformed id,
+    cross-tenant - the todo-4 status matrix); 403 = can see but is not the
+    run's initiator (a removed member included; a run with no recorded
+    initiator fails closed).
+    """
+    db = get_db()
+    try:
+        conversation = await member_conversation(
+            db,
+            SessionParticipantsRepository(db),
+            conversation_id,
+            tenant_id=tenant_id,
+            user_id=user_id,
+        )
+        assert_run_initiator(conversation, conversation_id=conversation_id, user_id=user_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="session_not_found") from exc
+    except CancelNotAllowedError as exc:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": exc.code, "message": str(exc), "session_id": exc.conversation_id},
+        ) from exc
+
+
 @router.post("/chat/cancel", response_model=ApiResponse)
 async def chat_cancel(
     payload: CancelRequest,
     authorization: str | None = Header(default=None),
 ) -> ApiResponse:
     tenant_id, user_id, _ = await _identity(authorization)
+    # Session-sharing plan todo 15 (guard-before-try, T17's convention): the
+    # initiator-only gate fires before the approval-clearing call, so a
+    # non-initiator never reaches it.
+    await _require_cancel_initiator(
+        tenant_id=tenant_id, user_id=user_id, conversation_id=payload.session_id
+    )
     try:
         await dsh_runtime_application.require_tools().cancel_conversation(
             tenant_id=tenant_id,
@@ -515,6 +556,13 @@ async def chat_cancel(
         )
     except LookupError as exc:
         raise HTTPException(status_code=404, detail="session_not_found") from exc
+    except CancelNotAllowedError as exc:
+        # Defense in depth: the coordinator enforces the same initiator-only
+        # gate; a state change between the two checks surfaces here.
+        raise HTTPException(
+            status_code=403,
+            detail={"code": exc.code, "message": str(exc), "session_id": exc.conversation_id},
+        ) from exc
     except DshRuntimeError as exc:
         raise HTTPException(
             status_code=503,
