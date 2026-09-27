@@ -21,6 +21,18 @@ from app.api.endpoints.auth import _resolve_session_user
 from app.core.tenant import add_main_scope, resolve_main_id
 from app.dsh_runtime.conversation.participants_repository import SessionParticipantsRepository
 from app.dsh_runtime.conversation.repository import ConversationRepository, MessageSequenceConflict
+from app.dsh_runtime.events.repository import KernelEventRepository
+from app.dsh_runtime.session_live import (
+    CURSOR_VERSION,
+    MESSAGE_ID_RE,
+    TERMINAL_TURN_STATUSES,
+    build_live_cursor,
+    revision_digest,
+)
+from app.services.session_identity_projection import (
+    message_identity,
+    resolve_author_projections,
+)
 from app.utils.oss_uploader import AliyunOSSUploader
 from app.llm.factory import get_llm_client
 from app.llm.types import Message, Role
@@ -67,6 +79,9 @@ class MessageIn(BaseModel):
     scheduled_job_id: Optional[str] = None
     scheduled_run_id: Optional[str] = None
     created_at: Optional[datetime] = None
+    seq: int = Field(0, description="Server-side per-session ordinal; 0 marks a degraded unsequenced row")
+    legacy_key: str = Field("", description="Server-side stable per-row fallback identity")
+    author: Optional[dict] = Field(None, description="Server-side author projection for user messages")
 
 
 class SessionCreate(BaseModel):
@@ -109,6 +124,7 @@ class SessionDetail(SessionSummary):
     access: str = "owner"
     owner_user_id: str = ""
     participant_count: int = 0
+    live_cursor: str = ""
 
 
 class SessionSearchResult(SessionSummary):
@@ -962,7 +978,43 @@ async def get_session(
     # Session-scoped read (todo 6): deliberately no viewer filter — the
     # (main_id, session_id) query is served by the unique_main_session_seq
     # index and every member reads the full thread.
-    rows = await ConversationRepository(db).list_messages(main_id, str(oid))
+    conversations = ConversationRepository(db)
+    # Todo 5: a wholly-legacy session is backfilled durably BEFORE the read
+    # projects it; a mixed session is skipped there and degrades below.
+    await conversations.backfill_message_sequences(main_id, str(oid))
+    rows = await conversations.list_messages(main_id, str(oid))
+    participant_rows = await participants.list(str(oid), tenant_id=main_id)
+    # Todo 5: the authoritative live position, minted with T1's canonical
+    # serializer from durable state only, so a client can always reopen with
+    # after=<live_cursor> after a control invalidation.
+    active_run = session_doc.get("active_run")
+    if not isinstance(active_run, dict):
+        active_run = {}
+    active_message_id: Optional[str] = None
+    active_stream_seq: Optional[int] = None
+    active_candidate = str(active_run.get("message_id") or "")
+    if (
+        active_candidate
+        and MESSAGE_ID_RE.match(active_candidate)
+        and str(active_run.get("status") or "") not in TERMINAL_TURN_STATUSES
+    ):
+        active_message_id = active_candidate
+        latest_projection = await db[KernelEventRepository.PROJECTIONS].find_one(
+            {"tenant_id": main_id, "message_id": active_message_id},
+            {"stream_seq": 1},
+            sort=[("stream_seq", -1)],
+        )
+        active_stream_seq = int((latest_projection or {}).get("stream_seq") or 0)
+    live_cursor = build_live_cursor({
+        "v": CURSOR_VERSION,
+        "session_id": str(oid),
+        "revision": revision_digest(
+            session=session_doc, messages=rows, participants=participant_rows
+        ),
+        "last_message_seq": int(session_doc.get("next_message_seq") or 0),
+        "active_message_id": active_message_id,
+        "active_stream_seq": active_stream_seq,
+    })
     # Todo 19: an active participant's read advances their read cursor to the
     # session's max seq (T2's set_read_cursor). Owners hold no participant
     # row, and a removed participant 404s above, so the advance is
@@ -1017,6 +1069,15 @@ async def get_session(
     except Exception as exc:
         log_print(f"[sessions] execution_events fetch failed: {exc}", flush=True)
 
+    authors = await resolve_author_projections(
+        db,
+        tenant_id=main_id,
+        user_ids=[
+            str(row.get("user_id") or "")
+            for row in rows
+            if str(row.get("role") or "") == "user"
+        ],
+    )
     messages = []
     for msg in rows:
         msg_images = msg.get("images") or []
@@ -1057,6 +1118,11 @@ async def get_session(
             if uploader is not None:
                 _sign_oss_paths_in_events(events_for_msg, uploader)
 
+        seq_value, row_legacy_key = message_identity(msg)
+        row_role = str(msg.get("role") or "")
+        row_author = (
+            authors.get(str(msg.get("user_id") or "")) if row_role == "user" else None
+        )
         messages.append(
             MessageIn(
                 role=msg.get("role"),
@@ -1073,13 +1139,16 @@ async def get_session(
                 scheduled_job_id=msg.get("scheduled_job_id"),
                 scheduled_run_id=msg.get("scheduled_run_id"),
                 created_at=msg.get("created_at"),
+                seq=seq_value,
+                legacy_key=row_legacy_key,
+                author=row_author,
             )
         )
     # Pinned by todo 9: the detail response carries the viewer's access
     # ("owner" | "shared") and the active-participant count (todo 4's
     # convention: active non-owner rows; owners never hold a row) — uniform
     # with the scope=shared list (todo 8).
-    participant_count = len(await participants.list(str(oid), tenant_id=main_id))
+    participant_count = len(participant_rows)
     data = _serialize_session(
         session_doc,
         access="owner" if role == "owner" else "shared",
@@ -1096,7 +1165,7 @@ async def get_session(
     return ApiResponse(
         code=0,
         message="success",
-        data=SessionDetail(**data, messages=messages).model_dump(),
+        data=SessionDetail(**data, messages=messages, live_cursor=live_cursor).model_dump(),
     )
 
 

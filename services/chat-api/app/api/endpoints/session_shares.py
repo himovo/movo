@@ -21,7 +21,7 @@ from app.core.db import get_db
 from app.core.tenant import add_main_scope
 from app.dsh_runtime.bindings.repository import KernelBindingRepository
 from app.dsh_runtime.conversation.participants_repository import SessionParticipantsRepository
-from app.services.member_identity import public_display_name
+from app.services.session_identity_projection import resolve_author_projections
 from app.services.session_sharing.service import (
     SessionShareError,
     hash_token,
@@ -191,26 +191,25 @@ async def list_participants(
     rows = await participants.list(str(session_doc["_id"]), tenant_id=principal.main_id)
     member_ids = [str(session_doc.get("user_id") or "")]
     member_ids.extend(str(row.get("user_id") or "") for row in rows)
-    candidates = [ObjectId(value) if ObjectId.is_valid(value) else value for value in member_ids if value]
-    user_rows = get_db().end_users.find(
-        add_main_scope({"_id": {"$in": candidates}}, principal.main_id),
-        {"name": 1, "login_name": 1},
+    # Todo 5: the shared tenant-scoped batch resolver owns display names and
+    # the nullable avatar projection (signed URLs only, never object paths).
+    identity = await resolve_author_projections(
+        get_db(), tenant_id=principal.main_id, user_ids=member_ids,
     )
-    names = {
-        str(row.get("_id") or ""): public_display_name(row)
-        async for row in user_rows
-    }
+    owner_identity = identity.get(member_ids[0]) or {}
     items = [{
         "user_id": member_ids[0],
-        "display_name": names.get(member_ids[0], ""),
+        "display_name": owner_identity.get("display_name", ""),
         "role": "owner",
         "joined_at": session_doc.get("created_at"),
+        "avatar_url": owner_identity.get("avatar_url"),
     }]
     items.extend({
         "user_id": str(row.get("user_id") or ""),
-        "display_name": names.get(str(row.get("user_id") or ""), ""),
+        "display_name": (identity.get(str(row.get("user_id") or "")) or {}).get("display_name", ""),
         "role": str(row.get("role") or "participant"),
         "joined_at": row.get("joined_at"),
+        "avatar_url": (identity.get(str(row.get("user_id") or "")) or {}).get("avatar_url"),
     } for row in rows)
     return _response({"items": items})
 

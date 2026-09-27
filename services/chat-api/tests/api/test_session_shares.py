@@ -13,6 +13,7 @@ revoked tokens.
 from __future__ import annotations
 
 import datetime
+import json
 import uuid
 from typing import Any
 
@@ -24,6 +25,7 @@ from app.api.endpoints import session_shares
 from app.api.principal import ApiPrincipal
 from app.dsh_runtime.bindings.repository import KernelBindingRepository
 from app.dsh_runtime.conversation.participants_repository import SessionParticipantsRepository
+from app.services import session_identity_projection as identity_projection
 from app.services.session_sharing.service import hash_token, issue_share
 
 
@@ -531,3 +533,153 @@ def test_full_share_token_lifecycle_end_to_end(api_db) -> None:
         harness.run(session_shares.join_session_share(
             stale_token, principal=_principal(TENANT, member_id)))
     assert exc_info.value.status_code == 410
+
+
+# --- todo 5: participant identity projection + avatar grammar -----------------
+
+
+class _FakeStorage:
+    def sign_url(self, object_path: str) -> str:
+        return f"https://signed.example.com/{object_path.rsplit('/', 1)[-1]}?sig=test"
+
+
+class _BrokenStorage:
+    def sign_url(self, object_path: str) -> str:
+        raise RuntimeError("signing unavailable")
+
+
+async def _seed_user_profile(
+    db: Any,
+    *,
+    tenant_id: str,
+    name: str,
+    avatar: str | None = None,
+    avatar_object_path: str | None = None,
+) -> str:
+    user_id = ObjectId()
+    document: dict[str, Any] = {
+        "_id": user_id, "main_id": tenant_id, "name": name, "status": "active",
+    }
+    if avatar is not None:
+        document["avatar"] = avatar
+    if avatar_object_path is not None:
+        document["avatar_object_path"] = avatar_object_path
+    await db.end_users.insert_one(document)
+    return str(user_id)
+
+
+def _listing_items(harness: Any, session_id: str, viewer_id: str) -> list[dict[str, Any]]:
+    listing = harness.run(session_shares.list_participants(
+        session_id, principal=_principal(TENANT, viewer_id)))
+    return listing["data"]["items"]
+
+
+def test_participant_listing_projects_identity_and_signed_avatars(api_db, monkeypatch) -> None:
+    monkeypatch.setattr(identity_projection, "ObjectStorageClient", _FakeStorage)
+    harness = api_db
+    owner_id = harness.run(_seed_user_profile(
+        harness.db, tenant_id=TENANT, name="Alice Owner",
+        avatar="https://cdn.example.com/owner.png",
+    ))
+    direct_id = harness.run(_seed_user_profile(
+        harness.db, tenant_id=TENANT, name="Bob Direct", avatar="/static/bob.png",
+    ))
+    path_id = harness.run(_seed_user_profile(
+        harness.db, tenant_id=TENANT, name="Carol Path",
+        avatar_object_path="tenants/a/carol.png",
+    ))
+    session_id = harness.run(_seed_session(harness.db, tenant_id=TENANT, owner_id=owner_id))
+    for member_id in (direct_id, path_id):
+        harness.run(SessionParticipantsRepository(harness.db).add(
+            tenant_id=TENANT, conversation_id=session_id, user_id=member_id))
+
+    items = _listing_items(harness, session_id, owner_id)
+
+    assert [
+        (item["user_id"], item["display_name"], item["role"], item["avatar_url"])
+        for item in items
+    ] == [
+        (owner_id, "Alice Owner", "owner", "https://cdn.example.com/owner.png"),
+        (direct_id, "Bob Direct", "participant", "/static/bob.png"),
+        (path_id, "Carol Path", "participant", "https://signed.example.com/carol.png?sig=test"),
+    ]
+    payload = json.dumps(items, default=str)
+    assert "avatar_object_path" not in payload
+    assert "tenants/a/carol.png" not in payload
+
+
+def test_participant_listing_avatar_grammar_rejects_unsafe_values(api_db) -> None:
+    harness = api_db
+    owner_id = harness.run(_seed_user_profile(
+        harness.db, tenant_id=TENANT, name="Owner", avatar="//evil.example.com/x.png",
+    ))
+    session_id = harness.run(_seed_session(harness.db, tenant_id=TENANT, owner_id=owner_id))
+    unsafe_avatars = [
+        "javascript:alert(1)",
+        "data:image/png;base64,AAAA",
+        "http://user:pass@cdn.example.com/x.png",
+        "https://cdn.example.com/back\\slash.png",
+        "\\\\host\\share\\x.png",
+        "bad\x01control",
+        "ftp://cdn.example.com/x.png",
+    ]
+    unsafe_ids: dict[str, str] = {}
+    for index, avatar in enumerate(unsafe_avatars):
+        user_id = harness.run(_seed_user_profile(
+            harness.db, tenant_id=TENANT, name=f"Unsafe {index}", avatar=avatar,
+        ))
+        unsafe_ids[avatar] = user_id
+        harness.run(SessionParticipantsRepository(harness.db).add(
+            tenant_id=TENANT, conversation_id=session_id, user_id=user_id))
+    safe_id = harness.run(_seed_user_profile(
+        harness.db, tenant_id=TENANT, name="Safe Rel", avatar="/ok/relative.png",
+    ))
+    harness.run(SessionParticipantsRepository(harness.db).add(
+        tenant_id=TENANT, conversation_id=session_id, user_id=safe_id))
+    ghost_id = str(ObjectId())
+    harness.run(SessionParticipantsRepository(harness.db).add(
+        tenant_id=TENANT, conversation_id=session_id, user_id=ghost_id))
+
+    by_id = {item["user_id"]: item for item in _listing_items(harness, session_id, owner_id)}
+
+    for avatar, user_id in unsafe_ids.items():
+        assert by_id[user_id]["avatar_url"] is None, avatar
+    assert by_id[owner_id]["avatar_url"] is None
+    assert by_id[safe_id]["avatar_url"] == "/ok/relative.png"
+    # A participant whose end_users row is missing degrades, never 5xx.
+    assert by_id[ghost_id]["display_name"] == ""
+    assert by_id[ghost_id]["avatar_url"] is None
+
+
+def test_participant_listing_signing_failure_returns_null_never_object_path(api_db, monkeypatch) -> None:
+    monkeypatch.setattr(identity_projection, "ObjectStorageClient", _BrokenStorage)
+    harness = api_db
+    owner_id = harness.run(_seed_user_profile(
+        harness.db, tenant_id=TENANT, name="Owner",
+        avatar_object_path="private/tenant/owner.png",
+    ))
+    session_id = harness.run(_seed_session(harness.db, tenant_id=TENANT, owner_id=owner_id))
+
+    items = _listing_items(harness, session_id, owner_id)
+
+    assert items[0]["display_name"] == "Owner"
+    assert items[0]["avatar_url"] is None
+    payload = json.dumps(items, default=str)
+    assert "private/tenant/owner.png" not in payload
+    assert "avatar_object_path" not in payload
+
+
+def test_participant_listing_cross_tenant_user_is_not_resolved(api_db) -> None:
+    harness = api_db
+    owner_id = harness.run(_seed_user(harness.db, tenant_id=TENANT, name="Owner"))
+    foreign_id = harness.run(_seed_user(harness.db, tenant_id=OTHER_TENANT, name="Tenant B Member"))
+    session_id = harness.run(_seed_session(harness.db, tenant_id=TENANT, owner_id=owner_id))
+    harness.run(SessionParticipantsRepository(harness.db).add(
+        tenant_id=TENANT, conversation_id=session_id, user_id=foreign_id))
+
+    by_id = {item["user_id"]: item for item in _listing_items(harness, session_id, owner_id)}
+
+    assert by_id[foreign_id]["display_name"] == ""
+    assert by_id[foreign_id]["avatar_url"] is None
+    assert "Tenant B Member" not in json.dumps(
+        _listing_items(harness, session_id, owner_id), default=str)
