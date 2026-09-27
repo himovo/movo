@@ -48,6 +48,7 @@ class PreparedTurn:
     conversation_id: str
     message_id: str
     binding_id: str
+    user_message_id: str = ""
 
 
 class ConversationBusyError(RuntimeError):
@@ -147,6 +148,7 @@ class DshChatService:
         knowledge_base_ids: list[str] | None = None,
         trusted_turn_context: dict[str, Any] | None = None,
         claim_token: str | None = None,
+        user_message_id: str | None = None,
         language_name: str | None = None,
         selected_writing_skill_id: str | None = None,
         selected_skill_id: str | None = None,
@@ -328,6 +330,12 @@ class DshChatService:
 
         message_id = f"msg-{uuid4()}"
         request_id = f"turn-{uuid4()}"
+        # Client turn identity (plan todo 4): the endpoint accepted this value
+        # at the request boundary, so it is persisted verbatim as the user
+        # row's id when present; otherwise the id stays server-minted. The
+        # assistant id (message_id) remains server-minted either way.
+        server_user_message_id = f"user-{request_id}"
+        effective_user_message_id = user_message_id or server_user_message_id
         stable_claim_token = claim_token or f"claim-{uuid4()}"
         if authorizer is not None and conversation_id is not None:
             # Rechecked immediately before the admission: a removal that
@@ -365,10 +373,18 @@ class DshChatService:
             # Same-token re-admission after a client timeout: the durable
             # claim and its rows already exist, so return them as-is rather
             # than appending a duplicate user message/placeholder/active_run.
+            # Plan todo 4: report the durable user id of the admitted turn -
+            # the resent client id, else the server-minted id the original
+            # admission wrote (recovered from the claimed request_id).
+            claimed_request_id = str((claimed.get("active_turn") or {}).get("request_id") or "")
+            recovered_user_message_id = (
+                f"user-{claimed_request_id}" if claimed_request_id else server_user_message_id
+            )
             return PreparedTurn(
                 conversation_id=str(claimed.get("conversation_id") or conversation_id or ""),
                 message_id=existing_message_id,
                 binding_id=str(binding["binding_id"]),
+                user_message_id=user_message_id or recovered_user_message_id,
             )
         try:
             await self._conversations.append_message(
@@ -377,9 +393,10 @@ class DshChatService:
                 user_id=user_id,
                 role="user",
                 content=text,
-                message_id=f"user-{request_id}",
+                message_id=effective_user_message_id,
                 images=images,
                 documents=documents,
+                client_supplied_id=user_message_id is not None,
             )
             await self._conversations.append_message(
                 conversation_id=conversation_id,
@@ -432,6 +449,7 @@ class DshChatService:
             conversation_id=conversation_id,
             message_id=message_id,
             binding_id=str(binding["binding_id"]),
+            user_message_id=effective_user_message_id,
         )
 
     async def wait_turn(self, message_id: str) -> str:

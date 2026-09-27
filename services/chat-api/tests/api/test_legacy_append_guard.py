@@ -36,7 +36,10 @@ conflict mapping, forced-duplicate mapping) -> GREEN.
 
 from __future__ import annotations
 
+import asyncio
 import datetime
+import uuid
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -46,9 +49,17 @@ from fastapi import HTTPException
 import app.services.session_persistence_service as session_persistence_module
 from app.api.endpoints import dsh_chat, sessions
 from app.api.endpoints.dsh_chat import ChatRequest, Message
+from app.dsh_runtime import chat_service as chat_service_module
 from app.dsh_runtime.application import dsh_runtime_application
+from app.dsh_runtime.bindings import KernelBindingRepository
+from app.dsh_runtime.chat_service import DshChatService
 from app.dsh_runtime.conversation.participants_repository import SessionParticipantsRepository
-from app.dsh_runtime.conversation.repository import ConversationRepository, MessageSequenceConflict
+from app.dsh_runtime.conversation.repository import (
+    ConversationRepository,
+    MessageSequenceConflict,
+)
+from app.dsh_runtime.events import KernelEventRepository
+from app.dsh_runtime.runtime_coordinator import RuntimeCoordinator
 
 
 TENANT = "tenant-a"
@@ -427,3 +438,332 @@ def test_forced_duplicate_legacy_append_returns_retryable_409_not_500(api_db, mo
         "main_id": TENANT, "session_id": ObjectId(session_id), "seq": 1,
     }))
     assert rows_with_seq_one == 1
+
+
+# --- T04 (plan checkbox 4): validated user-message turn identity -------------
+#
+# X-User-Message-Id cases: the endpoint parse/pass-through/echo, the
+# repository conflict mapping, and the sequential admission boundary driven
+# through the REAL DshChatService (T2's claim/authorize structure untouched;
+# only the user-row identity the admission persists changes).
+
+_T04_BAD_IDS = [
+    "x" * 129,          # overlong (cap is 128)
+    "-leading-hyphen",  # first character must be alphanumeric
+    "has space",
+    "semi;colon",
+    "sl/ash",
+    "",
+]
+
+
+@pytest.fixture
+def admission_env(real_mongo_db, monkeypatch):
+    harness = real_mongo_db
+    monkeypatch.setattr(chat_service_module, "get_db", lambda: harness.db, raising=False)
+    harness.run(SessionParticipantsRepository(harness.db).ensure_indexes())
+    harness.run(KernelBindingRepository(harness.db).ensure_indexes())
+
+    owner_id = str(ObjectId())
+    participant_id = str(ObjectId())
+    session_id = str(harness.run(ConversationRepository(harness.db).create(
+        tenant_id=TENANT, user_id=owner_id, title="t04-admission"))["_id"])
+    harness.run(_join(harness.db, tenant_id=TENANT, session_id=session_id, user_id=participant_id))
+
+    foreign_tenant = "tenant-b"
+    foreign_session_id = str(harness.run(ConversationRepository(harness.db).create(
+        tenant_id=foreign_tenant, user_id=str(ObjectId()), title="t04-foreign"))["_id"])
+
+    binding_id = f"bind-{uuid.uuid4().hex}"
+    now = _now()
+    harness.run(harness.db.agent_kernel_bindings.insert_one({
+        "binding_id": binding_id,
+        "conversation_id": session_id,
+        "tenant_id": TENANT,
+        "user_id": owner_id,
+        "current": True,
+        "status": "idle",
+        "active_turn": None,
+        "kernel_session_id": f"ks-{uuid.uuid4().hex}",
+        "execution_location": "server",
+        "profile_version": "pv-t04",
+        "model_instance_id": "model-a",
+        "created_at": now,
+        "updated_at": now,
+    }))
+
+    chat = DshChatService(
+        gateway=SimpleNamespace(),
+        coordinator=RuntimeCoordinator(SimpleNamespace(), KernelBindingRepository(harness.db)),
+        conversations=ConversationRepository(harness.db),
+        bindings=KernelBindingRepository(harness.db),
+        events=KernelEventRepository(harness.db),
+        profiles=SimpleNamespace(),
+        kernel_version="test-kernel",
+    )
+
+    class _GatedRunner:
+        def __init__(self) -> None:
+            self.release = asyncio.Event()
+
+        async def __call__(self, *, binding, message_id, request_id, text,
+                           temporal_context, turn_context, live_stream):
+            await self.release.wait()
+            await chat._finalizer.finalize(
+                binding=binding, message_id=message_id, status="completed"
+            )
+            return "completed"
+
+    runner = _GatedRunner()
+    chat._turn_runner.run = runner
+
+    async def passthrough(binding, *, tenant_id, user_id, model_instance_id=None):
+        return SimpleNamespace(binding=binding)
+
+    chat._profile_sync.synchronize = passthrough
+    monkeypatch.setattr(dsh_runtime_application, "chat", chat)
+    return SimpleNamespace(
+        harness=harness, chat=chat, runner=runner, session_id=session_id,
+        owner_id=owner_id, participant_id=participant_id, binding_id=binding_id,
+        foreign_session_id=foreign_session_id, foreign_tenant=foreign_tenant,
+    )
+
+
+def _drive_completion(
+    env: Any,
+    monkeypatch: Any,
+    *,
+    user_message_id: str | None = None,
+    user_id: str | None = None,
+) -> Any:
+    # The direct-endpoint-call pattern of this file: patch the identity and
+    # quota seams, then call the real handler with the header value as the
+    # handler receives it from FastAPI.
+    async def _fake_resolve(authorization: str | None) -> dict[str, Any]:
+        return {"user": {"_id": ObjectId(user_id or env.owner_id)}, "main_id": TENANT}
+
+    async def _allow_quota(main_id: str, user: dict[str, Any]) -> dict[str, Any]:
+        return {}
+
+    monkeypatch.setattr(dsh_chat, "_resolve_session_user", _fake_resolve)
+    monkeypatch.setattr(dsh_chat, "assert_quota_available", _allow_quota)
+    request = ChatRequest(
+        messages=[Message(role="user", content="t04 identity")],
+        output_spec={"session_id": env.session_id, "model_id": "model-a"},
+    )
+    return dsh_chat.chat_completions(
+        request, authorization=None, x_user_message_id=user_message_id,
+    )
+
+
+def _t04_rows(env: Any) -> list[Any]:
+    return list(env.harness.run(
+        ConversationRepository(env.harness.db).list_messages(TENANT, env.session_id)
+    ))
+
+
+def test_client_user_message_id_is_persisted_and_echoed(admission_env, monkeypatch) -> None:
+    env = admission_env
+    response = env.harness.run(
+        _drive_completion(env, monkeypatch, user_message_id="client-turn-1")
+    )
+
+    assistant_id = response.headers["X-Message-Id"]
+    assert response.status_code == 200
+    assert response.headers["X-User-Message-Id"] == "client-turn-1"
+    assert response.headers["X-Session-Id"] == env.session_id
+    assert assistant_id.startswith("msg-")
+    assert assistant_id != "client-turn-1"
+
+    rows = _t04_rows(env)
+    user_row = next(row for row in rows if row["role"] == "user")
+    assistant_row = next(row for row in rows if row["role"] == "assistant")
+    # The committed user row matches the echoed header; the server keeps the
+    # assistant identity distinct from the client id.
+    assert str(user_row["message_id"]) == response.headers["X-User-Message-Id"]
+    assert str(user_row["content"]) == "t04 identity"
+    assert str(assistant_row["message_id"]) == assistant_id
+    assert assistant_row["message_id"] != user_row["message_id"]
+
+    env.runner.release.set()
+    assert env.harness.run(env.chat.wait_turn(assistant_id)) == "completed"
+
+
+@pytest.mark.parametrize("bad_id", _T04_BAD_IDS)
+def test_invalid_client_id_falls_back_to_server_minted_id(
+    admission_env, monkeypatch, bad_id: str
+) -> None:
+    env = admission_env
+    response = env.harness.run(
+        _drive_completion(env, monkeypatch, user_message_id=bad_id)
+    )
+
+    accepted = response.headers["X-User-Message-Id"]
+    assert response.status_code == 200
+    assert accepted.startswith("user-turn-")
+    assert accepted != bad_id
+    rows = _t04_rows(env)
+    user_row = next(row for row in rows if row["role"] == "user")
+    assert str(user_row["message_id"]) == accepted
+
+    env.runner.release.set()
+    assert env.harness.run(
+        env.chat.wait_turn(response.headers["X-Message-Id"])
+    ) == "completed"
+
+
+def test_existing_same_scope_client_id_maps_to_409_conflict(
+    admission_env, monkeypatch
+) -> None:
+    env = admission_env
+    harness = env.harness
+    harness.run(ConversationRepository(harness.db).append_message(
+        conversation_id=env.session_id, tenant_id=TENANT, user_id=env.owner_id,
+        role="user", content="seeded", message_id="client-dup",
+    ))
+    claims: list[str] = []
+    real_claim = env.chat._bindings.claim_turn_authorized
+
+    async def counting_claim(binding_id, **kwargs):
+        claims.append(kwargs["message_id"])
+        return await real_claim(binding_id, **kwargs)
+
+    monkeypatch.setattr(env.chat._bindings, "claim_turn_authorized", counting_claim)
+
+    with pytest.raises(HTTPException) as exc_info:
+        harness.run(_drive_completion(env, monkeypatch, user_message_id="client-dup"))
+
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.detail["code"] == "user_message_id_conflict"
+    assert exc_info.value.detail["session_id"] == env.session_id
+    # No assistant placeholder and no orphaned second user row: the conflict
+    # fires before any write, and the losing claim is rolled back.
+    rows = _t04_rows(env)
+    assert [str(row["message_id"]) for row in rows] == ["client-dup"]
+    binding = harness.run(
+        harness.db.agent_kernel_bindings.find_one({"binding_id": env.binding_id})
+    )
+    assert binding["active_turn"]["status"] == "failed"
+    assert len(claims) == 1
+
+
+def test_existing_cross_session_client_id_maps_to_409_conflict(
+    admission_env, monkeypatch
+) -> None:
+    env = admission_env
+    harness = env.harness
+    harness.run(ConversationRepository(harness.db).append_message(
+        conversation_id=env.foreign_session_id, tenant_id=env.foreign_tenant,
+        user_id=str(ObjectId()), role="user", content="foreign", message_id="client-cross",
+    ))
+
+    with pytest.raises(HTTPException) as exc_info:
+        harness.run(_drive_completion(env, monkeypatch, user_message_id="client-cross"))
+
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.detail["code"] == "user_message_id_conflict"
+    assert _t04_rows(env) == []
+
+
+def test_removal_at_claim_boundary_with_client_id_leaves_no_orphan(
+    admission_env, monkeypatch
+) -> None:
+    env = admission_env
+    harness = env.harness
+    claims: list[str] = []
+    real_claim = env.chat._bindings.claim_turn_authorized
+
+    async def remove_then_claim(binding_id, **kwargs):
+        claims.append(kwargs["message_id"])
+        await SessionParticipantsRepository(harness.db).remove(
+            env.session_id, tenant_id=TENANT, user_id=env.participant_id
+        )
+        return await real_claim(binding_id, **kwargs)
+
+    monkeypatch.setattr(env.chat._bindings, "claim_turn_authorized", remove_then_claim)
+
+    with pytest.raises(HTTPException) as exc_info:
+        harness.run(_drive_completion(
+            env, monkeypatch, user_message_id="client-race", user_id=env.participant_id,
+        ))
+
+    # A removal committed at the claim boundary rolls the claim back and the
+    # endpoint maps the typed denial to 404 - one admission attempt, no retry,
+    # no orphaned user row.
+    assert exc_info.value.status_code == 404
+    assert len(claims) == 1
+    assert _t04_rows(env) == []
+    binding = harness.run(
+        harness.db.agent_kernel_bindings.find_one({"binding_id": env.binding_id})
+    )
+    assert binding["status"] == "failed"
+    assert binding["active_turn"]["status"] == "failed"
+
+
+def test_concurrent_turns_with_distinct_client_ids_claim_exactly_one(
+    admission_env, monkeypatch
+) -> None:
+    env = admission_env
+    claims: list[str] = []
+    real_claim = env.chat._bindings.claim_turn_authorized
+
+    async def counting_claim(binding_id, **kwargs):
+        claims.append(kwargs["message_id"])
+        return await real_claim(binding_id, **kwargs)
+
+    monkeypatch.setattr(env.chat._bindings, "claim_turn_authorized", counting_claim)
+
+    async def scenario():
+        return await asyncio.gather(
+            _drive_completion(env, monkeypatch, user_message_id="client-a"),
+            _drive_completion(env, monkeypatch, user_message_id="client-b"),
+            return_exceptions=True,
+        )
+
+    results = env.harness.run(scenario())
+    responses = [item for item in results if not isinstance(item, BaseException)]
+    failures = [item for item in results if isinstance(item, HTTPException)]
+    assert len(responses) == 1
+    assert len(failures) == 1
+    assert failures[0].status_code == 409
+    assert failures[0].detail["code"] == "session_already_running"
+    assert failures[0].detail["session_id"] == env.session_id
+    # Exactly one admission attempt per submitted turn: the loser is neither
+    # queued nor auto-retried, and the winner's claim is untouched.
+    assert len(claims) == 2
+
+    winner_header = responses[0].headers["X-User-Message-Id"]
+    assert winner_header in {"client-a", "client-b"}
+    rows = _t04_rows(env)
+    user_row = next(row for row in rows if row["role"] == "user")
+    assistant_row = next(row for row in rows if row["role"] == "assistant")
+    assert len(rows) == 2
+    assert str(user_row["message_id"]) == winner_header
+    assert str(assistant_row["message_id"]) == responses[0].headers["X-Message-Id"]
+    assert assistant_row["message_id"] != user_row["message_id"]
+
+    env.runner.release.set()
+    assert env.harness.run(
+        env.chat.wait_turn(str(assistant_row["message_id"]))
+    ) == "completed"
+
+
+def test_server_minted_reappend_stays_idempotent(api_db) -> None:
+    harness = api_db
+    owner_id = harness.run(_seed_user(harness.db, tenant_id=TENANT, name="Owner"))
+    session_id = harness.run(_seed_session(harness.db, tenant_id=TENANT, owner_id=owner_id, title="Mine"))
+    repo = ConversationRepository(harness.db)
+
+    first = harness.run(repo.append_message(
+        conversation_id=session_id, tenant_id=TENANT, user_id=owner_id,
+        role="user", content="one", message_id="server-1",
+    ))
+    second = harness.run(repo.append_message(
+        conversation_id=session_id, tenant_id=TENANT, user_id=owner_id,
+        role="user", content="one", message_id="server-1",
+    ))
+
+    assert first["message_id"] == second["message_id"] == "server-1"
+    assert harness.run(
+        harness.db.chat_messages.count_documents({"message_id": "server-1"})
+    ) == 1

@@ -25,8 +25,12 @@ from app.dsh_runtime.conversation import ConversationRepository
 from app.dsh_runtime.conversation.participants_repository import (
     SessionParticipantsRepository,
 )
-from app.dsh_runtime.conversation.repository import MessageSequenceConflict
+from app.dsh_runtime.conversation.repository import (
+    MessageSequenceConflict,
+    UserMessageIdConflict,
+)
 from app.dsh_runtime.errors import DshRuntimeError
+from app.dsh_runtime.session_live import MESSAGE_ID_RE
 from app.dsh_runtime.turn_cancellation import (
     CancelNotAllowedError,
     assert_run_initiator,
@@ -162,12 +166,29 @@ async def _identity(authorization: str | None) -> tuple[str, str, dict[str, Any]
     return resolve_main_id(resolved["main_id"]), str(user.get("_id") or ""), user
 
 
+def _accepted_user_message_id(candidate: str | None) -> str | None:
+    """Parse the optional client turn identity at the request boundary.
+
+    Session-sharing realtime plan todo 4: a missing, overlong, or unsafe
+    ``X-User-Message-Id`` is ignored - never a 4xx by itself - so the turn
+    falls back to the server-minted id and authoritative reconciliation.
+    """
+    if not isinstance(candidate, str) or not MESSAGE_ID_RE.fullmatch(candidate):
+        return None
+    return candidate
+
+
 @router.post("/chat/completions")
 async def chat_completions(
     request: ChatRequest,
     authorization: str | None = Header(default=None),
+    x_user_message_id: str | None = Header(default=None),
 ):
-    return await _start_chat_completions(request, authorization)
+    return await _start_chat_completions(
+        request,
+        authorization,
+        user_message_id=_accepted_user_message_id(x_user_message_id),
+    )
 
 
 async def _start_chat_completions(
@@ -175,6 +196,7 @@ async def _start_chat_completions(
     authorization: str | None,
     *,
     trusted_turn_context: dict[str, Any] | None = None,
+    user_message_id: str | None = None,
 ):
     """Internal start helper; trusted context is never part of ChatRequest."""
     tenant_id, user_id, user = await _identity(authorization)
@@ -215,6 +237,7 @@ async def _start_chat_completions(
             language_name=str(output_spec.get("language") or output_spec.get("locale") or "") or None,
             selected_writing_skill_id=skill_selection.selected_writing_skill_id,
             selected_skill_id=skill_selection.selected_skill_id,
+            user_message_id=user_message_id,
         )
     except ConversationBusyError as exc:
         raise HTTPException(
@@ -222,6 +245,11 @@ async def _start_chat_completions(
             detail={"code": "session_already_running", "message": str(exc), "session_id": conversation_id},
         ) from exc
     except MessageSequenceConflict as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": exc.code, "message": str(exc), "session_id": exc.conversation_id},
+        ) from exc
+    except UserMessageIdConflict as exc:
         raise HTTPException(
             status_code=409,
             detail={"code": exc.code, "message": str(exc), "session_id": exc.conversation_id},
@@ -241,6 +269,7 @@ async def _start_chat_completions(
         headers={
             "X-Session-Id": turn.conversation_id,
             "X-Message-Id": turn.message_id,
+            "X-User-Message-Id": turn.user_message_id,
             "X-Execution-Protocol": "3",
             "X-Agent-Kernel": "dsh",
         },

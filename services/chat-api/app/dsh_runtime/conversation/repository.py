@@ -56,6 +56,26 @@ class MessageSequenceConflict(RuntimeError):
         )
 
 
+class UserMessageIdConflict(RuntimeError):
+    """A client-supplied user-message id already exists in ``chat_messages``.
+
+    Session-sharing realtime plan todo 4: a client id is an identity claim, so
+    ANY existing row carrying it - same scope or not - is this stable,
+    non-500 conflict. A collision on a SERVER-minted id keeps the repository's
+    idempotent re-delivery return; only ``client_supplied_id=True`` rejects it.
+    """
+
+    code = "user_message_id_conflict"
+
+    def __init__(self, *, conversation_id: str, message_id: str) -> None:
+        self.conversation_id = conversation_id
+        self.message_id = message_id
+        super().__init__(
+            f"user message id {message_id!r} already exists in chat_messages;"
+            " supply a fresh turn identity"
+        )
+
+
 class ConversationRepository:
     def __init__(self, db: Any) -> None:
         self._sessions = db.chat_sessions
@@ -207,9 +227,18 @@ class ConversationRepository:
         images: list[dict[str, Any]] | None = None,
         documents: list[dict[str, Any]] | None = None,
         execution_events: list[dict[str, Any]] | None = None,
+        client_supplied_id: bool = False,
     ) -> dict[str, Any]:
         existing = await self._messages.find_one({"message_id": message_id})
         if existing is not None:
+            if client_supplied_id:
+                # Plan todo 4: the client's X-User-Message-Id is an identity
+                # claim, so an existing row is a conflict even in the same
+                # scope - never the server-minted path's silent idempotent
+                # return below.
+                raise UserMessageIdConflict(
+                    conversation_id=conversation_id, message_id=message_id
+                )
             if (
                 str(existing.get("main_id")) != tenant_id
                 or str(existing.get("user_id")) != user_id
@@ -269,6 +298,10 @@ class ConversationRepository:
         except DuplicateKeyError:
             existing = await self._messages.find_one({"message_id": message_id})
             if existing is not None:
+                if client_supplied_id:
+                    raise UserMessageIdConflict(
+                        conversation_id=conversation_id, message_id=message_id
+                    ) from None
                 return existing
             # Not the message-id idempotency case: a concurrent writer took
             # the same (main_id, session_id, seq) slot. Typed and retryable,
