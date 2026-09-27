@@ -48,6 +48,9 @@ pytest = "^8.0.0"
 black = "^24.1.0"
 isort = "^5.13.0"
 
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
