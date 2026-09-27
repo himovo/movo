@@ -1,0 +1,19 @@
+# T12 QA-only overlay. Never merged into the shipped docker-compose.yml.
+#
+# Both networks are load-bearing:
+#   * backend (internal: true) lets chat-api/admin-api resolve `qa-model-stub`
+#     so the setup-time live model probe reaches http://qa-model-stub:8200/v1.
+#   * public (non-internal) is required for the published loopback port to
+#     appear at all: Docker withholds a port mapping for a container attached
+#     only to an internal network, which would break the pinned healthz wait.
+services:
+  qa-model-stub:
+    image: python:3.12-slim
+    command: ["python", "/app/qa_model_stub.py"]
+    volumes:
+      - ./qa/qa_model_stub.py:/app/qa_model_stub.py:ro
+    networks:
+      - backend
+      - public
+    ports:
+      - "127.0.0.1:18200:8200"

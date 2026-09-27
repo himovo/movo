@@ -1,0 +1,18 @@
+{
+  "orgName": "QA Realtime Org",
+  "adminUsername": "qa-admin",
+  "adminPassword": "qa-admin-pass-2026",
+  "employeeUsername": "qa-employee",
+  "employeePassword": "qa-employee-pass-2026",
+  "employeeName": "QA 实时员工",
+  "orgTotalTokens": 1000000,
+  "defaultUserTokens": 100000,
+  "model": {
+    "providerId": "",
+    "displayName": "QA Stub Chat",
+    "modelName": "qa-stub-chat",
+    "baseUrl": "http://qa-model-stub:8200/v1",
+    "apiKey": "qa-local-stub-key",
+    "capability": "chat"
+  }
+}
