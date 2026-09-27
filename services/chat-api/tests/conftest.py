@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import time
 import uuid
 from dataclasses import dataclass
 from typing import Any, Coroutine
@@ -56,11 +57,13 @@ from typing import Any, Coroutine
 import pytest
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import MongoClient
-from pymongo.errors import PyMongoError
+from pymongo.errors import AutoReconnect, PyMongoError
 
 MOVO_TEST_MONGODB_URI_ENV = "MOVO_TEST_MONGODB_URI"
 DEFAULT_TEST_MONGODB_URI = "mongodb://localhost:27017"
 DB_NAME_PREFIX = "movo_test_"
+POOL_WARMUP_ATTEMPTS = 3
+POOL_WARMUP_BACKOFF_SECONDS = 0.25
 
 
 @dataclass(frozen=True)
@@ -81,6 +84,17 @@ class RealMongoHarness:
         return self.loop.run_until_complete(awaitable)
 
 
+def _warmup_ping(command) -> None:
+    for attempt in range(POOL_WARMUP_ATTEMPTS):
+        try:
+            command()
+            return
+        except AutoReconnect:
+            if attempt == POOL_WARMUP_ATTEMPTS - 1:
+                raise
+            time.sleep(POOL_WARMUP_BACKOFF_SECONDS)
+
+
 @pytest.fixture
 def real_mongo_db():
     """Yield a clean real-mongo database; drop it on teardown.
@@ -91,7 +105,10 @@ def real_mongo_db():
     admin = MongoClient(uri, serverSelectionTimeoutMS=5000, connectTimeoutMS=2000)
     try:
         try:
-            admin.admin.command("ping")
+            # Bounded AutoReconnect-only warm-up: a cold pool's first
+            # operation intermittently strikes AutoReconnect (measured
+            # 7/14 runs pre-retry); every other error fails immediately.
+            _warmup_ping(lambda: admin.admin.command("ping"))
         except PyMongoError as exc:
             pytest.fail(
                 f"A real MongoDB server is required for this test, but {uri} is"
@@ -109,6 +126,10 @@ def real_mongo_db():
         )
         db = client[name]
         try:
+            # Warm the cold motor pool before yielding: the first operation
+            # of file-local fixtures and test bodies otherwise strikes
+            # AutoReconnect on a cold pool.
+            _warmup_ping(lambda: loop.run_until_complete(db.command("ping")))
             yield RealMongoHarness(db=db, loop=loop, name=name, uri=uri)
         finally:
             # AsyncIOMotorClient.close() is a synchronous delegate in motor 2.5.1.

@@ -94,6 +94,7 @@ class Settings(BaseSettings):
     LOG_CAPTURE_PRINTS: bool = True
     LOG_DEBUG_PAYLOADS: bool = False
     LOG_REQUEST_HEARTBEAT_SECONDS: float = 15.0
+    SESSION_LIVE_HEARTBEAT_SECONDS: float = 15.0
     LOG_SLOW_SPAN_MS: int = 10000
     LLM_SLOW_MS: int = 30000
     TOOL_SLOW_MS: int = 20000
