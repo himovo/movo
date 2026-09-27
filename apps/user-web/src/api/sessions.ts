@@ -81,6 +81,9 @@ export type SessionDetail = SessionSummary & {
   access: 'owner' | 'shared'
   owner_user_id: string
   participant_count: number
+  /** T7: authoritative fresh-stream position for a live SSE reopen after a
+   *  control-frame invalidation; absent when the server omits it. */
+  live_cursor?: string
 }
 
 export type SessionSearchResult = SessionSummary & {

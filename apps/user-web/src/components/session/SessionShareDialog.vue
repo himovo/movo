@@ -53,7 +53,7 @@ import { t } from '../../composables/i18n'
 import { formatAppShortDateTime } from '../../composables/appTimezone'
 import { copyTextToClipboard } from '../../utils/copyTextToClipboard'
 
-const props = defineProps<{ show: boolean; mode: 'owner' | 'participant'; sessionId: string | null }>()
+const props = defineProps<{ show: boolean; mode: 'owner' | 'participant'; sessionId: string | null; membersRevision?: number }>()
 // T24 wiring: the hosting header (ChatSessionHeader) re-fetches its session detail on
 // removed/revoked so the participant count reflects the mutation; left hands off to the
 // parent to clear the pane and refresh the session lists. create emits nothing — a new
@@ -87,7 +87,7 @@ const isEmpty = computed(() => {
   return props.mode === 'owner' ? otherMembers.value.length === 0 : members.value.length === 0
 })
 
-watch(() => [props.show, props.sessionId, props.mode], () => {
+watch(() => [props.show, props.sessionId, props.mode, props.membersRevision], () => {
   if (!props.show) return
   if (shareSessionId.value !== props.sessionId) {
     share.value = null

@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { resolve } from 'node:path'
 import test from 'node:test'
 // allow: SIZE_OK — T6's QA row mandates the happy + failure matrices in one harness.
 import {
@@ -490,4 +493,234 @@ test('network failures retry with backoff instead of failing the pane', async ()
   assert.equal(recorded.errors.length, 0, 'a network failure is transient, not terminal')
   handle.stop()
   await handle.done
+})
+
+// ---------------------------------------------------------------------------
+// T7: pane-lifecycle binding against the real store. Bundling axios into ESM
+// needs a require shim, installed before the store's dynamic import; the live
+// SSE endpoint uses global fetch while the authoritative GET is served by a
+// custom axios adapter installed before module init.
+// ---------------------------------------------------------------------------
+;(globalThis as { require?: unknown }).require = createRequire(import.meta.url)
+
+interface LiveCall {
+  url: string
+  headers: Record<string, string>
+  signal: AbortSignal | null
+  push: (text: string) => void
+}
+
+function liveHub() {
+  const calls: LiveCall[] = []
+  const impl = (async (input: unknown, init?: RequestInit) => {
+    const url = String(input)
+    if (!url.includes('/live')) return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } })
+    let stream: ReadableStreamDefaultController<Uint8Array> | null = null
+    const body = new ReadableStream<Uint8Array>({ start(controller) { stream = controller } })
+    const headers: Record<string, string> = {}
+    const raw = init?.headers as Record<string, string> | undefined
+    if (raw) for (const [key, value] of Object.entries(raw)) headers[key] = String(value)
+    calls.push({
+      url,
+      headers,
+      signal: (init?.signal as AbortSignal) || null,
+      push: (text) => { try { stream?.enqueue(encode(text)) } catch { stream = null } },
+    })
+    return new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } })
+  }) as typeof fetch
+  return { impl, calls }
+}
+
+interface SessionApi {
+  adapter: (config: { url?: string }) => Promise<unknown>
+  gets: string[]
+  cursorBySession: Map<string, string>
+  holdNextGet: (sessionId: string) => void
+  releaseGet: () => void
+}
+
+function createSessionApi(): SessionApi {
+  const gets: string[] = []
+  const cursorBySession = new Map<string, string>()
+  let held: { sessionId: string; wait: Promise<void> } | null = null
+  let releaseHeld: (() => void) | null = null
+  const adapter = async (config: { url?: string }) => {
+    const url = String(config.url || '')
+    const sessionId = decodeURIComponent(url.split('/sessions/')[1]?.split('?')[0] || '')
+    gets.push(sessionId)
+    if (held && held.sessionId === sessionId) {
+      const pending = held
+      held = null
+      await pending.wait
+    }
+    return {
+      data: {
+        data: {
+          id: sessionId,
+          title: `Session ${sessionId}`,
+          messages: [],
+          access: 'shared',
+          owner_user_id: 'owner-1',
+          participant_count: 2,
+          live_cursor: cursorBySession.get(sessionId),
+        },
+      },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config,
+      request: null,
+    }
+  }
+  return {
+    adapter,
+    gets,
+    cursorBySession,
+    holdNextGet(sessionId: string) {
+      let release: () => void = () => undefined
+      const wait = new Promise<void>((settle) => { release = settle })
+      held = { sessionId, wait }
+      releaseHeld = release
+    },
+    releaseGet() { releaseHeld?.() },
+  }
+}
+
+let activeApi: SessionApi | null = null
+const storeAdapter = async (config: { url?: string }): Promise<unknown> => {
+  if (!activeApi) throw new Error('no session api armed for the store harness')
+  return await activeApi.adapter(config)
+}
+
+async function loadStore(api: SessionApi) {
+  activeApi = api
+  const axios = (await import('axios')).default
+  ;(axios.defaults as any).adapter = storeAdapter
+  const { useChatRuntimeStore } = await import('../src/composables/useChatRuntimeStore')
+  return useChatRuntimeStore({})
+}
+
+async function until(predicate: () => boolean, label: string, tries = 400): Promise<void> {
+  for (let attempt = 0; attempt < tries; attempt += 1) {
+    if (predicate()) return
+    await new Promise<void>((settle) => setTimeout(settle, 1))
+  }
+  assert.fail(`timed out waiting for ${label}`)
+}
+
+async function settleTicks(count = 3): Promise<void> {
+  for (let tick = 0; tick < count; tick += 1) await new Promise<void>((settle) => setTimeout(settle, 0))
+}
+
+test('T7 store: one stream per viewed pane, one snapshot refresh per invalidation, pane-switch cleanup', async () => {
+  const live = liveHub()
+  ;(globalThis as { fetch?: typeof fetch }).fetch = live.impl
+  const api = createSessionApi()
+  api.cursorBySession.set('sess-a', 'cursor-a-2')
+  api.cursorBySession.set('sess-b', 'cursor-b-1')
+  const runtime = await loadStore(api)
+  runtime.reset()
+
+  const paneA = await runtime.selectSession('sess-a', 'user-1', 'main-1', 'token-1')
+  await until(() => live.calls.length === 1, 'first pane stream start')
+  assert.match(live.calls[0].url, /\/sessions\/sess-a\/live/)
+  assert.equal(live.calls[0].headers.Authorization, 'Bearer token-1')
+  assert.equal(api.gets.filter((id) => id === 'sess-a').length, 1)
+  assert.equal(runtime.membersRevisionFor('sess-a'), 0)
+
+  live.calls[0].push(frame('members.changed', { session_id: 'sess-a', revision: 'rev-2' }))
+  await until(() => runtime.membersRevisionFor('sess-a') === 1, 'members revision bump')
+  await until(() => live.calls.length === 2, 'control-frame reopen')
+  assert.equal(api.gets.filter((id) => id === 'sess-a').length, 2, 'exactly one authoritative snapshot per invalidation')
+  assert.match(live.calls[1].url, /after=cursor-a-2/)
+  await settleTicks()
+  assert.equal(live.calls.length, 2, 'no refresh storm and no duplicate reopen')
+
+  await runtime.selectSession('sess-b', 'user-1', 'main-1', 'token-1')
+  await until(() => live.calls.length === 3, 'second pane stream start')
+  assert.equal(live.calls[1].signal?.aborted, true, 'inactive pane aborts its in-flight stream')
+  assert.match(live.calls[2].url, /\/sessions\/sess-b\/live/)
+
+  const revisionA = runtime.membersRevisionFor('sess-a')
+  live.calls[0].push(frame('members.changed', { session_id: 'sess-a', revision: 'rev-3' }))
+  await settleTicks()
+  assert.equal(runtime.membersRevisionFor('sess-a'), revisionA, 'stale stream callbacks are rejected')
+  assert.equal(runtime.membersRevisionFor('sess-b'), 0, 'no cross-pane mutation')
+
+  await runtime.selectSession('sess-a', 'user-1', 'main-1', 'token-1')
+  await until(() => live.calls.length === 4, 're-viewed pane stream start')
+  assert.equal(live.calls[2].signal?.aborted, true, 'the superseded pane aborted too')
+  assert.ok(!live.calls[3].url.includes('after='), 'a re-viewed pane cold-attaches')
+  assert.equal(runtime.activeChatPane.value?.key, paneA.key)
+
+  runtime.removeSession('sess-a')
+  runtime.removeSession('sess-b')
+  runtime.reset()
+})
+
+test('T7 store: access-loss latch closes once; a refresh aborted by pane removal mutates nothing', async () => {
+  const unhandled: unknown[] = []
+  const capture = (reason: unknown) => { unhandled.push(reason) }
+  process.on('unhandledRejection', capture)
+  try {
+    const live = liveHub()
+    ;(globalThis as { fetch?: typeof fetch }).fetch = live.impl
+    const api = createSessionApi()
+    api.cursorBySession.set('sess-c', 'cursor-c-9')
+    api.cursorBySession.set('sess-d', 'cursor-d-4')
+    const runtime = await loadStore(api)
+    runtime.reset()
+
+    const paneC = await runtime.selectSession('sess-c', 'user-1', 'main-1', 'token-1')
+    await until(() => live.calls.length === 1, 'pane C stream start')
+    runtime.markAccessLost(paneC.key, 'participant_removed')
+    assert.equal(paneC.accessLost, true)
+    assert.equal(paneC.accessLostReason, 'participant_removed')
+    assert.equal(paneC.liveStream, null)
+    assert.equal(live.calls[0].signal?.aborted, true, 'the latch aborts the session stream')
+    assert.doesNotThrow(() => runtime.markAccessLost(paneC.key, 'participant_left'))
+    assert.equal(paneC.accessLostReason, 'participant_removed', 'the latch never flips after the first write')
+    assert.equal(live.calls.length, 1, 'a second close never touches a dead handle')
+
+    await runtime.selectSession('sess-d', 'user-1', 'main-1', 'token-1')
+    await until(() => live.calls.length === 2, 'pane D stream start')
+    api.holdNextGet('sess-d')
+    live.calls[1].push(frame('thread.changed', { session_id: 'sess-d', revision: 'r2', last_message_seq: 4 }, 'evt-7'))
+    await until(() => api.gets.filter((id) => id === 'sess-d').length === 2, 'refresh started')
+    runtime.removeSession('sess-d')
+    api.releaseGet()
+    await settleTicks(6)
+    assert.equal(live.calls.length, 2, 'no reopen after the pane was removed mid-refresh')
+
+    live.calls[1].push(frame('members.changed', { session_id: 'sess-d', revision: 'r3' }))
+    await settleTicks(3)
+    assert.equal(runtime.membersRevisionFor('sess-d'), 0)
+    assert.equal(live.calls.length, 2, 'no duplicate stream for a dead pane')
+    assert.equal(unhandled.length, 0, 'no unhandled rejection from the aborted refresh')
+  } finally {
+    process.off('unhandledRejection', capture)
+  }
+})
+
+test('T7 threading contract: single stream constructor, single latch writer, closed prop/watch edges', () => {
+  const root = process.cwd()
+  const store = readFileSync(resolve(root, 'src/composables/useChatRuntimeStore.ts'), 'utf8')
+  const dialog = readFileSync(resolve(root, 'src/components/session/SessionShareDialog.vue'), 'utf8')
+  const header = readFileSync(resolve(root, 'src/components/chat/ChatSessionHeader.vue'), 'utf8')
+  const app = readFileSync(resolve(root, 'src/App.vue'), 'utf8')
+  const sessions = readFileSync(resolve(root, 'src/api/sessions.ts'), 'utf8')
+
+  assert.equal(store.match(/startSessionLiveStream\(\{/g)?.length, 1, 'T7 is the ONLY stream constructor')
+  assert.match(store, /if \(!pane \|\| pane\.accessLost\) return/, 'the latch is idempotent per pane key')
+  assert.match(store, /pane\.activeStream\?\.abort\(\)/, 'the latch aborts the local POST handle')
+  assert.match(store, /pane\.authResumeController\?\.abort\(\)/, 'the latch aborts the recovery controller')
+  assert.match(store, /noteSessionLiveControlFrame\(pane\.key\)/, 'control frames engage the T6 cap')
+  assert.match(store, /detail\.live_cursor/, 'the reopen cursor comes from the authoritative GET')
+  assert.match(store, /membersRevisionFor/, 'the store exposes the single-instance selector')
+  assert.match(dialog, /membersRevision\?: number/, 'the dialog closed prop set is extended')
+  assert.match(dialog, /props\.sessionId, props\.mode, props\.membersRevision/, 'the dialog watch key is extended')
+  assert.match(header, /refreshToken\?: number/, 'the header gains the optional counter prop')
+  assert.match(header, /watch\(\(\) => props\.refreshToken/, 'the header refetches its own detail on the counter')
+  assert.match(app, /:refresh-token="chatRuntime\.membersRevisionFor\(currentSessionId\)"/, 'the single-instance call site threads the counter by session id')
+  assert.match(sessions, /live_cursor\?: string/, 'SessionDetail closed shape is extended')
 })
