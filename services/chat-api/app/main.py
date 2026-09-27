@@ -127,6 +127,7 @@ from app.api.endpoints import (
     skill_share_direct,
     skill_shares,
     session_shares,
+    session_live,
     resource_feedback,
     tasks,
     token_usage,
@@ -153,6 +154,7 @@ app.include_router(skill_updates.router, prefix="/api")
 app.include_router(skill_share_direct.router, prefix="/api")
 app.include_router(skill_shares.router, prefix="/api")
 app.include_router(session_shares.router, prefix="/api")
+app.include_router(session_live.router, prefix="/api")
 app.include_router(resource_feedback.router, prefix="/api")
 app.include_router(site_profiles.router, prefix="/api")
 app.include_router(token_usage.router, prefix="/api")

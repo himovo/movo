@@ -29,6 +29,11 @@ from app.dsh_runtime.locale import resolve_turn_locale
 from app.dsh_runtime.profile.service import RuntimeProfilePublisher
 from app.dsh_runtime.profile.synchronizer import ConversationProfileSynchronizer
 from app.dsh_runtime.runtime_coordinator import RuntimeCoordinator
+from app.dsh_runtime.session_access import (
+    AccessLease,
+    SessionReadAuthorizer,
+    SessionReadDeniedError,
+)
 from app.dsh_runtime.temporal_context import build_temporal_context
 from app.dsh_runtime.turn_cancellation import TurnCancellationCoordinator
 from app.dsh_runtime.turn_runner import DshTurnRunner
@@ -47,6 +52,29 @@ class PreparedTurn:
 
 class ConversationBusyError(RuntimeError):
     pass
+
+
+# The POST stream's producer wait reauthorizes at least this often even while
+# the live queue is idle (one-second monotonic authorization timer, plan L48).
+_STREAM_AUTH_RECHECK_SECONDS = 1.0
+
+
+def _access_revoked_ndjson_line(session_id: str) -> str:
+    """The POST stream's terminal NDJSON line (one line, then EOF).
+
+    The durable soft-removal is identical for leave and removal (a single
+    ``update_one`` setting ``removed_at``), so the reason reports the removal
+    member exactly like the session SSE endpoint's terminal frame.
+    """
+    return json.dumps(
+        {
+            "type": "session.access.revoked",
+            "session_id": session_id,
+            "reason": "participant_removed",
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ) + "\n"
 
 
 class DshChatService:
@@ -118,6 +146,7 @@ class DshChatService:
         knowledge_qa_enabled: bool = False,
         knowledge_base_ids: list[str] | None = None,
         trusted_turn_context: dict[str, Any] | None = None,
+        claim_token: str | None = None,
         language_name: str | None = None,
         selected_writing_skill_id: str | None = None,
         selected_skill_id: str | None = None,
@@ -159,20 +188,20 @@ class DshChatService:
                 turn_context["browser_resume"] = dict(browser_resume)
         binding: dict[str, Any] | None = None
         other_member = False
+        authorizer: SessionReadAuthorizer | None = None
         if conversation_id:
-            # Turn admission (session-sharing plan todo 13): owner-or-ACTIVE-
-            # participant, using T6's membership semantics — the session
-            # doc's user_id (owner) OR an active session_participants row.
-            # Everyone else is invisible (LookupError -> 404), never 403.
-            is_owner = True
-            try:
-                await self._conversations.owned(conversation_id, tenant_id=tenant_id, user_id=user_id)
-            except LookupError:
-                is_owner = False
-                if not await SessionParticipantsRepository(get_db()).is_member(
-                    conversation_id, tenant_id=tenant_id, user_id=user_id
-                ):
-                    raise
+            # Turn admission (session-sharing plan todos 13/2): the shared
+            # owner-or-ACTIVE-participant predicate is the initial access
+            # gate — the session doc's user_id (owner) OR an active
+            # session_participants row through is_member()'s removed_at
+            # filter. Everyone else is invisible (SessionReadDeniedError is
+            # a LookupError -> 404), never 403.
+            authorizer = SessionReadAuthorizer(get_db())
+            initial_lease = await authorizer.authorize_read(
+                conversation_id, tenant_id=tenant_id, user_id=user_id
+            )
+            is_owner = initial_lease.role == "owner"
+            if not is_owner:
                 # A participant speaker always has another member: the owner.
                 other_member = True
             binding = await self._bindings.current(conversation_id, tenant_id=tenant_id, user_id=user_id)
@@ -231,8 +260,11 @@ class DshChatService:
                         message_id=terminal_message_id,
                         status=active_status,
                     )
-            if active_status and active_status not in {"completed", "failed", "cancelled"}:
-                raise ConversationBusyError("another DSH turn is already running for this Conversation")
+            # No separate busy pre-check here: the conditional claim below is
+            # the single atomic admission decision (the old check-then-claim
+            # race is removed). Recovery/finalization above still repairs a
+            # stale lock; a live claim makes claim_turn_authorized() return
+            # None, which raises the same ConversationBusyError (409).
             sync_model_id = model_instance_id
             if other_member and model_instance_id is None:
                 # Q11 [review-3] (session-sharing plan todo 13): with another
@@ -296,13 +328,48 @@ class DshChatService:
 
         message_id = f"msg-{uuid4()}"
         request_id = f"turn-{uuid4()}"
-        claimed = await self._bindings.claim_turn(
-            str(binding["binding_id"]), message_id=message_id, request_id=request_id,
+        stable_claim_token = claim_token or f"claim-{uuid4()}"
+        if authorizer is not None and conversation_id is not None:
+            # Rechecked immediately before the admission: a removal that
+            # committed during binding resolution/synchronization denies the
+            # claim before it is taken.
+            await authorizer.authorize_read(
+                conversation_id, tenant_id=tenant_id, user_id=user_id
+            )
+        claimed = await self._bindings.claim_turn_authorized(
+            str(binding["binding_id"]),
+            message_id=message_id,
+            request_id=request_id,
+            claim_token=stable_claim_token,
             turn_context=turn_context,
             turn_metadata=turn_metadata,
         )
         if claimed is None:
             raise ConversationBusyError("another DSH turn is already running for this Conversation")
+        if authorizer is not None and conversation_id is not None:
+            try:
+                # Rechecked immediately after the admission: a removal
+                # committed before this read rolls the freshly taken claim
+                # back and denies (404), while a removal committing afterwards
+                # leaves the claim to the post-claim stream timer.
+                await authorizer.authorize_read(
+                    conversation_id, tenant_id=tenant_id, user_id=user_id
+                )
+            except SessionReadDeniedError:
+                await self._bindings.finish_turn(
+                    str(binding["binding_id"]), message_id=message_id, status="failed"
+                )
+                raise
+        existing_message_id = str((claimed.get("active_turn") or {}).get("message_id") or "")
+        if existing_message_id and existing_message_id != message_id:
+            # Same-token re-admission after a client timeout: the durable
+            # claim and its rows already exist, so return them as-is rather
+            # than appending a duplicate user message/placeholder/active_run.
+            return PreparedTurn(
+                conversation_id=str(claimed.get("conversation_id") or conversation_id or ""),
+                message_id=existing_message_id,
+                binding_id=str(binding["binding_id"]),
+            )
         try:
             await self._conversations.append_message(
                 conversation_id=conversation_id,
@@ -389,17 +456,71 @@ class DshChatService:
             if isinstance(item, dict) and str(item.get("object_path") or "").strip()
         ]
 
+    @staticmethod
+    async def _stream_lease(
+        authorizer: SessionReadAuthorizer,
+        conversation_id: str,
+        *,
+        tenant_id: str,
+        user_id: str,
+    ) -> AccessLease | None:
+        """The stream's lease check; None means authorization was lost."""
+        try:
+            return await authorizer.authorize_read(
+                conversation_id, tenant_id=tenant_id, user_id=user_id
+            )
+        except SessionReadDeniedError:
+            return None
+
     async def stream(self, turn: PreparedTurn, *, tenant_id: str, user_id: str) -> AsyncIterator[str]:
         live_stream = self._live_streams.get(turn.message_id)
         if live_stream is None:
             raise LookupError("live_turn_stream_not_found")
+        # Per-request lock: every lease check is serialized with the response
+        # write it guards, so a removal committed before the locked check
+        # suppresses the frame, while a write already begun is the single
+        # defined in-flight frame followed by terminal revocation.
+        authorizer = SessionReadAuthorizer(get_db())
+        send_lock = asyncio.Lock()
+        pending_event: asyncio.Task[dict[str, Any]] | None = None
         try:
-            async for projected in live_stream.events():
-                row = dict(projected)
-                row.setdefault("session_id", turn.conversation_id)
-                row.setdefault("task_id", turn.conversation_id)
-                yield json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n"
+            events = live_stream.events().__aiter__()
+            while True:
+                if pending_event is None:
+                    pending_event = asyncio.ensure_future(events.__anext__())
+                # Producer wait: the next queued event races a one-second
+                # monotonic authorization timer; either wake reauthorizes.
+                timer = asyncio.ensure_future(asyncio.sleep(_STREAM_AUTH_RECHECK_SECONDS))
+                try:
+                    done, _ = await asyncio.wait(
+                        {pending_event, timer}, return_when=asyncio.FIRST_COMPLETED
+                    )
+                finally:
+                    timer.cancel()
+                async with send_lock:
+                    lease = await self._stream_lease(
+                        authorizer, turn.conversation_id, tenant_id=tenant_id, user_id=user_id
+                    )
+                    if lease is None:
+                        # On loss: exactly one typed terminal NDJSON line and
+                        # EOF, never cancel, and the server run's terminal
+                        # outcome is untouched.
+                        yield _access_revoked_ndjson_line(turn.conversation_id)
+                        return
+                    if pending_event in done:
+                        try:
+                            projected = pending_event.result()
+                        except StopAsyncIteration:
+                            pending_event = None
+                            break
+                        pending_event = None
+                        row = dict(projected)
+                        row.setdefault("session_id", turn.conversation_id)
+                        row.setdefault("task_id", turn.conversation_id)
+                        yield json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n"
         finally:
+            if pending_event is not None:
+                pending_event.cancel()
             live_stream.detach()
             if self._live_streams.get(turn.message_id) is live_stream:
                 self._live_streams.pop(turn.message_id, None)

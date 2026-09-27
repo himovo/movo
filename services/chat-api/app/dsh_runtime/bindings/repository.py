@@ -235,6 +235,69 @@ class KernelBindingRepository:
             return_document=ReturnDocument.AFTER,
         )
 
+    async def claim_turn_authorized(
+        self,
+        binding_id: str,
+        *,
+        message_id: str,
+        request_id: str,
+        claim_token: str,
+        turn_context: dict[str, Any] | None = None,
+        turn_metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
+        """Conditionally claim the turn for the sequential admission.
+
+        Same conditional-update shape as ``claim_turn()`` — the claim is the
+        single atomic decision, so there is no separate pre-check to race —
+        plus the three durable claim fields ``claim_state``,
+        ``assistant_message_id`` and ``claim_token``. Idempotent for a
+        re-admission: when the binding is already claimed, a caller carrying
+        the SAME stable ``claim_token`` gets the existing claim back instead
+        of a busy signal, so a client-timeout retry converges on the durable
+        claim rather than appending a duplicate turn. A competing claim with
+        a different token still returns None (the existing 409).
+        """
+        now = datetime.utcnow()
+        claimed = await self._collection.find_one_and_update(
+            {
+                "binding_id": binding_id,
+                "current": True,
+                "$or": [
+                    {"active_turn": None},
+                    {"active_turn.status": {"$in": ["completed", "failed", "cancelled"]}},
+                ],
+            },
+            {
+                "$set": {
+                    "status": "running",
+                    "active_turn": {
+                        "message_id": message_id,
+                        "request_id": request_id,
+                        "assistant_message_id": message_id,
+                        "claim_token": claim_token,
+                        "claim_state": "running",
+                        "status": "running",
+                        "turn_context": dict(turn_context or {}),
+                        "turn_metadata": dict(turn_metadata or {}),
+                        "started_at": now,
+                    },
+                    "updated_at": now,
+                }
+            },
+            return_document=ReturnDocument.AFTER,
+        )
+        if claimed is not None:
+            return claimed
+        return await self._collection.find_one(
+            {
+                "binding_id": binding_id,
+                "current": True,
+                "active_turn.claim_token": claim_token,
+                "active_turn.claim_state": "running",
+                "active_turn.status": "running",
+            }
+        )
+
     async def finish_turn(self, binding_id: str, *, message_id: str, status: str) -> bool:
         if status not in {"completed", "failed", "cancelled"}:
             raise ValueError(f"unsupported terminal turn status: {status}")
