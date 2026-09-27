@@ -12,8 +12,8 @@ export interface ExecutionEventV3 {
   id: string
   ts: number
   type: V3EventType
-  item_kind?: V3ItemKind
-  item_id?: string
+  item_kind?: V3ItemKind | null
+  item_id?: string | null
   parent_item_id?: string
   revision: number
   stream_seq?: number
