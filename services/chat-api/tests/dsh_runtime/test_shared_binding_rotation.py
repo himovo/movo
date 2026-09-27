@@ -372,7 +372,7 @@ def test_solo_owner_turn_with_no_model_still_inherits_previous_model(shared_thre
     assert gateway.disposed_sessions == []
 
 
-def test_binding_replacement_conflict_is_surfaced_as_a_retry_not_a_500() -> None:
+def test_binding_replacement_conflict_is_surfaced_as_a_retry_not_a_500(monkeypatch) -> None:
     # QA failure (plan todo 13): a lost replacement claim (another turn won
     # the current-binding claim) is surfaced as ConversationBusyError — the
     # retryable 409 the endpoint maps — never as an unmapped
@@ -381,11 +381,12 @@ def test_binding_replacement_conflict_is_surfaced_as_a_retry_not_a_500() -> None
     # rotation loses the claim. Characterization: the conversion exists in
     # prepare_turn on the unchanged code too.
     async def run() -> None:
+        conversation_id = str(ObjectId())
         current = {
             "binding_id": "binding-old",
             "tenant_id": "tenant-a",
             "user_id": "user-a",
-            "conversation_id": "conversation-a",
+            "conversation_id": conversation_id,
             "kernel_session_id": "session-old",
             "runtime_id": "runtime-old",
             "profile_version": "rp-old",
@@ -396,13 +397,13 @@ def test_binding_replacement_conflict_is_surfaced_as_a_retry_not_a_500() -> None
 
         class Conversations:
             async def owned(self, *_args, **_kwargs):
-                return {"_id": "conversation-a"}
+                return {"_id": conversation_id}
 
         class Bindings:
             async def current(self, *_args, **_kwargs):
                 return current
 
-            async def claim_turn(self, *_args, **_kwargs):
+            async def claim_turn_authorized(self, *_args, **_kwargs):
                 raise AssertionError("the conflict must be raised before the claim")
 
             async def finish_turn(self, *_args, **_kwargs):
@@ -425,6 +426,24 @@ def test_binding_replacement_conflict_is_surfaced_as_a_retry_not_a_500() -> None
             async def dispose_restored_session(self, binding):
                 return True
 
+        async def _session_doc(query, *_args, **_kwargs):
+            # The mandatory admission authorizer's tenant-scoped session read:
+            # the caller is the seeded owner of tenant-a's session.
+            if query.get("_id") != ObjectId(conversation_id) or query.get("main_id") != "tenant-a":
+                return None
+            return {"_id": ObjectId(conversation_id), "user_id": "user-a", "main_id": "tenant-a"}
+
+        async def _no_participant(*_args, **_kwargs):
+            return None
+
+        monkeypatch.setattr(
+            chat_service_module,
+            "get_db",
+            lambda: SimpleNamespace(
+                chat_sessions=SimpleNamespace(find_one=_session_doc),
+                session_participants=SimpleNamespace(find_one=_no_participant),
+            ),
+        )
         service = DshChatService(
             gateway=SimpleNamespace(),
             coordinator=Coordinator(),  # type: ignore[arg-type]
@@ -438,7 +457,7 @@ def test_binding_replacement_conflict_is_surfaced_as_a_retry_not_a_500() -> None
             await service.prepare_turn(
                 tenant_id="tenant-a",
                 user_id="user-a",
-                conversation_id="conversation-a",
+                conversation_id=conversation_id,
                 text="retry turn",
                 model_instance_id="model-a",
                 timezone_name="UTC",
