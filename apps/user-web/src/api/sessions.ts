@@ -1,5 +1,11 @@
 import axios from 'axios'
 
+export type ChatMessageAuthor = {
+  user_id: string
+  display_name: string | null
+  avatar_url: string | null
+}
+
 export type ChatMessage = {
   role: string
   content: string
@@ -9,10 +15,18 @@ export type ChatMessage = {
   images?: ImageInfo[]
   /** Server-minted id for this assistant turn (X-Message-Id from /chat/completions) */
   message_id?: string
+  /** T5: stable server-computed per-row fallback identity; the browser consumes
+   *  it verbatim as the merge key and never synthesizes one. */
+  legacy_key?: string
+  /** T5: allocated message sequence; `0` marks a DEGRADED unsequenced row. */
+  seq?: number
   /** Message author — user_id IS the author; no author_user_id duplicate. Present
    *  on session-GET responses (server-side addition); absent on optimistic and
    *  request-path messages (MessageIn.user_id is Optional and ignored on writes). */
   user_id?: string
+  /** T5: user-message identity projection (`author: {user_id, display_name,
+   *  avatar_url} | null`); assistant rows have no author projection. */
+  author?: ChatMessageAuthor | null
   /** Persisted V3 events returned by GET /sessions/{id}; used for replay. */
   execution_events?: any[]
   trigger_source?: string

@@ -1,8 +1,21 @@
 import { computed, markRaw, reactive, ref } from 'vue'
 import { fetchOrgBilling } from '../api/auth'
 import { uploadChatDocument, uploadChatImage, type UploadedDocument, type UploadedImage } from '../api/chat'
-import { getSession, type ChatMessage, type SessionDetail } from '../api/sessions'
-import { fetchChatMessageEvents, startChatStream, ChatStreamHttpError, SESSION_ALREADY_RUNNING, type ChatStreamHandle } from './useChatStream'
+import { getSession, type ChatMessage, type ChatMessageAuthor, type SessionDetail } from '../api/sessions'
+import { fetchChatMessageEvents, startChatStream, ChatStreamHttpError, type ChatStreamHandle } from './useChatStream'
+import {
+  applyEffectiveUserMessageId,
+  bufferPreHeaderEvent,
+  createPreHeaderBufferState,
+  drainPreHeaderEvents,
+  isManualOnlyConflict,
+  mergeAuthoritativeMessages,
+  shouldIgnoreSessionExecution,
+  shouldReleaseToDurableRecovery,
+  utf8ByteLength,
+  withoutMessages,
+  type PreHeaderBufferState,
+} from './sessionLiveProjection'
 import { getLocale, t } from './i18n'
 import { createDiscreteApi, darkTheme } from 'naive-ui'
 import { resumeBrowserInterventionTaskUntilSettled } from './tasks/browserInterventionTaskFlow'
@@ -23,6 +36,7 @@ import {
   noteSessionLiveData,
   startSessionLiveStream,
   type SessionLiveAccessRevokedReason,
+  type SessionLiveExecutionEvent,
   type SessionLiveStreamHandle,
 } from './useSessionLiveStream'
 
@@ -62,6 +76,12 @@ export type RuntimeMessage = {
    *  the author's user_id preserved from session-GET messages by
    *  normalizeMessages. Absent on legacy/system-shaped messages. */
   user_id?: string
+  /** T5: stable server-computed merge identity, consumed verbatim. */
+  legacy_key?: string
+  /** T5: allocated message sequence; `0` marks a DEGRADED unsequenced row. */
+  seq?: number
+  /** T5: authoritative user-message author projection; T9 renders this. */
+  author?: ChatMessageAuthor | null
   execution_events?: any[]
   documents?: RuntimeDocumentInfo[]
   images?: RuntimeImageInfo[]
@@ -126,6 +146,16 @@ export type ChatRuntimePane = {
   liveAuth: PaneLiveAuth | null
   /** T7: sequence guard for overlapping authoritative snapshot refreshes. */
   liveRefreshSeq: number
+  /** T8/T9: authoritative shared-pane flag from detail.access/participant_count. */
+  shared: boolean
+  /** T8: true while a local POST holds this pane's turn before its headers. */
+  localPostPending: boolean
+  /** T8: assistant message_id established by the local POST headers; the pane
+   *  ignores session-SSE execution for that id. Separate from a resumed
+   *  recovery handle. */
+  localPostMessageId: string | null
+  /** T8: pre-header session execution buffer (200 rows / 256 KiB caps). */
+  preHeader: PreHeaderBufferState<SessionLiveExecutionEvent>
 }
 
 /** T7: caller identity captured at bind time for the invalidation snapshot refresh. */
@@ -141,6 +171,8 @@ type SendInput = {
   authToken: string | null
   userId: string | null
   mainId: string | null
+  /** T8: authenticated viewer identity for the optimistic user row. */
+  viewerAuthor: ChatMessageAuthor | null
   locale: 'zh' | 'en'
   timezone: string
 }
@@ -231,6 +263,10 @@ function createPane(input: { key?: string; sessionId: string | null; messages?: 
     liveGeneration: 0,
     liveAuth: null,
     liveRefreshSeq: 0,
+    shared: false,
+    localPostPending: false,
+    localPostMessageId: null,
+    preHeader: createPreHeaderBufferState<SessionLiveExecutionEvent>(),
   }
 }
 
@@ -364,6 +400,8 @@ async function refreshPaneLiveState(pane: ChatRuntimePane, generation: number, s
   if (detail.runtime_preset_id) pane.runtimePresetId = detail.runtime_preset_id
   if (detail.model_instance_id !== undefined && detail.model_instance_id !== null) pane.modelInstanceId = detail.model_instance_id
   if (detail.code_project !== undefined) pane.codeProject = detail.code_project
+  pane.shared = detail.access === 'shared' || (detail.participant_count ?? 0) > 0
+  pane.messages = mergeAuthoritativeMessages(pane.messages, detail.messages || []).messages
   await refreshAfterRun(runtimeCallbacks, sessionId)
   if (!reopen || !paneLiveCallbackValid(pane, generation, sessionId)) return
   // T6 contract: every control invalidation counts toward the three-frame cap,
@@ -405,7 +443,7 @@ function startPaneLiveStream(pane: ChatRuntimePane) {
       refresh(true)
     },
     onTurnStarted: () => { if (liveProgress()) refresh(false) },
-    onExecution: () => { liveProgress() },
+    onExecution: (event) => { if (liveProgress()) consumeSessionExecution(pane, event) },
     onTurnCompleted: () => { if (liveProgress()) refresh(false) },
     onAccessLost: (paneKey, reason) => markAccessLost(paneKey, reason),
   })
@@ -456,6 +494,51 @@ function markAccessLost(paneKey: string, reason: SessionLiveAccessRevokedReason)
 
 function ensureExecV3(msg: RuntimeMessage): ExecutionStoreV3 {
   return ensureMessageExecutionV3(msg)
+}
+
+/** Apply one V3 event to a message row; false when it was a duplicate. */
+function applyExecutionEventToMessage(
+  pane: ChatRuntimePane,
+  msg: RuntimeMessage,
+  ev: ExecutionEventV3,
+): boolean {
+  if (!isExecutionEventV3(ev)) return false
+  const store = ensureExecV3(msg)
+  const before = store.state.rawEvents.length
+  store.applyEvent(ev)
+  if (store.state.rawEvents.length === before) return false
+  applyAssistantContentEvent(msg, ev)
+  const transition = browserInterventionTransition(ev)
+  if (transition.kind === 'cleared') pane.activeIntervention = null
+  if (transition.kind === 'activated') pane.activeIntervention = transition.intervention
+  return true
+}
+
+/** T8 ownership: session-SSE execution is buffered until the local POST's
+ *  headers exist, then foreign frames are consumed while the POST's own
+ *  frames (same message_id) stay ignored. */
+function consumeSessionExecution(pane: ChatRuntimePane, frame: SessionLiveExecutionEvent) {
+  if (pane.localPostPending && !pane.localPostMessageId) {
+    bufferPreHeaderEvent(pane.preHeader, frame, utf8ByteLength(JSON.stringify(frame)))
+    return
+  }
+  if (shouldIgnoreSessionExecution(pane.localPostMessageId, frame.message_id)) return
+  const target = pane.messages.find(
+    (msg) => msg.role === 'assistant' && msg.message_id === frame.message_id,
+  )
+  if (target) applyExecutionEventToMessage(pane, target, frame.event)
+}
+
+/** T8: header arrived — adopt local-POST ownership and flush the pre-header
+ *  buffer, consuming only the foreign frames. */
+function adoptLocalPostMessageId(pane: ChatRuntimePane, messageId: string) {
+  pane.localPostMessageId = messageId
+  for (const frame of drainPreHeaderEvents(pane.preHeader, messageId)) {
+    const target = pane.messages.find(
+      (msg) => msg.role === 'assistant' && msg.message_id === frame.message_id,
+    )
+    if (target) applyExecutionEventToMessage(pane, target, frame.event)
+  }
 }
 
 async function uploadImages(userId: string, files: File[], authToken?: string | null): Promise<UploadedImage[]> {
@@ -563,11 +646,19 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
   }
   if (pane.operationId !== operationId) return
 
+  const viewerAuthor: ChatMessageAuthor = input.viewerAuthor ?? {
+    user_id: input.userId || '',
+    display_name: null,
+    avatar_url: null,
+  }
+  const localPostUserMessageId = nextMessageId()
   const userMessage: RuntimeMessage = {
     _id: nextMessageId(),
+    message_id: localPostUserMessageId,
     role: 'user',
     content: text,
-    user_id: input.userId || undefined,
+    user_id: viewerAuthor.user_id || input.userId || undefined,
+    author: viewerAuthor,
     images: uploadedImages as RuntimeImageInfo[],
     documents: uploadedDocuments,
     created_at: new Date().toISOString(),
@@ -593,25 +684,17 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
   const applyAssistantEvent = (ev: ExecutionEventV3, options: { fromBackend?: boolean } = {}) => {
     const msg = pane.messages.find((item) => item._id === assistantMsg._id)
     if (!msg || !isExecutionEventV3(ev)) return
-    const store = ensureExecV3(msg)
-    const before = store.state.rawEvents.length
-    store.applyEvent(ev)
     if (
       options.fromBackend &&
       (ev.type === 'run.completed' || ev.type === 'run.failed' || ev.type === 'run.cancelled')
     ) {
       backendTerminalReceived = true
     }
-    const accepted = store.state.rawEvents.length > before
+    const accepted = applyExecutionEventToMessage(pane, msg, ev)
     if (accepted && options.fromBackend) {
       const sequence = Number(ev.stream_seq_end || ev.stream_seq || 0)
       backendEventCursor = sequence > 0 ? Math.max(backendEventCursor, sequence) : backendEventCursor + 1
     }
-    if (!accepted) return
-    applyAssistantContentEvent(msg, ev)
-    const transition = browserInterventionTransition(ev)
-    if (transition.kind === 'cleared') pane.activeIntervention = null
-    if (transition.kind === 'activated') pane.activeIntervention = transition.intervention
   }
 
   const recoverDisconnectedStream = async (showRecoveryEvent = true): Promise<boolean> => {
@@ -648,6 +731,9 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
     return false
   }
 
+  pane.localPostPending = true
+  pane.localPostMessageId = null
+  pane.preHeader = createPreHeaderBufferState<SessionLiveExecutionEvent>()
   try {
     const handle = startChatStream(
       {
@@ -673,6 +759,7 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
       },
       {
         authToken: input.authToken,
+        userMessageId: localPostUserMessageId,
         onSessionId: (sid) => {
           if (input.modelId) pane.modelInstanceId = input.modelId
           assistantMsg._backendSid = sid
@@ -680,6 +767,13 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
         },
         onMessageId: (mid) => {
           assistantMsg.message_id = mid
+          adoptLocalPostMessageId(pane, mid)
+        },
+        onUserMessageId: (mid) => {
+          applyEffectiveUserMessageId(userMessage, mid)
+        },
+        onAccessRevoked: (event) => {
+          markAccessLost(pane.key, event.reason)
         },
       },
     )
@@ -687,7 +781,11 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
     pane.activeStream = handle
     ctrl.signal.addEventListener('abort', () => handle.abort())
     await handle.done
-    if (!ctrl.signal.aborted && !backendTerminalReceived) {
+    if (!backendTerminalReceived && shouldReleaseToDurableRecovery({
+      accessLost: pane.accessLost,
+      paneAlive: findPaneByKey(pane.key) === pane,
+      aborted: ctrl.signal.aborted,
+    })) {
       // A proxy may close a streaming response cleanly. Verify the backend run
       // reached a terminal state instead of treating EOF as task completion.
       await recoverDisconnectedStream(true)
@@ -723,15 +821,12 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
       })
     }
   } catch (error: any) {
-    if (error instanceof ChatStreamHttpError && error.status === 409 && error.code === SESSION_ALREADY_RUNNING) {
-      // Concurrent run holds the session (server 409). Remove BOTH optimistic
-      // bubbles (the pair pushed above), inform the viewer neutrally, and leave
-      // the composer enabled for a later retry — never an error bubble.
-      // message_sequence_conflict and generic failures fall through to the
-      // normal error path below.
-      pane.messages = pane.messages.filter(
-        (item) => item._id !== userMessage._id && item._id !== assistantMsg._id,
-      )
+    if (error instanceof ChatStreamHttpError && error.status === 409 && isManualOnlyConflict(error.code)) {
+      // Manual-only 409 (concurrent run or rejected user-message id): remove
+      // BOTH optimistic bubbles, inform the viewer neutrally, and leave the
+      // composer enabled for a later retry — never an error bubble, never an
+      // automatic retry, never a queue.
+      pane.messages = withoutMessages(pane.messages, [userMessage._id, assistantMsg._id])
       notifySessionBusy()
     } else if (error?.name !== 'AbortError') {
       const recovered = await recoverDisconnectedStream().catch(() => false)
@@ -753,6 +848,9 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
     }
   } finally {
     if (pane.operationId !== operationId) return
+    pane.localPostPending = false
+    pane.localPostMessageId = null
+    pane.preHeader = createPreHeaderBufferState<SessionLiveExecutionEvent>()
     // Transport completion owns the running flag. Clear it before any optional
     // refresh callback so a slow or failed sidebar/billing request can never
     // leave the composer stuck in its loading state.
@@ -842,6 +940,7 @@ export function useChatRuntimeStore(callbacks: RuntimeCallbacks = {}) {
     pane.runtimePresetId = detail.runtime_preset_id || 'askai-enterprise'
     pane.modelInstanceId = detail.model_instance_id || ''
     pane.codeProject = detail.code_project || null
+    pane.shared = detail.access === 'shared' || (detail.participant_count ?? 0) > 0
     pane.liveAuth = { userId, mainId, authToken }
     state.panes = [...state.panes, pane]
     setActivePane(pane)

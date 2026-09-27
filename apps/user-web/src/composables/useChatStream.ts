@@ -3,9 +3,18 @@
 import type { ExecutionEventV3 } from '../features/execution-v3/domain/protocol'
 import { notifyAuthExpiredFromResponse } from '../api/authExpiry'
 import { createStreamReadiness } from './tasks/streamReadiness'
+import { isChatStreamAccessRevokedEvent, type ChatStreamAccessRevokedEvent } from './sessionLiveProjection'
+
+export {
+  CHAT_STREAM_ACCESS_REVOKED, isChatStreamAccessRevokedEvent,
+  type ChatStreamAccessRevokedEvent, type ChatStreamAccessRevokedReason,
+} from './sessionLiveProjection'
 
 /** Server contract on POST /chat/completions 409: a concurrent run holds the session. */
 export const SESSION_ALREADY_RUNNING = 'session_already_running'
+
+/** Server contract on POST /chat/completions 409: the client user-message id was rejected. */
+export const USER_MESSAGE_ID_CONFLICT = 'user_message_id_conflict'
 
 /**
  * Non-OK chat-completions response. `code` is the parsed FastAPI dict-detail
@@ -38,6 +47,10 @@ export interface ChatStreamHandle {
   sessionId: string | null
   /** Per-turn message id (returned via X-Message-Id header on stream start) */
   messageId: string | null
+  /** Effective user-message id: the X-User-Message-Id response header when the
+   *  server returned one, otherwise the requested opts.userMessageId. Optional
+   *  because non-chat resume handles (taskResume) never send the header. */
+  userMessageId?: string | null
   /** Resolves after response headers are available, including failed requests. */
   ready: Promise<void>
   /** Promise that resolves when the stream finishes (or aborts cleanly) */
@@ -51,8 +64,12 @@ export function startChatStream(
   onEvent: (ev: ExecutionEventV3) => void,
   opts: {
     authToken?: string | null
+    /** Sent as X-User-Message-Id so the server can key the user row to this id. */
+    userMessageId?: string
     onSessionId?: (sid: string) => void
     onMessageId?: (mid: string) => void
+    onUserMessageId?: (mid: string) => void
+    onAccessRevoked?: (event: ChatStreamAccessRevokedEvent) => void
   } = {},
 ): ChatStreamHandle {
   const ctrl = new AbortController()
@@ -60,6 +77,7 @@ export function startChatStream(
   const handle: ChatStreamHandle = {
     sessionId: null,
     messageId: null,
+    userMessageId: opts.userMessageId || null,
     ready: readiness.ready,
     done: Promise.resolve(),
     abort: () => ctrl.abort(),
@@ -69,6 +87,7 @@ export function startChatStream(
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
       if (opts.authToken) headers.Authorization = `Bearer ${opts.authToken}`
+      if (opts.userMessageId) headers['X-User-Message-Id'] = opts.userMessageId
       const resp = await fetch('/askai-api/api/chat/completions', {
         method: 'POST',
         headers,
@@ -112,30 +131,60 @@ export function startChatStream(
         handle.messageId = mid
         opts.onMessageId?.(mid)
       }
+      const umid = resp.headers.get('X-User-Message-Id') || opts.userMessageId || null
+      if (umid) {
+        handle.userMessageId = umid
+        opts.onUserMessageId?.(umid)
+      }
       readiness.settle()
       if (!resp.body) throw new Error('No response body')
 
       const reader = resp.body.getReader()
       const decoder = new TextDecoder()
       let buffer = ''
-      while (true) {
+      let accessRevoked = false
+      const pumpLine = (raw: string) => {
+        const s = raw.trim()
+        if (!s || accessRevoked) return
+        let parsed: unknown
+        try {
+          parsed = JSON.parse(s)
+        } catch {
+          console.warn('[chat-stream] bad line', s)
+          return
+        }
+        if (isChatStreamAccessRevokedEvent(parsed)) {
+          accessRevoked = true
+          opts.onAccessRevoked?.(parsed)
+          return
+        }
+        try {
+          onEvent(parsed as ExecutionEventV3)
+        } catch (e) {
+          console.warn('[chat-stream] bad line', s)
+        }
+      }
+      while (!accessRevoked) {
         const { done, value } = await reader.read()
         if (done) break
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
         buffer = lines.pop() || ''
         for (const line of lines) {
-          const s = line.trim()
-          if (!s) continue
-          try {
-            onEvent(JSON.parse(s) as ExecutionEventV3)
-          } catch (e) {
-            console.warn('[chat-stream] bad line', s)
-          }
+          pumpLine(line)
+          if (accessRevoked) break
         }
       }
-      if (buffer.trim()) {
-        try { onEvent(JSON.parse(buffer.trim()) as ExecutionEventV3) } catch { /* ignore */ }
+      if (accessRevoked) {
+        // Terminal line already seen: close our side of the reader without
+        // cancelling the backend run (the server EOFs right after it).
+        try {
+          reader.releaseLock()
+        } catch {
+          /* the reader is already released */
+        }
+      } else if (buffer.trim()) {
+        pumpLine(buffer)
       }
     } finally {
       readiness.settle()

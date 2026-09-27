@@ -1906,6 +1906,13 @@ async function handlePaneSend(
     authToken: authToken.value || null,
     userId: getUserId(),
     mainId: getMainId(),
+    viewerAuthor: userProfile.value
+      ? {
+          user_id: String(userProfile.value.userId ?? getUserId() ?? ''),
+          display_name: userProfile.value.name || userProfile.value.username || null,
+          avatar_url: userProfile.value.avatar || null,
+        }
+      : null,
     locale: locale.value === 'en' ? 'en' : 'zh',
     timezone: timezoneValue.value,
   })
