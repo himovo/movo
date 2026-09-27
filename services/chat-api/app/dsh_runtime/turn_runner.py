@@ -24,7 +24,10 @@ from app.dsh_runtime.evidence_projection import (
 )
 from app.dsh_runtime.gateway import DshAgentKernelGateway
 from app.dsh_runtime.profile.service import RuntimeProfilePublisher
-from app.dsh_runtime.turn_finalization import TurnStateFinalizer
+from app.dsh_runtime.turn_finalization import (
+    TurnAssistantProjection,
+    TurnStateFinalizer,
+)
 from app.enterprise_capabilities.evidence import ExecutionEvidenceRepository
 
 
@@ -184,12 +187,21 @@ class DshTurnRunner:
                         await self._turn_events.flush(message_id)
                     break
         except asyncio.CancelledError:
+            # Cancellation records intent; the durable writer is NOT aborted
+            # before the coordinator runs, so the finalizer's flush step keeps
+            # every already-queued row and the terminal state stays durable.
             await credential_lease.stop()
-            await writer.abort()
             await self._finish_side_events(message_id)
             try:
                 await self._finalizer.finalize(
-                    binding=binding, message_id=message_id, status="cancelled"
+                    binding=binding,
+                    message_id=message_id,
+                    status="cancelled",
+                    flush=writer.close,
+                    assistant=TurnAssistantProjection(
+                        content=assistant_text,
+                        execution_events=list(history_events),
+                    ),
                 )
             except Exception:
                 logger.exception(
@@ -223,8 +235,6 @@ class DshTurnRunner:
             if terminal_projection is not None:
                 history_events.append(terminal_projection)
         try:
-            if not writer_aborted:
-                await writer.close()
             evidence_bundles: list[dict[str, Any]] = []
             if self._execution_evidence is not None:
                 evidence_bundle = await self._execution_evidence.load(
@@ -251,19 +261,19 @@ class DshTurnRunner:
             side_history = await self._finish_side_events(message_id)
             history_events.extend(side_history)
             history_events.sort(key=lambda row: int(row.get("stream_seq") or 0))
-            await self._conversations.update_assistant_projection(
-                message_id=message_id,
-                tenant_id=str(binding["tenant_id"]),
-                user_id=str(binding["user_id"]),
-                content=assistant_text,
-                execution_events=history_events,
-                evidence_bundles=evidence_bundles,
-            )
+            suspension = browser_intervention if status == "completed" else None
             await self._finalizer.finalize(
                 binding=binding,
                 message_id=message_id,
                 status=status,
-                clear_conversation=browser_intervention is None,
+                clear_conversation=suspension is None,
+                intervention=suspension,
+                flush=None if writer_aborted else writer.close,
+                assistant=TurnAssistantProjection(
+                    content=assistant_text,
+                    execution_events=list(history_events),
+                    evidence_bundles=list(evidence_bundles),
+                ),
             )
         except Exception as exc:
             status = "failed"
@@ -281,14 +291,6 @@ class DshTurnRunner:
                 pass
         finally:
             await credential_lease.stop()
-            if browser_intervention is not None and status == "completed":
-                await self._conversations.suspend_active_run(
-                    conversation_id=str(binding["conversation_id"]),
-                    tenant_id=str(binding["tenant_id"]),
-                    user_id=str(binding["user_id"]),
-                    message_id=message_id,
-                    intervention=browser_intervention,
-                )
             if terminal_projection is not None:
                 live_stream.publish(terminal_projection)
             live_stream.finish()

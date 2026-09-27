@@ -24,7 +24,8 @@ import base64
 import hashlib
 import json
 import string
-from datetime import datetime
+from datetime import datetime, timezone
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -36,7 +37,26 @@ from app.dsh_runtime.conversation import ConversationRepository
 from app.dsh_runtime.conversation.participants_repository import (
     SessionParticipantsRepository,
 )
-from app.dsh_runtime.events.repository import KernelEventRepository
+from app.dsh_runtime.contracts.events import KernelEventEnvelope, KernelEventSource
+from app.dsh_runtime.contracts.kernel import TemporalContext
+from app.dsh_runtime.events.durable_writer import DurableKernelEventWriter
+from app.dsh_runtime.events.live_stream import LiveTurnStream
+from app.dsh_runtime.errors import DshNotFoundError, DshRuntimeError
+from app.dsh_runtime.events.repository import (
+    KernelEventRepository,
+    KernelEventWrite,
+    StreamSequenceReservationError,
+)
+from app.dsh_runtime.events.turn_channel import TurnEventRegistry
+from app.dsh_runtime.profile.models import RuntimeProfileSnapshot
+from app.dsh_runtime.runtime_coordinator import RuntimeCoordinator
+from app.dsh_runtime.turn_finalization import (
+    TurnAssistantProjection,
+    TurnFinalizationRetryableError,
+    TurnStateFinalizer,
+)
+from app.dsh_runtime.turn_recovery import TurnTerminalRecovery
+from app.dsh_runtime.turn_runner import DshTurnRunner
 from app.dsh_runtime.session_access import (
     SessionReadAuthorizer,
     SessionReadDeniedError,
@@ -1313,3 +1333,846 @@ def test_settings_session_live_heartbeat_defaults_to_fifteen(monkeypatch):
         assert Settings().SESSION_LIVE_HEARTBEAT_SECONDS == 15.0
     finally:
         get_settings.cache_clear()
+
+
+# ---------------------------------------------------------------------------
+# T3: durable cursors, terminal convergence, process-restart recovery
+# ---------------------------------------------------------------------------
+
+T3_KERNEL = "kernel-t3"
+T3_PROFILE = "profile-t3"
+
+
+class _T3Profiles:
+    def __init__(self) -> None:
+        self._snapshots: dict[str, RuntimeProfileSnapshot] = {}
+
+    async def get(self, profile_version: str) -> RuntimeProfileSnapshot:
+        snapshot = self._snapshots.get(profile_version)
+        if snapshot is None:
+            snapshot = RuntimeProfileSnapshot(
+                profile_version=profile_version,
+                content_hash="0" * 64,
+                tenant_id=TENANT,
+                model_source_tenant_id=TENANT,
+                model_instance_id="model-1",
+                provider_id="provider-1",
+                provider_type="openai_compatible",
+                provider_name="Provider",
+                model_name="Model",
+                display_name="Model",
+                capabilities=(),
+            )
+            self._snapshots[profile_version] = snapshot
+        return snapshot
+
+
+class _T3Gateway:
+    """Deterministic gateway fake: replay, block, fail, or vanish on demand."""
+
+    def __init__(
+        self,
+        events: list[KernelEventEnvelope] | None = None,
+        *,
+        send_error: Exception | None = None,
+        events_error: Exception | None = None,
+    ) -> None:
+        self._events = list(events or [])
+        self._send_error = send_error
+        self._events_error = events_error
+        self.subscribed = asyncio.Event()
+        self.release = asyncio.Event()
+        self.release.set()
+
+    async def send(self, request: Any) -> None:
+        if self._send_error is not None:
+            raise self._send_error
+
+    async def subscribe(self, session_id: str, after_cursor: int = 0):
+        for event in self._events:
+            if event.session_id != session_id or event.cursor <= int(after_cursor):
+                continue
+            yield event
+            self.subscribed.set()
+            await self.release.wait()
+
+    async def events_once(self, session_id: str, after_cursor: int = 0) -> list[KernelEventEnvelope]:
+        if self._events_error is not None:
+            raise self._events_error
+        return [
+            event
+            for event in self._events
+            if event.session_id == session_id and event.cursor > int(after_cursor)
+        ]
+
+    async def discover_runtime(self, *, tenant_id: str, profile_version: str, isolation_key: str):
+        return SimpleNamespace(runtime_id="runtime-t3", kernel_version="test-kernel")
+
+    def attach_session(self, **kwargs: Any) -> None:
+        return None
+
+    async def resume_session(self, session_id: str) -> None:
+        return None
+
+    async def refresh_session_credentials(self, session_id: str) -> None:
+        return None
+
+
+def _t3_envelope(event_id: str, cursor: int, event_type: str, **payload: Any) -> KernelEventEnvelope:
+    return KernelEventEnvelope(
+        event_id=event_id,
+        runtime_id="runtime-t3",
+        session_id=T3_KERNEL,
+        profile_version=T3_PROFILE,
+        cursor=cursor,
+        type=event_type,
+        occurred_at=datetime.now(timezone.utc),
+        payload=payload,
+        source=KernelEventSource(kernel_version="test-kernel"),
+    )
+
+
+def _t3_context() -> TemporalContext:
+    now = datetime.now(timezone.utc)
+    return TemporalContext(captured_at_utc=now, user_local_time=now, user_timezone="UTC")
+
+
+def _t3_seed_claimed_turn(
+    harness, *, message_id: str = "msg-t3", title: str = "T3"
+) -> tuple[str, str, dict[str, Any]]:
+    conversations = ConversationRepository(harness.db)
+    session = harness.run(conversations.create(tenant_id=TENANT, user_id=OWNER, title=title))
+    session_id = str(session["_id"])
+    harness.run(
+        conversations.append_message(
+            conversation_id=session_id,
+            tenant_id=TENANT,
+            user_id=OWNER,
+            role="assistant",
+            content="",
+            message_id=message_id,
+        )
+    )
+    bindings = KernelBindingRepository(harness.db)
+    created = harness.run(
+        bindings.create(
+            tenant_id=TENANT,
+            user_id=OWNER,
+            conversation_id=session_id,
+            kernel_session_id=T3_KERNEL,
+            runtime_id="runtime-t3",
+            profile_version=T3_PROFILE,
+            model_instance_id="model-1",
+            kernel_version="test-kernel",
+        )
+    )
+    claimed = harness.run(
+        bindings.claim_turn_authorized(
+            str(created["binding_id"]),
+            message_id=message_id,
+            request_id=f"turn-{message_id}",
+            claim_token=f"token-{message_id}",
+            turn_metadata={"initiator_user_id": OWNER},
+        )
+    )
+    harness.run(
+        conversations.mark_active_run(
+            conversation_id=session_id,
+            tenant_id=TENANT,
+            user_id=OWNER,
+            message_id=message_id,
+            run_id=str(claimed["active_turn"]["request_id"]),
+        )
+    )
+    return session_id, message_id, claimed
+
+
+def _t3_runner(harness, gateway: Any) -> DshTurnRunner:
+    return DshTurnRunner(
+        gateway=gateway,
+        conversations=ConversationRepository(harness.db),
+        bindings=KernelBindingRepository(harness.db),
+        events=KernelEventRepository(harness.db),
+        profiles=_T3Profiles(),
+        kernel_version="test-kernel",
+    )
+
+
+def _t3_rows(harness, message_id: str) -> list[dict[str, Any]]:
+    repo = KernelEventRepository(harness.db)
+    return harness.run(repo.all_for_message(message_id, tenant_id=TENANT, user_id=OWNER))
+
+
+def _t3_binding(harness, session_id: str) -> dict[str, Any]:
+    return harness.run(
+        KernelBindingRepository(harness.db).current(
+            session_id, tenant_id=TENANT, user_id=OWNER
+        )
+    )
+
+
+def _t3_session_doc(harness, session_id: str) -> dict[str, Any]:
+    return harness.run(harness.db.chat_sessions.find_one({"_id": ObjectId(session_id)}))
+
+
+def _t3_run(
+    harness, runner: DshTurnRunner, binding: dict[str, Any], message_id: str, *, text: str = "hello"
+) -> str:
+    return harness.run(
+        runner.run(
+            binding=binding,
+            message_id=message_id,
+            request_id=f"req-{message_id}",
+            text=text,
+            temporal_context=_t3_context(),
+            live_stream=LiveTurnStream(),
+        )
+    )
+
+
+def _t3_assert_normalized(rows: list[dict[str, Any]]) -> list[int]:
+    seqs = [int(row["stream_seq"]) for row in rows]
+    assert seqs == sorted(seqs)
+    assert len(set(seqs)) == len(seqs)
+    assert all(int(row["stream_seq_end"]) == int(row["stream_seq"]) for row in rows)
+    return seqs
+
+
+def test_t3_durable_ordinal_writers_and_compound_index(real_mongo_db):
+    harness = real_mongo_db
+    session_id, message_id, _binding = _t3_seed_claimed_turn(harness, message_id="msg-writers")
+    repo = KernelEventRepository(harness.db)
+    harness.run(repo.ensure_indexes())
+
+    indexes = harness.run(repo._projections.index_information())
+    assert indexes["durable_projection_message_stream"]["key"] == [
+        ("tenant_id", 1),
+        ("message_id", 1),
+        ("stream_seq", 1),
+    ]
+
+    for cursor in (1, 2, 3):
+        harness.run(
+            repo.ingest(
+                _t3_envelope(f"t3-idx-{cursor}", cursor, "turn.started"),
+                tenant_id=TENANT,
+                user_id=OWNER,
+                conversation_id=session_id,
+                message_id=message_id,
+            )
+        )
+    rows = harness.run(
+        repo.list_for_message(message_id, tenant_id=TENANT, user_id=OWNER, after_cursor=0)
+    )
+    seqs = _t3_assert_normalized(rows)
+
+    registry = TurnEventRegistry(repo)
+    fallback = harness.run(
+        registry.publish_kernel(
+            message_id, {"event_id": "evt-fb", "type": "item.delta", "payload": {}}
+        )
+    )
+    assert fallback["stream_seq"] == fallback["stream_seq_end"]
+    assert int(fallback["stream_seq"]) > seqs[-1]
+
+    with pytest.raises(StreamSequenceReservationError):
+        harness.run(repo.reserve_stream_ordinals(message_id="ghost-message", span=1))
+    assert harness.run(harness.db.chat_messages.count_documents({"message_id": "ghost-message"})) == 0
+
+
+def test_t3_finalizer_coordination_matrix(real_mongo_db, monkeypatch):
+    harness = real_mongo_db
+    order: list[str] = []
+
+    # (a) exact four-step order for a completed turn
+    session_a, message_a, binding_a = _t3_seed_claimed_turn(harness, message_id="msg-order")
+    conversations = ConversationRepository(harness.db)
+    bindings = KernelBindingRepository(harness.db)
+
+    async def flush() -> None:
+        order.append("flush")
+
+    async def projection(**kwargs: Any) -> None:
+        order.append("projection")
+        await ConversationRepository.update_assistant_projection(conversations, **kwargs)
+
+    async def finish(*args: Any, **kwargs: Any) -> bool:
+        order.append("binding")
+        return await KernelBindingRepository.finish_turn(bindings, *args, **kwargs)
+
+    async def clear(*args: Any, **kwargs: Any) -> None:
+        order.append("clear")
+        await ConversationRepository.clear_active_run(conversations, *args, **kwargs)
+
+    conversations.update_assistant_projection = projection
+    bindings.finish_turn = finish
+    conversations.clear_active_run = clear
+    harness.run(
+        TurnStateFinalizer(bindings, conversations).finalize(
+            binding=binding_a,
+            message_id=message_a,
+            status="completed",
+            flush=flush,
+            assistant=TurnAssistantProjection(content="done", execution_events=[]),
+        )
+    )
+    assert order == ["flush", "projection", "binding", "clear"]
+    current_a = _t3_binding(harness, session_a)
+    assert current_a["active_turn"]["status"] == "completed"
+    assert current_a["active_turn"]["claim_state"] == "finished"
+    assert "active_run" not in _t3_session_doc(harness, session_a)
+    assert harness.run(
+        ConversationRepository(harness.db).message(message_a, tenant_id=TENANT, user_id=OWNER)
+    )["content"] == "done"
+
+    # (b) the suspension branch retains active_run
+    session_b, message_b, binding_b = _t3_seed_claimed_turn(harness, message_id="msg-suspend")
+    harness.run(
+        TurnStateFinalizer(
+            KernelBindingRepository(harness.db), ConversationRepository(harness.db)
+        ).finalize(
+            binding=binding_b,
+            message_id=message_b,
+            status="completed",
+            clear_conversation=False,
+            intervention={
+                "suspension_id": "susp-1",
+                "node_id": "node-1",
+                "reason": "needs human assistance",
+            },
+            assistant=TurnAssistantProjection(content="partial", execution_events=[]),
+        )
+    )
+    assert _t3_binding(harness, session_b)["active_turn"]["claim_state"] == "finished"
+    active_run = _t3_session_doc(harness, session_b)["active_run"]
+    assert active_run["status"] == "suspended"
+    assert active_run["suspension_id"] == "susp-1"
+    assert active_run["message_id"] == message_b
+
+    # (c) a flush failure is typed/retryable and transitions nothing; the
+    # retry resumes from the already-durable steps
+    session_c, message_c, binding_c = _t3_seed_claimed_turn(harness, message_id="msg-ffail")
+    finalizer_c = TurnStateFinalizer(
+        KernelBindingRepository(harness.db), ConversationRepository(harness.db)
+    )
+
+    async def failing_flush() -> None:
+        raise RuntimeError("terminal event flush exploded")
+
+    with pytest.raises(TurnFinalizationRetryableError) as excinfo:
+        harness.run(
+            finalizer_c.finalize(
+                binding=binding_c,
+                message_id=message_c,
+                status="completed",
+                flush=failing_flush,
+                assistant=TurnAssistantProjection(content="x", execution_events=[]),
+            )
+        )
+    assert excinfo.value.retryable is True
+    assert excinfo.value.code == "turn_finalization_retryable"
+    current_c = _t3_binding(harness, session_c)
+    assert current_c["active_turn"]["status"] == "running"
+    assert current_c["active_turn"]["claim_state"] == "running"
+    assert "active_run" in _t3_session_doc(harness, session_c)
+    assert harness.run(
+        ConversationRepository(harness.db).message(message_c, tenant_id=TENANT, user_id=OWNER)
+    )["content"] == ""
+
+    async def ok_flush() -> None:
+        return None
+
+    harness.run(
+        finalizer_c.finalize(
+            binding=binding_c,
+            message_id=message_c,
+            status="completed",
+            flush=ok_flush,
+            assistant=TurnAssistantProjection(content="x", execution_events=[]),
+        )
+    )
+    assert _t3_binding(harness, session_c)["active_turn"]["status"] == "completed"
+
+    # (d) a projection failure is retryable and resumes
+    session_d, message_d, binding_d = _t3_seed_claimed_turn(harness, message_id="msg-pfail")
+    finalizer_d = TurnStateFinalizer(
+        KernelBindingRepository(harness.db), ConversationRepository(harness.db)
+    )
+    with pytest.raises(TurnFinalizationRetryableError):
+        harness.run(
+            finalizer_d.finalize(
+                binding=binding_d,
+                message_id="ghost-message",
+                status="completed",
+                assistant=TurnAssistantProjection(content="never", execution_events=[]),
+            )
+        )
+    current_d = _t3_binding(harness, session_d)
+    assert current_d["active_turn"]["status"] == "running"
+    assert "active_run" in _t3_session_doc(harness, session_d)
+    harness.run(
+        finalizer_d.finalize(
+            binding=binding_d,
+            message_id=message_d,
+            status="completed",
+            assistant=TurnAssistantProjection(content="resumed", execution_events=[]),
+        )
+    )
+    assert _t3_binding(harness, session_d)["active_turn"]["claim_state"] == "finished"
+
+    # (e) a binding-transition failure is retryable and retains active_run
+    session_e, message_e, binding_e = _t3_seed_claimed_turn(harness, message_id="msg-bfail")
+    finalizer_e = TurnStateFinalizer(
+        KernelBindingRepository(harness.db), ConversationRepository(harness.db)
+    )
+
+    async def failing_finish(*args: Any, **kwargs: Any) -> bool:
+        raise RuntimeError("binding write failed")
+
+    monkeypatch.setattr(KernelBindingRepository, "finish_turn", failing_finish)
+    with pytest.raises(TurnFinalizationRetryableError):
+        harness.run(
+            finalizer_e.finalize(
+                binding=binding_e,
+                message_id=message_e,
+                status="completed",
+                assistant=TurnAssistantProjection(content="partial", execution_events=[]),
+            )
+        )
+    current_e = _t3_binding(harness, session_e)
+    assert current_e["active_turn"]["status"] == "running"
+    assert "active_run" in _t3_session_doc(harness, session_e)
+    monkeypatch.undo()
+    harness.run(
+        finalizer_e.finalize(
+            binding=binding_e,
+            message_id=message_e,
+            status="completed",
+            assistant=TurnAssistantProjection(content="partial", execution_events=[]),
+        )
+    )
+    assert _t3_binding(harness, session_e)["active_turn"]["claim_state"] == "finished"
+
+    # (f) a suspension failure is retryable and retains the run
+    session_f, message_f, binding_f = _t3_seed_claimed_turn(harness, message_id="msg-sfail")
+    finalizer_f = TurnStateFinalizer(
+        KernelBindingRepository(harness.db), ConversationRepository(harness.db)
+    )
+
+    async def failing_suspend(*args: Any, **kwargs: Any) -> None:
+        raise RuntimeError("suspension write failed")
+
+    monkeypatch.setattr(ConversationRepository, "suspend_active_run", failing_suspend)
+    with pytest.raises(TurnFinalizationRetryableError):
+        harness.run(
+            finalizer_f.finalize(
+                binding=binding_f,
+                message_id=message_f,
+                status="completed",
+                clear_conversation=False,
+                intervention={"suspension_id": "s-1"},
+                assistant=TurnAssistantProjection(content="partial", execution_events=[]),
+            )
+        )
+    assert _t3_binding(harness, session_f)["active_turn"]["claim_state"] == "finished"
+    assert _t3_session_doc(harness, session_f)["active_run"]["status"] == "running"
+    monkeypatch.undo()
+
+
+def test_t3_runner_terminal_exits_matrix(real_mongo_db, monkeypatch):
+    harness = real_mongo_db
+
+    # (a) normal exit converges and a live service replays only after the cursor
+    session_a, message_a, binding_a = _t3_seed_claimed_turn(harness, message_id="msg-normal")
+    gateway_a = _T3Gateway(
+        [
+            _t3_envelope("t3-n1", 1, "turn.started"),
+            _t3_envelope(
+                "t3-n2",
+                2,
+                "agent.message.completed",
+                message={"content": [{"type": "text", "text": "hi"}]},
+            ),
+            _t3_envelope("t3-n3", 3, "turn.completed", reason={"kind": "stop"}),
+        ]
+    )
+    assert _t3_run(harness, _t3_runner(harness, gateway_a), binding_a, message_a) == "completed"
+    rows_a = _t3_rows(harness, message_a)
+    seqs_a = _t3_assert_normalized(rows_a)
+    assert rows_a[-1]["type"] == "run.completed"
+    current_a = _t3_binding(harness, session_a)
+    assert current_a["active_turn"]["status"] == "completed"
+    assert current_a["active_turn"]["claim_state"] == "finished"
+    assert "active_run" not in _t3_session_doc(harness, session_a)
+    assert harness.run(
+        ConversationRepository(harness.db).message(message_a, tenant_id=TENANT, user_id=OWNER)
+    )["content"] == "hi"
+
+    cursor = _mint_cursor(
+        session_a, last_message_seq=1, active_message_id=message_a, active_stream_seq=seqs_a[0]
+    )
+    replay = harness.run(
+        _service(harness).poll(
+            session_a, tenant_id=TENANT, user_id=OWNER, last_event_id=cursor
+        )
+    )
+    assert replay.kind == "data"
+    assert _exec_stream_seqs(replay, session_a) == seqs_a[1:]
+    completed = [frame for frame in replay.frames if frame.event == EVENT_TURN_COMPLETED]
+    assert len(completed) == 1
+    assert json.loads(completed[0].data_json)["status"] == "completed"
+
+    # (b) cancellation flushes the queued rows instead of aborting them
+    session_b, message_b, binding_b = _t3_seed_claimed_turn(harness, message_id="msg-cancel")
+    gateway_b = _T3Gateway(
+        [
+            _t3_envelope(
+                "t3-c1", 1, "agent.message.delta", chunk={"type": "text-delta", "text": "partial"}
+            )
+        ]
+    )
+    gateway_b.release.clear()
+    runner_b = _t3_runner(harness, gateway_b)
+
+    async def scenario_b() -> str:
+        task = asyncio.create_task(
+            runner_b.run(
+                binding=binding_b,
+                message_id=message_b,
+                request_id="req-cancel",
+                text="hello",
+                temporal_context=_t3_context(),
+                live_stream=LiveTurnStream(),
+            )
+        )
+        await asyncio.wait_for(gateway_b.subscribed.wait(), timeout=5)
+        await asyncio.sleep(0.05)
+        task.cancel()
+        return await task
+
+    assert harness.run(scenario_b()) == "cancelled"
+    rows_b = _t3_rows(harness, message_b)
+    assert rows_b
+    _t3_assert_normalized(rows_b)
+    current_b = _t3_binding(harness, session_b)
+    assert current_b["active_turn"]["status"] == "cancelled"
+    assert current_b["active_turn"]["claim_state"] == "finished"
+    assert "active_run" not in _t3_session_doc(harness, session_b)
+
+    # (c) a send failure persists one normalized failure row and clears the run
+    session_c, message_c, binding_c = _t3_seed_claimed_turn(harness, message_id="msg-failed")
+    assert (
+        _t3_run(
+            harness,
+            _t3_runner(harness, _T3Gateway(send_error=RuntimeError("dsh send failed"))),
+            binding_c,
+            message_c,
+        )
+        == "failed"
+    )
+    rows_c = _t3_rows(harness, message_c)
+    _t3_assert_normalized(rows_c)
+    assert [row["type"] for row in rows_c] == ["run.failed"]
+    current_c = _t3_binding(harness, session_c)
+    assert current_c["active_turn"]["status"] == "failed"
+    assert current_c["active_turn"]["claim_state"] == "finished"
+    assert "active_run" not in _t3_session_doc(harness, session_c)
+
+    # (d) browser intervention suspends and retains the run
+    session_d, message_d, binding_d = _t3_seed_claimed_turn(harness, message_id="msg-browser")
+    intervention = {
+        "intervention_suspension": {"suspension_id": "susp-9", "node_id": "node-9"},
+        "domain_events": [
+            {
+                "type": "intervention_required",
+                "content": {
+                    "reason": "captcha",
+                    "category": "browser",
+                    "url": "https://example.com",
+                },
+            }
+        ],
+    }
+    gateway_d = _T3Gateway(
+        [
+            _t3_envelope(
+                "t3-b1", 1, "tool.call.started", callId="call-1", name="browser_task", arguments={}
+            ),
+            _t3_envelope(
+                "t3-b2",
+                2,
+                "tool.call.completed",
+                callId="call-1",
+                codeDispatch=True,
+                content=[{"type": "text", "text": json.dumps(intervention)}],
+                isError=False,
+            ),
+            _t3_envelope("t3-b3", 3, "turn.completed", reason={"kind": "stop"}),
+        ]
+    )
+    assert _t3_run(harness, _t3_runner(harness, gateway_d), binding_d, message_d) == "completed"
+    _t3_assert_normalized(_t3_rows(harness, message_d))
+    assert _t3_binding(harness, session_d)["active_turn"]["status"] == "completed"
+    active_run_d = _t3_session_doc(harness, session_d)["active_run"]
+    assert active_run_d["status"] == "suspended"
+    assert active_run_d["suspension_id"] == "susp-9"
+
+    # (e) a late projection failure keeps exactly one terminal event
+    session_e, message_e, binding_e = _t3_seed_claimed_turn(harness, message_id="msg-late")
+    calls = {"count": 0}
+    original = ConversationRepository.update_assistant_projection
+
+    async def flaky(self: Any, **kwargs: Any) -> None:
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise LookupError("projection store unavailable")
+        await original(self, **kwargs)
+
+    monkeypatch.setattr(ConversationRepository, "update_assistant_projection", flaky)
+    gateway_e = _T3Gateway(
+        [
+            _t3_envelope("t3-l1", 1, "turn.started"),
+            _t3_envelope(
+                "t3-l2",
+                2,
+                "agent.message.completed",
+                message={"content": [{"type": "text", "text": "hi"}]},
+            ),
+            _t3_envelope("t3-l3", 3, "turn.completed", reason={"kind": "stop"}),
+        ]
+    )
+    assert _t3_run(harness, _t3_runner(harness, gateway_e), binding_e, message_e) == "failed"
+    assert calls["count"] == 1
+    rows_e = _t3_rows(harness, message_e)
+    _t3_assert_normalized(rows_e)
+    terminals = [
+        row for row in rows_e if row["type"] in {"run.completed", "run.failed", "run.cancelled"}
+    ]
+    assert [row["type"] for row in terminals] == ["run.completed"]
+    current_e = _t3_binding(harness, session_e)
+    assert current_e["active_turn"]["status"] == "failed"
+    assert current_e["active_turn"]["claim_state"] == "finished"
+    assert "active_run" not in _t3_session_doc(harness, session_e)
+    monkeypatch.undo()
+
+
+def test_t3_recovery_and_live_service_convergence(real_mongo_db):
+    harness = real_mongo_db
+
+    # (a) the recovery exit finalizes through the single finalizer
+    session_a, message_a, binding_a = _t3_seed_claimed_turn(harness, message_id="msg-recover")
+    events = KernelEventRepository(harness.db)
+    harness.run(events.ensure_indexes())
+    terminal = _t3_envelope("t3-rec-1", 1, "turn.completed", reason={"kind": "stop"})
+    harness.run(
+        events.persist_batch(
+            [
+                KernelEventWrite(
+                    event=terminal,
+                    projected=events.project(terminal, message_id=message_a),
+                )
+            ],
+            tenant_id=TENANT,
+            user_id=OWNER,
+            conversation_id=session_a,
+            message_id=message_a,
+        )
+    )
+    recovery_a = TurnTerminalRecovery(
+        gateway=_T3Gateway([terminal]),
+        conversations=ConversationRepository(harness.db),
+        bindings=KernelBindingRepository(harness.db),
+        events=events,
+        profiles=_T3Profiles(),
+    )
+    assert (
+        harness.run(
+            recovery_a.finalize_persisted_terminal(binding=binding_a, message_id=message_a)
+        )
+        is True
+    )
+    current_a = _t3_binding(harness, session_a)
+    assert current_a["active_turn"]["status"] == "completed"
+    assert current_a["active_turn"]["claim_state"] == "finished"
+    assert "active_run" not in _t3_session_doc(harness, session_a)
+    assert harness.run(
+        ConversationRepository(harness.db).message(message_a, tenant_id=TENANT, user_id=OWNER)
+    )["execution_events"][-1]["type"] == "run.completed"
+
+    # (b) the live service reconciles exactly once per service instance
+    session_b = _create_session(harness)
+    session_b_id = str(session_b["_id"])
+    calls: list[str] = []
+
+    async def reconciler(candidate: str) -> None:
+        calls.append(candidate)
+
+    service_b = SessionLiveService(**_service_kwargs(harness), claim_reconciler=reconciler)
+    harness.run(service_b.poll(session_b_id, tenant_id=TENANT, user_id=OWNER))
+    harness.run(service_b.poll(session_b_id, tenant_id=TENANT, user_id=OWNER))
+    assert calls == [session_b_id]
+
+    # (c) the live service converges an orphaned claim before the first poll
+    session_c, _message_c, _binding_c = _t3_seed_claimed_turn(harness, message_id="msg-live")
+    recovery_c = TurnTerminalRecovery(
+        gateway=_T3Gateway(events_error=DshNotFoundError("no such session")),
+        conversations=ConversationRepository(harness.db),
+        bindings=KernelBindingRepository(harness.db),
+        events=KernelEventRepository(harness.db),
+        profiles=_T3Profiles(),
+    )
+    service_c = SessionLiveService(
+        **_service_kwargs(harness), claim_reconciler=recovery_c.reconcile_session_claims
+    )
+    result = harness.run(service_c.poll(session_c, tenant_id=TENANT, user_id=OWNER))
+    current_c = _t3_binding(harness, session_c)
+    assert current_c["active_turn"]["status"] == "failed"
+    assert current_c["active_turn"]["claim_state"] == "finished"
+    assert "active_run" not in _t3_session_doc(harness, session_c)
+    assert result.kind == "data"
+
+
+def test_t3_normalization_both_writers_ascending_distinct_with_zero_skipped(real_mongo_db):
+    harness = real_mongo_db
+    session_id, message_id, binding = _t3_seed_claimed_turn(harness, message_id="msg-norm")
+    events = KernelEventRepository(harness.db)
+    bindings = KernelBindingRepository(harness.db)
+
+    async def runner_writer() -> None:
+        writer = DurableKernelEventWriter(
+            events=events,
+            bindings=bindings,
+            binding_id=str(binding["binding_id"]),
+            tenant_id=TENANT,
+            user_id=OWNER,
+            conversation_id=session_id,
+            message_id=message_id,
+            max_batch_size=2,
+        )
+        first = _t3_envelope("t3-w1", 1, "turn.started")
+        second = _t3_envelope(
+            "t3-w2", 2, "agent.message.delta", chunk={"type": "text-delta", "text": "a"}
+        )
+        dropped = _t3_envelope("t3-w3", 3, "kernel.unknown")
+        for event in (first, second, dropped):
+            writer.enqueue(
+                KernelEventWrite(
+                    event=event, projected=events.project(event, message_id=message_id)
+                )
+            )
+        await writer.close()
+
+    harness.run(runner_writer())
+    high_water = max(int(row["stream_seq"]) for row in _t3_rows(harness, message_id))
+
+    recovery = TurnTerminalRecovery(
+        gateway=_T3Gateway(
+            [
+                _t3_envelope(
+                    "t3-r1", 10, "agent.message.delta", chunk={"type": "text-delta", "text": "b"}
+                ),
+                _t3_envelope("t3-r2", 11, "kernel.unknown"),
+                _t3_envelope("t3-r3", 12, "turn.completed", reason={"kind": "stop"}),
+            ]
+        ),
+        conversations=ConversationRepository(harness.db),
+        bindings=bindings,
+        events=events,
+        profiles=_T3Profiles(),
+    )
+    harness.run(recovery.ingest_once(binding=binding, message_id=message_id))
+
+    rows = _t3_rows(harness, message_id)
+    seqs = _t3_assert_normalized(rows)
+    recovery_ids = [
+        row["event_id"]
+        for row in rows
+        if str(row["event_id"]).startswith("dsh-v3:t3-r")
+    ]
+    # t3-r2's kernel.unknown event dropped at the projector, so its reserved
+    # ordinal is abandoned (a gap is healthy; a duplicate never is).
+    assert recovery_ids == ["dsh-v3:t3-r1", "dsh-v3:t3-r3"]
+    recovery_seqs = [
+        int(row["stream_seq"])
+        for row in rows
+        if str(row["event_id"]).startswith("dsh-v3:t3-r")
+    ]
+    assert min(recovery_seqs) > high_water
+    assert rows[-1]["type"] == "run.completed"
+
+    resumed = harness.run(
+        events.list_for_message(
+            message_id, tenant_id=TENANT, user_id=OWNER, after_cursor=high_water
+        )
+    )
+    assert [row["event_id"] for row in resumed] == ["dsh-v3:t3-r1", "dsh-v3:t3-r3"]
+    assert len(resumed) == 2
+    assert resumed[-1]["type"] == "run.completed"
+    assert seqs == sorted(seqs)
+
+
+def test_t3_restart_sweep_finalizes_orphaned_claim_and_admits_next_send(
+    real_mongo_db, monkeypatch
+):
+    harness = real_mongo_db
+    session_id, message_id, binding = _t3_seed_claimed_turn(harness, message_id="msg-restart")
+    assert binding["active_turn"]["claim_state"] == "running"
+
+    import app.dsh_runtime.application as application_module
+    from app.dsh_runtime.application import DshRuntimeApplication
+    from app.dsh_runtime.gateway import DshAgentKernelGateway
+    from app.dsh_runtime.profile.store import MongoRuntimeProfileStore
+    from app.dsh_runtime.transport import HttpKernelHostTransport
+    from app.enterprise_capabilities.delivery import AuthoritativeDeliveryRepository
+    from app.enterprise_capabilities.tools import EnterpriseToolRepository
+    from app.services.presentation.execution import PresentationJobRepository
+
+    async def noop_async(*args: Any, **kwargs: Any) -> None:
+        return None
+
+    def noop_sync(*args: Any, **kwargs: Any) -> None:
+        return None
+
+    async def offline_request(self: Any, method: str, path: str, **kwargs: Any) -> None:
+        raise DshRuntimeError("runtime host offline")
+
+    async def no_such_session(self: Any, session_id: str, after_cursor: int = 0) -> None:
+        raise DshNotFoundError("no such session")
+
+    async def fake_discover_runtime(self: Any, **kwargs: Any) -> SimpleNamespace:
+        return SimpleNamespace(runtime_id="runtime-t3", kernel_version="test-kernel")
+
+    monkeypatch.setattr(application_module, "get_db", lambda: harness.db)
+    monkeypatch.setattr(HttpKernelHostTransport, "request", offline_request)
+    monkeypatch.setattr(DshAgentKernelGateway, "discover_runtime", fake_discover_runtime)
+    monkeypatch.setattr(DshAgentKernelGateway, "attach_session", noop_sync)
+    monkeypatch.setattr(DshAgentKernelGateway, "resume_session", noop_async)
+    monkeypatch.setattr(DshAgentKernelGateway, "events_once", no_such_session)
+    monkeypatch.setattr(MongoRuntimeProfileStore, "ensure_indexes", noop_async)
+    monkeypatch.setattr(EnterpriseToolRepository, "ensure_indexes", noop_async)
+    monkeypatch.setattr(PresentationJobRepository, "ensure_indexes", noop_async)
+    monkeypatch.setattr(PresentationJobRepository, "recover_running", noop_async)
+    monkeypatch.setattr(AuthoritativeDeliveryRepository, "ensure_indexes", noop_async)
+
+    app = DshRuntimeApplication()
+    harness.run(app.start())
+    try:
+        current = _t3_binding(harness, session_id)
+        assert current["active_turn"]["status"] == "failed"
+        assert current["active_turn"]["claim_state"] == "finished"
+        assert "active_run" not in _t3_session_doc(harness, session_id)
+        rows = _t3_rows(harness, message_id)
+        assert rows and rows[-1]["type"] == "run.failed"
+
+        readmitted = harness.run(
+            KernelBindingRepository(harness.db).claim_turn_authorized(
+                str(current["binding_id"]),
+                message_id="msg-restart-2",
+                request_id="req-restart-2",
+                claim_token="token-restart-2",
+            )
+        )
+        assert readmitted is not None
+        assert readmitted["active_turn"]["claim_state"] == "running"
+    finally:
+        harness.run(app.stop())

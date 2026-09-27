@@ -7,11 +7,37 @@ from datetime import datetime
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-from pymongo import UpdateOne
+from pymongo import ReturnDocument, UpdateOne
 
 from app.dsh_runtime.contracts import KernelEventEnvelope
 
 from .projection import KernelEventProjector
+
+# The durable per-message ordinal counter lives on the chat_messages row
+# (T3 normalization): every durable projection row for a message draws its
+# ascending, distinct stream_seq from this one counter.
+MESSAGE_STREAM_COUNTER = "next_stream_seq"
+
+
+class StreamSequenceReservationError(RuntimeError):
+    """The durable per-message stream ordinal could not be reserved.
+
+    Raised LOUDLY (never swallowed) when the ``chat_messages`` row for the
+    message is missing: ``find_one_and_update`` returns ``None`` and an
+    ``upsert`` would silently fabricate a bogus message row instead. The
+    failure is allowed to propagate so it poisons the caller's writer for
+    the whole message rather than dropping one batch.
+    """
+
+    code = "stream_sequence_reservation_failed"
+
+    def __init__(self, *, message_id: str, span: int) -> None:
+        self.message_id = message_id
+        self.span = span
+        super().__init__(
+            f"cannot reserve {span} durable stream ordinals for message"
+            f" {message_id}: no chat_messages row exists"
+        )
 
 
 @dataclass(frozen=True)
@@ -23,10 +49,12 @@ class KernelEventWrite:
 class KernelEventRepository:
     INBOX = "kernel_event_inbox"
     PROJECTIONS = "kernel_event_projections"
+    MESSAGES = "chat_messages"
 
     def __init__(self, db: Any, projector: KernelEventProjector | None = None) -> None:
         self._inbox = db[self.INBOX]
         self._projections = db[self.PROJECTIONS]
+        self._messages = db[self.MESSAGES]
         self._projector = projector or KernelEventProjector()
 
     async def ensure_indexes(self) -> None:
@@ -35,6 +63,13 @@ class KernelEventRepository:
         await self._projections.create_index("event_id", unique=True)
         await self._projections.create_index(
             [("tenant_id", 1), ("user_id", 1), ("message_id", 1), ("stream_seq", 1)]
+        )
+        # T3: the durable execution-replay query filters tenant_id + message_id
+        # and ranges stream_seq, leaving user_id unconstrained — the
+        # pre-existing four-field index above cannot serve it.
+        await self._projections.create_index(
+            [("tenant_id", 1), ("message_id", 1), ("stream_seq", 1)],
+            name="durable_projection_message_stream",
         )
 
     async def ingest(
@@ -69,6 +104,25 @@ class KernelEventRepository:
             tool_presentations=tool_presentations,
         )
 
+    async def reserve_stream_ordinals(self, *, message_id: str, span: int) -> list[int]:
+        """Reserve `span` contiguous, ascending durable ordinals for a message.
+
+        One atomic ``$inc`` on the message row is the serialization point, so
+        concurrent reservers can never overlap; a partly-consumed block is
+        abandoned rather than reused, which makes the durable ordinal stream
+        strictly ascending and distinct but NOT contiguous.
+        """
+        size = max(1, int(span))
+        row = await self._messages.find_one_and_update(
+            {"message_id": message_id},
+            {"$inc": {MESSAGE_STREAM_COUNTER: size}},
+            return_document=ReturnDocument.AFTER,
+        )
+        if row is None:
+            raise StreamSequenceReservationError(message_id=message_id, span=size)
+        end = int(row.get(MESSAGE_STREAM_COUNTER) or size)
+        return list(range(end - size + 1, end + 1))
+
     async def persist_batch(
         self,
         writes: list[KernelEventWrite],
@@ -81,6 +135,8 @@ class KernelEventRepository:
         if not writes:
             return
         now = datetime.utcnow()
+        ordinals = await self._reserve_for(writes, message_id=message_id)
+        ordinal_index = 0
         inbox_ops: list[UpdateOne] = []
         projection_ops: list[UpdateOne] = []
         for write in writes:
@@ -102,6 +158,8 @@ class KernelEventRepository:
             if write.projected is not None:
                 row = {
                     **write.projected,
+                    "stream_seq": ordinals[ordinal_index],
+                    "stream_seq_end": ordinals[ordinal_index],
                     "tenant_id": tenant_id,
                     "user_id": user_id,
                     "conversation_id": conversation_id,
@@ -109,6 +167,7 @@ class KernelEventRepository:
                     "kernel_session_id": event.session_id,
                     "created_at": now,
                 }
+                ordinal_index += 1
                 projection_ops.append(
                     UpdateOne({"event_id": row["event_id"]}, {"$setOnInsert": row}, upsert=True)
                 )
@@ -132,10 +191,15 @@ class KernelEventRepository:
         if not rows:
             return
         now = datetime.utcnow()
+        ordinals = await self.reserve_stream_ordinals(
+            message_id=message_id, span=max(1, len(rows))
+        )
         operations: list[UpdateOne] = []
-        for projected in rows:
+        for projected, seq in zip(rows, ordinals):
             row = {
                 **dict(projected),
+                "stream_seq": seq,
+                "stream_seq_end": seq,
                 "tenant_id": tenant_id,
                 "user_id": user_id,
                 "conversation_id": conversation_id,
@@ -147,6 +211,15 @@ class KernelEventRepository:
                 UpdateOne({"event_id": row["event_id"]}, {"$setOnInsert": row}, upsert=True)
             )
         await self._projections.bulk_write(operations, ordered=True)
+
+    async def _reserve_for(
+        self, writes: list[KernelEventWrite], *, message_id: str
+    ) -> list[int]:
+        if not any(write.projected is not None for write in writes):
+            return []
+        return await self.reserve_stream_ordinals(
+            message_id=message_id, span=max(1, len(writes))
+        )
 
     async def list_for_message(
         self,

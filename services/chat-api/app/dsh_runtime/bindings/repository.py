@@ -312,6 +312,10 @@ class KernelBindingRepository:
                 "$set": {
                     "status": "idle" if status == "completed" else status,
                     "active_turn.status": status,
+                    # T3: the terminal claim state, so the restart sweep's
+                    # predicate {"claim_state": "running"} agrees with this
+                    # write and a finished binding is never re-swept.
+                    "active_turn.claim_state": "finished",
                     "active_turn.finished_at": now,
                     "updated_at": now,
                 }

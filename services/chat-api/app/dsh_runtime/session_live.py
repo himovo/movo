@@ -22,6 +22,7 @@ import binascii
 import hashlib
 import json
 import re
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Iterable, Mapping, Sequence
@@ -77,6 +78,25 @@ REASON_CURSOR_GAP = "cursor_gap"
 REASON_REPLAY_OVERFLOW = "replay_overflow"
 
 HEARTBEAT_COMMENT = ": heartbeat\n\n"
+
+
+ClaimReconciler = Callable[[str], Awaitable[None]]
+
+
+def _process_claim_reconciler() -> ClaimReconciler | None:
+    """Resolve the started application's restart-recovery sweep, if any.
+
+    A long-lived process converges orphaned claims through the same
+    ``TurnTerminalRecovery`` the startup sweep uses; when no application has
+    been started (unit tests constructing the service directly) there is
+    nothing to reconcile and the poll proceeds unchanged.
+    """
+    from app.dsh_runtime.application import dsh_runtime_application
+
+    recovery = dsh_runtime_application.claim_recovery
+    if recovery is None:
+        return None
+    return recovery.reconcile_session_claims
 
 
 class InvalidLiveCursorError(ValueError):
@@ -637,12 +657,15 @@ class SessionLiveService:
         bindings: KernelBindingRepository,
         authorizer: SessionReadAuthorizer,
         heartbeat_seconds: float | None = None,
+        claim_reconciler: ClaimReconciler | None = None,
     ) -> None:
         self._conversations = conversations
         self._participants = participants
         self._events = events
         self._bindings = bindings
         self._authorizer = authorizer
+        self._claim_reconciler = claim_reconciler
+        self._claims_reconciled = False
         # In-process override for T1's own pytest; deployment configuration
         # reaches the interval through the env-backed Settings field read
         # via get_settings() (a bare constructor argument as the sole seam
@@ -654,6 +677,25 @@ class SessionLiveService:
         if self._heartbeat_seconds_override is not None:
             return float(self._heartbeat_seconds_override)
         return float(get_settings().SESSION_LIVE_HEARTBEAT_SECONDS)
+
+    async def reconcile_session_claims(self, session_id: str) -> None:
+        """Converge this session's orphaned durable claims before polling."""
+        reconciler = self._claim_reconciler or _process_claim_reconciler()
+        if reconciler is None:
+            return
+        await reconciler(session_id)
+
+    async def _converge_before_first_poll(self, session_id: str) -> None:
+        if self._claims_reconciled:
+            return
+        self._claims_reconciled = True
+        try:
+            await self.reconcile_session_claims(session_id)
+        except Exception:
+            # Best effort by design: a failed convergence mutates nothing
+            # and retries through the startup sweep or a later service
+            # instance; the live stream must never be blocked by recovery.
+            return
 
     # -- reads ---------------------------------------------------------------
 
@@ -684,6 +726,7 @@ class SessionLiveService:
         lease = await self._authorizer.authorize_read(
             session_id, tenant_id=tenant_id, user_id=user_id
         )
+        await self._converge_before_first_poll(session_id)
         session, participants, messages = await self._read_state(session_id, tenant_id)
         digest1 = revision_digest(
             session=session, messages=messages, participants=participants

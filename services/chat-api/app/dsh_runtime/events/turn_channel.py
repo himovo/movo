@@ -149,7 +149,14 @@ class TurnEventRegistry:
     ) -> dict[str, Any]:
         channel = self._channels.get(message_id)
         if channel is None:
-            return dict(row)
+            # No channel registered (the runner's failure path after the
+            # channel closed): the row still needs a durable per-message
+            # ordinal, drawn from the same counter the persistence boundary
+            # uses, instead of the kernel-session ordinal it carries.
+            seq = (await self._events.reserve_stream_ordinals(
+                message_id=message_id, span=1
+            ))[0]
+            return {**dict(row), "stream_seq": seq, "stream_seq_end": seq}
         return await channel.publish_kernel(row, publish_live=publish_live)
 
     def progress_sink(self, message_id: str, action_id: str) -> ProgressSink | None:

@@ -26,6 +26,7 @@ from app.dsh_runtime.runtime_coordinator import RuntimeCoordinator
 from app.dsh_runtime.desktop_bootstrap import DesktopRuntimeBootstrapService
 from app.dsh_runtime.desktop_binding import DesktopCodeBindingService
 from app.dsh_runtime.transport import HttpKernelHostTransport
+from app.dsh_runtime.turn_recovery import TurnTerminalRecovery
 from app.enterprise_capabilities.tools import EnterpriseToolRepository, EnterpriseToolService
 from app.enterprise_capabilities.evidence import ExecutionEvidenceRepository
 from app.enterprise_capabilities.delivery import AuthoritativeDeliveryRepository
@@ -41,6 +42,7 @@ class DshRuntimeApplication:
     def __init__(self) -> None:
         self._transport: HttpKernelHostTransport | None = None
         self.chat: DshChatService | None = None
+        self.claim_recovery: TurnTerminalRecovery | None = None
         self.tools: EnterpriseToolService | None = None
         self.desktop_bootstrap: DesktopRuntimeBootstrapService | None = None
         self.desktop_bindings: DesktopCodeBindingService | None = None
@@ -126,6 +128,20 @@ class DshRuntimeApplication:
             execution_evidence=execution_evidence,
             authoritative_deliveries=authoritative_deliveries,
         )
+        # Process-restart recovery (T3): sweep orphaned durable claims after
+        # DshChatService exists (so the single gateway's in-process session
+        # registry is the one restore() rehydrates) and before start()
+        # returns to main.py's startup event, so a restart after a claim
+        # commit resolves instead of returning a permanent 409.
+        self.claim_recovery = TurnTerminalRecovery(
+            gateway=gateway,
+            conversations=conversations,
+            bindings=bindings,
+            events=events,
+            profiles=publisher,
+            authoritative_deliveries=authoritative_deliveries,
+        )
+        await self.claim_recovery.reconcile_all_active_claims()
 
     async def stop(self) -> None:
         if self.chat is not None:
@@ -133,6 +149,7 @@ class DshRuntimeApplication:
         if self._transport is not None:
             await self._transport.close()
         self.chat = None
+        self.claim_recovery = None
         self.tools = None
         self.desktop_bootstrap = None
         self.desktop_bindings = None
