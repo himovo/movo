@@ -4,7 +4,7 @@ numpy==1.26.4
 docling==2.94.0
 docling-core==2.92.0
 docling-ibm-models==3.14.0
-docling-parse==5.11.0
+docling-parse==7.20.0
 # Keep the offline OCR asset layout aligned with the bundled model manifest.
 rapidocr==3.8.4
 transformers==5.10.0
