@@ -12,7 +12,7 @@
   "dependencies": {
     "@codemirror/commands": "^6.10.4",
     "@codemirror/lang-python": "^6.2.1",
-    "@codemirror/state": "^6.7.0",
+    "@codemirror/state": "^6.7.4",
     "@codemirror/view": "^6.43.3",
     "axios": "1.7.9",
     "codemirror": "^6.0.2",
