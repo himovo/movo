@@ -326,6 +326,32 @@ class DshAgentKernelGateway(AgentKernelContract):
             mapped.append(event)
         return mapped
 
+    async def head_cursor(self, session_id: str) -> int:
+        """Return the runtime journal's CURRENT head cursor for a session.
+
+        After a resume the host rebuilds the journal via ``resetFromSession``
+        (cursors renumbered from 1), so the durable binding cursor may point
+        inside reimported history. The turn runner probes this head BEFORE
+        ``send`` and subscribes after it, so only the new turn's events flow
+        live. Hosts that predate ``head_only`` ignore the flag and return the
+        full list; the max-cursor fallback keeps them working (at the cost of
+        one history-sized fetch per turn).
+        """
+        binding = self._binding(session_id)
+        response = await self._transport.request(
+            "GET",
+            f"/v1/runtimes/{binding.runtime_id}/sessions/{session_id}/events",
+            params={"after": 0, "head_only": 1},
+        )
+        head = response.get("head")
+        if isinstance(head, bool) or not isinstance(head, int) or head < 0:
+            native_events = response.get("events")
+            if not isinstance(native_events, list):
+                raise DshProtocolError("DSH events-head response must contain a head cursor")
+            head = max((self._event_cursor(item) for item in native_events), default=0)
+            head = max(head, 0)
+        return head
+
     def _binding(self, session_id: str) -> _SessionBinding:
         try:
             return self._sessions[session_id]

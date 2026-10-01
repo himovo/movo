@@ -22,6 +22,11 @@ export class EventJournal {
     return (this.#events.get(sessionId) ?? []).filter(event => event.cursor > afterCursor)
   }
 
+  head(sessionId) {
+    const events = this.#events.get(sessionId) ?? []
+    return events.length === 0 ? 0 : events.at(-1).cursor
+  }
+
   subscribe(sessionId, afterCursor, subscriber) {
     const subscribers = this.#subscribers.get(sessionId) ?? new Set()
     subscribers.add(subscriber)

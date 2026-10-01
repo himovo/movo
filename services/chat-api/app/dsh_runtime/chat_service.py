@@ -262,11 +262,30 @@ class DshChatService:
                         message_id=terminal_message_id,
                         status=active_status,
                     )
-            # No separate busy pre-check here: the conditional claim below is
-            # the single atomic admission decision (the old check-then-claim
-            # race is removed). Recovery/finalization above still repairs a
-            # stale lock; a live claim makes claim_turn_authorized() return
-            # None, which raises the same ConversationBusyError (409).
+            if active_status and active_status not in {"completed", "failed", "cancelled"}:
+                # Early busy rejection (walkthrough fix): a live foreign claim
+                # must 409 BEFORE the speaker rotation — the rotation seeds
+                # the successor from the predecessor session
+                # (exportCompletedSeed -> agent.whenIdle()) and BLOCKS until
+                # the predecessor turn finishes, which outlives the 5s host
+                # transport timeout and surfaces as a bogus 503 "DSH Runtime
+                # Host is unavailable". The atomic claim below remains the
+                # single admission decision; this reject is only a fast,
+                # side-effect-free short-circuit. Same-token re-admission (the
+                # client-timeout retry the claim's fallback exists for) still
+                # passes through to the claim.
+                live_claim_token = str((binding.get("active_turn") or {}).get("claim_token") or "")
+                if not (claim_token and live_claim_token and claim_token == live_claim_token):
+                    raise ConversationBusyError("another DSH turn is already running for this Conversation")
+            # Two-layer admission (walkthrough fix): the early reject above is
+            # the fast, side-effect-free layer that keeps the rotation/seed
+            # path from ever being entered while the predecessor is live; the
+            # conditional claim below remains the single atomic admission
+            # decision (the old check-then-claim race stays removed — this
+            # reject only short-circuits, it never admits).
+            # Recovery/finalization above still repairs a stale lock; a live
+            # foreign claim makes claim_turn_authorized() return None, which
+            # raises the same ConversationBusyError (409).
             sync_model_id = model_instance_id
             if other_member and model_instance_id is None:
                 # Q11 [review-3] (session-sharing plan todo 13): with another

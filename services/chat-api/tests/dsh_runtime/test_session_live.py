@@ -493,6 +493,52 @@ def test_execution_frame_sequence_is_exact_lf_only(real_mongo_db):
     assert _exec_stream_seqs(result, session_id) == [1, 2, 3]
 
 
+def test_execution_frames_carry_the_wrapped_frontend_envelope(real_mongo_db):
+    """Every emitted execution ``data`` parses under the frontend contract
+    (useSessionLiveStream ``case 'execution'``): top-level session_id /
+    message_id / event_id strings, stream_seq number, and a nested v3 event
+    with the exact 12-key ``public_execution_event`` shape. A flat 12-key
+    frame at the top level is silently dropped by every client, so this
+    pins the wrapped envelope on real ``poll()`` output."""
+    harness = real_mongo_db
+    service = _service(harness)
+    session = _create_session(harness)
+    session_id = str(session["_id"])
+    message_id = "msg-wrap"
+    _append_message(harness, session_id, message_id=message_id)
+    _mark_active_run(harness, session_id, message_id=message_id, run_id="run-wrap")
+    _seed_execution_rows(harness, message_id, seqs=[1, 2])
+
+    result = harness.run(service.poll(session_id, tenant_id=TENANT, user_id=OWNER))
+
+    assert result.kind == "data"
+    exec_frames = [frame for frame in result.frames if frame.event == EVENT_EXECUTION]
+    assert len(exec_frames) == 2
+    for frame in exec_frames:
+        envelope = json.loads(frame.data_json)
+        assert type(envelope["session_id"]) is str and envelope["session_id"] == session_id
+        assert type(envelope["message_id"]) is str and envelope["message_id"] == message_id
+        assert type(envelope["event_id"]) is str and envelope["event_id"]
+        assert type(envelope["stream_seq"]) is int
+        assert envelope["stream_seq"] == envelope["event"]["stream_seq"]
+        assert envelope["event_id"] == envelope["event"]["event_id"]
+        assert list(envelope["event"]) == [
+            "v",
+            "event_id",
+            "id",
+            "ts",
+            "type",
+            "item_kind",
+            "item_id",
+            "parent_item_id",
+            "revision",
+            "stream_seq",
+            "stream_seq_end",
+            "payload",
+        ]
+        assert envelope["event"]["type"] == "item.delta"
+
+
 def test_members_changed_sole_frame_control_via_known_fingerprint(real_mongo_db):
     harness = real_mongo_db
     service = _service(harness)
@@ -574,7 +620,7 @@ def test_no_id_accessor_without_token_leakage(real_mongo_db):
     assert result.kind == "data"
     exec_frames = [frame for frame in result.frames if frame.event == EVENT_EXECUTION]
     # the allowlist drops everything but text/provisional for item.delta
-    assert json.loads(exec_frames[0].data_json)["payload"] == {
+    assert json.loads(exec_frames[0].data_json)["event"]["payload"] == {
         "text": "secret scan",
         "provisional": True,
     }
@@ -587,6 +633,8 @@ def test_no_id_accessor_without_token_leakage(real_mongo_db):
         assert TENANT not in blob
         assert "javascript:" not in blob
         assert "/etc/passwd" not in blob
+        if frame.event == EVENT_EXECUTION:
+            assert payload["event"]["payload"].get("text") != "/etc/passwd"
     assert exec_frames[0].frame_id is not None
 
     # the recursive sanitizer strips nested storage/ID keys and non-HTTP(S)
@@ -1022,22 +1070,28 @@ def _budget_setup(harness):
     overhead = execution_frame_bytes(
         frame_id,
         json.dumps(
-            public_execution_event(
-                {
-                    "v": 1,
-                    "event_id": "evt-budget-4",
-                    "id": None,
-                    "ts": None,
-                    "type": "item.delta",
-                    "item_kind": "final_answer",
-                    "item_id": "item-4",
-                    "parent_item_id": None,
-                    "revision": None,
-                    "stream_seq": 4,
-                    "stream_seq_end": None,
-                    "payload": {"text": "", "provisional": True},
-                }
-            ),
+            {
+                "session_id": session_id,
+                "message_id": message_id,
+                "event_id": "evt-budget-4",
+                "stream_seq": 4,
+                "event": public_execution_event(
+                    {
+                        "v": 1,
+                        "event_id": "evt-budget-4",
+                        "id": None,
+                        "ts": None,
+                        "type": "item.delta",
+                        "item_kind": "final_answer",
+                        "item_id": "item-4",
+                        "parent_item_id": None,
+                        "revision": None,
+                        "stream_seq": 4,
+                        "stream_seq_end": None,
+                        "payload": {"text": "", "provisional": True},
+                    }
+                ),
+            },
             ensure_ascii=False,
             separators=(",", ":"),
         ),

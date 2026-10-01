@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
+import { resolve } from 'node:path'
 import test from 'node:test'
 import {
   PRE_HEADER_BUFFER_MAX_BYTES,
@@ -389,6 +391,162 @@ t08('failure', 'manual-only 409 removes both bubbles, shows the neutral state, a
     } finally {
       ;(globalThis as { fetch: typeof fetch }).fetch = previousFetch
     }
+  }
+})
+
+t08('failure', 'manual-only 409 shows a per-pane transient notice, never a thread message', () => {
+  const root = process.cwd()
+  const store = readFileSync(resolve(root, 'src/composables/useChatRuntimeStore.ts'), 'utf8')
+  const app = readFileSync(resolve(root, 'src/App.vue'), 'utf8')
+  const chatWindow = readFileSync(resolve(root, 'src/components/ChatWindow.vue'), 'utf8')
+  const locales = readFileSync(resolve(root, 'src/locales/messages.ts'), 'utf8')
+
+  const notifyStart = store.indexOf('function notifySessionBusy')
+  const notifyEnd = store.indexOf('async function sendMessage')
+  assert.ok(notifyStart > -1 && notifyEnd > notifyStart, 'notifySessionBusy owns the transient notice')
+  const notifyBody = store.slice(notifyStart, notifyEnd)
+  assert.ok(notifyBody.includes('pane.busyNotice ='), 'the notice is stored on the pane field')
+  assert.ok(
+    notifyBody.includes("code === 'session_already_running'"),
+    'the concurrent-send code gets the explicit other-user copy',
+  )
+  assert.ok(notifyBody.includes('pane.busyNoticeToken += 1'), 'a re-trigger resets the auto-dismiss token')
+  assert.ok(notifyBody.includes('window.setTimeout'), 'the notice auto-dismisses on a timer')
+  assert.ok(!notifyBody.includes('pane.messages'), 'the busy path can never touch the thread messages')
+
+  const branchStart = store.indexOf('isManualOnlyConflict(error.code)')
+  const branchEnd = store.indexOf("} else if (error?.name !== 'AbortError')", branchStart)
+  assert.ok(branchStart > -1 && branchEnd > branchStart, 'the manual-only branch exists in the send catch')
+  const branch = store.slice(branchStart, branchEnd)
+  assert.ok(branch.includes('withoutMessages'), 'both optimistic bubbles are still removed')
+  assert.ok(branch.includes('notifySessionBusy(pane, error.code)'), 'the call site forwards the catalog code')
+  assert.ok(!branch.includes('pane.messages.push'), 'nothing is appended to the conversation thread')
+
+  assert.ok(!store.includes('sessionBusyMessageApi'), 'the old naive-ui discrete toast is replaced')
+  assert.ok(!store.includes('createDiscreteApi'), 'the detached toast API is gone from the store')
+
+  assert.ok(app.includes(':busy-notice="pane.busyNotice"'), 'the pane field reaches the visible ChatWindow')
+  assert.ok(chatWindow.includes('busyNotice?: string | null'), 'ChatWindow declares the pane-driven prop')
+  assert.ok(chatWindow.includes('role="status"'), 'the notice is a status region')
+  assert.ok(chatWindow.includes('aria-live="polite"'), 'the transient notice is politely announced')
+  assert.ok(chatWindow.includes('{{ props.busyNotice }}'), 'the rendered copy is the pane field')
+
+  assert.match(
+    locales,
+    /'app\.chat\.session_busy_notice': \{ zh: '[^']*其他用户[^']*', en: '[^']*another user[^']*' \},/,
+    'the explicit other-user notice copy exists in zh and en',
+  )
+  assert.ok(locales.includes("'app.sidebar.session_running'"), 'the generic running copy stays for the id conflict')
+})
+
+t08('failure', 'foreign early-turn execution frames buffer until the snapshot row merges, then apply once', async () => {
+  const liveCalls: Array<{ signal: AbortSignal | null; push: (text: string) => void }> = []
+  const impl = (async (input: unknown, init?: RequestInit) => {
+    const url = String(input)
+    if (!url.includes('/live')) return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } })
+    let stream: ReadableStreamDefaultController<Uint8Array> | null = null
+    const body = new ReadableStream<Uint8Array>({ start(controller) { stream = controller } })
+    liveCalls.push({
+      signal: (init?.signal as AbortSignal) || null,
+      push: (text) => { try { stream?.enqueue(encode(text)) } catch { stream = null } },
+    })
+    return new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } })
+  }) as typeof fetch
+  const previousFetch = globalThis.fetch
+  ;(globalThis as { fetch: typeof fetch }).fetch = impl
+
+  let snapshot: Array<Record<string, unknown>> = []
+  const gets: string[] = []
+  let gate: { wait: Promise<void>; release: () => void } | null = null
+  const axios = (await import('axios')).default
+  ;(axios.defaults as unknown as { adapter: (config: { url?: string }) => Promise<unknown> }).adapter = async (config) => {
+    gets.push(String(config.url || ''))
+    if (gate) {
+      const held = gate
+      gate = null
+      await held.wait
+    }
+    return {
+      data: {
+        data: {
+          id: 'sess-early',
+          title: 'Early observer session',
+          messages: snapshot,
+          access: 'shared',
+          owner_user_id: 'owner-1',
+          participant_count: 2,
+        },
+      },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config,
+      request: null,
+    }
+  }
+  // allow: SIZE_OK — T8 early-turn evidence needs the store + transport in one harness.
+  const { useChatRuntimeStore } = await import('../src/composables/useChatRuntimeStore')
+  const runtime = useChatRuntimeStore({})
+  try {
+    runtime.reset()
+    const pane = await runtime.selectSession('sess-early', 'viewer-1', 'main-1', 'token-1')
+    await until(() => liveCalls.length === 1, 'session-SSE stream start')
+    assert.equal(pane.messages.length, 0)
+    const initialGets = gets.length
+
+    const turnStartedFrame = `id: t-1\nevent: turn.started\ndata: ${JSON.stringify({
+      session_id: 'sess-early', revision: 'rev-1', run_id: 'run-9', message_id: 'foreign-1',
+      initiator_user_id: 'owner-1', status: 'running',
+    })}\n\n`
+    const execFrame = (id: string, eventId: string, seq: number) =>
+      `id: ${id}\nevent: execution\ndata: ${JSON.stringify({
+        session_id: 'sess-early', message_id: 'foreign-1', event_id: eventId, stream_seq: seq,
+        event: execEvent(eventId, seq),
+      })}\n\n`
+
+    // Hold the turn.started snapshot GET so all three foreign frames land rowless.
+    let release!: () => void
+    gate = { wait: new Promise<void>((settle) => { release = settle }), release: () => undefined }
+    gate.release = release
+    liveCalls[0]!.push(turnStartedFrame)
+    await until(() => gets.length === initialGets + 1, 'turn.started refresh started')
+    liveCalls[0]!.push(execFrame('s-1', 'early-1', 1))
+    liveCalls[0]!.push(execFrame('s-2', 'early-2', 2))
+    liveCalls[0]!.push(execFrame('s-3', 'early-3', 3))
+    await settleTicks(8)
+    assert.equal(pane.messages.length, 0, 'no thread row is created before the snapshot')
+    assert.equal(pane.pendingForeign.rows.length, 3, 'all three rowless foreign frames are buffered')
+    assert.equal(pane.preHeader.rows.length, 0, 'the local-POST buffer is untouched')
+
+    // The snapshot materializes the row; the flush applies the buffer in stream order.
+    snapshot = [{ role: 'assistant', content: '', message_id: 'foreign-1', legacy_key: 'message:foreign-1', seq: 1 }]
+    release()
+    await until(() => pane.messages.length === 1, 'snapshot row merged')
+    await until(
+      () => (pane.messages[0]!._execV3?.state.rawEvents.length || 0) === 3,
+      'buffered frames applied',
+    )
+    assert.deepEqual(
+      pane.messages[0]!._execV3!.state.rawEvents.map((event) => event.event_id),
+      ['early-1', 'early-2', 'early-3'],
+      'frames apply once, in stream order',
+    )
+    assert.equal(pane.pendingForeign.rows.length, 0, 'consumed entries are cleared')
+
+    // A terminal refresh re-merges the same snapshot: no duplicate rows, no duplicate events.
+    const completedGets = gets.length
+    liveCalls[0]!.push(`id: t-2\nevent: turn.completed\ndata: ${JSON.stringify({
+      session_id: 'sess-early', message_id: 'foreign-1', run_id: 'run-9', status: 'completed', revision: 'rev-2',
+    })}\n\n`)
+    await until(() => gets.length === completedGets + 1, 'turn.completed refresh ran')
+    await settleTicks(8)
+    assert.equal(pane.messages.length, 1, 'zero duplicate rows after the merge')
+    assert.equal(pane.messages[0]!._execV3!.state.rawEvents.length, 3, 'zero duplicate events after the merge')
+    assert.equal(pane.malformedFrameCount, 0)
+  } finally {
+    runtime.removeSession('sess-early')
+    runtime.reset()
+    ;(globalThis as { fetch: typeof fetch }).fetch = previousFetch
   }
 })
 

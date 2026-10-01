@@ -143,6 +143,14 @@ export class RuntimeHttpServer {
         return sendJson(response, 202, await runtime.cancel(sessionId, body.cause ?? 'cancelled'))
       }
       if (request.method === 'GET' && parts[5] === 'events') {
+        // O(1) attach probe for the chat-api turn runner: after a resume the
+        // journal is rebuilt by resetFromSession (cursors renumbered from 1),
+        // so the durable binding cursor may point inside reimported history.
+        // The runner probes the CURRENT head before send and subscribes after
+        // it, so only the new turn's events flow live.
+        if (query.get('head_only') === '1' || query.get('headOnly') === '1') {
+          return sendJson(response, 200, { head: runtime.headCursor(sessionId) })
+        }
         return sendJson(response, 200, { events: runtime.events(sessionId, Number(query.get('after') ?? -1)) })
       }
       if (request.method === 'GET' && parts[5] === 'approvals' && parts.length === 6) {

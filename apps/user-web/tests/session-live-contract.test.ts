@@ -537,6 +537,9 @@ interface SessionApi {
   cursorBySession: Map<string, string>
   holdNextGet: (sessionId: string) => void
   releaseGet: () => void
+  /** T8: when set, GETs past this count throw (the session reads as
+   *  unreadable). Null keeps every GET readable. */
+  failAfterGets: number | null
 }
 
 function createSessionApi(): SessionApi {
@@ -544,10 +547,24 @@ function createSessionApi(): SessionApi {
   const cursorBySession = new Map<string, string>()
   let held: { sessionId: string; wait: Promise<void> } | null = null
   let releaseHeld: (() => void) | null = null
+  const api: SessionApi = {
+    adapter: undefined as unknown as SessionApi['adapter'],
+    gets,
+    cursorBySession,
+    holdNextGet(sessionId: string) {
+      let release: () => void = () => undefined
+      const wait = new Promise<void>((settle) => { release = settle })
+      held = { sessionId, wait }
+      releaseHeld = release
+    },
+    releaseGet() { releaseHeld?.() },
+    failAfterGets: null,
+  }
   const adapter = async (config: { url?: string }) => {
     const url = String(config.url || '')
     const sessionId = decodeURIComponent(url.split('/sessions/')[1]?.split('?')[0] || '')
     gets.push(sessionId)
+    if (api.failAfterGets !== null && gets.length > api.failAfterGets) throw new Error('session unreadable')
     if (held && held.sessionId === sessionId) {
       const pending = held
       held = null
@@ -572,18 +589,8 @@ function createSessionApi(): SessionApi {
       request: null,
     }
   }
-  return {
-    adapter,
-    gets,
-    cursorBySession,
-    holdNextGet(sessionId: string) {
-      let release: () => void = () => undefined
-      const wait = new Promise<void>((settle) => { release = settle })
-      held = { sessionId, wait }
-      releaseHeld = release
-    },
-    releaseGet() { releaseHeld?.() },
-  }
+  api.adapter = adapter
+  return api
 }
 
 let activeApi: SessionApi | null = null
@@ -699,6 +706,74 @@ test('T7 store: access-loss latch closes once; a refresh aborted by pane removal
     assert.equal(unhandled.length, 0, 'no unhandled rejection from the aborted refresh')
   } finally {
     process.off('unhandledRejection', capture)
+  }
+})
+
+test('T8 store: terminal 404 with an unreadable session latches access loss exactly once', async () => {
+  const liveCalls: string[] = []
+  const impl = (async (input: unknown) => {
+    const url = String(input)
+    if (!url.includes('/live')) return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } })
+    liveCalls.push(url)
+    return new Response('gone', { status: 404 })
+  }) as typeof fetch
+  ;(globalThis as { fetch?: typeof fetch }).fetch = impl
+
+  // The selectSession GET succeeds; the onError suspicion probe reads as gone.
+  const api = createSessionApi()
+  api.failAfterGets = 1
+  const runtime = await loadStore(api)
+  try {
+    runtime.reset()
+    const pane = await runtime.selectSession('sess-gone', 'viewer-1', 'main-1', 'token-1')
+    await until(() => pane.accessLost, 'suspicion probe latches access loss')
+    assert.equal(pane.accessLostReason, 'participant_removed')
+    assert.deepEqual(api.gets, ['sess-gone', 'sess-gone'], 'exactly one authoritative probe GET after the close')
+    assert.equal(liveCalls.length, 1, 'no retry loop and no fresh stream for a lost pane')
+    assert.equal(pane.liveStream, null)
+    assert.equal(pane.malformedFrameCount, 0)
+    await settleTicks(6)
+    assert.deepEqual(api.gets, ['sess-gone', 'sess-gone'], 'the suspicion path never refires')
+    assert.equal(liveCalls.length, 1)
+  } finally {
+    runtime.removeSession('sess-gone')
+    runtime.reset()
+  }
+})
+
+test('T8 store: terminal 404 with a readable session reopens one fresh stream and never loops', async () => {
+  const liveCalls: string[] = []
+  let opened = 0
+  const impl = (async (input: unknown) => {
+    const url = String(input)
+    if (!url.includes('/live')) return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } })
+    liveCalls.push(url)
+    opened += 1
+    if (opened === 1) return new Response('gone', { status: 404 })
+    let stream: ReadableStreamDefaultController<Uint8Array> | null = null
+    const body = new ReadableStream<Uint8Array>({ start(controller) { stream = controller } })
+    void stream
+    return new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } })
+  }) as typeof fetch
+  ;(globalThis as { fetch?: typeof fetch }).fetch = impl
+
+  const api = createSessionApi()
+  api.cursorBySession.set('sess-back', 'cursor-fresh')
+  const runtime = await loadStore(api)
+  try {
+    runtime.reset()
+    const pane = await runtime.selectSession('sess-back', 'viewer-1', 'main-1', 'token-1')
+    await until(() => liveCalls.length === 2, 'suspicion probe reopens a fresh stream')
+    assert.match(liveCalls[1]!, /after=cursor-fresh/, 'the fresh stream carries the authoritative cursor')
+    assert.equal(pane.accessLost, false, 'a readable session never latches access loss')
+    assert.deepEqual(api.gets, ['sess-back', 'sess-back'], 'exactly one authoritative probe GET after the close')
+    assert.equal(pane.malformedFrameCount, 0)
+    await settleTicks(6)
+    assert.equal(liveCalls.length, 2, 'no retry loop past the single reopen')
+    assert.deepEqual(api.gets, ['sess-back', 'sess-back'])
+  } finally {
+    runtime.removeSession('sess-back')
+    runtime.reset()
   }
 })
 

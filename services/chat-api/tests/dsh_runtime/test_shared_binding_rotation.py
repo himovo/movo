@@ -727,3 +727,83 @@ def test_forced_back_to_back_rotations_leave_no_orphans_and_no_conflict_409(shar
         )
     )
     assert current_count == 1
+
+
+# ---------------------------------------------------------------------------
+# Walkthrough regression — the fast 409 while the predecessor turn is live
+# ---------------------------------------------------------------------------
+
+
+def test_participant_send_while_owner_turn_running_is_fast_409_without_rotation_side_effects(
+    shared_thread,
+):
+    # Walkthrough regression: a participant's send while the OWNER's turn is
+    # still RUNNING must converge on the fast 409 (ConversationBusyError) for
+    # the live claim, BEFORE the speaker rotation. The rotation seeds the
+    # successor from the predecessor session (exportCompletedSeed ->
+    # agent.whenIdle()) and blocks on the Node host until the predecessor turn
+    # completes — measured 50.15s, past the 5s host transport timeout — which
+    # surfaced as a bogus 503 dsh_runtime_unavailable instead of the 409 the
+    # frontend keys on. The owner's runner is held open on an event so the
+    # turn stays live; the participant's attempt must reject with NO rotation
+    # side effects.
+    harness, ids, session_oid, gateway, chat, _profiles = shared_thread
+    owner_id = str(ids[OWNER])
+    participant_id = str(ids[PARTICIPANT])
+
+    release = asyncio.Event()
+
+    async def _hold_turn(*, binding, message_id, **_kwargs):
+        await release.wait()
+        await chat._finalizer.finalize(
+            binding=binding, message_id=message_id, status="completed",
+        )
+        return "completed"
+
+    chat._turn_runner.run = _hold_turn
+
+    owner_turn = harness.run(
+        chat.prepare_turn(
+            tenant_id=TENANT,
+            user_id=owner_id,
+            conversation_id=str(session_oid),
+            text="owner turn still streaming",
+            model_instance_id="model-x",
+            timezone_name="UTC",
+            images=[],
+            documents=[],
+        )
+    )
+    predecessor = _current_binding(harness, session_oid)
+    assert predecessor is not None
+    assert predecessor["user_id"] == owner_id
+    assert (predecessor.get("active_turn") or {}).get("status") == "running"
+    created_before = len(gateway.created_sessions)
+    disposed_before = list(gateway.disposed_sessions)
+
+    with pytest.raises(ConversationBusyError):
+        harness.run(
+            chat.prepare_turn(
+                tenant_id=TENANT,
+                user_id=participant_id,
+                conversation_id=str(session_oid),
+                text="participant while the owner streams",
+                model_instance_id=None,
+                timezone_name="UTC",
+                images=[],
+                documents=[],
+            )
+        )
+
+    # Fast reject without side effects: no successor kernel session was
+    # created, no predecessor was disposed, and the owner's binding is still
+    # the current one with its live turn intact.
+    assert len(gateway.created_sessions) == created_before
+    assert gateway.disposed_sessions == disposed_before
+    still_current = _current_binding(harness, session_oid)
+    assert still_current["binding_id"] == predecessor["binding_id"]
+    assert still_current["user_id"] == owner_id
+    assert (still_current.get("active_turn") or {}).get("status") == "running"
+
+    release.set()
+    assert harness.run(chat.wait_turn(owner_turn.message_id)) == "completed"

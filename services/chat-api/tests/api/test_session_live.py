@@ -460,7 +460,7 @@ def test_owner_cold_attach_receives_durable_frames_and_closes_cleanly(live_env):
     assert started["run_id"] == "run-t02-owner"
     executions = [json.loads(frame["data"]) for frame in frames[1:]]
     assert [row["stream_seq"] for row in executions] == [1, 2]
-    assert [row["payload"]["text"] for row in executions] == ["step-1", "step-2"]
+    assert [row["event"]["payload"]["text"] for row in executions] == ["step-1", "step-2"]
     assert _session_doc(harness, session_id) == before
 
 
@@ -491,7 +491,7 @@ def test_active_participant_receives_frames_advanced_mid_stream(live_env):
     assert [frame["event"] for frame in frames].count("execution") == 2
     assert json.loads(frames[0]["data"])["message_id"] == "msg-t02-midstream"
     assert [
-        json.loads(frame["data"])["payload"]["text"]
+        json.loads(frame["data"])["event"]["payload"]["text"]
         for frame in frames
         if frame["event"] == "execution"
     ] == ["step-1", "step-2"]

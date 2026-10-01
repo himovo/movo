@@ -841,7 +841,15 @@ class SessionLiveService:
                     active_message_id=tracked,
                     active_stream_seq=row_seq,
                 )
-                data_json = _compact_json(public_execution_event(row))
+                data_json = _compact_json(
+                    {
+                        "session_id": session_id,
+                        "message_id": tracked,
+                        "event_id": row.get("event_id"),
+                        "stream_seq": row_seq,
+                        "event": public_execution_event(row),
+                    }
+                )
                 total += execution_frame_bytes(frame_id, data_json)
                 if total > FRAME_BUDGET_BYTES:
                     verdict = REASON_REPLAY_OVERFLOW

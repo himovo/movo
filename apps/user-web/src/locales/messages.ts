@@ -226,6 +226,7 @@ export const messages = {
   'app.sidebar.search_chats': { zh: '搜索对话', en: 'Search chats' },
   'app.sidebar.history': { zh: '历史记录', en: 'History' },
   'app.sidebar.session_running': { zh: '会话正在执行', en: 'Session is running' },
+  'app.chat.session_busy_notice': { zh: 'Agent 正在处理该会话中其他用户的回合，请等待其完成后再发送。', en: 'The agent is still working on another user’s turn in this conversation — please try again when it finishes.' },
   'app.sidebar.session_unread': { zh: '会话有新结果', en: 'Session has new results' },
   'app.sidebar.session_needs_assistance': { zh: '当前会话需要人工协助', en: 'This session needs human assistance' },
   'app.sidebar.session_needs_assistance_short': { zh: '需要协助', en: 'Help needed' },

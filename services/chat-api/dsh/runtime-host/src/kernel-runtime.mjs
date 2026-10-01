@@ -225,6 +225,11 @@ export class KernelRuntime {
     return this.#journal.replay(sessionId, afterCursor)
   }
 
+  headCursor(sessionId) {
+    this.#requireAgent(sessionId)
+    return this.#journal.head(sessionId)
+  }
+
   subscribeEvents(sessionId, afterCursor, subscriber) {
     this.#requireAgent(sessionId)
     return this.#journal.subscribe(sessionId, afterCursor, subscriber)

@@ -221,6 +221,13 @@ async def _start_chat_completions(
     except (LookupError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     conversation_id = str(output_spec.get("task_id") or output_spec.get("session_id") or "").strip() or None
+    # F2 re-admission (no new client contract): the stable claim token is
+    # derived from the already-validated, already-echoed X-User-Message-Id —
+    # a retry of the same client message re-admits the same turn
+    # (claim_turn_authorized's same-token fallback), a different message mints
+    # a different token and still fast-409s. The claim: prefix keeps the token
+    # domain separate from raw ids. Absent id ⇒ None (fresh mint, as today).
+    claim_token = f"claim:{user_message_id}" if user_message_id else None
     try:
         turn = await dsh_runtime_application.require_chat().prepare_turn(
             tenant_id=tenant_id,
@@ -234,6 +241,7 @@ async def _start_chat_completions(
             knowledge_qa_enabled=request.knowledge_qa_enabled,
             knowledge_base_ids=request.knowledge_base_ids,
             trusted_turn_context=trusted_turn_context,
+            claim_token=claim_token,
             language_name=str(output_spec.get("language") or output_spec.get("locale") or "") or None,
             selected_writing_skill_id=skill_selection.selected_writing_skill_id,
             selected_skill_id=skill_selection.selected_skill_id,

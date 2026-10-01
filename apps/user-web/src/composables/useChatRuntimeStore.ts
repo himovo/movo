@@ -17,7 +17,6 @@ import {
   type PreHeaderBufferState,
 } from './sessionLiveProjection'
 import { getLocale, t } from './i18n'
-import { createDiscreteApi, darkTheme } from 'naive-ui'
 import { resumeBrowserInterventionTaskUntilSettled } from './tasks/browserInterventionTaskFlow'
 import {
   browserInterventionTransition,
@@ -154,8 +153,21 @@ export type ChatRuntimePane = {
    *  ignores session-SSE execution for that id. Separate from a resumed
    *  recovery handle. */
   localPostMessageId: string | null
+  /** T8: transient top-of-conversation notice for a manual-only 409; the ONLY
+   *  writer is notifySessionBusy. Never appended to `messages`. */
+  busyNotice: string | null
+  /** T8: monotonic token so a re-trigger resets the auto-dismiss timer. */
+  busyNoticeToken: number
   /** T8: pre-header session execution buffer (200 rows / 256 KiB caps). */
   preHeader: PreHeaderBufferState<SessionLiveExecutionEvent>
+  /** T8: foreign early-turn execution buffer (200 rows / 256 KiB caps, same
+   *  whole-drop policy as preHeader). A foreign frame whose assistant row has
+   *  not merged yet waits here instead of being silently dropped; the
+   *  snapshot flush applies it in stream order. Never appended to `messages`
+   *  directly, so it cannot create a row. */
+  pendingForeign: PreHeaderBufferState<SessionLiveExecutionEvent>
+  /** T8: session-SSE malformed-frame counter; diagnostics only, never UI. */
+  malformedFrameCount: number
 }
 
 /** T7: caller identity captured at bind time for the invalidation snapshot refresh. */
@@ -266,7 +278,11 @@ function createPane(input: { key?: string; sessionId: string | null; messages?: 
     shared: false,
     localPostPending: false,
     localPostMessageId: null,
+    busyNotice: null,
+    busyNoticeToken: 0,
     preHeader: createPreHeaderBufferState<SessionLiveExecutionEvent>(),
+    pendingForeign: createPreHeaderBufferState<SessionLiveExecutionEvent>(),
+    malformedFrameCount: 0,
   }
 }
 
@@ -402,6 +418,9 @@ async function refreshPaneLiveState(pane: ChatRuntimePane, generation: number, s
   if (detail.code_project !== undefined) pane.codeProject = detail.code_project
   pane.shared = detail.access === 'shared' || (detail.participant_count ?? 0) > 0
   pane.messages = mergeAuthoritativeMessages(pane.messages, detail.messages || []).messages
+  // T8: the snapshot may have materialized rows for early foreign frames;
+  // apply them in stream order (event_id-deduped, rows are never created here).
+  flushPendingForeignExecutions(pane)
   await refreshAfterRun(runtimeCallbacks, sessionId)
   if (!reopen || !paneLiveCallbackValid(pane, generation, sessionId)) return
   // T6 contract: every control invalidation counts toward the three-frame cap,
@@ -415,6 +434,45 @@ async function refreshPaneLiveState(pane: ChatRuntimePane, generation: number, s
   handle.openFreshStream(cursor)
 }
 
+/**
+ * T8 removed-member 404: a 401/404/410 close carries no revocable frame, so
+ * the pane probes readability exactly once — an unreadable session latches
+ * access loss, a readable one reopens fresh. Never loops, never toasts; the
+ * transport owns reconnect.
+ */
+async function handlePaneLiveStreamError(
+  pane: ChatRuntimePane,
+  generation: number,
+  sessionId: string,
+  status: number,
+) {
+  if (!paneLiveCallbackValid(pane, generation, sessionId)) return
+  if (status !== 401 && status !== 404 && status !== 410) return
+  const auth = pane.liveAuth
+  if (!auth) return
+  let detail: SessionRuntimeDetail | null = null
+  try {
+    detail = await getSession(sessionId, auth.userId, auth.mainId, auth.authToken)
+  } catch {
+    detail = null
+  }
+  if (!paneLiveCallbackValid(pane, generation, sessionId)) return
+  if (!detail) {
+    markAccessLost(pane.key, 'participant_removed')
+    return
+  }
+  const handle = pane.liveStream
+  if (!handle) return
+  const cursor = typeof detail.live_cursor === 'string' && detail.live_cursor ? detail.live_cursor : null
+  if (cursor) {
+    handle.openFreshStream(cursor)
+    return
+  }
+  // Readable but cursorless: cold re-attach instead of parking on the dead handle.
+  stopPaneLiveStream(pane)
+  startPaneLiveStream(pane)
+}
+
 function startPaneLiveStream(pane: ChatRuntimePane) {
   if (pane.liveStream) return
   if (!pane.sessionId || !pane.liveAuth || pane.accessLost) return
@@ -422,6 +480,9 @@ function startPaneLiveStream(pane: ChatRuntimePane) {
   const sessionId = pane.sessionId
   const generation = pane.liveGeneration + 1
   pane.liveGeneration = generation
+  // T8: the transport settles after a terminal HTTP error, so at most one
+  // onError fires per close; the flag guards even that single call.
+  let errorSuspicionFired = false
   const refresh = (reopen: boolean) => {
     void refreshPaneLiveState(pane, generation, sessionId, reopen).catch(() => undefined)
   }
@@ -446,6 +507,13 @@ function startPaneLiveStream(pane: ChatRuntimePane) {
     onExecution: (event) => { if (liveProgress()) consumeSessionExecution(pane, event) },
     onTurnCompleted: () => { if (liveProgress()) refresh(false) },
     onAccessLost: (paneKey, reason) => markAccessLost(paneKey, reason),
+    // T8: malformed frames count diagnostics only — no UI surface.
+    onMalformedFrame: () => { pane.malformedFrameCount += 1 },
+    onError: (error) => {
+      if (errorSuspicionFired) return
+      errorSuspicionFired = true
+      void handlePaneLiveStreamError(pane, generation, sessionId, error.status).catch(() => undefined)
+    },
   })
   pane.liveStream = markRaw(handle)
 }
@@ -516,7 +584,9 @@ function applyExecutionEventToMessage(
 
 /** T8 ownership: session-SSE execution is buffered until the local POST's
  *  headers exist, then foreign frames are consumed while the POST's own
- *  frames (same message_id) stay ignored. */
+ *  frames (same message_id) stay ignored. A foreign frame whose assistant
+ *  row has not merged yet waits in pendingForeign for the snapshot flush
+ *  instead of being silently dropped. */
 function consumeSessionExecution(pane: ChatRuntimePane, frame: SessionLiveExecutionEvent) {
   if (pane.localPostPending && !pane.localPostMessageId) {
     bufferPreHeaderEvent(pane.preHeader, frame, utf8ByteLength(JSON.stringify(frame)))
@@ -526,7 +596,23 @@ function consumeSessionExecution(pane: ChatRuntimePane, frame: SessionLiveExecut
   const target = pane.messages.find(
     (msg) => msg.role === 'assistant' && msg.message_id === frame.message_id,
   )
-  if (target) applyExecutionEventToMessage(pane, target, frame.event)
+  if (target) {
+    applyExecutionEventToMessage(pane, target, frame.event)
+    return
+  }
+  bufferPreHeaderEvent(pane.pendingForeign, frame, utf8ByteLength(JSON.stringify(frame)))
+}
+
+/** T8: apply buffered foreign frames to rows the snapshot just merged, in
+ *  stream order. Still-rowless frames are dropped with containment (no UI);
+ *  `messages` itself is never touched, so no duplicate row can appear. */
+function flushPendingForeignExecutions(pane: ChatRuntimePane) {
+  for (const frame of drainPreHeaderEvents(pane.pendingForeign, pane.localPostMessageId)) {
+    const target = pane.messages.find(
+      (msg) => msg.role === 'assistant' && msg.message_id === frame.message_id,
+    )
+    if (target) applyExecutionEventToMessage(pane, target, frame.event)
+  }
 }
 
 /** T8: header arrived — adopt local-POST ownership and flush the pre-header
@@ -571,20 +657,21 @@ function resetPanePreview(pane: ChatRuntimePane) {
   pane.activeIntervention = null
 }
 
-let sessionBusyMessageApi: ReturnType<typeof createDiscreteApi>['message'] | null = null
+const SESSION_BUSY_NOTICE_MS = 5000
 
-// The store is non-component code, so naive-ui's provider-scoped useMessage()
-// is unavailable; createDiscreteApi is its detached equivalent (App.vue's T27
-// shareToast pattern), themed via the app-managed theme-dark root class.
-// Lazy + reused across calls.
-function notifySessionBusy() {
-  if (!sessionBusyMessageApi) {
-    const theme = document.documentElement.classList.contains('theme-dark') ? darkTheme : null
-    sessionBusyMessageApi = createDiscreteApi(['message'], {
-      configProviderProps: computed(() => ({ theme })),
-    }).message
-  }
-  sessionBusyMessageApi.info(t('app.sidebar.session_running'))
+// T8: a manual-only 409 is surfaced as a transient top-of-conversation notice
+// owned by the pane itself — never a thread message, never an error bubble,
+// never a retry or queue. The token makes a re-trigger restart the timer so the
+// notice cannot dismiss early under a newer trigger.
+function notifySessionBusy(pane: ChatRuntimePane, code: string | null) {
+  pane.busyNotice = code === 'session_already_running'
+    ? t('app.chat.session_busy_notice')
+    : t('app.sidebar.session_running')
+  pane.busyNoticeToken += 1
+  const token = pane.busyNoticeToken
+  window.setTimeout(() => {
+    if (pane.busyNoticeToken === token) pane.busyNotice = null
+  }, SESSION_BUSY_NOTICE_MS)
 }
 
 async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCallbacks = {}) {
@@ -823,11 +910,11 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
   } catch (error: any) {
     if (error instanceof ChatStreamHttpError && error.status === 409 && isManualOnlyConflict(error.code)) {
       // Manual-only 409 (concurrent run or rejected user-message id): remove
-      // BOTH optimistic bubbles, inform the viewer neutrally, and leave the
-      // composer enabled for a later retry — never an error bubble, never an
-      // automatic retry, never a queue.
+      // BOTH optimistic bubbles, show the transient top-of-conversation notice,
+      // and leave the composer enabled for a later retry — never an error
+      // bubble, never an automatic retry, never a queue.
       pane.messages = withoutMessages(pane.messages, [userMessage._id, assistantMsg._id])
-      notifySessionBusy()
+      notifySessionBusy(pane, error.code)
     } else if (error?.name !== 'AbortError') {
       const recovered = await recoverDisconnectedStream().catch(() => false)
       if (!recovered && !ctrl.signal.aborted) {

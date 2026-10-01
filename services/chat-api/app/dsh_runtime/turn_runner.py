@@ -120,6 +120,12 @@ class DshTurnRunner:
                 user_id=str(binding["user_id"]),
                 message_id=message_id,
             )
+            # Re-baseline BEFORE send: after a resume the host journal is
+            # rebuilt with cursors renumbered from 1, so the durable cursor
+            # may point inside reimported history. Only post-head events flow.
+            attach_after = await self._attach_cursor(binding, message_id)
+            last_native_cursor = max(last_native_cursor, attach_after)
+            skipped_stale = 0
             await self._gateway.send(
                 SendRequest(
                     session_id=str(binding["kernel_session_id"]),
@@ -132,8 +138,14 @@ class DshTurnRunner:
             )
             credential_lease.start()
             async for event in self._gateway.subscribe(
-                str(binding["kernel_session_id"]), int(binding.get("event_cursor") or 0)
+                str(binding["kernel_session_id"]), attach_after
             ):
+                if event.cursor <= attach_after:
+                    # Pre-attach history: never project/persist/deliver it
+                    # and never let its terminal close this turn's stream.
+                    last_native_cursor = max(last_native_cursor, event.cursor)
+                    skipped_stale += 1
+                    continue
                 native_event_count += 1
                 if event.type == "tool.approval.requested":
                     await credential_lease.refresh_now()
@@ -235,6 +247,8 @@ class DshTurnRunner:
             if terminal_projection is not None:
                 history_events.append(terminal_projection)
         try:
+            if skipped_stale and not writer_aborted:
+                await self._advance_consumed_cursor(binding, message_id, last_native_cursor)
             evidence_bundles: list[dict[str, Any]] = []
             if self._execution_evidence is not None:
                 evidence_bundle = await self._execution_evidence.load(
@@ -304,6 +318,37 @@ class DshTurnRunner:
                 delta_count=delta_count,
             )
         return status
+
+    async def _attach_cursor(self, binding: dict[str, Any], message_id: str) -> int:
+        durable = int(binding.get("event_cursor") or 0)
+        probe = getattr(self._gateway, "head_cursor", None)
+        if probe is None:
+            return durable
+        try:
+            return max(int(await probe(str(binding["kernel_session_id"]))), 0)
+        except Exception:
+            logger.warning(
+                "DSH head probe failed; attaching at the durable cursor",
+                extra={"event": "dsh.turn.head_probe_fallback", "message_id": message_id},
+            )
+            return durable
+
+    async def _advance_consumed_cursor(
+        self, binding: dict[str, Any], message_id: str, cursor: int
+    ) -> None:
+        if cursor <= 0:
+            return
+        try:
+            await self._bindings.advance_cursor(str(binding["binding_id"]), int(cursor))
+        except Exception:
+            logger.warning(
+                "failed to advance DSH binding cursor",
+                extra={
+                    "event": "dsh.turn.cursor_advance_failed",
+                    "message_id": message_id,
+                    "cursor": int(cursor),
+                },
+            )
 
     async def _publish_kernel(
         self,

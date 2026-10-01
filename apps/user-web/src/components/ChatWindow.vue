@@ -64,6 +64,10 @@ const props = defineProps<{
   active: boolean
   running?: boolean
   stopping?: boolean
+  /** T8: transient top-of-conversation notice for a manual-only concurrent-send
+   *  409; the store owns the auto-dismiss timer and this never enters the
+   *  message thread. */
+  busyNotice?: string | null
   /** T9: authoritative shared-session flag wired from `pane.shared` in App.vue.
    *  When true, user rows render author avatar + display name through the
    *  focused UserMessageAuthor child (architecture boundary above). */
@@ -1984,6 +1988,33 @@ function formatErrorMessage(raw: string): string {
     <div 
       class="relative flex h-full min-w-0 flex-1 flex-col"
     >
+    <!-- T8: transient concurrent-send notice, in-flow at the top of the
+         conversation (never covering messages, never a thread row). The store
+         owns the auto-dismiss timer; this is display-only. -->
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0 -translate-y-1"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 -translate-y-1"
+    >
+      <div
+        v-if="props.busyNotice"
+        class="w-full max-w-4xl mx-auto px-4 md:px-6 pt-3 shrink-0"
+        role="status"
+        aria-live="polite"
+      >
+        <div class="flex items-start gap-2.5 rounded-xl border border-gray-200 bg-blue-50 px-3.5 py-2.5 text-sm text-slate-700">
+          <svg class="mt-0.5 h-4 w-4 shrink-0 text-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4" />
+            <path d="M12 8h.01" />
+          </svg>
+          <span class="min-w-0">{{ props.busyNotice }}</span>
+        </div>
+      </div>
+    </Transition>
     <!-- Messages Area -->
     <div
       ref="messagesContainer"
