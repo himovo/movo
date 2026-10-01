@@ -287,7 +287,7 @@ services:
     networks:
       - public
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/ >/dev/null"]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -299,7 +299,7 @@ services:
     networks:
       - public
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/ >/dev/null"]
       interval: 10s
       timeout: 5s
       retries: 20
