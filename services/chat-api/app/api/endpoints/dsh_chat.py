@@ -99,6 +99,7 @@ class CancelRequest(BaseModel):
 
 class DesktopRuntimeProfileRequest(BaseModel):
     model_id: str | None = Field(default=None, alias="modelId")
+    profile_version: str | None = Field(default=None, alias="profileVersion", max_length=128)
 
 
 class DesktopSessionCommitRequest(BaseModel):
@@ -323,6 +324,7 @@ async def desktop_runtime_profile(
             tenant_id=tenant_id,
             user_id=user_id,
             model_instance_id=str(payload.model_id or "").strip() or None,
+            requested_profile_version=str(payload.profile_version or "").strip() or None,
         )
     except PermissionError as exc:
         raise HTTPException(

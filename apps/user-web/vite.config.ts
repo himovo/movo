@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 const communityProductExtension = fileURLToPath(new URL('./src/product/community.ts', import.meta.url))
 const configuredProductExtension = process.env.MOVO_PRODUCT_UI_EXTENSION?.trim()
+const developmentService = process.env.MOVO_DEV_SERVICE_URL?.trim().replace(/\/+$/, '')
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -28,7 +29,14 @@ export default defineConfig({
     server: {
         host: '0.0.0.0',
         port: 3000,
-        proxy: {
+        proxy: developmentService ? Object.fromEntries(
+            ['/api', '/portal-api', '/knowledge-api', '/sso', '/aigc', '/askai-api', '/admin-api']
+                .map((prefix) => [prefix, {
+                    target: developmentService,
+                    changeOrigin: true,
+                    ws: prefix === '/askai-api',
+                }]),
+        ) : {
             '/api': {
                 target: process.env.VITE_LEGACY_API_TARGET || 'http://127.0.0.1:8000',
                 changeOrigin: true,

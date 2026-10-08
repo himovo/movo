@@ -37,6 +37,19 @@ class RuntimeProfileSnapshot(BaseModel):
     plugin_versions: tuple[str, ...] = ()
     plugins: tuple[dict[str, object], ...] = ()
 
+    def execution_payload(self) -> dict[str, object]:
+        """Return the normalized, secret-free execution contract.
+
+        Profile hashes may change when the serialized schema evolves (for
+        example an omitted optional field versus its empty default). Desktop
+        history may only reuse an older profile when the validated contracts
+        are otherwise identical.
+        """
+        return self.model_dump(mode="json", exclude={"content_hash", "profile_version"})
+
+    def is_execution_compatible_with(self, other: "RuntimeProfileSnapshot") -> bool:
+        return self.execution_payload() == other.execution_payload()
+
     def host_payload(
         self,
         *,

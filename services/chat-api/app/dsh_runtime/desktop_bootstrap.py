@@ -28,14 +28,24 @@ class DesktopRuntimeBootstrapService:
         tenant_id: str,
         user_id: str,
         model_instance_id: str | None,
+        requested_profile_version: str | None = None,
     ) -> DesktopRuntimeBootstrap:
-        snapshot = await self._publisher.publish_model_profile(
+        desired = await self._publisher.publish_model_profile(
             tenant_id=tenant_id,
             actor_id=user_id,
             user_id=user_id,
             model_instance_id=model_instance_id,
             activate=False,
         )
+        snapshot = desired
+        requested_version = str(requested_profile_version or "").strip()
+        if requested_version and requested_version != desired.profile_version:
+            try:
+                historical = await self._publisher.get(requested_version)
+            except ValueError:
+                historical = None
+            if historical is not None and historical.is_execution_compatible_with(desired):
+                snapshot = historical
         host_profile = await self._resolver.resolve(snapshot.profile_version, tenant_id=tenant_id)
         return DesktopRuntimeBootstrap(
             profile_version=snapshot.profile_version,

@@ -20,6 +20,7 @@ from app.dsh_runtime.profile import (
     RuntimeProfileResolver,
     RuntimeProfileBundle,
     RuntimeProfilePublisher,
+    RuntimeProfileSnapshot,
 )
 from app.llm.base import BaseLLMClient
 from app.llm.types import LLMResponse, Message, Role
@@ -126,6 +127,17 @@ async def _test_profile_compile_publish_rollback_disable_and_secret_exclusion() 
     repeated = await compiler.compile(tenant_id="tenant-a")
     assert repeated == first
     assert first.tool_versions == first.skill_versions == first.workflow_versions == first.plugin_versions == ()
+    equivalent_version = first.model_copy(update={
+        "profile_version": "rp-" + "b" * 24,
+        "content_hash": "b" * 64,
+    })
+    assert first.is_execution_compatible_with(equivalent_version)
+    legacy_wire = first.model_dump(mode="json", exclude={"plugins", "plugin_versions"})
+    legacy_wire.update({"profile_version": "rp-" + "c" * 24, "content_hash": "c" * 64})
+    legacy_shape = RuntimeProfileSnapshot.model_validate(legacy_wire)
+    assert first.is_execution_compatible_with(legacy_shape)
+    changed_contract = first.model_copy(update={"display_name": "different execution contract"})
+    assert not first.is_execution_compatible_with(changed_contract)
     assert "LONG-LIVED-SECRET" not in first.model_dump_json()
     assert RuntimeProfileBundle.load(RuntimeProfileBundle.export(first)) == first
     tampered = json.loads(RuntimeProfileBundle.export(first))
