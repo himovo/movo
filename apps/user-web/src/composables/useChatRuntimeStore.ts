@@ -206,6 +206,7 @@ type RuntimeCallbacks = {
 export type ExternalTurnHandle = {
   pane: ChatRuntimePane
   assistant: RuntimeMessage
+  bindMessageId(messageId: string): void
   apply(event: ExecutionEventV3): boolean
   finish(): void
   setCodeChanges(changes: DshTaskChangeSet): void
@@ -1234,6 +1235,13 @@ export function useChatRuntimeStore(callbacks: RuntimeCallbacks = {}) {
     return {
       pane,
       assistant,
+      bindMessageId(messageId: string) {
+        assistant.message_id = messageId
+        user.message_id = `user-${messageId}`
+        // A live snapshot may have arrived before the send call returned.
+        // Reconcile it now so the optimistic row keeps its execution state.
+        pane.messages = mergeAuthoritativeMessages(pane.messages, []).messages
+      },
       apply(event: ExecutionEventV3) {
         if (!isExecutionEventV3(event)) return false
         const store = ensureExecV3(assistant)
@@ -1249,7 +1257,8 @@ export function useChatRuntimeStore(callbacks: RuntimeCallbacks = {}) {
         void refreshAfterRun(callbacks, pane.sessionId)
       },
       setCodeChanges(changes: DshTaskChangeSet) {
-        const target = pane.messages.find(message => message._id === assistant._id)
+        const target = pane.messages.find(message => message.role === 'assistant' && message.message_id === changes.task_id)
+          || pane.messages.find(message => message._id === assistant._id)
         if (target) target._codeChanges = changes
       },
     }

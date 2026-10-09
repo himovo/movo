@@ -67,7 +67,6 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
         if (event.item_kind === 'approval') void refreshApprovals(entry)
         if (terminal(event)) {
           const turn = turns.get(sessionId)
-          turn?.finish()
           turns.delete(sessionId)
           entry.busy = false
           entry.stopping = false
@@ -75,6 +74,7 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
           if (turn) void getLatestDshTaskChanges(sessionId).then(changes => {
             if (changes?.files.length) turn.setCodeChanges(changes)
           }).catch(error => { console.warn('[code] failed to summarize task changes', error) })
+            .finally(() => turn.finish())
         }
       })
     : () => {}
@@ -204,7 +204,8 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
       if (!conversationId) throw new Error('desktop Code Session was not committed to MOVO history')
       await ensureSubscribed(state)
       turns.set(sessionId, chat.beginExternalTurn(key, text, conversationId))
-      await sendDshCodeTurn(sessionId, text)
+      const sent = await sendDshCodeTurn(sessionId, text)
+      turns.get(sessionId)?.bindMessageId(sent.messageId)
       await refreshApprovals(state)
       return true
     } catch (error) {

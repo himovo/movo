@@ -307,6 +307,11 @@ const displayMessages = computed(() => {
       prev.role === 'assistant' &&
       (prev.content?.trim() || '') === content
     ) {
+      // Keep a change summary even when the server and optimistic assistant
+      // briefly coexist with identical text during desktop synchronization.
+      if (msg._codeChanges && !prev._codeChanges) {
+        result[result.length - 1] = { ...prev, _codeChanges: msg._codeChanges }
+      }
       continue
     }
     result.push(msg)
