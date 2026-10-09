@@ -7,6 +7,7 @@ import type { ChatDocumentKind, PendingDocument } from './types'
 import { NModal } from 'naive-ui'
 import SkillFeedbackPanel from '../skills/SkillFeedbackPanel.vue'
 import ComposerActionButton from './ComposerActionButton.vue'
+import { useComposerAutofocus } from '../../composables/useComposerAutofocus'
 
 interface PendingImage {
   file: File
@@ -17,6 +18,7 @@ const props = defineProps<{
   running: boolean
   blocked?: boolean
   stopping?: boolean
+  active: boolean
   isNewSessionView: boolean
   chatModels: ChatModelOption[]
   selectedModelId: string
@@ -40,6 +42,8 @@ const { locale } = useLocale()
 
 const userInput = ref('')
 const composerInputRef = ref<HTMLTextAreaElement | null>(null)
+const autofocusEnabled = computed(() => props.active && !props.running && !props.blocked)
+useComposerAutofocus(composerInputRef, autofocusEnabled)
 const pendingImages = ref<PendingImage[]>([])
 const pendingDocuments = ref<PendingDocument[]>([])
 const imageInputRef = ref<HTMLInputElement | null>(null)
@@ -745,6 +749,7 @@ watch(() => props.allowSkills, (allowed) => {
         </div>
         <textarea
           ref="composerInputRef"
+          data-chat-composer-input="true"
           v-model="userInput"
           @input="handleComposerInput"
           @keydown="onComposerKeydown"

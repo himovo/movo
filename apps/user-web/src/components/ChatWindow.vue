@@ -2319,6 +2319,7 @@ function formatErrorMessage(raw: string): string {
       <ChatComposer
         v-else
         ref="composerRef"
+        :active="props.active"
         :running="isLoading"
         :blocked="Boolean(props.foreignRun || props.foreignRunFinished)"
         :stopping="Boolean(props.stopping)"
