@@ -4,6 +4,10 @@ updates:
     directory: /apps/user-web
     schedule:
       interval: weekly
+    # Tailwind v4 requires a coordinated PostCSS/CSS migration; keep v3 updates automatic.
+    ignore:
+      - dependency-name: tailwindcss
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: pip
     directory: /services/chat-api
     schedule:
