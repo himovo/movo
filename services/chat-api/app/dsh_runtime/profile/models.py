@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections import Counter
+import json
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -42,13 +44,27 @@ class RuntimeProfileSnapshot(BaseModel):
 
         Profile hashes may change when the serialized schema evolves (for
         example an omitted optional field versus its empty default). Desktop
-        history may only reuse an older profile when the validated contracts
-        are otherwise identical.
+        history may reuse an older profile when its execution contract is
+        preserved; separately added plugins do not alter that old contract.
         """
         return self.model_dump(mode="json", exclude={"content_hash", "profile_version"})
 
     def is_execution_compatible_with(self, other: "RuntimeProfileSnapshot") -> bool:
-        return self.execution_payload() == other.execution_payload()
+        historical = self.execution_payload()
+        current = other.execution_payload()
+        historical_plugins = historical.pop("plugins")
+        current_plugins = current.pop("plugins")
+        historical_versions = historical.pop("plugin_versions")
+        current_versions = current.pop("plugin_versions")
+        if historical != current:
+            return False
+        # A newly available plugin must not invalidate an existing task. The
+        # resumed task keeps its original profile; changed or removed plugins
+        # still fail this check, so their old permissions cannot be revived.
+        if not Counter(historical_versions) <= Counter(current_versions):
+            return False
+        plugin_key = lambda plugin: json.dumps(plugin, sort_keys=True, ensure_ascii=False)
+        return Counter(map(plugin_key, historical_plugins)) <= Counter(map(plugin_key, current_plugins))
 
     def host_payload(
         self,

@@ -14,6 +14,7 @@ defineProps<{
   navigationWidth?: number
   windowsTitleBar?: boolean
   sidebarCollapsed?: boolean
+  secondaryNavigationAvailable?: boolean
   showBack?: boolean
   backLabel?: string
   chatActions?: boolean
@@ -39,6 +40,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
+  (event: 'toggle-sidebar'): void
   (event: 'back'): void
   (event: 'choose-workspace'): void
   (event: 'select-workspace', workspace: DshWorkspace): void
@@ -67,9 +69,41 @@ const emit = defineEmits<{
         <img src="/movo-logo.png" :alt="windowsTitleBar && (navigationWidth || 260) <= 64 ? 'MOVO' : ''" />
         <span>MOVO</span>
       </span>
+      <button
+        v-if="!windowsTitleBar && secondaryNavigationAvailable && !sidebarCollapsed"
+        type="button"
+        class="desktop-window-chrome__sidebar-toggle desktop-window-chrome__sidebar-toggle--beside-brand"
+        :aria-label="locale === 'en' ? 'Hide sidebar' : '收起侧栏'"
+        :title="locale === 'en' ? 'Hide sidebar' : '收起侧栏'"
+        :aria-expanded="true"
+        @click="emit('toggle-sidebar')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <path d="M9 4v16" />
+        </svg>
+      </button>
     </div>
     <div class="desktop-window-chrome__content">
       <div class="desktop-window-chrome__context">
+        <span v-if="!windowsTitleBar && sidebarCollapsed" class="desktop-window-chrome__brand desktop-window-chrome__collapsed-brand" aria-label="MOVO">
+          <img src="/movo-logo.png" alt="" />
+          <span>MOVO</span>
+        </span>
+        <button
+          v-if="!windowsTitleBar && secondaryNavigationAvailable && sidebarCollapsed"
+          type="button"
+          class="desktop-window-chrome__sidebar-toggle"
+          :aria-label="sidebarCollapsed ? (locale === 'en' ? 'Show sidebar' : '展开侧栏') : (locale === 'en' ? 'Hide sidebar' : '收起侧栏')"
+          :title="sidebarCollapsed ? (locale === 'en' ? 'Show sidebar' : '展开侧栏') : (locale === 'en' ? 'Hide sidebar' : '收起侧栏')"
+          :aria-expanded="!sidebarCollapsed"
+          @click="emit('toggle-sidebar')"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <path d="M9 4v16" />
+          </svg>
+        </button>
         <button
           v-if="showBack"
           type="button"
@@ -217,6 +251,7 @@ const emit = defineEmits<{
 .desktop-window-chrome__workspace-control,
 .desktop-window-chrome__branch-control,
 .desktop-window-chrome__back-button,
+.desktop-window-chrome__sidebar-toggle,
 .desktop-window-chrome__actions {
   -webkit-app-region: no-drag;
 }
@@ -245,9 +280,11 @@ const emit = defineEmits<{
   object-fit: contain;
 }
 
-.desktop-window-chrome--compact-navigation .desktop-window-chrome__brand {
+.desktop-window-chrome--compact-navigation .desktop-window-chrome__sidebar .desktop-window-chrome__brand {
   display: none;
 }
+
+.desktop-window-chrome__collapsed-brand { flex: none; margin-right: 5px; }
 
 .desktop-window-chrome--windows.desktop-window-chrome--compact-navigation .desktop-window-chrome__sidebar {
   justify-content: center;
@@ -299,6 +336,23 @@ const emit = defineEmits<{
   color: #1d4ed8;
 }
 
+.desktop-window-chrome__sidebar-toggle {
+  display: grid;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+}
+.desktop-window-chrome__sidebar-toggle svg { width: 18px; height: 18px; }
+.desktop-window-chrome__sidebar-toggle--beside-brand { margin-left: 12px; }
+.desktop-window-chrome__sidebar-toggle:hover { background: #f1f5f9; color: #1d4ed8; }
+.desktop-window-chrome__sidebar-toggle:focus-visible { outline: 2px solid #bfdbfe; outline-offset: 1px; }
+
 .desktop-window-chrome__back-button svg {
   width: 17px;
   height: 17px;
@@ -330,6 +384,9 @@ const emit = defineEmits<{
 :global(html.theme-dark .desktop-window-chrome__back-button) {
   color: #cbd5e1;
 }
+
+:global(html.theme-dark .desktop-window-chrome__sidebar-toggle) { color: #cbd5e1; }
+:global(html.theme-dark .desktop-window-chrome__sidebar-toggle:hover) { background: #1e293b; color: #93c5fd; }
 
 :global(html.theme-dark .desktop-window-chrome__back-button:hover) {
   background: #1e293b;

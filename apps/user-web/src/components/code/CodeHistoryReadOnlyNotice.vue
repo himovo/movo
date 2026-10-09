@@ -1,23 +1,24 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useLocale } from '../../composables/i18n'
+import { t } from '../../composables/i18n'
 
 const props = defineProps<{
   executionLocation: 'desktop' | 'remote_sandbox'
   project?: { workspace_id: string; git_branch: string; worktree: boolean } | null
+  localFolderUnavailable?: boolean
+  canStartLocal?: boolean
 }>()
+const emit = defineEmits<{ (e: 'start-local'): void }>()
 
-const { locale } = useLocale()
-const title = computed(() => locale.value === 'zh' ? '项目会话历史（只读）' : 'Project task history (read only)')
+const title = computed(() => t('code.history_read_only.title'))
 const detail = computed(() => {
   if (props.executionLocation === 'remote_sandbox') {
-    return locale.value === 'zh'
-      ? '该会话绑定到企业远程沙箱；当前客户端没有可用执行面，但历史记录和审计信息仍可查看。'
-      : 'This task is bound to an enterprise remote sandbox. No execution surface is available here, but history and audit remain readable.'
+    return t('code.history_read_only.remote_detail')
   }
-  return locale.value === 'zh'
-    ? '该会话绑定到创建它的 MOVO Desktop 与本地项目。请在绑定的桌面端继续执行；Web 不会访问本地文件或命令。'
-    : 'This task is bound to its MOVO Desktop and local project. Continue on the bound desktop; Web never accesses local files or commands.'
+  if (props.localFolderUnavailable) {
+    return t('code.history_read_only.missing_folder_detail')
+  }
+  return t('code.history_read_only.local_detail')
 })
 </script>
 
@@ -34,6 +35,9 @@ const detail = computed(() => {
       <p v-if="props.project?.git_branch" class="mt-2 truncate font-mono text-[11px] text-slate-500">
         {{ props.project.git_branch }}
       </p>
+      <button v-if="props.canStartLocal && props.localFolderUnavailable" type="button" class="mt-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100" @click="emit('start-local')">
+        {{ t('code.history_read_only.start_local') }}
+      </button>
     </div>
   </div>
 </template>

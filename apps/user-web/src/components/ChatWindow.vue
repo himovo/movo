@@ -6,6 +6,7 @@ import LocalBrowserInterventionPrompt from './execution/LocalBrowserIntervention
 import ToolApprovalPrompt from './execution/ToolApprovalPrompt.vue'
 import DshCodeApprovalList from './code/DshCodeApprovalList.vue'
 import CodeHistoryReadOnlyNotice from './code/CodeHistoryReadOnlyNotice.vue'
+import CodeHistoryRestoringNotice from './code/CodeHistoryRestoringNotice.vue'
 import CodeTaskChangeCard from './code/CodeTaskChangeCard.vue'
 import CodeDraftContextBar from './code/CodeDraftContextBar.vue'
 import ChatComposer from './chat/ChatComposer.vue'
@@ -92,8 +93,10 @@ const props = defineProps<{
   codeWorktree?: boolean
   codeSourceRef?: string
   codeHistoryReadOnly?: boolean
+  codeHistoryRestoring?: boolean
   codeHistoryLocation?: 'desktop' | 'remote_sandbox'
   codeHistoryProject?: { workspace_id: string; git_branch: string; worktree: boolean } | null
+  codeHistoryLocalFolderUnavailable?: boolean
   desktopBrowserRequest?: number
   browserSessionId?: string
   desktopToolTabs?: DesktopToolTab[]
@@ -140,6 +143,7 @@ const emit = defineEmits<{
   (e: 'clear-intervention'): void
   (e: 'approval-decided'): void
   (e: 'choose-code-workspace'): void
+  (e: 'start-local-code-task'): void
   (e: 'select-code-workspace', workspace: DshWorkspace): void
   (e: 'clear-code-workspace'): void
   (e: 'code-worktree', enabled: boolean): void
@@ -2303,10 +2307,14 @@ function formatErrorMessage(raw: string): string {
           @decide="(approvalId, decision, scope) => emit('code-approval', approvalId, decision, scope)"
         />
       </div>
+      <CodeHistoryRestoringNotice v-if="props.codeHistoryRestoring" />
       <CodeHistoryReadOnlyNotice
-        v-if="props.codeHistoryReadOnly && props.codeHistoryLocation"
+        v-else-if="props.codeHistoryReadOnly && props.codeHistoryLocation"
         :execution-location="props.codeHistoryLocation"
         :project="props.codeHistoryProject"
+        :local-folder-unavailable="props.codeHistoryLocalFolderUnavailable"
+        :can-start-local="capabilities.localWorkspacePicker"
+        @start-local="emit('start-local-code-task')"
       />
       <ChatComposer
         v-else

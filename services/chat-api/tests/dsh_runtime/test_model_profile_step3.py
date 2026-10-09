@@ -120,6 +120,26 @@ def test_previous_runtime_bundle_with_inline_skill_still_loads() -> None:
     assert loaded.skills[0].bundle_archive_id == ""
 
 
+def test_historical_desktop_profile_survives_additive_plugin_install_only() -> None:
+    base = asyncio.run(ModelProfileCompiler(FakeCatalog()).compile(tenant_id="tenant-a"))
+    greet = {"name": "dsh-plugin-greet", "version": "0.3.2", "tool_names": ["greet"]}
+    old = base.model_copy(update={
+        "plugins": ({"name": "existing", "version": "1.0.0"},),
+        "plugin_versions": ("existing@1.0.0",),
+    })
+    added = old.model_copy(update={
+        "plugins": (*old.plugins, greet),
+        "plugin_versions": (*old.plugin_versions, "dsh-plugin-greet@0.3.2"),
+    })
+    assert old.is_execution_compatible_with(added)
+    assert not added.is_execution_compatible_with(old)
+    changed = added.model_copy(update={
+        "plugins": ({"name": "existing", "version": "2.0.0"}, greet),
+    })
+    assert not old.is_execution_compatible_with(changed)
+    assert not old.is_execution_compatible_with(added.model_copy(update={"model_name": "another-model"}))
+
+
 async def _test_profile_compile_publish_rollback_disable_and_secret_exclusion() -> None:
     catalog = FakeCatalog()
     compiler = ModelProfileCompiler(catalog)

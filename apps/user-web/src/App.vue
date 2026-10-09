@@ -29,6 +29,7 @@ import {
 import { deleteSkill, enrichSkillDraft, generateSkill, listSkills, updateSkill, uploadSkillSource } from './api/skills'
 import { joinSessionShare, type SessionShareError } from './api/sessionSharing'
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import ChatWindowLoadError from './components/ChatWindowLoadError.vue'
 import { registerProductMessages, setLocale as setAppLocale, t, useLocale, type Locale } from './composables/i18n'
 import { themeOverridesForPlatform } from './composables/naiveThemeOverrides'
 import { getBrowserTimezone, setAppTimezone } from './composables/appTimezone'
@@ -40,6 +41,7 @@ import type { SessionLiveAccessRevokedReason } from './composables/useSessionLiv
 import { useDshCodeRuntime } from './composables/code/useDshCodeRuntime'
 import { useUserBoundProjects } from './composables/code/userBoundProjects'
 import { boundProjectWorktree } from './composables/code/projectAuthorization'
+import { projectHistoryVisibility } from './composables/code/projectHistoryVisibility'
 import { useEnterpriseAccessPolicy } from './composables/useEnterpriseAccessPolicy'
 import { useProfileRefreshOnResume } from './composables/useProfileRefreshOnResume'
 import { useSkillShareInboxBadge } from './composables/useSkillShareInboxBadge'
@@ -48,7 +50,14 @@ import { useDesktopToolTabs } from './composables/desktop/useDesktopToolTabs'
 import { clearDesktopAuthSession, restoreDesktopAuthToken } from './composables/desktop/desktopAuthSession'
 import { AppsOutline, SettingsOutline } from '@vicons/ionicons5'
 
-const ChatWindow = defineAsyncComponent(() => import('./components/ChatWindow.vue'))
+const ChatWindow = defineAsyncComponent({
+  loader: () => import('./components/ChatWindow.vue'),
+  errorComponent: ChatWindowLoadError,
+  onError(_error, retry, fail, attempts) {
+    if (attempts < 2) window.setTimeout(retry, 750)
+    else fail()
+  },
+})
 const SkillsPage = defineAsyncComponent(() => import('./components/MySkillsPage.vue'))
 const PluginsPage = defineAsyncComponent(() => import('./components/MyPluginsPage.vue'))
 const ToolsPage = defineAsyncComponent(() => import('./components/MyToolsPage.vue'))
@@ -97,7 +106,7 @@ const themeMode = ref<ThemeMode>(
 const isDarkTheme = ref(false)
 document.documentElement.classList.toggle('platform-desktop', capabilities.isDesktop)
 const isWindowsDesktop = capabilities.isDesktop && document.documentElement.classList.contains('platform-windows')
-const windowsSidebarCollapsed = ref(false)
+const desktopSidebarCollapsed = ref(false)
 const platformThemeOverrides = computed(() => themeOverridesForPlatform(
   isDarkTheme.value && capabilities.isDesktop,
 ))
@@ -158,7 +167,7 @@ const desktopPrimarySection = computed<DesktopPrimarySection>(() => {
   return 'home'
 })
 const desktopSecondaryNavigationVisible = computed(() =>
-  capabilities.isDesktop && desktopPrimarySection.value === 'home' && !windowsSidebarCollapsed.value,
+  capabilities.isDesktop && desktopPrimarySection.value === 'home' && !desktopSidebarCollapsed.value,
 )
 const desktopNavigationWidth = computed(() => capabilities.isDesktop
   ? 52 + (desktopSecondaryNavigationVisible.value ? 260 : 0)
@@ -328,37 +337,12 @@ const pinnedSessions = computed(() => pinnedSessionIds.value
 const collapsedProjectHistory = ref<Record<string, boolean>>(savedSidebarHistoryState.projects || {})
 function projectHistoryExpanded(workspaceId: string): boolean { return !collapsedProjectHistory.value[workspaceId] }
 function toggleProjectHistory(workspaceId: string): void { collapsedProjectHistory.value = { ...collapsedProjectHistory.value, [workspaceId]: projectHistoryExpanded(workspaceId) } }
-const historyItems = computed(() => sortSessionsByRecentActivity(
-  sessions.value.filter((session) => !supportsLocalCodeProjects || !session.code_project?.workspace_id),
-))
-const projectHistoryGroups = computed(() => {
-  if (!canUseCode.value || !supportsLocalCodeProjects) return []
-  const sessionsByWorkspace = new Map<string, SessionSummary[]>()
-  sessions.value.filter((session) => session.code_project?.workspace_id).forEach((session) => {
-    const workspaceId = session.code_project!.workspace_id
-    sessionsByWorkspace.set(workspaceId, [...(sessionsByWorkspace.get(workspaceId) || []), session])
-  })
-  const knownWorkspaces = new Map(projectWorkspaces.value.map((workspace) => [workspace.workspace_id, workspace]))
-  for (const workspaceId of sessionsByWorkspace.keys()) {
-    if (!knownWorkspaces.has(workspaceId)) {
-      knownWorkspaces.set(workspaceId, {
-        workspace_id: workspaceId,
-        title: workspaceTitles.value[workspaceId] || `${locale.value === 'en' ? 'Project' : '项目'} · ${workspaceId.slice(0, 8)}`,
-        path: '', status: 'missing-dir', session_ids: [], created_at: '', updated_at: '',
-      })
-    }
-  }
-  return [...knownWorkspaces.values()]
-    .sort((left, right) => right.updated_at.localeCompare(left.updated_at))
-    .map((workspace) => {
-      const items = sortSessionsByRecentActivity(sessionsByWorkspace.get(workspace.workspace_id) || [])
-      return {
-        workspaceId: workspace.workspace_id,
-        title: workspaceTitles.value[workspace.workspace_id] || workspace.title,
-        items,
-      }
-    })
-})
+const visibleProjectHistory = computed(() => projectHistoryVisibility(sessions.value, projectWorkspaces.value, workspaceTitles.value))
+const historyItems = computed(() => supportsLocalCodeProjects && canUseCode.value ? visibleProjectHistory.value.ordinary : sortSessionsByRecentActivity(sessions.value))
+const projectHistoryGroups = computed(() => canUseCode.value && supportsLocalCodeProjects ? visibleProjectHistory.value.projects : [])
+function isUnavailableProjectHistory(sessionId: string): boolean {
+  return supportsLocalCodeProjects && visibleProjectHistory.value.unavailableIds.has(sessionId)
+}
 const chatRuntime = useChatRuntimeStore({
   onSessionResolved: (sessionId) => {
     if (!sessions.value.some((item) => item.id === sessionId)) {
@@ -752,6 +736,13 @@ function handleLoginSuccess(payload: { token: string; username: string; profile?
   // Authentication is complete once a token is returned. Close the dialog
   // before running optional cleanup and persistence so those follow-up tasks
   // can never leave an authenticated user stuck on the verifying state.
+  sessions.value = []
+  sharedSessions.value = []
+  sessionsHasMore.value = false
+  sharedSessionsHasMore.value = false
+  chatRuntime.reset()
+  userProfile.value = null
+  localStorage.removeItem(authUserProfileKey)
   authToken.value = payload.token
   currentAccount.value = payload.username
   loginOpen.value = false
@@ -913,9 +904,13 @@ function clearAuthenticatedState() {
   billingSummaryLoaded.value = false
   userMenuOpen.value = false
   sessions.value = []
+  sharedSessions.value = []
   sessionsHasMore.value = false
+  sharedSessionsHasMore.value = false
   sessionsLoading.value = false
   sessionsLoadingMore.value = false
+  sharedSessionsLoading.value = false
+  sharedSessionsLoadingMore.value = false
   chatRuntime.reset()
   sessionSearchOpen.value = false
   sessionSearchQuery.value = ''
@@ -1379,6 +1374,7 @@ async function refreshUserProfile(token: string, createDefaultSession = false, p
     startLocalSession()
   }
   const result = await fetchUserProfile(token)
+  if (authToken.value !== token) return
   if (result.status === 401) {
     if (authToken.value === token) handleAuthExpired()
     return
@@ -1738,6 +1734,8 @@ async function confirmDeleteSession() {
 async function loadSessions(reset = true) {
   const userId = getUserId()
   if (!userId) return
+  const mainId = getMainId()
+  const token = authToken.value
   if (reset) {
     sessionsLoading.value = true
     sessionsHasMore.value = false
@@ -1745,20 +1743,20 @@ async function loadSessions(reset = true) {
     sessionsLoadingMore.value = true
   }
   try {
-    const page = await listSessionsPaged(userId, getMainId(), {
+    const page = await listSessionsPaged(userId, mainId, {
       limit: sessionPageSize,
       offset: reset ? 0 : sessions.value.length,
-    }, authToken.value || null)
+    }, token || null)
+    if (token !== authToken.value || userId !== getUserId() || mainId !== getMainId()) return
     sessions.value = reset ? page.items : mergeSessionPages(sessions.value, page.items)
     sessionsHasMore.value = page.has_more
     if (canUseCode.value) void refreshWorkspaceTitles()
   } catch (error) {
     throw error
   } finally {
-    if (reset) {
-      sessionsLoading.value = false
-    } else {
-      sessionsLoadingMore.value = false
+    if (token === authToken.value && userId === getUserId() && mainId === getMainId()) {
+      if (reset) sessionsLoading.value = false
+      else sessionsLoadingMore.value = false
     }
   }
 }
@@ -1766,10 +1764,13 @@ async function loadSessions(reset = true) {
 async function refreshSessionSummaries() {
   const userId = getUserId()
   if (!userId || document.visibilityState === 'hidden') return
+  const mainId = getMainId()
+  const token = authToken.value
   try {
-    const page = await listSessionsPaged(userId, getMainId(), {
+    const page = await listSessionsPaged(userId, mainId, {
       limit: Math.max(sessionPageSize, sessions.value.length), offset: 0,
-    }, authToken.value || null)
+    }, token || null)
+    if (token !== authToken.value || userId !== getUserId() || mainId !== getMainId()) return
     sessions.value = mergeSessionPages(page.items, sessions.value).slice(0, Math.max(sessionPageSize, sessions.value.length))
     sessionsHasMore.value = page.has_more
     chatRuntime.syncActiveRuns(page.items, userId)
@@ -1786,6 +1787,8 @@ async function refreshSessionSummaries() {
 async function loadSharedSessions(reset = true) {
   const userId = getUserId()
   if (!userId) return
+  const mainId = getMainId()
+  const token = authToken.value
   if (reset) {
     sharedSessionsLoading.value = true
     sharedSessionsHasMore.value = false
@@ -1793,20 +1796,20 @@ async function loadSharedSessions(reset = true) {
     sharedSessionsLoadingMore.value = true
   }
   try {
-    const page = await listSessionsPaged(userId, getMainId(), {
+    const page = await listSessionsPaged(userId, mainId, {
       limit: sessionPageSize,
       offset: reset ? 0 : sharedSessions.value.length,
       scope: 'shared',
-    }, authToken.value || null)
+    }, token || null)
+    if (token !== authToken.value || userId !== getUserId() || mainId !== getMainId()) return
     sharedSessions.value = reset ? page.items : [...sharedSessions.value, ...page.items]
     sharedSessionsHasMore.value = page.has_more
   } catch (error) {
     if (reset) throw error
   } finally {
-    if (reset) {
-      sharedSessionsLoading.value = false
-    } else {
-      sharedSessionsLoadingMore.value = false
+    if (token === authToken.value && userId === getUserId() && mainId === getMainId()) {
+      if (reset) sharedSessionsLoading.value = false
+      else sharedSessionsLoadingMore.value = false
     }
   }
 }
@@ -1814,12 +1817,15 @@ async function loadSharedSessions(reset = true) {
 async function refreshSharedSummaries() {
   const userId = getUserId()
   if (!userId || document.visibilityState === 'hidden') return
+  const mainId = getMainId()
+  const token = authToken.value
   try {
-    const page = await listSessionsPaged(userId, getMainId(), {
+    const page = await listSessionsPaged(userId, mainId, {
       limit: Math.max(sessionPageSize, sharedSessions.value.length),
       offset: 0,
       scope: 'shared',
-    }, authToken.value || null)
+    }, token || null)
+    if (token !== authToken.value || userId !== getUserId() || mainId !== getMainId()) return
     sharedSessions.value = page.items
     sharedSessionsHasMore.value = page.has_more
     chatRuntime.syncActiveRuns(page.items, userId)
@@ -1919,9 +1925,14 @@ async function selectSession(sessionId: string) {
     ))
   }
   const pane = await chatRuntime.selectSession(sessionId, userId, getMainId(), authToken.value || null)
-  if (canUseCode.value && pane.codeProject?.workspace_id) {
-    const identityReady = await syncDesktopAgentIdentity(authToken.value, userId)
-    if (identityReady) await codeRuntime.attach(pane.key, sessionId)
+  if (canUseCode.value && pane.codeProject?.workspace_id && !codeRuntime.stateFor(pane.key).session) {
+    codeRuntime.beginRestore(pane.key)
+    try {
+      const identityReady = await syncDesktopAgentIdentity(authToken.value, userId)
+      if (identityReady) await codeRuntime.attach(pane.key, sessionId)
+    } finally {
+      codeRuntime.finishRestore(pane.key)
+    }
   }
   closeSessionSearch()
 }
@@ -2257,7 +2268,7 @@ onBeforeUnmount(() => {
   <div
     v-else
     class="app-shell relative flex h-screen bg-white text-gray-800 font-sans"
-    :class="{ 'app-shell--desktop': capabilities.isDesktop, 'app-shell--windows-desktop': isWindowsDesktop, 'app-shell--windows-sidebar-collapsed': isWindowsDesktop && windowsSidebarCollapsed }"
+    :class="{ 'app-shell--desktop': capabilities.isDesktop, 'app-shell--windows-desktop': isWindowsDesktop, 'app-shell--windows-sidebar-collapsed': isWindowsDesktop && desktopSidebarCollapsed }"
   >
     <CreateProjectDialog
       v-if="canUseCode"
@@ -2276,10 +2287,10 @@ onBeforeUnmount(() => {
     />
     <WindowsTitleBar
       v-if="isWindowsDesktop"
-      :collapsed="windowsSidebarCollapsed"
+      :collapsed="desktopSidebarCollapsed"
       :dark="isDarkTheme"
       :locale="locale === 'en' ? 'en' : 'zh'"
-      @toggle-sidebar="windowsSidebarCollapsed = !windowsSidebarCollapsed"
+      @toggle-sidebar="desktopSidebarCollapsed = !desktopSidebarCollapsed"
       @new-chat="handleSidebarAction('plus')"
       @add-project="createProject"
     />
@@ -2287,7 +2298,8 @@ onBeforeUnmount(() => {
       v-if="capabilities.isDesktop"
       :navigation-width="desktopNavigationWidth"
       :windows-title-bar="isWindowsDesktop"
-      :sidebar-collapsed="false"
+      :sidebar-collapsed="desktopSidebarCollapsed"
+      :secondary-navigation-available="desktopPrimarySection === 'home'"
       :title="desktopWindowTitle"
       :show-back="currentView === 'skills'"
       :back-label="t('skills.back_to_chat')"
@@ -2320,6 +2332,7 @@ onBeforeUnmount(() => {
       @open-browser="requestDesktopBrowser"
       @toggle-code-panel="toggleDesktopCodePanel"
       @back="closeSkillsPage"
+      @toggle-sidebar="desktopSidebarCollapsed = !desktopSidebarCollapsed"
     />
     <DesktopPrimaryNavigation
       v-if="capabilities.isDesktop"
@@ -2428,6 +2441,7 @@ onBeforeUnmount(() => {
             >
               {{ compactSessionTitle(session) }}
             </div>
+            <span v-if="isUnavailableProjectHistory(session.id)" class="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500" :title="t('app.sidebar.project_folder_unavailable')">{{ t('app.sidebar.project_history_only') }}</span>
             <span
               v-if="sessionNeedsHumanAssistance(session.id)"
               class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700"
@@ -3044,8 +3058,10 @@ onBeforeUnmount(() => {
               :code-worktree="codeRuntime.stateFor(pane.key).worktree"
               :code-source-ref="codeRuntime.stateFor(pane.key).sourceRef"
               :code-history-read-only="pane.executionLocation !== 'server' && !codeRuntime.stateFor(pane.key).session"
+              :code-history-restoring="codeRuntime.stateFor(pane.key).restoring"
               :code-history-location="pane.executionLocation === 'server' ? undefined : pane.executionLocation"
               :code-history-project="pane.codeProject"
+              :code-history-local-folder-unavailable="Boolean(capabilities.localWorkspacePicker && pane.codeProject?.workspace_id && projectWorkspaces.find(workspace => workspace.workspace_id === pane.codeProject?.workspace_id)?.status !== 'ok')"
               :desktop-browser-request="desktopBrowserRequest"
               :browser-session-id="pane.sessionId || pane.key"
               :desktop-tool-tabs="desktopToolTabsFor(pane.key)"
@@ -3068,6 +3084,7 @@ onBeforeUnmount(() => {
               @select-code-workspace="(workspace) => selectBoundProject(pane.key, workspace)"
               @clear-code-workspace="codeRuntime.clear(pane.key)"
               @code-worktree="(enabled) => codeRuntime.setWorktree(pane.key, enabled)"
+              @start-local-code-task="createProject"
               @code-source-ref="(fullRef) => codeRuntime.setSourceRef(pane.key, fullRef)"
               @code-branch-updated="(branch) => codeRuntime.setWorkspaceBranch(pane.key, branch)"
               @code-approval="(approvalId, decision, scope) => codeRuntime.decide(pane.key, approvalId, decision, scope)"

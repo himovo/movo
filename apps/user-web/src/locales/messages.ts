@@ -255,6 +255,8 @@ export const messages = {
   'app.sidebar.skills': { zh: '我的配置', en: 'My Configurations' },
   'app.sidebar.loading_history': { zh: '正在加载历史记录...', en: 'Loading history...' },
   'app.sidebar.load_more': { zh: '加载更多', en: 'Load more' },
+  'app.sidebar.project_history_only': { zh: '仅历史', en: 'History only' },
+  'app.sidebar.project_folder_unavailable': { zh: '本机没有该项目目录，仅可查看历史', en: 'Project folder unavailable on this device; history only' },
   'app.sidebar.marketplace': { zh: '我的 Skills', en: 'My Skills' },
   'plugins.title': { zh: '我的插件', en: 'My Plugins' },
   'plugins.sidebar': { zh: '我的 插件', en: 'My Plugins' },
@@ -1318,6 +1320,12 @@ export const messages = {
   'session.sharedWithMe.title': { zh: '分享给我', en: 'Shared with me' },
   'session.sharedWithMe.unread': { zh: '有新消息', en: 'New messages' },
   'session.sharedWithMe.badge': { zh: '共享', en: 'Shared' },
+  'code.history_read_only.title': { zh: '项目会话历史（只读）', en: 'Project task history (read only)' },
+  'code.history_restoring': { zh: '正在连接本机项目…', en: 'Connecting to the local project…' },
+  'code.history_read_only.remote_detail': { zh: '该会话绑定到企业远程沙箱；当前客户端没有可用执行面，但历史记录和审计信息仍可查看。', en: 'This task is bound to an enterprise remote sandbox. No execution surface is available here, but history and audit remain readable.' },
+  'code.history_read_only.local_detail': { zh: '该会话绑定到创建它的 MOVO Desktop 与本地项目。请在绑定的桌面端继续执行；Web 不会访问本地文件或命令。', en: 'This task is bound to its MOVO Desktop and local project. Continue on the bound desktop; Web never accesses local files or commands.' },
+  'code.history_read_only.missing_folder_detail': { zh: '这台电脑没有原项目目录。历史记录可以查看；如需继续开发，请在本机选择目录，开始一个新会话。', en: 'The original project folder is unavailable on this device. You can read the history; choose a local folder to start a new task.' },
+  'code.history_read_only.start_local': { zh: '选择本机目录，开始新会话', en: 'Choose a local folder for a new task' },
 } as const
 
 export type MessageKey = keyof typeof messages

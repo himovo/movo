@@ -27,6 +27,7 @@ export type CodePaneState = {
   worktree: boolean
   sourceRef: string
   busy: boolean
+  restoring: boolean
   stopping: boolean
   error: string
   cursor: number
@@ -42,7 +43,7 @@ type ChatRuntimeBoundary = {
 function draftState(): CodePaneState {
   return reactive({
     draftId: createClientUuid(), workspace: null, session: null, worktree: false, sourceRef: '',
-    busy: false, stopping: false, error: '', cursor: -1, events: [], approvals: [], approvalBusy: {},
+    busy: false, restoring: false, stopping: false, error: '', cursor: -1, events: [], approvals: [], approvalBusy: {},
   })
 }
 
@@ -88,9 +89,13 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
     return state
   }
 
+  function beginRestore(key: string): void { stateFor(key).restoring = true }
+  function finishRestore(key: string): void { stateFor(key).restoring = false }
+
   async function attach(key: string, conversationId: string) {
     if (!capabilities.codeExecution) return null
     const state = stateFor(key)
+    state.restoring = true
     state.error = ''
     try {
       const session = await attachDshCodeConversation(conversationId)
@@ -108,6 +113,8 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
     } catch (error) {
       state.error = codeRuntimeErrorMessage(error, getLocale())
       return null
+    } finally {
+      state.restoring = false
     }
   }
 
@@ -288,5 +295,5 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
     for (const sessionId of subscribed) void unsubscribeDshCodeEvents(sessionId)
   })
 
-  return { stateFor, attach, clear, setWorktree, setSourceRef, setWorkspaceBranch, setDraftProject, inheritDraftProject, transferDraft, send, stop, decide, needsAssistance, activeSessions, reset }
+  return { stateFor, beginRestore, finishRestore, attach, clear, setWorktree, setSourceRef, setWorkspaceBranch, setDraftProject, inheritDraftProject, transferDraft, send, stop, decide, needsAssistance, activeSessions, reset }
 }
