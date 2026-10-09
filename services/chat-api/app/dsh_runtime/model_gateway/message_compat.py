@@ -45,7 +45,10 @@ def normalize_tool_history(messages: list[dict[str, Any]]) -> list[dict[str, Any
     def resolve_id(value: dict[str, Any]) -> str:
         explicit = _call_id(value)
         if explicit:
-            return explicit if explicit in pending else ""
+            # A legacy history slice can begin with a result whose assistant
+            # call is outside the slice. Keep its explicit ID, but never match
+            # it to a different call that is still pending in this slice.
+            return explicit if not pending or explicit in pending else ""
         return next(iter(pending)) if len(pending) == 1 else ""
 
     for original in messages:

@@ -36,6 +36,24 @@ def test_legacy_wrapped_tool_result_still_maps() -> None:
     assert messages[0].content == "old answer"
 
 
+def test_explicit_result_does_not_complete_a_different_pending_call() -> None:
+    messages = ModelGatewayService._messages(_request([
+        {"role": "assistant", "content": [
+            {"type": "text", "text": "checking"},
+            {"type": "tool-call", "id": "call-current", "name": "read", "arguments": "{}"},
+        ]},
+        {"role": "user", "content": [
+            {"type": "tool-result", "toolCallId": "call-other", "content": [{"type": "text", "text": "unrelated"}]},
+        ]},
+        {"role": "user", "content": [{"type": "text", "text": "continue"}]},
+    ]))
+
+    assert len(messages) == 2
+    assert messages[0].content == "checking"
+    assert messages[0].tool_calls is None
+    assert messages[1].content == "continue"
+
+
 def test_legacy_wrapped_result_recovers_the_only_pending_call_id() -> None:
     messages = ModelGatewayService._messages(_request([
         {"role": "assistant", "content": [
