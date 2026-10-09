@@ -16,6 +16,7 @@ from app.llm.configured_models import (
 )
 from app.llm.types import Message, Role
 
+from .message_compat import normalize_tool_history
 from .token import ModelGatewayClaims
 from .tool_schema import to_openai_chat_tools
 from .tool_visibility import visible_tools
@@ -202,7 +203,7 @@ class ModelGatewayService:
         result: list[Message] = []
         if request.system:
             result.append(Message(role=Role.SYSTEM, content=request.system))
-        for raw in request.messages:
+        for raw in normalize_tool_history(request.messages):
             role_value = str(raw.get("role") or "user")
             try:
                 role = Role(role_value)
@@ -212,7 +213,8 @@ class ModelGatewayService:
             if role == Role.TOOL:
                 # DSH v4 sends a first-class tool message; older sessions put
                 # the same call id inside a user-role tool-result block below.
-                call_id = str(raw.get("toolCallId") or raw.get("tool_call_id") or "")
+                source = raw.get("source") if isinstance(raw.get("source"), dict) else {}
+                call_id = str(raw.get("toolCallId") or raw.get("tool_call_id") or source.get("callId") or "")
                 if not call_id:
                     raise ValueError("DSH tool message is missing toolCallId")
                 if isinstance(content, list):
@@ -238,7 +240,7 @@ class ModelGatewayService:
                         result.append(Message(
                             role=Role.TOOL,
                             content=result_text,
-                            tool_call_id=str(block.get("toolCallId") or ""),
+                            tool_call_id=str(block.get("toolCallId") or block.get("tool_call_id") or ""),
                         ))
                     continue
                 text = "\n".join(str(block.get("text") or "") for block in blocks if block.get("type") == "text")

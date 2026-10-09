@@ -2094,7 +2094,13 @@ async function handlePaneSend(
       codeRuntime.transferDraft(key, derived.key)
       targetKey = derived.key
     }
-    try { await codeRuntime.send(targetKey, payload.text, payload.modelId) } catch { /* visible in Code context */ }
+    try {
+      await codeRuntime.send(targetKey, payload.text, payload.modelId)
+    } catch {
+      // The Runtime owns the visible error; the composer still owns the draft.
+      // Restore it so a rejected desktop send never looks like a lost message.
+      payload.onRejected?.()
+    }
     return
   }
   chatRuntime.sendMessage(key, {
