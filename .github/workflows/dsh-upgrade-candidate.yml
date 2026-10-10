@@ -21,7 +21,7 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: "11.28.5"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "24.19.0"
       - name: Install active Runtime Host
