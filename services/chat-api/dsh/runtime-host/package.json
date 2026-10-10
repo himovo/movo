@@ -32,6 +32,6 @@
     "@deepseek-ai/dsh-web": "0.2.1-alpha.1",
     "@modelcontextprotocol/sdk": "1.31.0",
     "fflate": "0.8.3",
-    "pnpm": "11.28.5"
+    "pnpm": "12.10.0"
   }
 }
