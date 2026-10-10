@@ -61,7 +61,8 @@ def compile_workflow_body(
                 raise PermissionError("workflow call_tool node requires an authorized HTTP or MCP tool")
             configured = node.get("businessConfig") if isinstance(node.get("businessConfig"), dict) else {}
             wanted = str(
-                configured.get("externalToolId")
+                configured.get("preferredToolId")
+                or configured.get("externalToolId")
                 or configured.get("external_tool_id")
                 or configured.get("toolId")
                 or configured.get("tool_id")

@@ -168,7 +168,7 @@
                                 :loading="toolOptionsLoading"
                                 :options="toolOptions"
                                 class="node-tool-select"
-                                :placeholder="t('优先使用的 Tool / MCP（可选）')"
+                                :placeholder="t('skills.workflow.toolRequiredPlaceholder')"
                                 @update:value="(val: any) => handleToolSelect(step, val)"
                               />
                               <n-select
@@ -841,6 +841,7 @@ import translateRewriteIcon from '@/assets/workflow-node-icons/translate-rewrite
 import fillTableIcon from '@/assets/workflow-node-icons/fill-table.svg';
 import exportDeliveryIcon from '@/assets/workflow-node-icons/export-delivery.svg';
 import SkillPublishDialog from './SkillPublishDialog.vue';
+import { missingWorkflowSelection } from './workflowRequiredSelections';
 
 const PythonCodeEditor = defineAsyncComponent(() => import('@/components/PythonCodeEditor.vue'));
 
@@ -2409,12 +2410,10 @@ async function saveWorkflow(): Promise<boolean> {
     message.warning(t('请至少填写一个业务步骤'));
     return false;
   }
-  const missingKnowledge = workflowNodes.find(node => node.type === 'read_material'
-    && node.businessConfig?.sourceType === 'knowledge_document'
-    && !String(node.businessConfig?.knowledgeSourceId || '').trim());
-  if (missingKnowledge) {
-    activeStepId.value = String(missingKnowledge.id || '');
-    message.warning(t('请先选择要读取的知识文档'));
+  const missingSelection = missingWorkflowSelection(workflowNodes);
+  if (missingSelection) {
+    activeStepId.value = missingSelection.nodeId;
+    message.warning(t(missingSelection.messageKey));
     return false;
   }
   const aliases = workflowNodes.map(node => String(node.outputAlias || '').trim()).filter(Boolean);

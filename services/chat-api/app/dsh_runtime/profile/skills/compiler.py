@@ -30,7 +30,6 @@ class SkillProfileCompiler:
         styles = tuple(self._compile_style(row) for row in rows if is_writing_style(row))
         style_refs = self._style_ref_aliases(styles)
         skills: list[DshSkillDefinition] = []
-        compile_errors: list[Exception] = []
         for row in rows:
             if is_writing_style(row):
                 continue
@@ -39,15 +38,12 @@ class SkillProfileCompiler:
             except (LookupError, PermissionError, ValueError) as exc:
                 # A malformed enabled Skill must fail closed, but it must not
                 # make every unrelated conversation in the tenant unavailable.
-                compile_errors.append(exc)
                 logger.warning(
                     "skill_profile_compile_skipped source_id=%s name=%s error=%s",
                     str(row.get("id") or ""),
                     str(row.get("name") or ""),
                     str(exc),
                 )
-        if compile_errors and not skills:
-            raise compile_errors[0]
         names = [item.name for item in skills]
         if len(names) != len(set(names)):
             raise ValueError("compiled Skill Profile contains duplicate names")

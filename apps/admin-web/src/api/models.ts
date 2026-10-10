@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { expireAdminSession } from './adminSessionExpiry';
 import { useAuthStore } from '@/stores/auth';
 
 export type ModelStatus = 'active' | 'disabled';
@@ -152,11 +153,8 @@ export async function streamModelInstanceTest(
     },
     body: JSON.stringify({ prompt }),
   });
-  if (response.status === 401 || response.status === 403) {
-    authStore.clearSession();
-    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-      window.location.replace('/login');
-    }
+  if (response.status === 401) {
+    expireAdminSession();
     throw new Error('认证已过期，请重新登录');
   }
   if (!response.ok || !response.body) {

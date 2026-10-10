@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
+import { expireAdminSession, isAdminLoginRequest } from './adminSessionExpiry';
 
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_ADMIN_API_BASE_URL || '/admin-api',
@@ -19,14 +20,8 @@ apiClient.interceptors.response.use(
   (error) => {
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
-      if (status === 401 || status === 403) {
-        const authStore = useAuthStore();
-        if (authStore.token) {
-          authStore.clearSession();
-        }
-        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-          window.location.replace('/login');
-        }
+      if (status === 401 && !isAdminLoginRequest(error.config?.url)) {
+        expireAdminSession();
       }
     }
     return Promise.reject(error);

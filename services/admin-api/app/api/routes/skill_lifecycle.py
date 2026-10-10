@@ -10,6 +10,7 @@ from app.api.routes.skills import _serialize
 from app.core.db import get_db
 from app.services.organization_skill_feedback import organization_skill_feedback_service
 from app.services.skill_lifecycle import OrganizationSkillLifecycle
+from app.services.workflow_validation import validate_workflow_config
 
 
 router = APIRouter()
@@ -24,6 +25,12 @@ class PublishSkillPayload(BaseModel):
 async def publish_skill(skill_id: str, payload: PublishSkillPayload, current_user: dict = Depends(get_current_admin_user)) -> dict[str, Any]:
     main_id = str(current_user.get("main_id") or "default")
     try:
+        row = await get_db().skills.find_one({"_id": str(skill_id), "main_id": main_id})
+        if row is None:
+            raise LookupError("技能不存在")
+        draft = row.get("draft") or row
+        if draft.get("type") == "workflow":
+            validate_workflow_config(draft.get("config") or {})
         doc, release = await OrganizationSkillLifecycle().publish(
             main_id=main_id, skill_id=str(skill_id), version=payload.version, notes=payload.releaseNotes,
         )

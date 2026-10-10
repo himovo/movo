@@ -6,6 +6,9 @@ export type LabelMap = Record<Locale, string>;
 
 export const messages = {
   ...uncoveredMessages,
+  'skills.workflow.selectKnowledgeDocument': { 'zh-CN': '请先选择要读取的知识文档', 'en-US': 'Select the knowledge document to read first' },
+  'skills.workflow.selectTool': { 'zh-CN': '请先选择要调用的工具', 'en-US': 'Select the tool to call first' },
+  'skills.workflow.toolRequiredPlaceholder': { 'zh-CN': '选择 Tool / MCP（必选）', 'en-US': 'Select a Tool / MCP (required)' },
   // === 路由与侧边栏菜单 ===
   '工作台': { 'zh-CN': '工作台', 'en-US': 'Dashboard' },
   '组织与用户': { 'zh-CN': '组织与用户', 'en-US': 'Organizations & Users' },

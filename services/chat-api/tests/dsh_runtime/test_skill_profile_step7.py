@@ -4,6 +4,7 @@ import pytest
 import asyncio
 
 from app.dsh_runtime.profile.skills import SkillProfileCompiler
+from app.dsh_runtime.profile.skills.workflow import compile_workflow_body
 from app.dsh_runtime.profile.tools import ToolProfileDefinition
 
 
@@ -230,18 +231,15 @@ def test_standalone_spreadsheet_workflow_remains_user_visible():
 
 def test_workflow_fails_closed_when_capability_is_not_authorized():
     with pytest.raises(PermissionError, match="research.progressive@v1"):
-        asyncio.run(SkillProfileCompiler(FakeSkillCatalog([workflow_row("" )])).compile(
-            tenant_id="tenant-a", user_id="user-a",
-            tools=(tool("content_production", "content.produce@v1"),),
-        ))
+        compile_workflow_body(workflow_row(""),
+            tools=(tool("content_production", "content.produce@v1"),), style_refs={})
 
 
 def test_workflow_fails_closed_when_bound_style_is_missing():
     with pytest.raises(PermissionError, match="writing standard"):
-        asyncio.run(SkillProfileCompiler(FakeSkillCatalog([workflow_row("missing")])).compile(
-            tenant_id="tenant-a", user_id="user-a",
+        compile_workflow_body(workflow_row("missing"),
             tools=(tool("progressive_research", "research.progressive@v1"), tool("content_production", "content.produce@v1")),
-        ))
+            style_refs={})
 
 
 def test_org_workflow_accepts_raw_control_plane_writing_style_id():
@@ -260,9 +258,7 @@ def test_workflow_fails_closed_for_an_unmigrated_node_type():
         {"id": "unknown", "type": "future_unknown_node", "description": "未知能力"},
     ]
     with pytest.raises(LookupError, match="not migrated"):
-        asyncio.run(SkillProfileCompiler(FakeSkillCatalog([row])).compile(
-            tenant_id="tenant-a", user_id="user-a", tools=(),
-        ))
+        compile_workflow_body(row, tools=(), style_refs={})
 
 
 def test_call_tool_uses_real_external_tool_id_and_rejects_unauthorized_binding():
@@ -285,9 +281,15 @@ def test_call_tool_uses_real_external_tool_id_and_rejects_unauthorized_binding()
     assert "`crm_search`" in compiled.skills[0].content
     other = crm.model_copy(update={"name": "other_tool", "external_tool_id": "other-tool"})
     with pytest.raises(PermissionError, match="unauthorized external tool"):
-        asyncio.run(SkillProfileCompiler(FakeSkillCatalog([row])).compile(
-            tenant_id="tenant-a", user_id="user-a", tools=(other,),
-        ))
+        compile_workflow_body(row, tools=(other,), style_refs={})
+
+    row["skill_contract"]["structure"]["workflow_nodes"][0]["businessConfig"] = {
+        "preferredToolId": "crm-tool",
+    }
+    compiled = asyncio.run(SkillProfileCompiler(FakeSkillCatalog([row])).compile(
+        tenant_id="tenant-a", user_id="user-a", tools=(crm,),
+    ))
+    assert "`crm_search`" in compiled.skills[0].content
 
 
 def test_workflow_contract_rejects_duplicate_outputs_and_unknown_tool_arguments():
@@ -295,12 +297,10 @@ def test_workflow_contract_rejects_duplicate_outputs_and_unknown_tool_arguments(
     row["skill_contract"]["structure"]["workflow_nodes"][0]["outputAlias"] = "result"
     row["skill_contract"]["structure"]["workflow_nodes"][1]["outputAlias"] = "result"
     with pytest.raises(ValueError, match="output aliases"):
-        asyncio.run(SkillProfileCompiler(FakeSkillCatalog([row])).compile(
-            tenant_id="tenant-a", user_id="user-a", tools=(
+        compile_workflow_body(row, tools=(
                 tool("progressive_research", "research.progressive@v1"),
                 tool("content_production", "content.produce@v1"),
-            ),
-        ))
+            ), style_refs={})
 
     external = workflow_row("")
     external["skill_contract"]["structure"]["workflow_nodes"] = [{
@@ -319,9 +319,20 @@ def test_workflow_contract_rejects_duplicate_outputs_and_unknown_tool_arguments(
         }, risk_level="read",
     )
     with pytest.raises(ValueError, match="not declared by tool schema"):
-        asyncio.run(SkillProfileCompiler(FakeSkillCatalog([external])).compile(
-            tenant_id="tenant-a", user_id="user-a", tools=(crm,),
-        ))
+        compile_workflow_body(external, tools=(crm,), style_refs={})
+
+
+def test_only_invalid_call_tool_skill_does_not_block_ordinary_chat_profile():
+    invalid = {
+        "id": "org_skill:broken", "name": "未绑定工具的工作流", "skill_type": "composite_task",
+        "skill_contract": {"structure": {"workflow_nodes": [
+            {"id": "call", "type": "call_tool", "description": "调用业务工具"},
+        ]}},
+    }
+    compiled = asyncio.run(SkillProfileCompiler(FakeSkillCatalog([invalid])).compile(
+        tenant_id="tenant-a", user_id="user-a", tools=(),
+    ))
+    assert compiled.skills == ()
 
 
 def test_invalid_workflow_does_not_block_unrelated_valid_skills():
