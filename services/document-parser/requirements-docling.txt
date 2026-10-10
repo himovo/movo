@@ -1,7 +1,7 @@
 # Python 3.10-compatible versions used by the Linux container release.
 # Keep the Docling family pinned together for reproducible model/runtime behavior.
 numpy==1.26.4
-docling==2.94.0
+docling==2.132.0
 docling-core==2.92.0
 docling-ibm-models==3.14.0
 docling-parse==5.11.0
