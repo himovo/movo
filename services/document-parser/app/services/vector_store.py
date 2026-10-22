@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import uuid
 import urllib.error
@@ -10,6 +11,10 @@ from typing import Any
 
 from app.core.config import settings
 from app.services.secret_codec import decrypt_admin_secret
+
+
+# Weaviate (>= 1.38) reads this header to attribute traffic to the integration.
+INTEGRATION_HEADER = "X-Weaviate-Client-Integration"
 
 
 class VectorStoreError(RuntimeError):
@@ -220,10 +225,19 @@ class WeaviateVectorStore:
             raise VectorStoreError(f"Weaviate unavailable: {exc}") from exc
 
     def _headers(self) -> dict[str, str]:
-        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            INTEGRATION_HEADER: _integration_header_value(),
+        }
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
         return headers
+
+
+def _integration_header_value() -> str:
+    version = os.getenv("MOVO_VERSION", "").strip() or "unknown"
+    return f"movo/{version}"
 
 
 def _sanitize_class_name(value: str) -> str:
