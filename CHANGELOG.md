@@ -15,6 +15,16 @@ image.
   each keeps their own model, tools, and permissions. Thanks to @vinvcn
   for contributing this feature.
 
+### Security
+
+- Upgrade the bundled Weaviate image from `1.25.7` to `1.39.13`, which is built
+  with Go 1.26.10 and rejects certificate chains containing the revoked eMudhra
+  intermediates (CVE-2026-111943). Existing knowledge vectors stay in the
+  `weaviate-data` volume. Weaviate documents upgrades one minor version at a
+  time, so run `./movo backup` before `./movo update`; to follow that path
+  strictly, step the `weaviate` service through each minor release from 1.26
+  to 1.38 before starting 1.39.13.
+
 ## v0.1.15 - 2026-09-16
 
 ### Added
