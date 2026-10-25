@@ -23,11 +23,11 @@ const allowCapabilities = ref<AgentCapabilityKey[]>([]);
 const denyCapabilities = ref<AgentCapabilityKey[]>([]);
 
 const capabilityOptions = [
-  { label: t('内容生成'), value: 'content_generation' },
-  { label: t('图片生成'), value: 'image_generation' },
-  { label: t('代码生成'), value: 'code_generation' },
-  { label: t('浏览器自动运行'), value: 'browser_automation' },
-  { label: t('内部知识检索'), value: 'internal_knowledge' },
+  { label: t('legacy.content_generation'), value: 'content_generation' },
+  { label: t('legacy.image_generation'), value: 'image_generation' },
+  { label: t('legacy.code_generation'), value: 'code_generation' },
+  { label: t('legacy.browser_automation'), value: 'browser_automation' },
+  { label: t('legacy.internal_knowledge_search_e7ef223'), value: 'internal_knowledge' },
 ];
 const hasChange = computed(() => allowCapabilities.value.length + denyCapabilities.value.length > 0);
 
@@ -47,9 +47,9 @@ async function load() {
 }
 
 async function save() {
-  if (!hasChange.value) return message.warning(t('请选择至少一项临时授权或限制'));
-  if (!expiresAt.value || expiresAt.value <= Date.now()) return message.warning(t('请选择未来的失效时间'));
-  if (!reason.value.trim()) return message.warning(t('请填写授权原因'));
+  if (!hasChange.value) return message.warning(t('legacy.select_at_least_one_temporary_grant_or_restriction'));
+  if (!expiresAt.value || expiresAt.value <= Date.now()) return message.warning(t('legacy.select_a_future_expiration_time'));
+  if (!reason.value.trim()) return message.warning(t('legacy.enter_a_reason_for_the_authorization'));
   saving.value = true;
   try {
     await createCapabilityOverride(props.userId, {
@@ -59,46 +59,46 @@ async function save() {
       expiresAt: new Date(expiresAt.value).toISOString(),
       reason: reason.value.trim(),
     });
-    message.success(t('临时授权已生效'));
+    message.success(t('legacy.temporary_authorization_is_active'));
     resetDraft();
     await load();
-  } catch (error: any) { message.error(error?.response?.data?.detail || error?.message || t('授权失败')); }
+  } catch (error: any) { message.error(error?.response?.data?.detail || error?.message || t('legacy.authorization_failed')); }
   finally { saving.value = false; }
 }
 
 async function revoke(row: CapabilityOverride) {
   try {
     await revokeCapabilityOverride(row.id);
-    message.success(t('临时授权已撤销'));
+    message.success(t('legacy.temporary_authorization_revoked'));
     await load();
-  } catch (error: any) { message.error(error?.response?.data?.detail || error?.message || t('撤销失败')); }
+  } catch (error: any) { message.error(error?.response?.data?.detail || error?.message || t('legacy.failed_to_revoke_authorization')); }
 }
 
 watch(() => props.show, (visible) => { if (visible) void load(); });
 </script>
 
 <template>
-  <n-modal :show="show" preset="card" :title="t('{name} · 临时能力授权', { name: userName })" style="width: 720px" @update:show="(value: boolean) => emit('update:show', value)">
+  <n-modal :show="show" preset="card" :title="t('legacy.temporary_capability_authorization', { name: userName })" style="width: 720px" @update:show="(value: boolean) => emit('update:show', value)">
     <n-spin :show="loading">
-      <n-alert type="info" :bordered="false">{{ t('岗位角色仍是长期权限基线；这里仅用于有明确原因和失效时间的临时例外。') }}</n-alert>
+      <n-alert type="info" :bordered="false">{{ t('legacy.position_roles_remain_the_long_term_permission_baseline_use') }}</n-alert>
       <n-form label-placement="top" class="override-form">
         <n-grid :cols="2" :x-gap="14">
-          <n-grid-item><n-form-item :label="t('临时增加能力')"><n-select v-model:value="allowCapabilities" multiple :options="capabilityOptions.filter(item => !denyCapabilities.includes(item.value as AgentCapabilityKey))" /></n-form-item></n-grid-item>
-          <n-grid-item><n-form-item :label="t('临时限制能力')"><n-select v-model:value="denyCapabilities" multiple :options="capabilityOptions.filter(item => !allowCapabilities.includes(item.value as AgentCapabilityKey))" /></n-form-item></n-grid-item>
+          <n-grid-item><n-form-item :label="t('legacy.temporarily_add_capabilities')"><n-select v-model:value="allowCapabilities" multiple :options="capabilityOptions.filter(item => !denyCapabilities.includes(item.value as AgentCapabilityKey))" /></n-form-item></n-grid-item>
+          <n-grid-item><n-form-item :label="t('legacy.temporarily_restrict_capabilities')"><n-select v-model:value="denyCapabilities" multiple :options="capabilityOptions.filter(item => !allowCapabilities.includes(item.value as AgentCapabilityKey))" /></n-form-item></n-grid-item>
         </n-grid>
         <n-grid :cols="2" :x-gap="14">
-          <n-grid-item><n-form-item :label="t('失效时间')" required><n-date-picker v-model:value="expiresAt" type="datetime" clearable style="width:100%" /></n-form-item></n-grid-item>
-          <n-grid-item><n-form-item :label="t('授权原因')" required><n-input v-model:value="reason" maxlength="1000" show-count /></n-form-item></n-grid-item>
+          <n-grid-item><n-form-item :label="t('legacy.expiration_time')" required><n-date-picker v-model:value="expiresAt" type="datetime" clearable style="width:100%" /></n-form-item></n-grid-item>
+          <n-grid-item><n-form-item :label="t('legacy.authorization_reason')" required><n-input v-model:value="reason" maxlength="1000" show-count /></n-form-item></n-grid-item>
         </n-grid>
-        <n-space justify="end"><n-button type="primary" :loading="saving" @click="save">{{ t('创建临时授权') }}</n-button></n-space>
+        <n-space justify="end"><n-button type="primary" :loading="saving" @click="save">{{ t('legacy.create_temporary_authorization') }}</n-button></n-space>
       </n-form>
-      <n-divider>{{ t('授权记录') }}</n-divider>
-      <n-empty v-if="!overrides.length" :description="t('暂无临时授权')" />
+      <n-divider>{{ t('legacy.authorization_history') }}</n-divider>
+      <n-empty v-if="!overrides.length" :description="t('legacy.no_temporary_authorizations')" />
       <div v-else class="override-list">
         <div v-for="row in overrides" :key="row.id" class="override-row">
-          <div><strong>{{ row.reason }}</strong><small>{{ t('{time} 创建', { time: formatAdminDateTime(row.createdAt, '-') }) }} · {{ row.expiresAt ? t('{time} 失效', { time: formatAdminDateTime(row.expiresAt, '-') }) : t('长期有效') }}</small></div>
-          <n-tag :type="row.status === 'active' ? 'success' : 'default'" :bordered="false">{{ row.status === 'active' ? t('生效中') : (row.status === 'expired' ? t('已到期') : t('已撤销')) }}</n-tag>
-          <n-button v-if="row.status === 'active'" text type="error" @click="revoke(row)">{{ t('撤销') }}</n-button>
+          <div><strong>{{ row.reason }}</strong><small>{{ t('legacy.created', { time: formatAdminDateTime(row.createdAt, '-') }) }} · {{ row.expiresAt ? t('legacy.expires', { time: formatAdminDateTime(row.expiresAt, '-') }) : t('legacy.no_expiration') }}</small></div>
+          <n-tag :type="row.status === 'active' ? 'success' : 'default'" :bordered="false">{{ row.status === 'active' ? t('legacy.active_4de07ee') : (row.status === 'expired' ? t('legacy.expired') : t('legacy.revoked')) }}</n-tag>
+          <n-button v-if="row.status === 'active'" text type="error" @click="revoke(row)">{{ t('legacy.revoke') }}</n-button>
         </div>
       </div>
     </n-spin>

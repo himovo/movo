@@ -4,14 +4,16 @@ import axios from 'axios';
 import { t } from '@/composables/i18n';
 import { streamModelInstanceTest, testImageModelInstance, testKnowledgeModelInstance, type ModelInstanceItem } from '@/api/models';
 import { resolveModelTestKind } from './modelTestKind';
+import { useVisionCapabilitySuggestion } from '@/composables/useVisionCapabilitySuggestion';
 import FlaskOutline from '@vicons/ionicons5/es/FlaskOutline';
 import PlayOutline from '@vicons/ionicons5/es/PlayOutline';
 
 const props = defineProps<{ models: ModelInstanceItem[]; selectedId?: string }>();
 const emit = defineEmits<{ (event: 'tested'): void; (event: 'select', id: string): void }>();
 const modelId = ref('');
-const prompt = ref(t('测试模型默认提示'));
+const prompt = ref(t('legacy.reply_in_one_sentence_to_test_the_current_model'));
 const testing = ref(false);
+const visionSuggestion = useVisionCapabilitySuggestion();
 const result = ref('');
 const resultType = ref<'idle' | 'success' | 'failed'>('idle');
 const imageUrl = ref('');
@@ -39,30 +41,33 @@ async function run() {
   try {
     if (kind.value === 'image') {
       const response = await testImageModelInstance(selectedId, prompt.value);
-      result.value = response.message || (response.success ? t('图片生成测试成功。') : t('图片生成测试失败。'));
+      result.value = response.message || (response.success ? t('additional.image_generation_test_succeeded') : t('additional.image_generation_test_failed'));
       resultType.value = response.success ? 'success' : 'failed';
       imageUrl.value = response.imageUrl || '';
     } else if (kind.value === 'embedding' || kind.value === 'rerank') {
       const response = await testKnowledgeModelInstance(selectedId, kind.value);
-      result.value = response.message || (response.success ? t('模型连接测试成功。') : t('测试失败'));
+      result.value = response.message || (response.success ? t('legacy.model_connection_tested_successfully') : t('legacy.test_failed'));
       resultType.value = response.success ? 'success' : 'failed';
     } else {
       let receivedDelta = false;
       await streamModelInstanceTest(selectedId, prompt.value, (event) => {
-        if (event.type === 'start') result.value = event.message || t('正在连接模型...');
+        if (event.type === 'start') result.value = event.message || t('legacy.connecting_to_model');
         if (event.type === 'delta') {
           if (!receivedDelta) { result.value = ''; receivedDelta = true; }
           result.value += event.content || '';
         }
-        if (event.type === 'error') { result.value = event.message || t('测试失败'); resultType.value = 'failed'; }
+        if (event.type === 'error') { result.value = event.message || t('legacy.test_failed'); resultType.value = 'failed'; }
         if (event.type === 'done' && resultType.value !== 'failed') {
-          result.value ||= event.message || t('模型连接测试成功。');
+          result.value ||= event.message || t('legacy.model_connection_tested_successfully');
           resultType.value = 'success';
         }
       });
       if (resultType.value === 'idle') resultType.value = 'success';
     }
     emit('tested');
+    if (kind.value === 'chat' && resultType.value === 'success') {
+      await visionSuggestion.check(model.value, () => emit('tested'));
+    }
   } catch (error) {
     result.value = errorText(error);
     resultType.value = 'failed';
@@ -76,13 +81,13 @@ async function run() {
     <p class="helper">{{ t('modelGroup.testHelp') }}</p>
     <n-select :value="modelId" :options="options" :placeholder="t('modelGroup.selectTestModel')" :disabled="!models.length || testing" @update:value="modelId = $event; emit('select', $event)" />
     <template v-if="model">
-      <div class="model-summary"><span>{{ t('模型 ID') }}</span><strong>{{ model.modelName }}</strong></div>
-      <div class="model-summary"><span>{{ t('能力') }}</span><strong>{{ model.capabilities.join(' · ') }}</strong></div>
+      <div class="model-summary"><span>{{ t('legacy.model_id') }}</span><strong>{{ model.modelName }}</strong></div>
+      <div class="model-summary"><span>{{ t('legacy.capabilities') }}</span><strong>{{ model.capabilities.join(' · ') }}</strong></div>
       <n-input v-if="kind === 'chat' || kind === 'image'" v-model:value="prompt" type="textarea" :rows="4" :placeholder="t('modelGroup.testPrompt')" />
-      <n-alert v-else type="info" :bordered="false">{{ kind === 'embedding' ? t('将调用 Embedding 接口并校验返回向量。') : t('将调用 Rerank 接口并校验排序结果。') }}</n-alert>
+      <n-alert v-else type="info" :bordered="false">{{ kind === 'embedding' ? t('legacy.the_embedding_endpoint_will_be_called_and_its_vector') : t('legacy.the_rerank_endpoint_will_be_called_and_its_ranking') }}</n-alert>
       <n-button type="primary" block :loading="testing" @click="run"><template #icon><n-icon><PlayOutline /></n-icon></template>{{ t('modelGroup.runTest') }}</n-button>
       <div v-if="result" class="test-result" :class="resultType">{{ result }}</div>
-      <img v-if="imageUrl" class="test-image" :src="imageUrl" :alt="t('图片模型测试结果')" />
+      <img v-if="imageUrl" class="test-image" :src="imageUrl" :alt="t('additional.image_model_test_result')" />
     </template>
     <n-empty v-else :description="t('modelGroup.noTestModel')" />
   </aside>

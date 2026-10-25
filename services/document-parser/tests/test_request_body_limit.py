@@ -19,7 +19,7 @@ class RequestBodyLimitTests(TestCase):
             return payload
 
         with TestClient(app) as client:
-            response = client.post("/echo", content=b"{}")
+            response = client.post("/echo", content=b"{}", headers={"content-type": "application/json"})
         self.assertEqual(200, response.status_code)
         self.assertEqual({}, response.json())
 

@@ -68,7 +68,7 @@
         <n-space align="center" :size="12">
           <div id="header-actions-teleport-target" class="header-actions-teleport"></div>
           <n-dropdown trigger="click" show-arrow :options="languageOptions" @select="handleLanguageSelect">
-            <n-button quaternary circle class="header-round-button" :title="`${t('语言')}: ${currentLanguageLabel}`">
+            <n-button quaternary circle class="header-round-button" :title="`${t('legacy.language')}: ${currentLanguageLabel}`">
               <span class="header-icon" aria-hidden="true">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -93,7 +93,7 @@
           </n-dropdown>
           <!-- <n-dropdown trigger="hover" :options="noticeOptions" @select="handleNoticeSelect">
             <n-badge :value="3" :max="99" class="notice-badge">
-              <n-button quaternary circle class="header-round-button" :title="t('系统通知')">
+              <n-button quaternary circle class="header-round-button" :title="t('legacy.notifications')">
                 <span class="header-icon" aria-hidden="true">
                   <svg
                     data-v-798ba459=""
@@ -146,7 +146,7 @@ import { useMenuOptions } from '@/composables/useMenuOptions';
 import { useAuthStore } from '@/stores/auth';
 import movoLogo from '@/assets/images/movo-logo.png';
 import { resolveAdminAssetUrlWithVersion } from '@/composables/adminAsset';
-import { isLocale, useLocale, t } from '@/composables/i18n';
+import { isLocale, useLocale, t, translateSourceText } from '@/composables/i18n';
 import { displayAdminName, isMobileLike } from '@/composables/privacy';
 
 const router = useRouter();
@@ -170,20 +170,20 @@ for (const child of rootRoute?.children ?? []) {
 
 const currentRouteTitle = computed(() => {
   if (dynamicRouteTitle.value) {
-    return t(dynamicRouteTitle.value);
+    return translateSourceText(dynamicRouteTitle.value);
   }
   const metaTitle = route.meta?.title;
   if (typeof metaTitle === 'string' && metaTitle) {
-    return t(metaTitle);
+    return translateSourceText(metaTitle);
   }
-  return routeTitleMap.get(route.path) ? t(routeTitleMap.get(route.path)!) : 'MOVO Admin';
+  return routeTitleMap.get(route.path) ? translateSourceText(routeTitleMap.get(route.path)!) : 'MOVO Admin';
 });
 const isToolEditPage = computed(() => route.path === '/tools/new' || route.name === 'ToolEdit');
 const isSkillConfigPage = computed(() => route.name === 'SkillConfig');
 const showBackButton = computed(() => isToolEditPage.value || isSkillConfigPage.value);
-const backButtonText = computed(() => t('返回'));
-const backButtonTitle = computed(() => (isSkillConfigPage.value ? t('返回 Skill 列表') : t('返回工具列表')));
-const profileDisplayName = computed(() => displayAdminName(authStore.profile, t('管理员')));
+const backButtonText = computed(() => t('legacy.back'));
+const backButtonTitle = computed(() => (isSkillConfigPage.value ? t('legacy.back_to_skills') : t('legacy.back_to_tools')));
+const profileDisplayName = computed(() => displayAdminName(authStore.profile, t('legacy.admin')));
 const profileAvatarUrl = computed(() => resolveAdminAssetUrlWithVersion(authStore.profile?.avatarUrl, authStore.profile?.avatarUpdatedAt));
 const profileAvatarFailedUrl = ref('');
 const showProfileAvatar = computed(() => Boolean(profileAvatarUrl.value) && profileAvatarFailedUrl.value !== profileAvatarUrl.value);
@@ -194,11 +194,11 @@ const currentLanguageLabel = computed(() =>
 
 const profileOptions = computed(() => [
   {
-    label: t('个人中心'),
+    label: t('legacy.profile'),
     key: 'profile',
   },
   {
-    label: t('退出登录'),
+    label: t('legacy.sign_out'),
     key: 'logout',
   },
 ]);
@@ -209,9 +209,9 @@ const languageOptions = [
 ];
 
 const noticeOptions = computed(() => [
-  { label: t('系统升级窗口将于今晚 23:00 开始'), key: 'notice-1' },
-  { label: t('模型配置变更待审批: 2 条'), key: 'notice-2' },
-  { label: t('今日活跃组织数较昨日提升 12%'), key: 'notice-3' },
+  { label: t('legacy.system_upgrade_window_starts_at_23_00_tonight'), key: 'notice-1' },
+  { label: t('legacy.model_config_changes_pending_approval_2_items'), key: 'notice-2' },
+  { label: t('legacy.active_orgs_increased_by_12_today_compared_to_yesterday'), key: 'notice-3' },
 ]);
 
 function toggleSidebar() {
@@ -241,7 +241,7 @@ function handleLanguageSelect(key: string) {
 }
 
 function handleNoticeSelect() {
-  message.info(t('通知详情页待接入'));
+  message.info(t('legacy.notification_details_page_is_coming_soon'));
 }
 
 function handleProfileAvatarError() {

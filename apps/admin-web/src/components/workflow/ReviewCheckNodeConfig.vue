@@ -2,59 +2,59 @@
   <section class="review-config" @click.stop>
     <header class="config-heading">
       <span class="heading-icon" aria-hidden="true">✓</span>
-      <div><strong>{{ t('设置审核方式') }}</strong><p>{{ t('选定审核对象和依据，系统会输出审核结论') }}</p></div>
+      <div><strong>{{ t('legacy.set_up_review') }}</strong><p>{{ t('legacy.choose_what_to_review_and_which_criteria_to_use') }}</p></div>
     </header>
 
     <div class="review-grid">
       <div class="review-panel subject-panel">
         <div class="panel-heading">
           <span class="panel-index">01</span>
-          <div><strong>{{ t('审核什么') }}</strong><small>{{ t('选择前面步骤得到的材料或结果') }}</small></div>
+          <div><strong>{{ t('legacy.what_to_review') }}</strong><small>{{ t('legacy.select_material_or_a_result_from_an_earlier_step') }}</small></div>
         </div>
         <n-select :value="selected('reviewSubjectNodeId', 'reviewSubject')" size="medium" clearable
-          :options="sourceOptions" :aria-label="t('选择审核对象')" :placeholder="t('选择审核对象')"
+          :options="sourceOptions" :aria-label="t('legacy.select_material_to_review')" :placeholder="t('legacy.select_material_to_review')"
           @update:value="(value: string | null) => selectSource('reviewSubjectNodeId', 'reviewSubject', value)" />
       </div>
       <div class="review-panel criteria-panel">
         <div class="panel-heading">
           <span class="panel-index">02</span>
-          <div><strong>{{ t('拿什么审核') }}</strong><small>{{ t('引用已有依据，或直接写下规则') }}</small></div>
+          <div><strong>{{ t('legacy.review_criteria') }}</strong><small>{{ t('legacy.use_an_earlier_result_or_enter_criteria_directly') }}</small></div>
         </div>
-        <div class="mode-switch" role="group" :aria-label="t('依据来源')">
+        <div class="mode-switch" role="group" :aria-label="t('legacy.criteria_source')">
           <button type="button" :class="{ active: criteriaMode === 'upstream' }"
-            :aria-pressed="criteriaMode === 'upstream'" @click="setCriteriaMode('upstream')">{{ t('已有依据') }}</button>
+            :aria-pressed="criteriaMode === 'upstream'" @click="setCriteriaMode('upstream')">{{ t('legacy.earlier_result') }}</button>
           <button type="button" :class="{ active: criteriaMode === 'inline' }"
-            :aria-pressed="criteriaMode === 'inline'" @click="setCriteriaMode('inline')">{{ t('直接输入') }}</button>
+            :aria-pressed="criteriaMode === 'inline'" @click="setCriteriaMode('inline')">{{ t('legacy.enter_criteria') }}</button>
         </div>
         <n-select v-if="criteriaMode === 'upstream'"
           :value="selected('reviewCriteriaNodeId', 'reviewCriteria')" size="medium" clearable
-          :options="sourceOptions" :aria-label="t('选择审核依据')" :placeholder="t('选择规则文档或其他上游依据')"
+          :options="sourceOptions" :aria-label="t('legacy.select_review_criteria')" :placeholder="t('legacy.select_a_rule_document_or_earlier_result')"
           @update:value="(value: string | null) => selectSource('reviewCriteriaNodeId', 'reviewCriteria', value)" />
-        <n-input v-else :value="String(businessConfig.reviewCriteria || '')" type="textarea" :aria-label="t('输入审核规则')"
-          :autosize="{ minRows: 2, maxRows: 5 }" :placeholder="t('例如：金额不得超过预算；缺少验收条款时标记风险')"
+        <n-input v-else :value="String(businessConfig.reviewCriteria || '')" type="textarea" :aria-label="t('legacy.enter_review_criteria')"
+          :autosize="{ minRows: 2, maxRows: 5 }" :placeholder="t('legacy.example_flag_amounts_over_budget_or_missing_acceptance_terms')"
           @update:value="setInlineCriteria" />
       </div>
     </div>
 
-    <p v-if="!sourceOptions.length" class="review-hint">{{ t('请先在上游节点设置输出名，再选择审核对象。') }}</p>
-    <p v-else-if="invalidSelection" class="review-hint">{{ t('已选节点不在上游，请重新选择。') }}</p>
+    <p v-if="!sourceOptions.length" class="review-hint">{{ t('legacy.name_the_output_of_an_earlier_step_before_selecting') }}</p>
+    <p v-else-if="invalidSelection" class="review-hint">{{ t('legacy.the_selected_step_is_no_longer_earlier_in_the') }}</p>
 
     <div class="delivery-field">
-      <div class="delivery-heading"><strong>{{ t('审核结果如何交付') }}</strong><small>{{ t('原文批注会保留上传 Word 的格式，并生成审阅副本') }}</small></div>
-      <div class="delivery-options" role="group" :aria-label="t('审核结果交付方式')">
+      <div class="delivery-heading"><strong>{{ t('legacy.deliver_review_results') }}</strong><small>{{ t('legacy.comments_preserve_the_uploaded_word_document_s_formatting_in') }}</small></div>
+      <div class="delivery-options" role="group" :aria-label="t('legacy.review_delivery_format')">
         <button v-for="option in outputOptions" :key="option.value" type="button"
           :class="{ active: outputMode === option.value }" :aria-pressed="outputMode === option.value"
           @click="setOutputMode(option.value)">
           <strong>{{ t(option.label) }}</strong><small>{{ t(option.description) }}</small>
         </button>
       </div>
-      <p v-if="outputMode !== 'report'" class="delivery-hint">{{ t('仅 DOCX 可生成原文批注；其他格式会输出审核报告。无法准确定位原文的问题不会写入批注。') }}</p>
+      <p v-if="outputMode !== 'report'" class="delivery-hint">{{ t('legacy.only_docx_supports_comments_in_the_original_other_formats') }}</p>
     </div>
 
     <div class="result-field">
       <div class="result-mark" aria-hidden="true">✓</div>
-      <div class="result-copy"><strong>{{ t('输出审核结论') }}</strong><small>{{ t('后续步骤可以引用这份结果') }}</small></div>
-      <n-input :value="outputAlias" size="medium" :aria-label="t('审核结论输出名')" :placeholder="t('例如：审核结论')"
+      <div class="result-copy"><strong>{{ t('legacy.name_review_output') }}</strong><small>{{ t('legacy.later_steps_can_use_this_result') }}</small></div>
+      <n-input :value="outputAlias" size="medium" :aria-label="t('legacy.review_output_name')" :placeholder="t('legacy.example_review_findings')"
         @update:value="(value: string) => emit('update:outputAlias', value)" />
     </div>
   </section>
@@ -72,9 +72,9 @@ const emit = defineEmits<{
 }>();
 const sourceOptions = computed(() => props.upstreamOutputs.map(item => ({ label: item.alias, value: item.id })));
 const outputOptions = [
-  { value: 'report', label: '独立报告', description: '逐项列出结论与建议' },
-  { value: 'annotated_docx', label: '原文批注', description: '在 Word 副本中标注原文' },
-  { value: 'both', label: '两者都要', description: '批注副本与完整报告' },
+  { value: 'report', label: 'legacy.separate_report', description: 'legacy.list_findings_and_suggestions' },
+  { value: 'annotated_docx', label: 'legacy.comments_in_original', description: 'legacy.comment_on_a_copy_of_the_word_document' },
+  { value: 'both', label: 'legacy.both', description: 'legacy.commented_copy_and_full_report' },
 ] as const;
 const outputMode = computed(() => String(props.businessConfig.outputMode || 'report'));
 const criteriaMode = computed(() => {

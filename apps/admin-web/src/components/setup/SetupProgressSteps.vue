@@ -7,17 +7,17 @@ const props = defineProps<{
 }>();
 
 const steps = computed(() => [
-  t('部署检测'),
-  t('组织与账号'),
-  t('对话模型'),
-  t('其他模型'),
-  t('联网搜索'),
-  t('完成'),
+  t('legacy.deployment_check'),
+  t('legacy.organization_accounts'),
+  t('legacy.chat_model'),
+  t('legacy.other_models'),
+  t('legacy.web_search'),
+  t('legacy.success'),
 ]);
 </script>
 
 <template>
-  <nav class="progress-card" :aria-label="t('初始化进度')">
+  <nav class="progress-card" :aria-label="t('legacy.setup_progress')">
     <ol>
       <li
         v-for="(step, index) in steps"

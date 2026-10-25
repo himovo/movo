@@ -26,6 +26,31 @@ class ContainerReleasePlanTests(unittest.TestCase):
         changed, _ = select_images(["apps/user-web/src/views/LoginView.vue"])
         self.assertEqual(["user-web"], self.suffixes(changed))
 
+    def test_document_parser_readme_does_not_rebuild_heavy_image(self):
+        changed, _ = select_images(["services/document-parser/README.md"])
+        self.assertEqual([], self.suffixes(changed))
+
+    def test_internal_readme_does_not_rebuild_chat_api(self):
+        changed, _ = select_images(
+            ["services/chat-api/app/enterprise_capabilities/content/evaluation/README.md"]
+        )
+        self.assertEqual([], self.suffixes(changed))
+
+    def test_runtime_skill_markdown_still_rebuilds_chat_api(self):
+        changed, _ = select_images(["services/chat-api/app/skills_specs/pdf/SKILL.md"])
+        self.assertEqual(["chat-api"], self.suffixes(changed))
+
+    def test_document_parser_runtime_and_build_inputs_do_rebuild(self):
+        for path in (
+            "services/document-parser/app/main.py",
+            "services/document-parser/scripts/download_docling_models.py",
+            "services/document-parser/requirements-docling.txt",
+            "services/document-parser/Dockerfile",
+        ):
+            with self.subTest(path=path):
+                changed, _ = select_images([path])
+                self.assertEqual(["document-parser"], self.suffixes(changed))
+
     def test_dsh_host_change_does_not_rebuild_chat_api(self):
         changed, _ = select_images(["services/chat-api/dsh/runtime-host/src/host.mjs"])
         self.assertEqual(["dsh-runtime-host"], self.suffixes(changed))

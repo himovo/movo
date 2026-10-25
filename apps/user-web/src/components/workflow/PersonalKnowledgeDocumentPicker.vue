@@ -2,45 +2,45 @@
   <div class="document-picker">
     <button type="button" class="picker-trigger" @click.stop="openPicker">
       <span class="trigger-icon" aria-hidden="true">▤</span>
-      <span class="trigger-copy"><strong>{{ selectedName || t('按目录或名称查找文档') }}</strong>
-        <small :class="{ 'access-warning': selectedUnavailable }">{{ selectedUnavailable ? t('当前账号已无权读取或文档尚未解析，请重新选择') : selectedName ? t('点击更换知识文档') : t('从我的知识或共享文档中选择') }}</small></span>
+      <span class="trigger-copy"><strong>{{ selectedName || t('legacy.find_a_document_by_folder_or_name') }}</strong>
+        <small :class="{ 'access-warning': selectedUnavailable }">{{ selectedUnavailable ? t('legacy.this_account_can_no_longer_access_the_document_or') : selectedName ? t('legacy.click_to_change_the_knowledge_document') : t('legacy.choose_from_my_knowledge_or_shared_documents') }}</small></span>
       <span class="trigger-arrow" aria-hidden="true">›</span>
     </button>
-    <n-modal v-model:show="visible" preset="card" class="picker-modal" :title="t('选择知识文档')" :style="{ width: 'min(760px, calc(100vw - 32px))' }">
-      <div class="picker-tabs" role="group" :aria-label="t('文档范围')">
-        <button type="button" :class="{ active: view === 'mine' }" @click="setView('mine')">{{ t('我的知识') }}</button>
-        <button type="button" :class="{ active: view === 'shared' }" @click="setView('shared')">{{ t('共享给我') }}</button>
+    <n-modal v-model:show="visible" preset="card" class="picker-modal" :title="t('legacy.select_knowledge_document')" :style="{ width: 'min(760px, calc(100vw - 32px))' }">
+      <div class="picker-tabs" role="group" :aria-label="t('legacy.document_scope')">
+        <button type="button" :class="{ active: view === 'mine' }" @click="setView('mine')">{{ t('legacy.my_knowledge') }}</button>
+        <button type="button" :class="{ active: view === 'shared' }" @click="setView('shared')">{{ t('legacy.shared_with_me') }}</button>
       </div>
       <div class="picker-filters">
         <n-select v-if="view === 'mine'" :value="directoryId" :options="directoryOptions"
-          filterable size="medium" :aria-label="t('筛选目录')" :placeholder="t('选择目录')"
+          filterable size="medium" :aria-label="t('legacy.filter_folders')" :placeholder="t('legacy.select_folder')"
           @update:value="setDirectory" />
-        <n-input v-model:value="keyword" clearable size="medium" :aria-label="t('搜索文档')"
-          :placeholder="t('搜索文档名称、描述或标签')" @keyup.enter="search" />
-        <n-button type="primary" secondary @click="search">{{ t('搜索') }}</n-button>
+        <n-input v-model:value="keyword" clearable size="medium" :aria-label="t('legacy.search_documents')"
+          :placeholder="t('legacy.search_document_name_description_or_tags')" @keyup.enter="search" />
+        <n-button type="primary" secondary @click="search">{{ t('legacy.search') }}</n-button>
       </div>
-      <div class="result-heading"><strong>{{ t('文档列表') }}</strong><span>{{ t('共 {count} 条 · 仅可选择已解析文档', { count: total }) }}</span></div>
+      <div class="result-heading"><strong>{{ t('legacy.documents') }}</strong><span>{{ t('legacy.documents_parsed_documents_only', { count: total }) }}</span></div>
       <div class="result-list" :class="{ loading }">
-        <div v-if="loading" class="empty-state">{{ t('正在查找文档…') }}</div>
-        <div v-else-if="error" class="empty-state error-state">{{ error }} <button type="button" @click="load">{{ t('重试') }}</button></div>
-        <div v-else-if="!items.length" class="empty-state">{{ t('没有找到文档，试试其他目录或关键词') }}</div>
+        <div v-if="loading" class="empty-state">{{ t('legacy.searching_documents') }}</div>
+        <div v-else-if="error" class="empty-state error-state">{{ error }} <button type="button" @click="load">{{ t('legacy.retry') }}</button></div>
+        <div v-else-if="!items.length" class="empty-state">{{ t('legacy.no_documents_found_try_another_folder_or_keyword') }}</div>
         <button v-for="item in items" v-else :key="item.id" type="button" class="document-row"
           :class="{ selected: pendingId === item.id, unavailable: !isAvailable(item) }"
           :disabled="!isAvailable(item)" @click="choose(item)">
           <span class="document-icon" aria-hidden="true">▤</span>
           <span class="document-copy"><strong>{{ item.name }}</strong>
-            <small>{{ view === 'shared' ? (item.owner?.displayName || item.owner?.username || t('共享文档')) : directoryLabel(item.directoryId) }}
+            <small>{{ view === 'shared' ? (item.owner?.displayName || item.owner?.username || t('legacy.shared_document')) : directoryLabel(item.directoryId) }}
               <span v-if="item.updatedAt"> · {{ item.updatedAt.slice(0, 10) }}</span></small></span>
-          <span class="document-status" :class="{ ready: isAvailable(item) }">{{ isAvailable(item) ? t('可选') : t('解析中') }}</span>
+          <span class="document-status" :class="{ ready: isAvailable(item) }">{{ isAvailable(item) ? t('legacy.available') : t('legacy.parsing') }}</span>
           <span class="document-check" aria-hidden="true">{{ pendingId === item.id ? '✓' : '' }}</span>
         </button>
       </div>
       <div class="picker-footer">
-        <div class="footer-selection">{{ t('已选：') }}<strong>{{ pendingName || t('尚未选择') }}</strong></div>
+        <div class="footer-selection">{{ t('legacy.selected') }}<strong>{{ pendingName || t('legacy.none_selected') }}</strong></div>
         <n-pagination :page="page" :page-size="pageSize" :item-count="total" simple
           @update:page="setPage" />
-        <n-button @click="visible = false">{{ t('取消') }}</n-button>
-        <n-button type="primary" :disabled="!pendingId" @click="confirm">{{ t('使用这份文档') }}</n-button>
+        <n-button @click="visible = false">{{ t('legacy.cancel') }}</n-button>
+        <n-button type="primary" :disabled="!pendingId" @click="confirm">{{ t('legacy.use_this_document') }}</n-button>
       </div>
     </n-modal>
   </div>
@@ -74,7 +74,7 @@ const error = ref('');
 let requestId = 0;
 
 const directoryOptions = computed(() => {
-  const options = [{ label: t('全部目录'), value: 'all' }, { label: t('未分类'), value: '' }];
+  const options = [{ label: t('legacy.all_folders'), value: 'all' }, { label: t('legacy.uncategorized'), value: '' }];
   const visit = (nodes: KnowledgeDirectory[], parents: string[] = []) => {
     for (const node of nodes) {
       const path = [...parents, node.name];
@@ -86,7 +86,7 @@ const directoryOptions = computed(() => {
   return options;
 });
 function directoryLabel(id: string) {
-  return directoryOptions.value.find(item => item.value === id)?.label || t('未分类');
+  return directoryOptions.value.find(item => item.value === id)?.label || t('legacy.uncategorized');
 }
 function isAvailable(item: PersonalKnowledge) {
   return Boolean(item.activeDocumentId) && ['parsed', 'indexed'].includes(item.status)
@@ -98,7 +98,7 @@ async function resolveSelected() {
   const item = await fetchSelectablePersonalKnowledgeItem(id).catch(() => null);
   if (props.value !== id) return;
   selectedUnavailable.value = !item || !isAvailable(item);
-  selectedName.value = item?.name || t('原文档不可用');
+  selectedName.value = item?.name || t('legacy.original_document_unavailable');
 }
 async function openPicker() {
   pendingId.value = selectedUnavailable.value ? '' : props.value || '';
@@ -120,7 +120,7 @@ async function load() {
     total.value = result.total;
   } catch {
     if (current !== requestId) return;
-    error.value = t('文档加载失败');
+    error.value = t('legacy.failed_to_load_documents');
     items.value = [];
   } finally {
     if (current === requestId) loading.value = false;

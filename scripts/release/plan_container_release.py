@@ -73,7 +73,15 @@ IMAGES = (
             "INSTALL_DOCLING_MODELS_AT_BUILD=true\n"
             "PYTORCH_ACCELERATOR=cpu"
         ),
-        inputs=("services/document-parser/**",),
+        inputs=(
+            "services/document-parser/Dockerfile",
+            "services/document-parser/.dockerignore",
+            "services/document-parser/entrypoint.sh",
+            "services/document-parser/requirements.txt",
+            "services/document-parser/requirements-docling.txt",
+            "services/document-parser/app/**",
+            "services/document-parser/scripts/**",
+        ),
     ),
     ImageDefinition(
         suffix="user-web",
@@ -97,6 +105,13 @@ IMAGES = (
     ),
 )
 
+# These maintainer notes are not copied into or read by the running images.
+NON_RUNTIME_DOCUMENTS = frozenset(
+    {
+        "services/chat-api/app/enterprise_capabilities/content/evaluation/README.md",
+    }
+)
+
 def _matches(path: str, pattern: str) -> bool:
     if pattern.endswith("/**"):
         return path.startswith(pattern[:-3].rstrip("/") + "/")
@@ -113,7 +128,10 @@ def select_images(
         # Release orchestration and planner changes do not alter image contents.
         # A broad rebuild must be an explicit operator decision via --force-all.
         affected = force_all or any(
-            _matches(path, pattern) for path in paths for pattern in image.inputs
+            path not in NON_RUNTIME_DOCUMENTS
+            and _matches(path, pattern)
+            for path in paths
+            for pattern in image.inputs
         )
         (changed if affected else unchanged).append(image)
     return changed, unchanged

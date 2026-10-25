@@ -131,7 +131,7 @@ def _keep_documents(
         metadata = {
             **dict(item.get("metadata") or {}),
             "document_title": str(
-                document.get("name") or document.get("original_filename") or ""
+                document.get("original_filename") or document.get("name") or ""
             ).strip(),
             "knowledge_scope": scope,
             "knowledge_label": "个人知识" if scope == "personal" else "企业知识",

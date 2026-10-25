@@ -54,7 +54,7 @@ let refreshTimer: ReturnType<typeof setInterval> | null = null
 const filterKeyword = ref('')
 
 const sessionTitleById = computed(
-  () => new Map(props.sessions.map((item) => [item.id, item.title || t('新对话')])),
+  () => new Map(props.sessions.map((item) => [item.id, item.title || t('legacy.new_chat')])),
 )
 
 const filteredJobs = computed(() => {
@@ -73,7 +73,7 @@ async function load(silent = false) {
     jobs.value = await listScheduledJobs(props.token)
   } catch (error: any) {
     message.error(
-      error?.response?.data?.detail || error?.message || t('加载定时任务失败'),
+      error?.response?.data?.detail || error?.message || t('legacy.failed_to_load_scheduled_tasks'),
     )
   } finally {
     if (!silent) loading.value = false
@@ -101,11 +101,11 @@ async function save(draft: ScheduledJobDraft) {
     if (editingJob.value) await updateScheduledJob(props.token, editingJob.value.id, draft)
     else await createScheduledJob(props.token, draft)
     editorOpen.value = false
-    message.success(editingJob.value ? t('定时任务已更新') : t('定时任务已创建'))
+    message.success(editingJob.value ? t('legacy.scheduled_task_updated') : t('legacy.scheduled_task_created'))
     await load()
   } catch (error: any) {
     message.error(
-      error?.response?.data?.detail || error?.message || t('保存失败'),
+      error?.response?.data?.detail || error?.message || t('legacy.failed_to_save'),
     )
   } finally {
     saving.value = false
@@ -118,7 +118,7 @@ async function toggle(job: ScheduledJob, enabled: boolean) {
     await load()
   } catch (error: any) {
     message.error(
-      error?.response?.data?.detail || error?.message || t('更新失败'),
+      error?.response?.data?.detail || error?.message || t('legacy.failed_to_update'),
     )
   }
 }
@@ -126,11 +126,11 @@ async function toggle(job: ScheduledJob, enabled: boolean) {
 async function runNow(job: ScheduledJob) {
   try {
     await runScheduledJobNow(props.token, job.id)
-    message.success(t('已开始执行'))
+    message.success(t('legacy.execution_started'))
     await load()
   } catch (error: any) {
     message.error(
-      error?.response?.data?.detail || error?.message || t('启动失败'),
+      error?.response?.data?.detail || error?.message || t('legacy.failed_to_start'),
     )
   }
 }
@@ -139,10 +139,10 @@ async function remove(job: ScheduledJob) {
   try {
     await deleteScheduledJob(props.token, job.id)
     await load()
-    message.success(t('定时任务已删除'))
+    message.success(t('legacy.scheduled_task_deleted'))
   } catch (error: any) {
     message.error(
-      error?.response?.data?.detail || error?.message || t('删除失败'),
+      error?.response?.data?.detail || error?.message || t('legacy.failed_to_delete'),
     )
   }
 }
@@ -150,19 +150,19 @@ async function remove(job: ScheduledJob) {
 function scheduleText(job: ScheduledJob) {
   const locale = getLocale() === 'zh' ? 'zh-CN' : 'en-US'
   const time = formatScheduledWallTime(job.run_at, locale)
-  if (job.schedule_kind === 'once') return t('单次 · {time}', { time: formatScheduledWallTime(job.run_at, locale, true) })
-  if (job.schedule_kind === 'daily') return t('每天 {time}', { time })
-  const labels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+  if (job.schedule_kind === 'once') return t('legacy.once', { time: formatScheduledWallTime(job.run_at, locale, true) })
+  if (job.schedule_kind === 'daily') return t('legacy.daily_at', { time })
+  const labels = ['legacy.mon', 'legacy.tue', 'legacy.wed', 'legacy.thu', 'legacy.fri', 'legacy.sat', 'legacy.sun']
   const separator = getLocale() === 'zh' ? '、' : ', '
-  return t('每周{days} {time}', { days: job.weekdays.map((day) => t(labels[day])).join(separator), time })
+  return t('legacy.weekly_on_at', { days: job.weekdays.map((day) => t(labels[day])).join(separator), time })
 }
 
 function statusText(job: ScheduledJob) {
-  if (!job.enabled) return t('已停用')
-  if (job.last_run_status === 'running') return t('正在运行')
-  if (job.last_run_status === 'failed') return t('最近执行失败')
-  if (job.next_run_at) return t('下次 {time}', { time: formatScheduledInstant(job.next_run_at, job.timezone, getLocale() === 'zh' ? 'zh-CN' : 'en-US', true) })
-  return t('等待安排')
+  if (!job.enabled) return t('legacy.disabled')
+  if (job.last_run_status === 'running') return t('legacy.running')
+  if (job.last_run_status === 'failed') return t('legacy.last_run_failed')
+  if (job.next_run_at) return t('legacy.next', { time: formatScheduledInstant(job.next_run_at, job.timezone, getLocale() === 'zh' ? 'zh-CN' : 'en-US', true) })
+  return t('legacy.awaiting_schedule')
 }
 
 onMounted(() => {
@@ -194,9 +194,9 @@ watch(
       <div class="tasks-header-left">
         <n-button secondary @click="emit('back')">
           <template #icon><n-icon><ArrowBackOutline /></n-icon></template>
-          {{ t('返回对话') }}
+          {{ t('legacy.back_to_chat') }}
         </n-button>
-        <h1>{{ t('定时任务') }}</h1>
+        <h1>{{ t('legacy.scheduled_tasks') }}</h1>
       </div>
     </header>
 
@@ -209,7 +209,7 @@ watch(
             <n-input
               v-model:value="filterKeyword"
               clearable
-              :placeholder="t('搜索任务名称或提示词...')"
+              :placeholder="t('legacy.search_task_name_or_prompt')"
               class="keyword-input"
             />
           </n-space>
@@ -231,7 +231,7 @@ watch(
                   <path d="M16 16h5v5" />
                 </svg>
               </template>
-              {{ t('刷新') }}
+              {{ t('legacy.refresh') }}
             </n-button>
             <n-button type="primary" strong @click="createNew()">
               <template #icon>
@@ -248,7 +248,7 @@ watch(
                   <path d="M12 5v14" />
                 </svg>
               </template>
-              {{ t('创建定时任务') }}
+              {{ t('legacy.create_scheduled_task') }}
             </n-button>
           </n-space>
         </div>
@@ -271,7 +271,7 @@ watch(
                     :bordered="false"
                     :type="job.enabled ? 'success' : 'default'"
                   >
-                    {{ job.enabled ? t('已启用') : t('已停用') }}
+                    {{ job.enabled ? t('legacy.enabled') : t('legacy.disabled') }}
                   </n-tag>
                   <n-tag
                     v-if="job.last_run_status === 'running'"
@@ -281,7 +281,7 @@ watch(
                   >
                     <span class="inline-flex items-center gap-1">
                       <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-500"></span>
-                      {{ t('运行中') }}
+                      {{ t('legacy.running_5942497') }}
                     </span>
                   </n-tag>
                   <n-tag
@@ -290,7 +290,7 @@ watch(
                     :bordered="false"
                     type="error"
                   >
-                    {{ t('最近失败') }}
+                    {{ t('legacy.last_run_failed_ec2121f') }}
                   </n-tag>
                 </div>
                 <span class="card-time">{{ scheduleText(job) }}</span>
@@ -308,9 +308,9 @@ watch(
                   class="session-link"
                   @click="emit('open-session', job.session_id)"
                 >
-                  {{ sessionTitleById.get(job.session_id) || t('目标会话') }}
+                  {{ sessionTitleById.get(job.session_id) || t('legacy.target_chat') }}
                 </button>
-                <span v-else class="meta-item">{{ t('每次新建会话') }}</span>
+                <span v-else class="meta-item">{{ t('legacy.new_chat_each_run') }}</span>
                 <span class="meta-divider">•</span>
                 <span class="meta-item">{{ statusText(job) }}</span>
               </div>
@@ -318,7 +318,7 @@ watch(
               <div class="card-footrow">
                 <div class="card-actions">
                   <div class="card-switch" @click.stop>
-                    <span class="card-switch-label">{{ job.enabled ? t('已启用') : t('已停用') }}</span>
+                    <span class="card-switch-label">{{ job.enabled ? t('legacy.enabled') : t('legacy.disabled') }}</span>
                     <n-switch
                       size="small"
                       :value="job.enabled"
@@ -330,7 +330,7 @@ watch(
                     size="small"
                     quaternary
                     circle
-                    :title="t('立即运行')"
+                    :title="t('legacy.run_now')"
                     @click="runNow(job)"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -342,7 +342,7 @@ watch(
                     size="small"
                     quaternary
                     circle
-                    :title="t('编辑任务')"
+                    :title="t('legacy.edit_task')"
                     @click="edit(job)"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -357,7 +357,7 @@ watch(
                         size="small"
                         quaternary
                         circle
-                        :title="t('删除任务')"
+                        :title="t('legacy.delete_task')"
                       >
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                           <path d="M3 6h18" />
@@ -368,7 +368,7 @@ watch(
                         </svg>
                       </n-button>
                     </template>
-                    {{ t('确定删除这个定时任务吗？') }}
+                    {{ t('legacy.delete_this_scheduled_task') }}
                   </n-popconfirm>
                 </div>
               </div>
@@ -381,10 +381,10 @@ watch(
               <span>TIME</span>
               <span>TASK</span>
             </div>
-            <div class="empty-title">{{ t('还没有定时任务') }}</div>
-            <div class="empty-desc">{{ t('创建定时任务，让 AI 在指定时间自动为您发起会话并完成工作。') }}</div>
+            <div class="empty-title">{{ t('legacy.no_scheduled_tasks_yet') }}</div>
+            <div class="empty-desc">{{ t('legacy.create_a_scheduled_task_so_ai_can_start_a') }}</div>
             <n-space justify="center">
-              <n-button type="primary" @click="createNew()">{{ t('创建第一个任务') }}</n-button>
+              <n-button type="primary" @click="createNew()">{{ t('legacy.create_your_first_task') }}</n-button>
             </n-space>
           </div>
         </n-spin>

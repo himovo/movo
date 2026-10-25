@@ -55,7 +55,7 @@ const pageNo = computed(() => {
 })
 const displayPageNo = computed(() => locatedPageNo.value || pageNo.value)
 const titleText = computed(() => (
-  documentMeta.value ? documentDisplayName(documentMeta.value) : activeSource.value?.title || t('文档依据')
+  documentMeta.value ? documentDisplayName(documentMeta.value) : activeSource.value?.title || t('additional.document_evidence')
 ))
 const sourceText = computed(() => chunk.value?.text || activeSource.value?.content || activeSource.value?.snippet || '')
 const previewKind = computed(() => previewKindForDocument(documentMeta.value))

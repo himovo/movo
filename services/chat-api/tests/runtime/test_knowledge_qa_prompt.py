@@ -22,6 +22,10 @@ def test_knowledge_qa_prompt_enforces_evidence_boundary() -> None:
     assert "一律不得写入 answer" in system
     assert "不要用常识、行业经验、流程经验或你自己的推断补全信息" in system
     assert "不得新增候选片段未支持的处理建议" in system
+    assert "只回答用户实际询问的事实与必要适用条件" in system
+    assert "不得移用该建议" in system
+    assert "usedChunkIds" in system
+    assert "supportChecks" not in system
 
 
 def test_knowledge_qa_prompt_keeps_candidate_citation_and_content() -> None:

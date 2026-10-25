@@ -14,10 +14,10 @@ export function mcpActivationError(tool: ToolLike | ToolPayload): string {
   if (tool.type !== 'mcp' || tool.status !== 'active') return '';
   const names = enabledMcpToolNames(tool.config);
   if (names.length === 0) {
-    return t('请选择MCP工具', { count: MCP_ENABLED_TOOL_LIMIT });
+    return t('legacy.select_at_least_one_mcp_tool_for_the_agent', { count: MCP_ENABLED_TOOL_LIMIT });
   }
   if (names.length > MCP_ENABLED_TOOL_LIMIT) {
-    return t('MCP工具超限', { selected: names.length, count: MCP_ENABLED_TOOL_LIMIT });
+    return t('legacy.mcp_tools_are_selected_exceeding_the_limit_of_remove', { selected: names.length, count: MCP_ENABLED_TOOL_LIMIT });
   }
   return '';
 }
@@ -31,15 +31,15 @@ export function nextMcpToolSelection(current: string[], name: string, checked: b
   }
   if (currentNames.includes(normalized)) return { names: currentNames, error: '' };
   if (currentNames.length >= MCP_ENABLED_TOOL_LIMIT) {
-    return { names: currentNames, error: t('MCP工具最多', { count: MCP_ENABLED_TOOL_LIMIT }) };
+    return { names: currentNames, error: t('legacy.you_can_select_at_most_mcp_tools', { count: MCP_ENABLED_TOOL_LIMIT }) };
   }
   return { names: [...currentNames, normalized], error: '' };
 }
 
 export function toolStatusConfirmText(tool: ToolLike, enabled: boolean): string {
-  const name = tool.name || t('未命名工具');
+  const name = tool.name || t('legacy.unnamed_tool');
   if (enabled) {
-    return t('确认启用工具', { name });
+    return t('legacy.enable_it_will_become_available_to_agent_skill_tool', { name });
   }
-  return t('确认禁用工具', { name });
+  return t('legacy.disable_agent_skill_will_no_longer_be_able_to', { name });
 }

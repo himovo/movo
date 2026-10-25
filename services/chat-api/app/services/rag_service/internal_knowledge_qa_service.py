@@ -199,6 +199,7 @@ class InternalKnowledgeQAService:
             "session_id": request.session_id,
             "knowledge_ids": list(request.knowledge_base_ids or []),
             "answer": result.answer,
+            "documentStatus": result.document_status,
             "usedChunks": used_chunks,
             "citations": citations,
             "evidenceBundle": evidence_bundle,

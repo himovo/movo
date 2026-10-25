@@ -1,19 +1,19 @@
 <template>
   <div class="complete-content">
-    <n-alert type="success" :show-icon="true" :title="t('初始化完成')">
-      {{ t('企业、初始账号和企业模型均已配置，可以开始使用 MOVO。') }}
+    <n-alert type="success" :show-icon="true" :title="t('legacy.setup_complete')">
+      {{ t('legacy.the_organization_initial_accounts_and_organization_models_are_configured') }}
     </n-alert>
     <div class="connection-list">
       <div v-for="item in items" :key="item.key" class="connection-item">
         <span class="connection-label">{{ item.label }}</span>
         <code>{{ item.value }}</code>
-        <n-button size="small" secondary :disabled="!item.value" @click="$emit('copy', item.value)">{{ t('复制') }}</n-button>
+        <n-button size="small" secondary :disabled="!item.value" @click="$emit('copy', item.value)">{{ t('legacy.copy') }}</n-button>
       </div>
     </div>
-    <p class="desktop-note">{{ t('桌面端只需填写企业服务地址，系统会自动连接 API 与浏览器 Agent，无需单独配置 WebSocket。') }}</p>
+    <p class="desktop-note">{{ t('legacy.enter_only_the_organization_service_url_in_the_desktop') }}</p>
     <div class="complete-actions">
-      <n-button size="large" secondary @click="downloadConnectionFile">{{ t('下载连接配置') }}</n-button>
-      <n-button type="primary" size="large" @click="$emit('login')">{{ t('登录管理后台') }}</n-button>
+      <n-button size="large" secondary @click="downloadConnectionFile">{{ t('legacy.download_connection_config') }}</n-button>
+      <n-button type="primary" size="large" @click="$emit('login')">{{ t('legacy.sign_in_to_admin') }}</n-button>
     </div>
   </div>
 </template>
@@ -33,9 +33,9 @@ const props = defineProps<{
 defineEmits<{ copy: [value: string]; login: [] }>();
 
 const items = computed(() => [
-  { key: 'user', label: t('员工 Web'), value: props.urls.userWeb },
-  { key: 'admin', label: t('管理后台'), value: props.urls.adminWeb },
-  { key: 'desktop', label: t('桌面端连接地址'), value: props.urls.desktopService },
+  { key: 'user', label: t('legacy.employee_web'), value: props.urls.userWeb },
+  { key: 'admin', label: t('legacy.admin_portal'), value: props.urls.adminWeb },
+  { key: 'desktop', label: t('legacy.desktop_connection_url'), value: props.urls.desktopService },
 ]);
 
 function downloadConnectionFile() {

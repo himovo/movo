@@ -38,8 +38,6 @@ export interface KnowledgeSettings {
     candidateTopK: number;
     scoreThreshold: number;
     metadataFiltersEnabled: boolean;
-    maxChunksPerDocument: number;
-    dedupByDocument: boolean;
     hybrid: {
       vectorWeight: number;
       keywordWeight: number;

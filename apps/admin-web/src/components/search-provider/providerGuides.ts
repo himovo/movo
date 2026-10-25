@@ -14,25 +14,25 @@ export const searchProviderGuides: Record<SearchProviderId, SearchProviderGuide>
   },
   tavily: {
     url: 'https://app.tavily.com/',
-    steps: ['注册或登录 Tavily', '在控制台创建 API Key', '复制 Key 到 MOVO 并测试连接'],
+    steps: ['legacy.sign_up_for_or_sign_in_to_tavily', 'legacy.create_an_api_key_in_the_dashboard', 'legacy.copy_the_key_to_movo_and_test_the_connection'],
   },
   serper: {
     url: 'https://serper.dev/',
-    steps: ['注册或登录 Serper', '进入 Dashboard 获取 API Key', '复制 Key 到 MOVO 并测试连接'],
+    steps: ['legacy.sign_up_for_or_sign_in_to_serper', 'legacy.get_the_api_key_from_the_dashboard', 'legacy.copy_the_key_to_movo_and_test_the_connection'],
   },
   serpapi: {
     url: 'https://serpapi.com/manage-api-key',
-    steps: ['注册或登录 SerpAPI', '进入 Dashboard 的 API Key 页面', '复制 Private API Key 到 MOVO 并测试连接'],
+    steps: ['legacy.sign_up_for_or_sign_in_to_serpapi', 'legacy.open_the_api_key_page_in_the_dashboard', 'legacy.copy_the_private_api_key_to_movo_and_test'],
   },
   baidu_qianfan: {
     url: 'https://console.bce.baidu.com/qianfan/ais/console/apiKey',
-    steps: ['登录百度智能云千帆控制台', '在安全认证中创建 API Key', '为 Key 开通百度搜索能力后复制到 MOVO'],
-    note: '百度搜索能力可能需要开通计费；Endpoint 通常保持默认值。',
+    steps: ['legacy.sign_in_to_the_baidu_qianfan_console', 'legacy.create_an_api_key_under_security_authentication', 'legacy.enable_baidu_search_for_the_key_then_copy_it'],
+    note: 'legacy.baidu_search_may_require_billing_the_default_endpoint_normally',
   },
   volc_ark: {
     url: 'https://console.volcengine.com/ark/region:ark+cn-beijing/apikey',
-    steps: ['登录火山方舟并创建 API Key', '创建启用了联网能力的应用 Bot', '将 API Key 与 bot- 开头的应用 ID 填入 MOVO'],
-    note: '仅有 API Key 不够，还需要填写已启用联网能力的 Bot Model。',
+    steps: ['legacy.sign_in_to_volcengine_ark_and_create_an_api', 'legacy.create_an_application_bot_with_web_access_enabled', 'legacy.enter_the_api_key_and_the_bot_application_id'],
+    note: 'legacy.an_api_key_alone_is_not_enough_enter_a',
   },
 };
 

@@ -1,13 +1,13 @@
 <template>
   <div class="step-content">
     <div class="step-heading">
-      <span class="step-kicker">{{ t('步骤 3 / 4') }}</span>
-      <h2>{{ t('配置企业对话模型') }}</h2>
-      <p>{{ t('配置将加密保存。连接测试成功后才能完成初始化。') }}</p>
+      <span class="step-kicker">{{ t('legacy.step_3_of_4') }}</span>
+      <h2>{{ t('legacy.configure_organization_chat_model') }}</h2>
+      <p>{{ t('legacy.credentials_are_encrypted_setup_can_finish_only_after_a') }}</p>
     </div>
 
     <n-alert type="info" :show-icon="true" class="security-note">
-      {{ t('API Key 不会返回到浏览器，保存后仅显示掩码。') }}
+      {{ t('legacy.the_api_key_is_never_returned_to_the_browser') }}
     </n-alert>
 
     <SetupModelFields v-model="model" :providers="providers" :providers-loading="providersLoading" />
@@ -17,12 +17,12 @@
     </n-alert>
 
     <div class="actions">
-      <n-button size="large" :disabled="submitting" @click="$emit('back')">{{ t('上一步') }}</n-button>
+      <n-button size="large" :disabled="submitting" @click="$emit('back')">{{ t('legacy.previous') }}</n-button>
       <n-button size="large" secondary type="primary" :loading="testState === 'testing'" :disabled="submitting" @click="$emit('test')">
-        {{ t('测试模型连接') }}
+        {{ t('legacy.test_model_connection') }}
       </n-button>
       <n-button size="large" type="primary" :loading="submitting" :disabled="testState !== 'success'" @click="$emit('next')">
-        {{ t('下一步：其他模型') }}
+        {{ t('legacy.next_other_models') }}
       </n-button>
     </div>
   </div>

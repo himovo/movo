@@ -7,7 +7,7 @@
             <img v-if="showProfileAvatar" :key="profileAvatarUrl" :src="profileAvatarUrl" alt="" @error="handleProfileAvatarError" />
             <span v-else>{{ profileInitial }}</span>
           </span>
-          <span>{{ uploadingAvatar ? t('上传中') : t('更换头像') }}</span>
+          <span>{{ uploadingAvatar ? t('legacy.uploading') : t('additional.change_avatar') }}</span>
         </button>
         <input
           ref="avatarInputRef"
@@ -18,11 +18,11 @@
         />
       </div>
       <div class="summary-main">
-        <div class="summary-kicker">{{ t('个人中心') }}</div>
+        <div class="summary-kicker">{{ t('legacy.profile') }}</div>
         <h1>{{ profileDisplayName }}</h1>
         <div class="summary-meta">
-          <n-tag size="small" :bordered="false" type="info">{{ authStore.profile?.roleName || t('组织管理员') }}</n-tag>
-          <span>{{ authStore.profile?.orgName || t('组织空间') }}</span>
+          <n-tag size="small" :bordered="false" type="info">{{ authStore.profile?.roleName || t('legacy.organization_administrator') }}</n-tag>
+          <span>{{ authStore.profile?.orgName || t('legacy.org_space') }}</span>
           <span>{{ maskedUsername }}</span>
         </div>
       </div>
@@ -32,8 +32,8 @@
       <n-card class="profile-card" :bordered="false" size="large">
         <template #header>
           <div class="card-header">
-            <span>{{ t('基本信息') }}</span>
-            <n-button text type="primary" :loading="loadingProfile" @click="loadProfile">{{ t('刷新') }}</n-button>
+            <span>{{ t('additional.basic_information') }}</span>
+            <n-button text type="primary" :loading="loadingProfile" @click="loadProfile">{{ t('legacy.refresh') }}</n-button>
           </div>
         </template>
 
@@ -44,50 +44,50 @@
           label-placement="top"
           require-mark-placement="right-hanging"
         >
-          <n-form-item :label="t('姓名')" path="name">
-            <n-input v-model:value="profileForm.name" :placeholder="t('请输入姓名或昵称')" />
+          <n-form-item :label="t('legacy.name')" path="name">
+            <n-input v-model:value="profileForm.name" :placeholder="t('additional.enter_a_name_or_nickname')" />
           </n-form-item>
-          <n-form-item :label="t('邮箱')" path="email">
-            <n-input v-model:value="profileForm.email" :placeholder="t('请输入邮箱')" />
+          <n-form-item :label="t('legacy.email')" path="email">
+            <n-input v-model:value="profileForm.email" :placeholder="t('additional.enter_an_email_address_f2dc24d')" />
           </n-form-item>
-          <n-form-item :label="t('手机号')" path="phone">
-            <n-input v-model:value="profileForm.phone" :placeholder="t('请输入手机号')" />
+          <n-form-item :label="t('legacy.mobile')" path="phone">
+            <n-input v-model:value="profileForm.phone" :placeholder="t('additional.enter_a_phone_number_5ecce33')" />
           </n-form-item>
 
           <div class="readonly-grid">
             <div class="readonly-item">
-              <span>{{ t('登录账号') }}</span>
+              <span>{{ t('legacy.username') }}</span>
               <strong>{{ maskedUsername }}</strong>
             </div>
             <div class="readonly-item">
-              <span>{{ t('所属组织') }}</span>
+              <span>{{ t('additional.organization') }}</span>
               <strong>{{ authStore.profile?.orgName || '-' }}</strong>
             </div>
             <div class="readonly-item">
-              <span>{{ t('当前角色') }}</span>
+              <span>{{ t('additional.current_role') }}</span>
               <strong>{{ authStore.profile?.roleName || '-' }}</strong>
             </div>
             <div class="readonly-item">
-              <span>{{ t('最近登录') }}</span>
-              <strong>{{ formatAdminDateTime(authStore.profile?.lastLoginAt, t('暂无记录')) }}</strong>
+              <span>{{ t('additional.last_sign_in') }}</span>
+              <strong>{{ formatAdminDateTime(authStore.profile?.lastLoginAt, t('legacy.no_records')) }}</strong>
             </div>
           </div>
 
           <div class="form-actions">
-            <n-button :disabled="savingProfile || !profileDirty" @click="resetProfileForm">{{ t('重置') }}</n-button>
+            <n-button :disabled="savingProfile || !profileDirty" @click="resetProfileForm">{{ t('legacy.reset') }}</n-button>
             <n-button type="primary" :loading="savingProfile" :disabled="!profileDirty" @click="saveProfile">
-              {{ t('保存资料') }}
+              {{ t('additional.save_profile') }}
             </n-button>
           </div>
         </n-form>
       </n-card>
 
       <n-card class="profile-card" :bordered="false" size="large">
-        <template #header>{{ t('账号安全') }}</template>
+        <template #header>{{ t('additional.account_security') }}</template>
 
         <div class="security-note">
-          <strong>{{ t('修改登录密码') }}</strong>
-          <span>{{ t('密码修改成功后，需要重新登录管理后台。') }}</span>
+          <strong>{{ t('additional.change_sign_in_password') }}</strong>
+          <span>{{ t('additional.after_changing_your_password_you_must_sign_in_to') }}</span>
         </div>
 
         <n-form
@@ -97,35 +97,35 @@
           label-placement="top"
           require-mark-placement="right-hanging"
         >
-          <n-form-item :label="t('当前密码')" path="currentPassword">
+          <n-form-item :label="t('additional.current_password')" path="currentPassword">
             <n-input
               v-model:value="passwordForm.currentPassword"
               type="password"
               show-password-on="click"
-              :placeholder="t('请输入当前密码')"
+              :placeholder="t('additional.enter_your_current_password')"
             />
           </n-form-item>
-          <n-form-item :label="t('新密码')" path="newPassword">
+          <n-form-item :label="t('additional.new_password')" path="newPassword">
             <n-input
               v-model:value="passwordForm.newPassword"
               type="password"
               show-password-on="click"
-              :placeholder="t('至少 10 位字符')"
+              :placeholder="t('legacy.at_least_10_characters_9ef2b0f')"
             />
           </n-form-item>
-          <n-form-item :label="t('确认新密码')" path="confirmPassword">
+          <n-form-item :label="t('additional.confirm_new_password')" path="confirmPassword">
             <n-input
               v-model:value="passwordForm.confirmPassword"
               type="password"
               show-password-on="click"
-              :placeholder="t('请再次输入新密码')"
+              :placeholder="t('additional.enter_your_new_password_again')"
             />
           </n-form-item>
 
           <div class="form-actions">
-            <n-button :disabled="changingPassword" @click="resetPasswordForm">{{ t('清空') }}</n-button>
+            <n-button :disabled="changingPassword" @click="resetPasswordForm">{{ t('additional.clear') }}</n-button>
             <n-button type="primary" :loading="changingPassword" @click="submitPasswordChange">
-              {{ t('修改密码') }}
+              {{ t('additional.change_password') }}
             </n-button>
           </div>
         </n-form>
@@ -176,42 +176,42 @@ const passwordForm = reactive({
 });
 
 const profileRules: FormRules = {
-  name: [{ required: true, message: t('请输入姓名或昵称'), trigger: ['input', 'blur'] }],
+  name: [{ required: true, message: t('additional.enter_a_name_or_nickname'), trigger: ['input', 'blur'] }],
   email: [
     {
       validator: (_rule, value: string) => {
         if (!value) return true;
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
       },
-      message: t('请输入有效邮箱'),
+      message: t('additional.enter_a_valid_email_address'),
       trigger: ['input', 'blur'],
     },
   ],
 };
 
 const passwordRules: FormRules = {
-  currentPassword: [{ required: true, message: t('请输入当前密码'), trigger: ['input', 'blur'] }],
+  currentPassword: [{ required: true, message: t('additional.enter_your_current_password'), trigger: ['input', 'blur'] }],
   newPassword: [
-    { required: true, message: t('请输入新密码'), trigger: ['input', 'blur'] },
-    { min: 10, message: t('新密码至少 10 位'), trigger: ['input', 'blur'] },
+    { required: true, message: t('additional.enter_a_new_password'), trigger: ['input', 'blur'] },
+    { min: 10, message: t('legacy.new_password_must_be_at_least_10_characters'), trigger: ['input', 'blur'] },
     {
       validator: (_rule, value: string) => value !== passwordForm.currentPassword,
-      message: t('新密码不能与当前密码相同'),
+      message: t('additional.the_new_password_must_differ_from_the_current_password'),
       trigger: ['input', 'blur'],
     },
   ],
   confirmPassword: [
-    { required: true, message: t('请再次输入新密码'), trigger: ['input', 'blur'] },
+    { required: true, message: t('additional.enter_your_new_password_again'), trigger: ['input', 'blur'] },
     {
       validator: (_rule, value: string) => value === passwordForm.newPassword,
-      message: t('两次输入的新密码不一致'),
+      message: t('additional.the_new_passwords_do_not_match'),
       trigger: ['input', 'blur'],
     },
   ],
 };
 
 const profileDisplayName = computed(() =>
-  profileForm.name.trim() ? profileForm.name.trim() : displayAdminName(authStore.profile, t('管理员')),
+  profileForm.name.trim() ? profileForm.name.trim() : displayAdminName(authStore.profile, t('legacy.admin')),
 );
 const profileAvatarUrl = computed(() => resolveAdminAssetUrlWithVersion(authStore.profile?.avatarUrl, authStore.profile?.avatarUpdatedAt));
 const profileAvatarFailedUrl = ref('');
@@ -245,7 +245,7 @@ async function loadProfile() {
     const profile = await fetchCurrentProfile();
     applyProfile(profile);
   } catch (error) {
-    message.error(t('个人资料加载失败'));
+    message.error(t('additional.failed_to_load_profile'));
   } finally {
     loadingProfile.value = false;
   }
@@ -272,12 +272,12 @@ async function handleAvatarChange(event: Event) {
   if (!file) return;
   const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
   if (!allowedTypes.has(file.type)) {
-    message.error(t('头像仅支持 JPG、PNG、WebP'));
+    message.error(t('additional.avatars_must_be_jpg_png_or_webp'));
     input.value = '';
     return;
   }
   if (file.size > 2 * 1024 * 1024) {
-    message.error(t('头像文件不能超过 2MB'));
+    message.error(t('additional.avatar_file_must_not_exceed_2_mb'));
     input.value = '';
     return;
   }
@@ -286,9 +286,9 @@ async function handleAvatarChange(event: Event) {
     const profile = await uploadCurrentAvatar(file);
     profileAvatarFailedUrl.value = '';
     applyProfile(profile);
-    message.success(t('头像已更新'));
+    message.success(t('additional.avatar_updated'));
   } catch (error) {
-    message.error(t('头像上传失败'));
+    message.error(t('additional.failed_to_upload_avatar'));
   } finally {
     uploadingAvatar.value = false;
     input.value = '';
@@ -305,9 +305,9 @@ async function saveProfile() {
       phone: profileForm.phone.trim(),
     });
     applyProfile(profile);
-    message.success(t('个人资料已保存'));
+    message.success(t('additional.profile_saved'));
   } catch (error) {
-    message.error(t('保存个人资料失败'));
+    message.error(t('additional.failed_to_save_profile'));
   } finally {
     savingProfile.value = false;
   }
@@ -327,11 +327,11 @@ async function submitPasswordChange() {
       currentPassword: passwordForm.currentPassword,
       newPassword: passwordForm.newPassword,
     });
-    message.success(t('密码已修改，请重新登录'));
+    message.success(t('additional.password_changed_please_sign_in_again'));
     authStore.clearSession();
     router.push('/login');
   } catch (error) {
-    message.error(t('修改密码失败，请检查当前密码'));
+    message.error(t('additional.failed_to_change_password_check_your_current_password'));
   } finally {
     changingPassword.value = false;
   }

@@ -8,6 +8,7 @@ from app.knowledge.prompting.knowledge_qa_prompt import build_knowledge_qa_messa
 from app.knowledge.retrieval.retrieval_client import knowledge_retrieval_client
 from app.services.llm import LLMService
 
+INSUFFICIENT = "内部知识库中未找到足够依据。"
 
 _USED_CHUNK_IDS_RE = re.compile(
     r",?\s*[\"']?usedChunkIds[\"']?\s*:\s*\[[^\]]*]\s*}?\s*$",
@@ -55,7 +56,10 @@ class KnowledgeQAAgent:
                 content_type=item.contentType,
                 source_chunk_ids=item.sourceChunkIds,
                 ordinal=item.ordinal,
-                score=float(item.rerankScore if item.rerankScore is not None else item.score or 0),
+                score=float(
+                    item.rerankScore if item.rerankScore is not None else
+                    item.fusionScore if item.fusionScore is not None else item.score or 0
+                ),
                 rerank_score=float(item.rerankScore) if item.rerankScore is not None else None,
                 distance=item.distance,
                 metadata=item.metadata,
@@ -76,7 +80,7 @@ class KnowledgeQAAgent:
         messages = build_knowledge_qa_messages(request.query, chunks)
         raw = await LLMService(intent="knowledge_qa").chat_complete(messages, temperature=None)
         parsed = parse_llm_json(raw)
-        answer = _clean_answer_text(str(parsed.get("answer") or "")) or "内部知识库中未找到足够依据。"
+        answer = _clean_answer_text(str(parsed.get("answer") or "")) or INSUFFICIENT
         raw_used = parsed.get("usedChunkIds") or parsed.get("used_chunk_ids") or []
         if isinstance(raw_used, str):
             used_chunk_ids = [raw_used]
@@ -87,6 +91,8 @@ class KnowledgeQAAgent:
         if not used_chunk_ids:
             used_chunk_ids = _extract_used_chunk_ids(raw)
         citations = resolve_citations(chunks, used_chunk_ids)
+        if not citations:
+            answer = INSUFFICIENT
         return KnowledgeQAResult(
             answer=answer,
             citations=citations,

@@ -17,10 +17,10 @@
               </div>
               <n-space :size="8" align="center">
                 <n-tag :type="form.type === 'mcp' ? 'info' : 'success'" round>
-                  {{ form.type === 'mcp' ? t('MCP 服务') : t('HTTP 工具') }}
+                  {{ form.type === 'mcp' ? t('legacy.mcp_service') : t('legacy.http_tool') }}
                 </n-tag>
                 <n-tag round>
-                  {{ t('第 {step} / {total} 步', { step: activeStep, total: steps.length }) }}
+                  {{ t('legacy.step', { step: activeStep, total: steps.length }) }}
                 </n-tag>
               </n-space>
             </div>
@@ -30,23 +30,23 @@
             <div class="step-actions">
               <n-button secondary @click="backToList">
                 <template #icon><ToolIcon name="back" /></template>
-                {{ t('返回') }}
+                {{ t('legacy.back') }}
               </n-button>
               <n-button v-if="activeStep > 1" @click="goPrevStep">
                 <template #icon><ToolIcon name="back" /></template>
-                {{ t('上一步') }}
+                {{ t('legacy.previous') }}
               </n-button>
               <n-button v-if="activeStep < steps.length" type="primary" @click="goNextStep">
                 <template #icon><ToolIcon name="next" /></template>
-                {{ t('下一步') }}
+                {{ t('legacy.next') }}
               </n-button>
               <n-button secondary :loading="saving" @click="saveDraft">
                 <template #icon><ToolIcon name="save" /></template>
-                {{ t('保存草稿') }}
+                {{ t('legacy.save_draft') }}
               </n-button>
               <n-button v-if="activeStep === steps.length" type="primary" :loading="saving" @click="saveTool">
                 <template #icon><ToolIcon name="check" /></template>
-                {{ t('完成并保存') }}
+                {{ t('legacy.finish_save') }}
               </n-button>
             </div>
           </template>
@@ -57,34 +57,34 @@
           <template v-else>
             <n-form ref="formRef" :model="form" :rules="rules" label-placement="top">
               <section v-if="activeKey === 'base'" class="step-panel">
-                <n-form-item v-if="isCreate" :label="t('连接类型')" path="type">
+                <n-form-item v-if="isCreate" :label="t('legacy.connection_type')" path="type">
                   <n-radio-group v-model:value="form.type" @update:value="changeType">
-                    <n-radio-button value="http">{{ t('HTTP 接口工具') }}</n-radio-button>
-                    <n-radio-button value="mcp">{{ t('远程 MCP 服务') }}</n-radio-button>
+                    <n-radio-button value="http">{{ t('legacy.http_interface_tool') }}</n-radio-button>
+                    <n-radio-button value="mcp">{{ t('legacy.remote_mcp_service') }}</n-radio-button>
                   </n-radio-group>
                 </n-form-item>
 
                 <n-grid :cols="2" :x-gap="18">
-                  <n-form-item-gi :label="t('名称')" path="name">
-                    <n-input v-model:value="form.name" :placeholder="t('例如：CRM 客户查询')" />
+                  <n-form-item-gi :label="t('legacy.name_1be7ae4')" path="name">
+                    <n-input v-model:value="form.name" :placeholder="t('legacy.example_crm_customer_query')" />
                   </n-form-item-gi>
-                  <n-form-item-gi :label="t('启用状态')">
+                  <n-form-item-gi :label="t('legacy.status_5691b37')">
                     <n-switch v-model:value="enabledSwitch">
-                      <template #checked>{{ t('启用') }}</template>
-                      <template #unchecked>{{ t('停用') }}</template>
+                      <template #checked>{{ t('legacy.active') }}</template>
+                      <template #unchecked>{{ t('legacy.disabled') }}</template>
                     </n-switch>
                   </n-form-item-gi>
                 </n-grid>
 
-                <n-form-item :label="t('工具说明')" path="description">
+                <n-form-item :label="t('legacy.tool_description')" path="description">
                   <div class="description-input-wrap">
-                    <n-button class="generate-desc-button" quaternary circle :loading="generatingDescription" @click="generateDescriptionFromName" :title="t('AI 生成描述')">
+                    <n-button class="generate-desc-button" quaternary circle :loading="generatingDescription" @click="generateDescriptionFromName" :title="t('legacy.ai_generate_description')">
                       <ToolIcon v-if="!generatingDescription" name="sparkles" />
                     </n-button>
-                    <n-input v-model:value="form.description" type="textarea" :autosize="{ minRows: 3, maxRows: 5 }" :placeholder="t('说明这个工具能做什么。')" />
+                    <n-input v-model:value="form.description" type="textarea" :autosize="{ minRows: 3, maxRows: 5 }" :placeholder="t('legacy.describe_what_this_tool_does')" />
                   </div>
                 </n-form-item>
-                <n-form-item :label="t('标签')">
+                <n-form-item :label="t('legacy.tags')">
                   <n-dynamic-tags v-model:value="form.tags" />
                 </n-form-item>
               </section>
@@ -92,25 +92,25 @@
               <section v-if="activeKey === 'request'" class="step-panel">
                 <template v-if="form.type === 'http'">
                   <n-grid :cols="4" :x-gap="18">
-                    <n-form-item-gi :span="3" :label="t('请求地址')" path="config.url">
+                    <n-form-item-gi :span="3" :label="t('legacy.request_url')" path="config.url">
                       <n-input v-model:value="form.config.url" :placeholder="t('https://api.example.com/customers/{customerId}')" />
                     </n-form-item-gi>
-                    <n-form-item-gi :label="t('请求方法')">
+                    <n-form-item-gi :label="t('legacy.request_method')">
                       <n-select v-model:value="form.config.method" :options="methodOptions" />
                     </n-form-item-gi>
                   </n-grid>
                 </template>
                 <template v-else>
-                  <n-form-item :label="t('MCP 服务地址')" path="config.endpoint">
+                  <n-form-item :label="t('legacy.mcp_endpoint')" path="config.endpoint">
                     <n-input v-model:value="form.config.endpoint" :placeholder="t('https://mcp.example.com/mcp')" />
                   </n-form-item>
                 </template>
 
                 <n-grid :cols="3" :x-gap="18">
-                  <n-form-item-gi :label="t('鉴权方式')">
+                  <n-form-item-gi :label="t('legacy.authentication')">
                     <n-select v-model:value="form.config.authType" :options="authOptions" />
                   </n-form-item-gi>
-                  <n-form-item-gi v-if="form.config.authType === 'api_key'" :label="t('Header 名称')" path="config.apiKeyHeader" required>
+                  <n-form-item-gi v-if="form.config.authType === 'api_key'" :label="t('legacy.header_name')" path="config.apiKeyHeader" required>
                     <n-input v-model:value="form.config.apiKeyHeader" :placeholder="t('X-API-Key')" />
                   </n-form-item-gi>
                   <n-form-item-gi v-if="form.config.authType !== 'none'" :span="form.config.authType === 'api_key' ? 1 : 2" :label="t('Token / Key')" path="config.authToken" required>
@@ -119,25 +119,25 @@
                 </n-grid>
 
                 <n-grid :cols="3" :x-gap="18">
-                  <n-form-item-gi :label="t('超时时间')">
+                  <n-form-item-gi :label="t('legacy.timeout_seconds')">
                     <n-input-number v-model:value="form.config.timeoutSeconds" :min="1" :max="120" />
                   </n-form-item-gi>
                 </n-grid>
 
                 <div class="section-head">
                   <div>
-                    <div class="section-title">{{ t('固定 Headers') }}</div>
-                    <div class="section-muted">{{ t('用于租户、渠道或内部鉴权等固定头信息。') }}</div>
+                    <div class="section-title">{{ t('legacy.fixed_headers') }}</div>
+                    <div class="section-muted">{{ t('legacy.used_for_tenant_channel_or_internal_auth_header_info') }}</div>
                   </div>
                   <n-button size="small" @click="addHeader">
                     <template #icon><ToolIcon name="add" /></template>
-                    {{ t('添加 Header') }}
+                    {{ t('legacy.add_header') }}
                   </n-button>
                 </div>
                 <div class="compact-table">
                   <div class="compact-row compact-head header-grid">
-                    <span>{{ t('Header 名称') }}</span>
-                    <span>{{ t('值') }}</span>
+                    <span>{{ t('legacy.header_name') }}</span>
+                    <span>{{ t('legacy.value') }}</span>
                     <span></span>
                   </div>
                   <div v-for="item in headerRows" :key="item.id" class="compact-row header-grid">
@@ -145,10 +145,10 @@
                     <n-input v-model:value="item.value" placeholder="default" />
                     <n-button quaternary type="error" @click="removeHeader(item.id)">
                       <template #icon><ToolIcon name="trash" /></template>
-                      {{ t('删除') }}
+                      {{ t('legacy.delete') }}
                     </n-button>
                   </div>
-                  <n-empty v-if="headerRows.length === 0" :description="t('无固定 Header')" size="small" />
+                  <n-empty v-if="headerRows.length === 0" :description="t('legacy.no_fixed_headers')" size="small" />
                 </div>
               </section>
 
@@ -157,7 +157,7 @@
                   <div></div>
                   <n-button type="primary" ghost @click="addInputNode()">
                     <template #icon><ToolIcon name="add" /></template>
-                    {{ t('添加参数') }}
+                    {{ t('legacy.add_parameter') }}
                   </n-button>
                 </div>
                 <SchemaEditor
@@ -174,11 +174,11 @@
                   <n-space :size="8">
                     <n-button :disabled="!canInferOutputSchema" @click="inferOutputSchemaFromTest">
                       <template #icon><ToolIcon name="schema" /></template>
-                      {{ t('从响应生成出参') }}
+                      {{ t('legacy.generate_from_response') }}
                     </n-button>
                     <n-button type="primary" ghost @click="addOutputNode()">
                       <template #icon><ToolIcon name="add" /></template>
-                      {{ t('添加字段') }}
+                      {{ t('legacy.add_field_f2772f0') }}
                     </n-button>
                   </n-space>
                 </div>
@@ -193,32 +193,32 @@
               <section v-if="activeKey === 'mcpTools'" class="step-panel">
                 <div class="section-head">
                   <div>
-                    <div class="section-title">{{ t('发现 MCP 工具') }}</div>
-                    <div class="section-muted">{{ t('保存连接后发现远程服务暴露的工具，并选择允许 Agent 使用的项。') }}</div>
+                    <div class="section-title">{{ t('legacy.discover_mcp_tools') }}</div>
+                    <div class="section-muted">{{ t('legacy.after_saving_connection_discover_tools_exposed_by_remote_services') }}</div>
                   </div>
                   <n-button type="primary" :loading="discovering" :disabled="!toolId" @click="discoverTools">
                     <template #icon><ToolIcon name="search" /></template>
-                    {{ t('发现工具') }}
+                    {{ t('legacy.discover_tools') }}
                   </n-button>
                 </div>
 
-                <n-alert v-if="!toolId" type="warning" :bordered="false">{{ t('请先保存 MCP 服务，再发现远程工具。') }}</n-alert>
+                <n-alert v-if="!toolId" type="warning" :bordered="false">{{ t('legacy.please_save_mcp_service_first_then_discover_remote_tools') }}</n-alert>
                 <div v-else class="mcp-tool-list">
                   <div v-for="tool in discoveredTools" :key="tool.name" class="mcp-tool-card">
                     <div class="mcp-tool-main">
                       <n-checkbox :checked="enabledToolNames.includes(tool.name)" @update:checked="(checked: boolean) => toggleMcpTool(tool.name, checked)" />
                       <div>
                         <div class="mcp-tool-name">{{ tool.name }}</div>
-                        <div class="section-muted">{{ tool.description || t('无描述') }}</div>
+                        <div class="section-muted">{{ tool.description || t('legacy.no_description') }}</div>
                       </div>
                     </div>
                     <n-collapse>
-                      <n-collapse-item :title="t('入参 Schema')" :name="tool.name">
+                      <n-collapse-item :title="t('legacy.input_schema')" :name="tool.name">
                         <n-code :code="JSON.stringify(tool.inputSchema || {}, null, 2)" language="json" word-wrap />
                       </n-collapse-item>
                     </n-collapse>
                   </div>
-                  <n-empty v-if="discoveredTools.length === 0" :description="t('还没有发现 MCP 工具')" />
+                  <n-empty v-if="discoveredTools.length === 0" :description="t('legacy.no_mcp_tools_discovered_yet')" />
                 </div>
               </section>
 
@@ -227,31 +227,31 @@
                   <div class="debug-left">
                     <div class="section-head">
                       <div>
-                        <div class="section-title">{{ t('测试输入') }}</div>
-                        <div class="section-muted">{{ t('根据入参定义填写一次真实调用。') }}</div>
+                        <div class="section-title">{{ t('legacy.test_input') }}</div>
+                        <div class="section-muted">{{ t('legacy.fill_in_a_real_call_according_to_the_input') }}</div>
                       </div>
                       <n-button type="primary" :loading="testing" :disabled="!toolId" @click="runDebug">
                         <template #icon><ToolIcon name="play" /></template>
-                        {{ t('运行测试') }}
+                        {{ t('legacy.run_test') }}
                       </n-button>
                     </div>
-                    <n-alert v-if="!toolId" type="warning" :bordered="false">{{ t('请先保存工具，再执行测试。') }}</n-alert>
+                    <n-alert v-if="!toolId" type="warning" :bordered="false">{{ t('legacy.please_save_the_tool_first_before_running_test') }}</n-alert>
 
                     <template v-if="form.type === 'http'">
                       <div v-for="node in flatInputNodes" :key="node.id" class="debug-param-row">
                         <label>
-                          {{ node.name || t('未命名参数') }}
+                          {{ node.name || t('legacy.unnamed_parameter') }}
                           <span v-if="node.required">*</span>
                         </label>
                         <n-input v-model:value="debugValues[node.id]" :placeholder="node.description || node.type" />
                       </div>
-                      <n-empty v-if="flatInputNodes.length === 0" :description="t('请先在入参定义里添加参数')" size="small" />
+                      <n-empty v-if="flatInputNodes.length === 0" :description="t('legacy.please_add_parameters_in_the_input_definition_first')" size="small" />
                     </template>
                     <template v-else>
-                      <n-form-item :label="t('MCP 工具')">
+                      <n-form-item :label="t('legacy.mcp_tool')">
                         <n-select v-model:value="debugMcpToolName" :options="mcpToolOptions" filterable />
                       </n-form-item>
-                      <n-form-item :label="t('参数 JSON')">
+                      <n-form-item :label="t('legacy.parameters_json')">
                         <n-input v-model:value="debugMcpArguments" type="textarea" :autosize="{ minRows: 8, maxRows: 14 }" :placeholder="t('mcp_placeholder')" />
                       </n-form-item>
                     </template>
@@ -259,15 +259,15 @@
 
                   <div class="debug-right">
                     <div class="result-panel">
-                      <div class="result-title">{{ t('请求体') }}</div>
+                      <div class="result-title">{{ t('legacy.request_body') }}</div>
                       <n-code :code="JSON.stringify(lastRequest, null, 2)" language="json" word-wrap />
                     </div>
                     <div class="result-panel">
                       <div class="result-title result-title-row">
-                        <span>{{ t('响应体') }}</span>
+                        <span>{{ t('legacy.response_body') }}</span>
                         <n-button v-if="canInferOutputSchema" size="tiny" secondary @click="inferOutputSchemaFromTest">
                           <template #icon><ToolIcon name="schema" /></template>
-                          {{ t('生成出参') }}
+                          {{ t('legacy.generate_output') }}
                         </n-button>
                       </div>
                       <n-code :code="JSON.stringify(testResult || {}, null, 2)" language="json" word-wrap />
@@ -285,7 +285,7 @@
           <div class="debug-workspace">
             <div class="aside-title-row">
               <div>
-                <div class="aside-title">{{ t('调试测试') }}</div>
+                <div class="aside-title">{{ t('legacy.debug_test') }}</div>
                 <div class="aside-desc">{{ testStatusText }}</div>
               </div>
               <n-tag :type="testStatusTagType" round>{{ testStatusLabel }}</n-tag>
@@ -296,49 +296,49 @@
               <strong>{{ debugEndpointText }}</strong>
             </div>
 
-            <div class="aside-subtitle compact-title">{{ t('测试输入') }}</div>
+            <div class="aside-subtitle compact-title">{{ t('legacy.test_input') }}</div>
             <template v-if="form.type === 'http'">
               <div v-for="group in groupedDebugNodes" :key="group.location" class="debug-param-group">
                 <div v-if="group.nodes.length" class="debug-group-title">{{ group.label }}</div>
                 <div v-for="node in group.nodes" :key="node.id" class="debug-param-row compact">
                   <label>
-                    {{ node.name || t('未命名参数') }}
+                    {{ node.name || t('legacy.unnamed_parameter') }}
                     <span v-if="node.required">*</span>
                   </label>
                   <n-input v-model:value="debugValues[node.id]" size="small" :placeholder="node.description || node.type" />
                 </div>
               </div>
-              <n-empty v-if="flatInputNodes.length === 0" :description="t('暂无入参')" size="small" />
+              <n-empty v-if="flatInputNodes.length === 0" :description="t('legacy.no_parameters')" size="small" />
             </template>
             <template v-else>
-              <n-form-item :label="t('MCP 工具')">
+              <n-form-item :label="t('legacy.mcp_tool')">
                 <n-select v-model:value="debugMcpToolName" :options="mcpToolOptions" filterable size="small" />
               </n-form-item>
-              <n-form-item :label="t('参数 JSON')">
+              <n-form-item :label="t('legacy.parameters_json')">
                 <n-input v-model:value="debugMcpArguments" type="textarea" :autosize="{ minRows: 4, maxRows: 8 }" :placeholder="t('mcp_placeholder')" />
               </n-form-item>
             </template>
 
             <n-button block type="primary" :loading="testing" @click="runDebug">
               <template #icon><ToolIcon name="play" /></template>
-              {{ t('运行测试') }}
+              {{ t('legacy.run_test') }}
             </n-button>
 
             <div v-if="testResult" class="test-summary">
               <div class="test-metrics-row">
                 <div>
-                  <span>{{ t('状态') }}</span>
+                  <span>{{ t('legacy.status') }}</span>
                   <strong :class="testResult.success ? 'success-text' : 'error-text'">{{ testResult.message || '-' }}</strong>
                 </div>
                 <div>
-                  <span>{{ t('耗时') }}</span>
+                  <span>{{ t('legacy.duration') }}</span>
                   <strong>{{ testResult.durationMs ?? '-' }} ms</strong>
                 </div>
               </div>
               <div class="response-summary">{{ String(testResult.responseSummary || testResult.message || '') }}</div>
               <n-button v-if="canInferOutputSchema" block secondary size="small" @click="inferOutputSchemaFromTest">
                 <template #icon><ToolIcon name="schema" /></template>
-                {{ t('从响应生成出参定义') }}
+                {{ t('legacy.generate_output_definition') }}
               </n-button>
             </div>
 
@@ -347,8 +347,8 @@
                 <n-collapse-item name="request">
                   <template #header>
                     <div class="json-panel-header">
-                      <span>{{ t('调用预览') }}</span>
-                      <n-button quaternary circle size="tiny" :title="t('复制调用预览')" @click.stop="copyJson(debugRequestPreview, t('调用预览已复制'))">
+                      <span>{{ t('legacy.call_preview') }}</span>
+                      <n-button quaternary circle size="tiny" :title="t('legacy.copy_preview')" @click.stop="copyJson(debugRequestPreview, t('legacy.call_preview_copied'))">
                         <ToolIcon name="copy" />
                       </n-button>
                     </div>
@@ -358,8 +358,8 @@
                 <n-collapse-item v-if="testResult" name="response">
                   <template #header>
                     <div class="json-panel-header">
-                      <span>{{ t('响应体') }}</span>
-                      <n-button quaternary circle size="tiny" :title="t('复制响应体')" @click.stop="copyJson(testResult, t('响应体已复制'))">
+                      <span>{{ t('legacy.response_body') }}</span>
+                      <n-button quaternary circle size="tiny" :title="t('legacy.copy_response')" @click.stop="copyJson(testResult, t('legacy.response_body_copied'))">
                         <ToolIcon name="copy" />
                       </n-button>
                     </div>
@@ -503,9 +503,9 @@ const SchemaEditor = defineComponent({
     ].map((value) => ({ label: value, value }));
     const locationOptions = ['Header', 'Query', 'Body', 'Path'].map((value) => ({ label: value, value }));
     const responseModeOptions = computed(() => [
-      { label: t('大模型总结'), value: 'summarized' },
-      { label: t('原始返回'), value: 'original' },
-      { label: t('主要答案'), value: 'answer' },
+      { label: t('legacy.llm_summary'), value: 'summarized' },
+      { label: t('legacy.original_response'), value: 'original' },
+      { label: t('legacy.main_answer'), value: 'answer' },
     ]);
 
     function flatten(nodes: SchemaNode[], depth = 0): Array<{ node: SchemaNode; depth: number }> {
@@ -518,22 +518,22 @@ const SchemaEditor = defineComponent({
     return () => {
       const flat = flatten(props.nodes);
       if (!flat.length) {
-        return h(NEmpty, { description: props.mode === 'input' ? t('还没有定义入参') : t('还没有定义出参') });
+        return h(NEmpty, { description: props.mode === 'input' ? t('legacy.no_input_parameters_defined_yet') : t('legacy.no_output_parameters_defined_yet') });
       }
       return h('div', { class: 'schema-editor' }, [
         h('div', { class: ['schema-grid', 'schema-head', props.mode === 'input' ? 'input-grid' : 'output-grid'] }, props.mode === 'input'
-          ? [t('参数名称'), t('参数描述'), t('类型'), t('传入位置'), t('必填'), t('操作')].map((text) => h('span', text))
-          : [t('字段名称'), t('字段描述'), t('类型'), t('使用方式'), t('操作')].map((text) => h('span', text))),
+          ? [t('legacy.parameter_name'), t('legacy.description_463de98'), t('legacy.type'), t('legacy.location'), t('legacy.required'), t('legacy.actions')].map((text) => h('span', text))
+          : [t('legacy.field_name'), t('legacy.description_805453d'), t('legacy.type'), t('legacy.usage_mode'), t('legacy.actions')].map((text) => h('span', text))),
         flat.map(({ node, depth }) => h('div', { key: node.id, class: ['schema-grid', props.mode === 'input' ? 'input-grid' : 'output-grid'] }, [
           h(NInput, {
             value: node.name,
-            placeholder: depth > 0 && node.type === 'Array' ? '[Array Item]' : t('请输入'),
+            placeholder: depth > 0 && node.type === 'Array' ? '[Array Item]' : t('legacy.please_enter'),
             style: { marginLeft: `${depth * 24}px`, width: `calc(100% - ${depth * 24}px)` },
             'onUpdate:value': (value: string) => { node.name = value.replace(/[^a-zA-Z0-9_]/g, ''); },
           }),
           h(NInput, {
             value: node.description,
-            placeholder: props.mode === 'input' ? t('帮助 agent 理解如何提取参数') : t('帮助 agent 理解返回字段'),
+            placeholder: props.mode === 'input' ? t('legacy.help_agent_understand_how_to_extract_parameter') : t('legacy.help_agent_understand_return_field'),
             'onUpdate:value': (value: string) => { node.description = value; },
           }),
           h(NSelect, {
@@ -569,8 +569,8 @@ const SchemaEditor = defineComponent({
               quaternary: true,
               disabled: !['Object', 'Array', 'ArrayObject'].includes(node.type),
               onClick: () => emit('add-child', node.id),
-            }, { icon: () => h(ToolIcon, { name: 'add' }), default: () => t('子项') }),
-            h(NButton, { size: 'small', quaternary: true, type: 'error', onClick: () => emit('remove', node.id) }, { icon: () => h(ToolIcon, { name: 'trash' }), default: () => t('删除') }),
+            }, { icon: () => h(ToolIcon, { name: 'add' }), default: () => t('legacy.child') }),
+            h(NButton, { size: 'small', quaternary: true, type: 'error', onClick: () => emit('remove', node.id) }, { icon: () => h(ToolIcon, { name: 'trash' }), default: () => t('legacy.delete') }),
           ]),
         ])),
       ]);
@@ -614,34 +614,34 @@ const form = reactive<ToolPayload>({
 });
 
 const rules: FormRules = {
-  name: { required: true, message: t('请输入工具名称'), trigger: 'blur' },
-  type: { required: true, message: t('请选择工具类型'), trigger: 'change' },
-  description: { required: true, message: t('请填写工具说明'), trigger: 'blur' },
+  name: { required: true, message: t('legacy.please_enter_tool_name'), trigger: 'blur' },
+  type: { required: true, message: t('legacy.please_select_tool_type'), trigger: 'change' },
+  description: { required: true, message: t('legacy.please_enter_tool_description'), trigger: 'blur' },
   'config.url': {
     validator: (_rule, value) => {
       if (form.type !== 'http') return true;
-      return String(value || '').trim() ? true : new Error(t('请填写请求地址'));
+      return String(value || '').trim() ? true : new Error(t('legacy.please_enter_request_url'));
     },
     trigger: ['blur', 'change'],
   },
   'config.endpoint': {
     validator: (_rule, value) => {
       if (form.type !== 'mcp') return true;
-      return String(value || '').trim() ? true : new Error(t('请填写 MCP 服务地址'));
+      return String(value || '').trim() ? true : new Error(t('legacy.please_enter_mcp_endpoint'));
     },
     trigger: ['blur', 'change'],
   },
   'config.apiKeyHeader': {
     validator: () => {
       if (form.config.authType !== 'api_key') return true;
-      return String(form.config.apiKeyHeader || '').trim() ? true : new Error(t('请填写 Header 名称'));
+      return String(form.config.apiKeyHeader || '').trim() ? true : new Error(t('legacy.please_enter_the_header_name'));
     },
     trigger: ['blur', 'change'],
   },
   'config.authToken': {
     validator: () => {
       if (form.config.authType === 'none') return true;
-      return String(form.config.authToken || '').trim() ? true : new Error(t('请填写 Token / Key'));
+      return String(form.config.authToken || '').trim() ? true : new Error(t('legacy.please_enter_the_token_key'));
     },
     trigger: ['blur', 'change'],
   },
@@ -649,9 +649,9 @@ const rules: FormRules = {
 
 const methodOptions = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map((value) => ({ label: value, value }));
 const authOptions = computed(() => [
-  { label: t('无'), value: 'none' },
-  { label: t('Bearer Token（令牌）'), value: 'bearer' },
-  { label: t('API Key Header（请求头）'), value: 'api_key' },
+  { label: t('legacy.none'), value: 'none' },
+  { label: t('legacy.bearer_token'), value: 'bearer' },
+  { label: t('legacy.api_key_header'), value: 'api_key' },
 ]);
 
 const isCreate = computed(() => !route.params.id);
@@ -672,16 +672,16 @@ const enabledSwitch = computed({
 const steps = computed(() => {
   if (form.type === 'mcp') {
     return [
-      { key: 'base', title: t('基础信息'), description: t('名称与说明') },
-      { key: 'request', title: t('连接配置'), description: t('地址、鉴权和 Headers') },
-      { key: 'mcpTools', title: t('发现工具'), description: t('读取远程 MCP 工具 Schema') },
+      { key: 'base', title: t('legacy.basic_info'), description: t('legacy.name_description') },
+      { key: 'request', title: t('legacy.connection_config'), description: t('legacy.url_auth_headers') },
+      { key: 'mcpTools', title: t('legacy.discover_tools'), description: t('legacy.fetch_remote_mcp_tool_schema') },
     ];
   }
   return [
-    { key: 'base', title: t('基础信息'), description: t('名称与说明') },
-    { key: 'request', title: t('请求配置'), description: t('URL、请求方法、鉴权和 Headers') },
-    { key: 'input', title: t('入参定义'), description: t('Agent 调用时需要填写的参数') },
-    { key: 'output', title: t('出参定义'), description: t('响应字段含义和使用方式') },
+    { key: 'base', title: t('legacy.basic_info'), description: t('legacy.name_description') },
+    { key: 'request', title: t('legacy.request_config'), description: t('legacy.url_method_auth_headers') },
+    { key: 'input', title: t('legacy.input_definition'), description: t('legacy.parameters_agent_needs_to_pass') },
+    { key: 'output', title: t('legacy.output_definition'), description: t('legacy.meaning_usage_of_response_fields') },
   ];
 });
 const activeKey = computed(() => steps.value[activeStep.value - 1]?.key || 'base');
@@ -703,7 +703,7 @@ const groupedDebugNodes = computed(() => {
 });
 const debugEndpointText = computed(() => {
   const value = form.type === 'mcp' ? form.config.endpoint : form.config.url;
-  return String(value || t('未配置地址'));
+  return String(value || t('legacy.no_endpoint_configured'));
 });
 const debugRequestPreview = computed(() => {
   if (!Object.keys(lastRequest.value).length) return {};
@@ -722,13 +722,13 @@ const currentConfigSignature = computed(() => JSON.stringify(buildPayload()));
 const canInferOutputSchema = computed(() => form.type === 'http' && Boolean(extractTestResponseBody()));
 const testConfigDirty = computed(() => Boolean(testResult.value) && lastTestConfigSignature.value !== currentConfigSignature.value);
 const testStatusLabel = computed(() => {
-  if (testConfigDirty.value) return t('需重测');
-  if (!testResult.value) return t('未测试');
-  return testResult.value.success ? t('已通过') : t('失败');
+  if (testConfigDirty.value) return t('legacy.retest_needed');
+  if (!testResult.value) return t('legacy.untested');
+  return testResult.value.success ? t('legacy.passed_4b3c965') : t('legacy.failed');
 });
 const testStatusText = computed(() => {
-  if (testConfigDirty.value) return t('配置已变更');
-  if (!testResult.value) return t('可直接测试当前草稿');
+  if (testConfigDirty.value) return t('legacy.config_changed');
+  if (!testResult.value) return t('legacy.ready_to_test_current_draft');
   return String(testResult.value.message || '');
 });
 const testStatusTagType = computed(() => {
@@ -747,7 +747,7 @@ async function copyJson(value: unknown, successText: string) {
     await navigator.clipboard.writeText(text);
     message.success(successText);
   } catch {
-    message.error(t('复制失败'));
+    message.error(t('legacy.copy_failed'));
   }
 }
 
@@ -837,13 +837,13 @@ function inferSchemaType(value: unknown): SchemaType {
 
 function readableType(type: SchemaType) {
   const labels: Record<SchemaType, string> = {
-    String: t('类型文本'),
-    Integer: t('类型整数'),
-    Number: t('类型数值'),
-    Boolean: t('类型布尔值'),
-    Object: t('类型对象'),
-    Array: t('类型数组'),
-    ArrayObject: t('类型对象数组'),
+    String: t('legacy.text_f1573e7'),
+    Integer: t('legacy.integer_2a59217'),
+    Number: t('legacy.number_5c785eb'),
+    Boolean: t('legacy.boolean_0defa35'),
+    Object: t('legacy.object_7db0748'),
+    Array: t('legacy.array_d166572'),
+    ArrayObject: t('legacy.array_of_objects'),
   };
   return labels[type] || type;
 }
@@ -860,20 +860,20 @@ function commonFieldMeaning(name: string, path: string) {
   const tokens = splitFieldTokens(`${path}_${name}`);
   const tokenSet = new Set(tokens);
   const joined = tokens.join('_');
-  if (tokenSet.has('id') || joined.endsWith('_id')) return t('字段含义标识');
-  if (tokenSet.has('name')) return t('字段含义名称');
-  if (tokenSet.has('title')) return t('字段含义标题');
-  if (tokenSet.has('status') || tokenSet.has('state')) return t('字段含义状态');
-  if (tokenSet.has('type') || tokenSet.has('category')) return t('字段含义类型');
-  if (tokenSet.has('count') || tokenSet.has('total') || tokenSet.has('num') || tokenSet.has('quantity')) return t('字段含义数量');
-  if (tokenSet.has('amount') || tokenSet.has('price') || tokenSet.has('cost') || tokenSet.has('fee')) return t('字段含义金额');
-  if (tokenSet.has('date') || tokenSet.has('time') || tokenSet.has('created') || tokenSet.has('updated')) return t('字段含义时间');
-  if (tokenSet.has('url') || tokenSet.has('link') || tokenSet.has('uri')) return t('字段含义链接');
-  if (tokenSet.has('desc') || tokenSet.has('description') || tokenSet.has('summary')) return t('字段含义描述');
-  if (tokenSet.has('content') || tokenSet.has('text')) return t('字段含义正文');
-  if (tokenSet.has('message') || tokenSet.has('msg')) return t('字段含义消息');
-  if (tokenSet.has('code')) return t('字段含义编码');
-  if (tokenSet.has('score') || tokenSet.has('rate') || tokenSet.has('ratio')) return t('字段含义分值');
+  if (tokenSet.has('id') || joined.endsWith('_id')) return t('legacy.usually_identifies_a_record_or_entity');
+  if (tokenSet.has('name')) return t('legacy.usually_represents_a_name');
+  if (tokenSet.has('title')) return t('legacy.usually_represents_a_title');
+  if (tokenSet.has('status') || tokenSet.has('state')) return t('legacy.usually_represents_a_status');
+  if (tokenSet.has('type') || tokenSet.has('category')) return t('legacy.usually_represents_a_type_or_category');
+  if (tokenSet.has('count') || tokenSet.has('total') || tokenSet.has('num') || tokenSet.has('quantity')) return t('legacy.usually_represents_a_count_or_metric');
+  if (tokenSet.has('amount') || tokenSet.has('price') || tokenSet.has('cost') || tokenSet.has('fee')) return t('legacy.usually_represents_an_amount_or_price');
+  if (tokenSet.has('date') || tokenSet.has('time') || tokenSet.has('created') || tokenSet.has('updated')) return t('legacy.usually_represents_a_date_or_time');
+  if (tokenSet.has('url') || tokenSet.has('link') || tokenSet.has('uri')) return t('legacy.usually_represents_a_link_or_address');
+  if (tokenSet.has('desc') || tokenSet.has('description') || tokenSet.has('summary')) return t('legacy.usually_represents_a_description_or_summary');
+  if (tokenSet.has('content') || tokenSet.has('text')) return t('legacy.usually_represents_body_content');
+  if (tokenSet.has('message') || tokenSet.has('msg')) return t('legacy.usually_represents_message_text');
+  if (tokenSet.has('code')) return t('legacy.usually_represents_a_code_or_return_code');
+  if (tokenSet.has('score') || tokenSet.has('rate') || tokenSet.has('ratio')) return t('legacy.usually_represents_a_score_ratio_or_rating');
   return '';
 }
 
@@ -1069,14 +1069,14 @@ function mergeSchemaNodes(target: SchemaNode[], incoming: SchemaNode[]): number 
 function inferOutputSchemaFromTest() {
   const inferred = schemaFromTestResponse();
   if (!inferred.length) {
-    message.warning(t('当前测试响应无法生成出参定义'));
+    message.warning(t('legacy.current_test_response_cannot_generate_output_definition'));
     return;
   }
   const added = mergeSchemaNodes(outputSchema.value, inferred);
   if (added > 0) {
-    message.success(t('已添加 {count} 个出参字段', { count: added }));
+    message.success(t('legacy.added_output_fields', { count: added }));
   } else {
-    message.info(t('出参定义已包含响应中的字段'));
+    message.info(t('legacy.output_definition_already_contains_response_fields'));
   }
 }
 
@@ -1197,15 +1197,15 @@ async function saveTool() {
     const payload = buildPayload();
     if (toolId.value) {
       await updateTool(toolId.value, payload);
-      message.success(t('工具配置已保存'));
+      message.success(t('legacy.tool_config_saved'));
     } else {
       const created = await createTool(payload);
       toolId.value = created.id;
-      message.success(t('工具配置已创建'));
+      message.success(t('legacy.tool_config_created'));
       router.replace(`/tools/${created.id}/edit`);
     }
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || error?.message || t('保存失败'));
+    message.error(error?.response?.data?.detail || error?.message || t('legacy.failed_to_save'));
   } finally {
     saving.value = false;
   }
@@ -1223,15 +1223,15 @@ async function saveDraft() {
     const payload = buildPayload();
     if (toolId.value) {
       await updateTool(toolId.value, payload);
-      message.success(t('草稿已保存'));
+      message.success(t('legacy.draft_saved'));
     } else {
       const created = await createTool(payload);
       toolId.value = created.id;
-      message.success(t('草稿已创建'));
+      message.success(t('legacy.draft_created'));
       router.replace(`/tools/${created.id}/edit`);
     }
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || error?.message || t('草稿保存失败'));
+    message.error(error?.response?.data?.detail || error?.message || t('legacy.failed_to_save_draft'));
   } finally {
     saving.value = false;
   }
@@ -1240,7 +1240,7 @@ async function saveDraft() {
 async function generateDescriptionFromName() {
   const toolName = form.name.trim();
   if (!toolName) {
-    message.warning(t('请先填写工具名称'));
+    message.warning(t('legacy.please_enter_tool_name_first'));
     return;
   }
   generatingDescription.value = true;
@@ -1252,13 +1252,13 @@ async function generateDescriptionFromName() {
     });
     const generated = String(result?.description || '').trim();
     if (!generated) {
-      message.warning(t('未生成有效描述，请重试'));
+      message.warning(t('legacy.failed_to_generate_description_please_try_again'));
       return;
     }
     form.description = generated;
-    message.success(t('已生成工具说明'));
+    message.success(t('legacy.tool_description_generated'));
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || t('生成失败'));
+    message.error(error?.response?.data?.detail || t('legacy.failed_to_generate'));
   } finally {
     generatingDescription.value = false;
   }
@@ -1266,11 +1266,11 @@ async function generateDescriptionFromName() {
 
 function validateBaseStep() {
   if (!form.name.trim()) {
-    message.warning(t('请先填写工具名称'));
+    message.warning(t('legacy.please_enter_tool_name_first'));
     return false;
   }
   if (!form.description.trim()) {
-    message.warning(t('请先填写工具说明'));
+    message.warning(t('legacy.please_enter_tool_description_first'));
     return false;
   }
   return true;
@@ -1278,19 +1278,19 @@ function validateBaseStep() {
 
 function validateRequestStep() {
   if (form.type === 'http' && !String(form.config.url || '').trim()) {
-    message.warning(t('请先填写请求地址'));
+    message.warning(t('legacy.please_enter_request_url_first'));
     return false;
   }
   if (form.type === 'mcp' && !String(form.config.endpoint || '').trim()) {
-    message.warning(t('请先填写 MCP 服务地址'));
+    message.warning(t('legacy.please_enter_mcp_endpoint_first'));
     return false;
   }
   if (form.config.authType === 'api_key' && !String(form.config.apiKeyHeader || '').trim()) {
-    message.warning(t('请先填写 Header 名称'));
+    message.warning(t('legacy.please_enter_the_header_name_first'));
     return false;
   }
   if (form.config.authType !== 'none' && !String(form.config.authToken || '').trim()) {
-    message.warning(t('请先填写 Token / Key'));
+    message.warning(t('legacy.please_enter_the_token_key_first'));
     return false;
   }
   return true;
@@ -1357,9 +1357,9 @@ async function discoverTools() {
     if (mcpActivationError(buildPayload())) {
       form.status = 'disabled';
     }
-    message.success(result.message || t('MCP 工具发现完成'));
+    message.success(result.message || t('legacy.mcp_tool_discovery_completed'));
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || t('MCP 工具发现失败'));
+    message.error(error?.response?.data?.detail || t('legacy.mcp_tool_discovery_failed'));
   } finally {
     discovering.value = false;
   }
@@ -1406,7 +1406,7 @@ function buildHttpTestInput() {
 
 async function runDebug() {
   if (!toolId.value) {
-    message.warning(t('请先保存工具，再执行测试。'));
+    message.warning(t('legacy.please_save_the_tool_first_before_running_test'));
     return;
   }
   testing.value = true;
@@ -1428,8 +1428,8 @@ async function runDebug() {
     const rawMessage = String(error?.response?.data?.detail || error?.message || '').trim();
     const isTimeout = error?.code === 'ECONNABORTED' || /timeout|timed out|超时/i.test(rawMessage);
     const errorMessage = isTimeout
-      ? t('请求超时', { seconds: configuredTimeout })
-      : (rawMessage || t('测试失败'));
+      ? t('legacy.request_timed_out_no_response_after_seconds', { seconds: configuredTimeout })
+      : (rawMessage || t('legacy.test_failed'));
     testResult.value = {
       success: false,
       status: 'failed',
@@ -1520,7 +1520,7 @@ async function loadTool() {
     const tool = await fetchTool(id);
     applyLoadedTool(tool);
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || t('加载工具配置失败'));
+    message.error(error?.response?.data?.detail || t('legacy.failed_to_load_tool_configuration'));
   } finally {
     loading.value = false;
   }

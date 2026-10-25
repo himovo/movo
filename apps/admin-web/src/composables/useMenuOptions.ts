@@ -5,12 +5,12 @@ import { computed, h, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { OrganizationUsersIcon } from '@/icons/OrganizationUsersIcon';
 import { appRoutes } from '@/router/routes';
-import { useLocale, t } from '@/composables/i18n';
+import { useLocale, translateSourceText } from '@/composables/i18n';
 import adminProductUiExtension from '@movo-admin-product-extension';
 
 const builtInGroups = [{
   key: 'organizations',
-  label: '组织与用户',
+  label: 'legacy.organizations_users',
   icon: OrganizationUsersIcon,
 }];
 
@@ -56,7 +56,7 @@ function buildOptions() {
     if (!definition) return null;
     const option: MenuOption = {
       key: `/${key}-group`,
-      label: t(definition.label),
+      label: translateSourceText(definition.label),
       icon: () => renderMenuIcon(definition.icon),
       children: [],
     };
@@ -74,7 +74,7 @@ function buildOptions() {
       const childrenOptions = ((group?.children as MenuOption[] | undefined) || []);
       childrenOptions.push({
         key: routePath,
-        label: t(route.meta?.title as string),
+        label: translateSourceText(route.meta?.title as string),
         icon: () => renderMenuIcon(route.meta?.icon),
       });
       if (group) {
@@ -84,7 +84,7 @@ function buildOptions() {
     }
     options.push({
       key: routePath,
-      label: t(route.meta?.title as string),
+      label: translateSourceText(route.meta?.title as string),
       icon: () => renderMenuIcon(route.meta?.icon),
     });
   }

@@ -92,7 +92,7 @@ export class KernelRuntime {
     this.#ctx = ctx
     this.#managedPlugins = new ManagedPluginBridge(ctx)
     this.#temporalContext.install(ctx)
-    this.#turnContext.install(ctx)
+    this.#turnContext.install(ctx, { visionEnabled: this.modelProfile?.visionEnabled === true })
     const skillProviderRegistration = registerAskaiSkillProvider(
       ctx, this.modelProfile?.skillProfile, {
         storageRoot: this.storageRoot,
@@ -117,7 +117,7 @@ export class KernelRuntime {
     }
     if (this.modelProfile === undefined) await ctx.plugin(DeterministicModelPlugin)
     else {
-      this.#modelAdapter = new AskaiModelGatewayAdapter(this.modelProfile)
+      this.#modelAdapter = new AskaiModelGatewayAdapter(this.modelProfile, ctx.get('attachments'))
       this.#modelAdapterDispose = ctx.llm.registerAdapter(['askai-model-gateway'], this.#modelAdapter)
     }
     this.#desktopApprovals = new DesktopApprovalBroker(ctx, {
@@ -220,7 +220,7 @@ export class KernelRuntime {
     return await this.describeSession(handle.agent)
   }
 
-  send({ sessionId, mode, content, temporalContext, turnContext, permissionPreset, approvalReviewer, approvalPolicy }) {
+  async send({ sessionId, mode, content, temporalContext, turnContext, permissionPreset, approvalReviewer, approvalPolicy }) {
     const agent = this.#requireAgent(sessionId)
     if (agent.session?.header?.agentPreset === 'code' && (permissionPreset !== undefined || approvalReviewer !== undefined || approvalPolicy !== undefined)) {
       const policy = codePermissionPolicy({ permissionPreset, approvalReviewer, approvalPolicy })
@@ -234,13 +234,24 @@ export class KernelRuntime {
     this.#temporalContext.update(sessionId, temporalContext)
     const resolvedTurnContext = resolveSkillTurnContext(this.modelProfile, turnContext)
     this.#turnContext.update(sessionId, resolvedTurnContext.context)
-    this.#skillInvocations.expectManual(sessionId, resolvedTurnContext.skillName)
-    const message = createUserMessage({
-      content: content.map((block, index) => {
-        if (block.type !== 'text') throw new Error(`this Runtime Profile only accepts text content: ${block.type}`)
+    this.#modelAdapter?.setKnowledgeMode(sessionId, resolvedTurnContext.context?.knowledge_qa_enabled === true)
+    const promptParts = content.map((block, index) => {
+      if (block.type === 'text') {
         const text = String(block.data?.text ?? '')
         return { type: 'text', text: index === 0 ? invokeSelectedSkill(resolvedTurnContext.skillName, text) : text }
-      }),
+      }
+      if (block.type === 'image') return {
+        type: 'image', mediaType: String(block.data?.mediaType ?? ''),
+        data: String(block.data?.data ?? ''), name: String(block.data?.name ?? ''),
+      }
+      throw new Error(`this Runtime Profile does not accept ${block.type} content`)
+    })
+    const admitted = promptParts.some(block => block.type === 'image')
+      ? await this.#ctx.get('attachments').admitPromptContent(promptParts)
+      : promptParts
+    this.#skillInvocations.expectManual(sessionId, resolvedTurnContext.skillName)
+    const message = createUserMessage({
+      content: admitted,
       source: { kind: 'user' },
     })
     try {
@@ -348,6 +359,7 @@ export class KernelRuntime {
     this.#handles.delete(sessionId)
     this.#temporalContext.remove(sessionId)
     this.#turnContext.remove(sessionId)
+    this.#modelAdapter?.clearKnowledgeMode(sessionId)
     this.#desktopApprovals.clearSession(sessionId)
     this.#userQuestions.clearSession(sessionId)
     await handle.agent.whenIdle()

@@ -42,7 +42,7 @@ const selectOptions = computed<SelectOption[]>(() => {
   }));
   if (props.modelValue && !options.some(item => item.value === props.modelValue)) {
     options.unshift({
-      label: t('已配置模型不可用，请重新选择'),
+      label: t('legacy.the_configured_model_is_unavailable_select_another_model'),
       value: props.modelValue,
       disabled: true,
     });

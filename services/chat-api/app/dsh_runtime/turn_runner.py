@@ -30,6 +30,7 @@ from app.dsh_runtime.turn_finalization import (
     TurnStateFinalizer,
 )
 from app.enterprise_capabilities.evidence import ExecutionEvidenceRepository
+from app.dsh_runtime.image_input import image_content_blocks
 
 
 logger = logging.getLogger(__name__)
@@ -86,6 +87,7 @@ class DshTurnRunner:
         temporal_context: TemporalContext,
         live_stream: LiveTurnStream,
         turn_context: dict[str, Any] | None = None,
+        image_owner_user_id: str | None = None,
     ) -> None:
         status = "interrupted"
         assistant_text = ""
@@ -135,12 +137,16 @@ class DshTurnRunner:
             # Refresh before the first model call so a long-lived Runtime uses
             # the current speaker-scoped credential for usage attribution.
             await credential_lease.refresh_now()
+            image_blocks = await image_content_blocks(
+                list((turn_context or {}).get("images") or []),
+                user_id=image_owner_user_id or str(binding["user_id"]),
+            )
             await self._gateway.send(
                 SendRequest(
                     session_id=str(binding["kernel_session_id"]),
                     request_id=request_id,
                     mode=SendMode.FOLLOWUP,
-                    content=[ContentBlock(type="text", data={"text": text})],
+                    content=[ContentBlock(type="text", data={"text": text}), *image_blocks],
                     temporal_context=temporal_context,
                     turn_context=kernel_turn_context(turn_context),
                 )

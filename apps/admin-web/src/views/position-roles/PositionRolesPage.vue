@@ -40,27 +40,27 @@ function openEdit(role: PositionRole) {
   editorVisible.value = true;
 }
 async function save() {
-  if (!draft.value.name.trim()) return message.warning(t('请输入岗位角色名称'));
+  if (!draft.value.name.trim()) return message.warning(t('legacy.enter_a_position_role_name'));
   saving.value = true;
   try {
     if (editing.value) await updatePositionRole(editing.value.id, draft.value); else await createPositionRole(draft.value);
-    editorVisible.value = false; message.success(t('用户岗位角色已保存')); await load();
-  } catch (error: any) { message.error(error?.response?.data?.detail || error?.message || t('保存失败')); }
+    editorVisible.value = false; message.success(t('legacy.position_role_saved')); await load();
+  } catch (error: any) { message.error(error?.response?.data?.detail || error?.message || t('legacy.failed_to_save')); }
   finally { saving.value = false; }
 }
 async function copyRole(role: PositionRole) {
-  try { await copyPositionRole(role.id, t('{name} 副本', { name: role.name })); message.success(t('岗位角色已复制')); await load(); }
-  catch (error: any) { message.error(error?.response?.data?.detail || t('复制失败')); }
+  try { await copyPositionRole(role.id, t('legacy.copy_9cb84a1', { name: role.name })); message.success(t('legacy.position_role_copied')); await load(); }
+  catch (error: any) { message.error(error?.response?.data?.detail || t('legacy.copy_failed')); }
 }
 function removeRole(role: PositionRole) {
-  dialog.warning({ title: t('删除用户岗位角色'), content: t('确认删除用户岗位角色“{name}”吗？', { name: role.name }), positiveText: t('删除'), negativeText: t('取消'), async onPositiveClick() { try { await deletePositionRole(role.id); message.success(t('已删除')); await load(); } catch (error: any) { message.error(error?.response?.data?.detail || t('删除失败')); } } });
+  dialog.warning({ title: t('legacy.delete_position_role'), content: t('legacy.delete_the_position_role', { name: role.name }), positiveText: t('legacy.delete'), negativeText: t('legacy.cancel'), async onPositiveClick() { try { await deletePositionRole(role.id); message.success(t('legacy.deleted')); await load(); } catch (error: any) { message.error(error?.response?.data?.detail || t('legacy.failed_to_delete')); } } });
 }
 async function toggle(role: PositionRole, enabled: boolean) {
   if (!enabled && role.memberCount > 0) {
     dialog.warning({
-      title: t('停用用户岗位角色'),
-      content: t('“{name}”仍绑定 {count} 名员工。停用后这些员工将不能继续获得该岗位能力，建议先分配替代岗位。', { name: role.name, count: role.memberCount }),
-      positiveText: t('仍然停用'), negativeText: t('取消'),
+      title: t('legacy.disable_position_role'),
+      content: t('legacy.is_still_assigned_to_employees_disabling_it_removes_these', { name: role.name, count: role.memberCount }),
+      positiveText: t('legacy.disable_anyway'), negativeText: t('legacy.cancel'),
       onPositiveClick: () => applyRoleStatus(role, enabled),
     });
     return;
@@ -70,20 +70,20 @@ async function toggle(role: PositionRole, enabled: boolean) {
 
 async function applyRoleStatus(role: PositionRole, enabled: boolean) {
   try { await setPositionRoleEnabled(role.id, enabled); await load(); }
-  catch (error: any) { message.error(error?.response?.data?.detail || t('状态更新失败')); }
+  catch (error: any) { message.error(error?.response?.data?.detail || t('legacy.failed_to_update_status')); }
 }
 
-const labels: Record<string, string> = { content_generation: t('内容'), image_generation: t('图片'), code_generation: t('代码'), browser_automation: t('浏览器'), internal_knowledge: t('知识') };
+const labels: Record<string, string> = { content_generation: t('legacy.content'), image_generation: t('legacy.image'), code_generation: t('legacy.code_33246dd'), browser_automation: t('legacy.browser'), internal_knowledge: t('legacy.knowledge') };
 const columns: DataTableColumns<PositionRole> = [
-  { title: t('岗位角色'), key: 'name', render: row => h('div', { class: 'role-name' }, [h('strong', row.name), row.protected ? h(NTag, { size: 'small', type: 'info', bordered: false }, { default: () => t('系统保障') }) : null, h('small', row.description || t('暂无说明'))]) },
-  { title: t('已启用能力'), key: 'capabilities', render: row => h(NSpace, { size: 6 }, { default: () => Object.entries(row.capabilities).filter(([, enabled]) => enabled).map(([key]) => h(NTag, { size: 'small', bordered: false }, { default: () => labels[key] })) }) },
-  { title: t('员工'), key: 'memberCount', width: 80 },
-  { title: t('状态'), key: 'status', width: 100, render: row => h(NTag, { type: row.status === 'active' ? 'success' : 'default', bordered: false }, { default: () => row.status === 'active' ? t('启用') : t('停用') }) },
-  { title: t('操作'), key: 'actions', width: 300, render: row => h('div', { class: 'action-row' }, [
-    h('button', { class: 'action-link', disabled: row.protected, onClick: () => openEdit(row) }, t('编辑')),
-    h('button', { class: 'action-link', onClick: () => copyRole(row) }, t('复制')),
-    h('button', { class: row.status === 'active' ? 'action-link danger' : 'action-link', disabled: row.protected, onClick: () => toggle(row, row.status !== 'active') }, row.status === 'active' ? t('停用') : t('启用')),
-    h('button', { class: 'action-link danger', disabled: row.protected, onClick: () => removeRole(row) }, t('删除')),
+  { title: t('legacy.position_role'), key: 'name', render: row => h('div', { class: 'role-name' }, [h('strong', row.name), row.protected ? h(NTag, { size: 'small', type: 'info', bordered: false }, { default: () => t('legacy.system_protected') }) : null, h('small', row.description || t('legacy.no_description_6dd28f4'))]) },
+  { title: t('legacy.enabled_capabilities'), key: 'capabilities', render: row => h(NSpace, { size: 6 }, { default: () => Object.entries(row.capabilities).filter(([, enabled]) => enabled).map(([key]) => h(NTag, { size: 'small', bordered: false }, { default: () => labels[key] })) }) },
+  { title: t('legacy.employees_9834f85'), key: 'memberCount', width: 80 },
+  { title: t('legacy.status'), key: 'status', width: 100, render: row => h(NTag, { type: row.status === 'active' ? 'success' : 'default', bordered: false }, { default: () => row.status === 'active' ? t('legacy.active') : t('legacy.disabled') }) },
+  { title: t('legacy.actions'), key: 'actions', width: 300, render: row => h('div', { class: 'action-row' }, [
+    h('button', { class: 'action-link', disabled: row.protected, onClick: () => openEdit(row) }, t('legacy.edit')),
+    h('button', { class: 'action-link', onClick: () => copyRole(row) }, t('legacy.copy')),
+    h('button', { class: row.status === 'active' ? 'action-link danger' : 'action-link', disabled: row.protected, onClick: () => toggle(row, row.status !== 'active') }, row.status === 'active' ? t('legacy.disabled') : t('legacy.active')),
+    h('button', { class: 'action-link danger', disabled: row.protected, onClick: () => removeRole(row) }, t('legacy.delete')),
   ]) },
 ];
 
@@ -94,18 +94,18 @@ onMounted(load);
   <div class="page-stack position-role-page">
     <n-card class="position-role-card" :bordered="false" size="large">
       <div class="position-role-content">
-        <div class="page-head"><PageIntro :title="t('用户岗位角色')" :description="t('按员工职责配置可见且可执行的 Agent 能力。')" /><n-button type="primary" @click="openCreate">{{ t('创建用户岗位角色') }}</n-button></div>
+        <div class="page-head"><PageIntro :title="t('legacy.position_roles')" :description="t('legacy.configure_visible_and_executable_agent_capabilities_by_employee_responsibili')" /><n-button type="primary" @click="openCreate">{{ t('legacy.create_position_role') }}</n-button></div>
         <div class="role-table-card"><n-data-table :columns="columns" :data="roles" :loading="loading" :bordered="false" /></div>
       </div>
     </n-card>
     <n-drawer v-model:show="editorVisible" :width="720" placement="right">
-      <n-drawer-content :title="editing ? t('编辑 {name}', { name: editing.name }) : t('创建用户岗位角色')" closable>
+      <n-drawer-content :title="editing ? t('legacy.edit_feaeda3', { name: editing.name }) : t('legacy.create_position_role')" closable>
         <n-form :model="draft" label-placement="top">
-          <n-grid :cols="2" :x-gap="14"><n-grid-item><n-form-item :label="t('用户岗位角色名称')" required><n-input v-model:value="draft.name" /></n-form-item></n-grid-item><n-grid-item><n-form-item :label="t('状态')"><n-select v-model:value="draft.status" :options="[{ label: t('启用'), value: 'active' }, { label: t('停用'), value: 'disabled' }]" /></n-form-item></n-grid-item></n-grid>
-          <n-form-item :label="t('说明')"><n-input v-model:value="draft.description" type="textarea" :rows="2" /></n-form-item>
+          <n-grid :cols="2" :x-gap="14"><n-grid-item><n-form-item :label="t('legacy.position_role_name')" required><n-input v-model:value="draft.name" /></n-form-item></n-grid-item><n-grid-item><n-form-item :label="t('legacy.status')"><n-select v-model:value="draft.status" :options="[{ label: t('legacy.active'), value: 'active' }, { label: t('legacy.disabled'), value: 'disabled' }]" /></n-form-item></n-grid-item></n-grid>
+          <n-form-item :label="t('legacy.description')"><n-input v-model:value="draft.description" type="textarea" :rows="2" /></n-form-item>
           <RoleCapabilityEditor v-model="draft" />
         </n-form>
-        <template #footer><div class="drawer-footer"><span>{{ t('已启用 {count} 项基础能力', { count: enabledSummary }) }}</span><n-space><n-button @click="editorVisible = false">{{ t('取消') }}</n-button><n-button type="primary" :loading="saving" @click="save">{{ t('保存') }}</n-button></n-space></div></template>
+        <template #footer><div class="drawer-footer"><span>{{ t('legacy.base_capabilities_enabled', { count: enabledSummary }) }}</span><n-space><n-button @click="editorVisible = false">{{ t('legacy.cancel') }}</n-button><n-button type="primary" :loading="saving" @click="save">{{ t('legacy.save') }}</n-button></n-space></div></template>
       </n-drawer-content>
     </n-drawer>
   </div>

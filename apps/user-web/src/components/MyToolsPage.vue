@@ -18,22 +18,22 @@
         <div class="list-filter-row">
           <div class="filter-toolbar">
             <n-space align="center" :size="10" class="filter-left">
-              <n-input v-model:value="filters.keyword" clearable :placeholder="t('搜索名称、描述或 URL')" class="keyword-input" />
-              <n-select v-model:value="filters.type" clearable :options="typeOptions" :placeholder="t('类型')" style="width: 140px" />
-              <n-select v-model:value="filters.status" clearable :options="statusOptions" :placeholder="t('状态')" style="width: 140px" />
+              <n-input v-model:value="filters.keyword" clearable :placeholder="t('legacy.search_by_name_description_or_url')" class="keyword-input" />
+              <n-select v-model:value="filters.type" clearable :options="typeOptions" :placeholder="t('legacy.type')" style="width: 140px" />
+              <n-select v-model:value="filters.status" clearable :options="statusOptions" :placeholder="t('legacy.status_62e951a')" style="width: 140px" />
             </n-space>
             <n-space :size="10" class="filter-right">
               <n-button secondary @click="loadRows">
                 <template #icon><n-icon><RefreshOutline /></n-icon></template>
-                {{ t('刷新') }}
+                {{ t('legacy.refresh') }}
               </n-button>
               <n-button @click="openCreate('mcp')">
                 <template #icon><n-icon><BuildOutline /></n-icon></template>
-                {{ t('新增 MCP 服务') }}
+                {{ t('legacy.add_mcp_service') }}
               </n-button>
               <n-button type="primary" strong @click="openCreate('http')">
                 <template #icon><n-icon><AddOutline /></n-icon></template>
-                {{ t('新增 HTTP 工具') }}
+                {{ t('legacy.add_http_tool') }}
               </n-button>
             </n-space>
           </div>
@@ -46,30 +46,30 @@
                 <div class="card-head">
                   <div class="card-tags">
                     <n-tag :type="row.type === 'mcp' ? 'info' : 'success'" size="small" :bordered="false">
-                      {{ row.type === 'mcp' ? t('MCP 服务') : t('HTTP 工具') }}
+                      {{ row.type === 'mcp' ? t('legacy.mcp_service') : t('legacy.http_tool') }}
                     </n-tag>
                     <n-tag :type="row.status === 'active' ? 'success' : 'default'" size="small" :bordered="false">
-                      {{ row.status === 'active' ? t('已启用') : t('已禁用') }}
+                      {{ row.status === 'active' ? t('legacy.enabled') : t('additional.disabled') }}
                     </n-tag>
                     <n-tag
                       :type="row.lastTestStatus === 'passed' ? 'success' : row.lastTestStatus === 'failed' ? 'error' : 'default'"
                       size="small"
                       :bordered="false"
                     >
-                      {{ row.lastTestStatus === 'passed' ? t('测试通过') : row.lastTestStatus === 'failed' ? t('测试失败') : t('未测试') }}
+                      {{ row.lastTestStatus === 'passed' ? t('legacy.passed') : row.lastTestStatus === 'failed' ? t('legacy.test_failed') : t('legacy.untested') }}
                     </n-tag>
                   </div>
               </div>
-                <div class="card-title">{{ row.name || t('未命名工具') }}</div>
-                <div class="card-desc">{{ row.description || t('未填写工具说明') }}</div>
+                <div class="card-title">{{ row.name || t('legacy.unnamed_tool') }}</div>
+                <div class="card-desc">{{ row.description || t('legacy.no_tool_description') }}</div>
                 <div class="tag-row">
                   <n-tag v-for="tag in row.tags" :key="tag" size="small" :bordered="false" class="tool-tag">{{ tag }}</n-tag>
-                  <span v-if="!row.tags.length" class="no-tag">{{ t('无标签') }}</span>
+                  <span v-if="!row.tags.length" class="no-tag">{{ t('legacy.no_tags') }}</span>
                 </div>
                 <div class="card-footrow">
                   <span class="card-footnote">{{ formatUpdatedTime(row) }}</span>
                   <n-space :size="8" align="center" @click.stop>
-                    <span class="status-switch-label">{{ row.status === 'active' ? t('启用') : t('禁用') }}</span>
+                    <span class="status-switch-label">{{ row.status === 'active' ? t('additional.enable') : t('legacy.disabled_be70be5') }}</span>
                     <n-switch
                       :value="row.status === 'active'"
                       size="small"
@@ -77,7 +77,7 @@
                     />
                     <n-button class="delete-btn" size="small" tertiary type="error" @click.stop="askDelete(row)">
                       <template #icon><n-icon><TrashOutline /></n-icon></template>
-                      {{ t('删除') }}
+                      {{ t('additional.delete') }}
                     </n-button>
                   </n-space>
                 </div>
@@ -90,16 +90,16 @@
                 <span>MCP</span>
                 <span>HTTP</span>
               </div>
-              <div class="empty-title">{{ t('暂未配置 Tool') }}</div>
-              <div class="empty-desc">{{ t('连接第一个 HTTP 工具或 MCP 服务，仅当前用户可用。') }}</div>
+              <div class="empty-title">{{ t('legacy.no_tools_configured') }}</div>
+              <div class="empty-desc">{{ t('legacy.connect_your_first_http_tool_or_mcp_service_it') }}</div>
               <n-space justify="center">
                 <n-button type="primary" @click="openCreate('http')">
                   <template #icon><n-icon><AddOutline /></n-icon></template>
-                  {{ t('新增 HTTP 工具') }}
+                  {{ t('legacy.add_http_tool') }}
                 </n-button>
                 <n-button @click="openCreate('mcp')">
                   <template #icon><n-icon><BuildOutline /></n-icon></template>
-                  {{ t('新增 MCP 服务') }}
+                  {{ t('legacy.add_mcp_service') }}
                 </n-button>
               </n-space>
             </div>
@@ -113,14 +113,14 @@
         <div class="tools-header-left">
           <n-button secondary @click="backToList">
             <template #icon><n-icon><ArrowBackOutline /></n-icon></template>
-            {{ t('返回') }}
+            {{ t('additional.back') }}
           </n-button>
-          <h1>{{ editingId ? t('编辑 Tool') : t('新增 Tool') }}</h1>
+          <h1>{{ editingId ? t('legacy.edit_tool') : t('legacy.add_tool') }}</h1>
         </div>
         <n-space>
           <n-button type="primary" :loading="saving" @click="saveTool">
             <template #icon><n-icon><SaveOutline /></n-icon></template>
-            {{ t('保存') }}
+            {{ t('legacy.save') }}
           </n-button>
         </n-space>
       </header>
@@ -141,9 +141,9 @@
               </div>
               <n-space :size="8" align="center">
                 <n-tag :type="form.type === 'mcp' ? 'info' : 'success'" round>
-                  {{ form.type === 'mcp' ? t('MCP 服务') : t('HTTP 工具') }}
+                  {{ form.type === 'mcp' ? t('legacy.mcp_service') : t('legacy.http_tool') }}
                 </n-tag>
-                <n-tag round>{{ t('第 {step} / {total} 步', { step: activeStep, total: steps.length }) }}</n-tag>
+                <n-tag round>{{ t('legacy.step_of', { step: activeStep, total: steps.length }) }}</n-tag>
               </n-space>
             </div>
           </template>
@@ -151,33 +151,33 @@
           <n-form ref="formRef" :model="form" :rules="rules" label-placement="top">
           <section v-if="activeKey === 'base'" class="step-panel">
             <n-grid :cols="2" :x-gap="16">
-              <n-form-item-gi :label="t('连接类型')" path="type">
+              <n-form-item-gi :label="t('legacy.connection_type')" path="type">
                 <n-radio-group v-model:value="form.type" :disabled="!!editingId" @update:value="resetStepsForType">
-                  <n-radio-button value="http">{{ t('HTTP 工具') }}</n-radio-button>
-                  <n-radio-button value="mcp">{{ t('MCP 服务') }}</n-radio-button>
+                  <n-radio-button value="http">{{ t('legacy.http_tool') }}</n-radio-button>
+                  <n-radio-button value="mcp">{{ t('legacy.mcp_service') }}</n-radio-button>
                 </n-radio-group>
               </n-form-item-gi>
-              <n-form-item-gi :label="t('启用状态')">
+              <n-form-item-gi :label="t('legacy.status')">
                 <n-switch v-model:value="enabledSwitch">
-                  <template #checked>{{ t('启用') }}</template>
-                  <template #unchecked>{{ t('停用') }}</template>
+                  <template #checked>{{ t('additional.enable') }}</template>
+                  <template #unchecked>{{ t('legacy.disabled_d989e55') }}</template>
                 </n-switch>
               </n-form-item-gi>
             </n-grid>
 
-            <n-form-item :label="t('名称')" path="name">
-              <n-input v-model:value="form.name" :placeholder="t('例如：CRM 客户查询')" />
+            <n-form-item :label="t('additional.name')" path="name">
+              <n-input v-model:value="form.name" :placeholder="t('legacy.example_crm_customer_query')" />
             </n-form-item>
-            <n-form-item :label="t('工具说明')" path="description">
+            <n-form-item :label="t('legacy.tool_description')" path="description">
               <div class="description-wrap">
-                <n-input v-model:value="form.description" type="textarea" :autosize="{ minRows: 3, maxRows: 5 }" :placeholder="t('说明这个工具能做什么。')" />
+                <n-input v-model:value="form.description" type="textarea" :autosize="{ minRows: 3, maxRows: 5 }" :placeholder="t('legacy.describe_what_this_tool_does')" />
                 <n-button secondary :loading="generatingDescription" @click="generateDescription">
                   <template #icon><n-icon><SparklesOutline /></n-icon></template>
-                  {{ t('AI 生成描述') }}
+                  {{ t('legacy.generate_description_with_ai') }}
                 </n-button>
               </div>
             </n-form-item>
-            <n-form-item :label="t('标签')">
+            <n-form-item :label="t('legacy.tags')">
               <n-dynamic-tags v-model:value="form.tags" />
             </n-form-item>
           </section>
@@ -185,25 +185,25 @@
           <section v-if="activeKey === 'request'" class="step-panel">
             <template v-if="form.type === 'http'">
               <n-grid :cols="4" :x-gap="16">
-                <n-form-item-gi :span="3" :label="t('请求地址')" path="config.url">
+                <n-form-item-gi :span="3" :label="t('legacy.request_url')" path="config.url">
                   <n-input v-model:value="form.config.url" placeholder="https://api.example.com/customers/{customerId}" />
                 </n-form-item-gi>
-                <n-form-item-gi :label="t('请求方法')">
+                <n-form-item-gi :label="t('legacy.request_method')">
                   <n-select v-model:value="form.config.method" :options="methodOptions" />
                 </n-form-item-gi>
               </n-grid>
             </template>
             <template v-else>
-              <n-form-item :label="t('MCP 服务地址')" path="config.endpoint">
+              <n-form-item :label="t('legacy.mcp_endpoint')" path="config.endpoint">
                 <n-input v-model:value="form.config.endpoint" placeholder="https://mcp.example.com/mcp" />
               </n-form-item>
             </template>
 
             <n-grid :cols="3" :x-gap="16">
-              <n-form-item-gi :label="t('鉴权方式')">
+              <n-form-item-gi :label="t('legacy.authentication')">
                 <n-select v-model:value="form.config.authType" :options="authOptions" />
               </n-form-item-gi>
-              <n-form-item-gi v-if="form.config.authType === 'api_key'" :label="t('Header 名称')">
+              <n-form-item-gi v-if="form.config.authType === 'api_key'" :label="t('legacy.header_name')">
                 <n-input v-model:value="form.config.apiKeyHeader" placeholder="X-API-Key" />
               </n-form-item-gi>
               <n-form-item-gi v-if="form.config.authType !== 'none'" :span="form.config.authType === 'api_key' ? 1 : 2" label="Token / Key">
@@ -215,12 +215,12 @@
           <section v-if="activeKey === 'input'" class="step-panel">
             <div class="section-head">
               <div>
-                <div class="section-title">{{ t('参数列表') }}</div>
-                <div class="muted">{{ t('配置名称、描述、类型和传入位置，帮助 Agent 正确组装请求。') }}</div>
+                <div class="section-title">{{ t('legacy.parameters') }}</div>
+                <div class="muted">{{ t('legacy.configure_names_descriptions_types_and_locations_so_the_agent') }}</div>
               </div>
               <n-button type="primary" ghost @click="addInputNode()">
                 <template #icon><n-icon><AddOutline /></n-icon></template>
-                {{ t('添加参数') }}
+                {{ t('legacy.add_parameter') }}
               </n-button>
             </div>
             <SchemaEditor
@@ -237,11 +237,11 @@
               <n-space :size="8">
                 <n-button type="primary" secondary :disabled="!canInferOutputSchema" @click="inferOutputSchemaFromTest">
                   <template #icon><n-icon><SparklesOutline /></n-icon></template>
-                  {{ t('一键生成出参') }}
+                  {{ t('legacy.generate_output_schema') }}
                 </n-button>
                 <n-button type="primary" ghost @click="addOutputNode()">
                   <template #icon><n-icon><AddOutline /></n-icon></template>
-                  {{ t('添加字段') }}
+                  {{ t('legacy.add_field') }}
                 </n-button>
               </n-space>
             </div>
@@ -256,15 +256,15 @@
           <section v-if="activeKey === 'mcpTools'" class="step-panel">
             <div class="section-head">
               <div>
-                <div class="section-title">{{ t('发现 MCP 工具') }}</div>
-                <div class="muted">{{ t('保存 MCP 服务后发现远程服务暴露的 tools，并选择允许 Agent 使用的项。') }}</div>
+                <div class="section-title">{{ t('legacy.discover_mcp_tools_9fa3bda') }}</div>
+                <div class="muted">{{ t('legacy.save_the_mcp_service_discover_its_remote_tools_and') }}</div>
               </div>
               <n-button type="primary" :disabled="!editingId" :loading="discovering" @click="discoverTools">
                 <template #icon><n-icon><SearchOutline /></n-icon></template>
-                {{ t('发现 MCP Tools') }}
+                {{ t('legacy.discover_mcp_tools') }}
               </n-button>
             </div>
-            <n-alert v-if="!editingId" type="warning" :bordered="false">{{ t('请先保存 MCP 服务，再发现远程 tools。') }}</n-alert>
+            <n-alert v-if="!editingId" type="warning" :bordered="false">{{ t('legacy.save_the_mcp_service_before_discovering_remote_tools') }}</n-alert>
             <div class="mcp-tools">
               <n-space vertical>
                 <n-checkbox
@@ -276,7 +276,7 @@
                   {{ tool.name }} <span class="muted">{{ tool.description }}</span>
                 </n-checkbox>
               </n-space>
-              <span v-if="!discoveredTools.length" class="muted">{{ t('还没有发现 MCP tools。') }}</span>
+              <span v-if="!discoveredTools.length" class="muted">{{ t('legacy.no_mcp_tools_discovered_yet') }}</span>
             </div>
           </section>
 
@@ -286,19 +286,19 @@
             <div class="step-actions">
               <n-button v-if="activeStep > 1" @click="goPrevStep">
                 <template #icon><n-icon><ChevronBackOutline /></n-icon></template>
-                {{ t('上一步') }}
+                {{ t('legacy.previous') }}
               </n-button>
               <n-button v-if="activeStep < steps.length" type="primary" @click="goNextStep">
                 <template #icon><n-icon><ChevronForwardOutline /></n-icon></template>
-                {{ t('下一步') }}
+                {{ t('legacy.next_ea0ef2a') }}
               </n-button>
               <n-button secondary :loading="saving" @click="saveTool">
                 <template #icon><n-icon><SaveOutline /></n-icon></template>
-                {{ t('保存草稿') }}
+                {{ t('legacy.save_draft') }}
               </n-button>
               <n-button v-if="activeStep === steps.length" type="primary" :loading="saving" @click="saveTool">
                 <template #icon><n-icon><CheckmarkDoneOutline /></n-icon></template>
-                {{ t('完成并保存') }}
+                {{ t('legacy.finish_save') }}
               </n-button>
             </div>
           </template>
@@ -307,11 +307,11 @@
         <n-card class="debug-card shell-card" :bordered="false" size="large">
           <div class="aside-title-row">
             <div>
-              <div class="content-title">{{ t('调试测试') }}</div>
-              <div class="muted">{{ testResultText ? (testResultOk ? t('最近测试已通过') : t('最近测试失败')) : t('可直接测试当前草稿') }}</div>
+              <div class="content-title">{{ t('legacy.debug_test') }}</div>
+              <div class="muted">{{ testResultText ? (testResultOk ? t('legacy.latest_test_passed') : t('legacy.latest_test_failed')) : t('legacy.ready_to_test_current_draft') }}</div>
             </div>
             <n-tag :type="testResultText ? (testResultOk ? 'success' : 'error') : 'default'" round>
-              {{ testResultText ? (testResultOk ? t('已通过') : t('失败')) : t('未测试') }}
+              {{ testResultText ? (testResultOk ? t('legacy.passed_4b3c965') : t('additional.failed')) : t('legacy.untested') }}
             </n-tag>
           </div>
 
@@ -325,36 +325,36 @@
               <div v-if="group.nodes.length" class="debug-group-title">{{ group.label }}</div>
               <div v-for="node in group.nodes" :key="node.id" class="debug-param-row">
                 <label>
-                  {{ node.name || t('未命名参数') }}
+                  {{ node.name || t('legacy.unnamed_parameter') }}
                   <span v-if="node.required">*</span>
                 </label>
                 <n-input v-model:value="debugValues[node.id]" size="small" :placeholder="node.description || node.type" />
               </div>
             </div>
-            <n-empty v-if="flatInputNodes.length === 0" :description="t('暂无入参')" size="small" />
+            <n-empty v-if="flatInputNodes.length === 0" :description="t('legacy.no_parameters')" size="small" />
           </template>
           <template v-else>
-            <n-form-item :label="t('MCP 工具')">
+            <n-form-item :label="t('legacy.mcp_tool')">
               <n-select v-model:value="debugMcpToolName" :options="mcpToolOptions" filterable size="small" />
             </n-form-item>
-            <n-form-item :label="t('参数 JSON')">
+            <n-form-item :label="t('legacy.parameters_json')">
               <n-input v-model:value="debugMcpArguments" type="textarea" :autosize="{ minRows: 4, maxRows: 8 }" placeholder='{"key":"value"}' />
             </n-form-item>
           </template>
 
           <n-button block type="primary" :loading="testing" @click="runTest">
             <template #icon><n-icon><PlayOutline /></n-icon></template>
-            {{ t('运行测试') }}
+            {{ t('legacy.run_test') }}
           </n-button>
 
           <div v-if="testResult" class="test-summary">
             <div class="test-metrics-row">
               <div>
-                <span>{{ t('状态') }}</span>
-                <strong :class="testResultOk ? 'success-text' : 'error-text'">{{ testResult.message || (testResultOk ? t('测试通过') : t('测试失败')) }}</strong>
+                <span>{{ t('legacy.status_62e951a') }}</span>
+                <strong :class="testResultOk ? 'success-text' : 'error-text'">{{ testResult.message || (testResultOk ? t('legacy.passed') : t('legacy.test_failed')) }}</strong>
               </div>
               <div>
-                <span>{{ t('耗时') }}</span>
+                <span>{{ t('legacy.duration') }}</span>
                 <strong>{{ testResult.durationMs ?? '-' }} ms</strong>
               </div>
             </div>
@@ -365,15 +365,15 @@
 
           <div v-if="testResultText || Object.keys(lastRequest).length" class="debug-json-scroll">
             <div class="result-panel">
-              <div class="result-title">{{ t('调用预览') }}</div>
+              <div class="result-title">{{ t('legacy.call_preview') }}</div>
               <pre class="json-pre-panel"><code>{{ JSON.stringify(debugRequestPreview, null, 2) }}</code></pre>
             </div>
             <div v-if="testResultText" class="result-panel">
               <div class="result-title result-title-row">
-                <span>{{ t('响应体') }}</span>
+                <span>{{ t('legacy.response_body') }}</span>
                 <n-button v-if="canInferOutputSchema" size="small" type="primary" secondary @click="inferOutputSchemaFromTest">
                   <template #icon><n-icon><SparklesOutline /></n-icon></template>
-                  {{ t('生成出参') }}
+                  {{ t('legacy.generate_output') }}
                 </n-button>
               </div>
               <pre class="json-pre-panel"><code>{{ testResultText }}</code></pre>
@@ -387,22 +387,22 @@
       v-model:show="deleteConfirmVisible"
       preset="dialog"
       type="warning"
-      :title="t('删除 Tool')"
-      :positive-text="t('删除')"
-      :negative-text="t('取消')"
+      :title="t('legacy.delete_tool')"
+      :positive-text="t('additional.delete')"
+      :negative-text="t('legacy.cancel')"
       :positive-button-props="{ type: 'error', loading: deleting }"
       @positive-click="confirmDelete"
     >
-      {{ t('确定删除「{name}」吗？删除后不可恢复。', { name: pendingDeleteRow?.name || t('未命名工具') }) }}
+      {{ t('legacy.delete_this_action_cannot_be_undone', { name: pendingDeleteRow?.name || t('legacy.unnamed_tool') }) }}
     </n-modal>
 
     <n-modal
       v-model:show="statusConfirmVisible"
       preset="dialog"
       type="warning"
-      :title="pendingStatusValue ? t('启用 Tool') : t('禁用 Tool')"
-      :positive-text="pendingStatusValue ? t('确认启用') : t('确认禁用')"
-      :negative-text="t('取消')"
+      :title="pendingStatusValue ? t('legacy.enable_tool') : t('legacy.disable_tool')"
+      :positive-text="pendingStatusValue ? t('legacy.enable') : t('legacy.disable')"
+      :negative-text="t('legacy.cancel')"
       :positive-button-props="{ type: pendingStatusValue ? 'primary' : 'warning', loading: statusUpdating }"
       @positive-click="confirmToggleStatus"
     >
@@ -503,9 +503,9 @@ const SchemaEditor = defineComponent({
       .map((value) => ({ label: value, value }))
     const locationOptions = ['Header', 'Query', 'Body', 'Path'].map((value) => ({ label: value, value }))
     const responseModeOptions = computed(() => [
-      { label: t('大模型总结'), value: 'summarized' },
-      { label: t('原始返回'), value: 'original' },
-      { label: t('主要答案'), value: 'answer' },
+      { label: t('legacy.llm_summary'), value: 'summarized' },
+      { label: t('legacy.original_response'), value: 'original' },
+      { label: t('legacy.main_answer'), value: 'answer' },
     ])
 
     function flatten(nodes: SchemaNode[], depth = 0): Array<{ node: SchemaNode; depth: number }> {
@@ -518,15 +518,15 @@ const SchemaEditor = defineComponent({
     return () => {
       const flat = flatten(schemaProps.nodes)
       if (!flat.length) {
-        return h(NEmpty, { description: schemaProps.mode === 'input' ? t('还没有定义入参') : t('还没有定义出参') })
+        return h(NEmpty, { description: schemaProps.mode === 'input' ? t('legacy.no_input_parameters_defined_yet') : t('legacy.no_output_parameters_defined_yet') })
       }
       return h('div', { class: 'schema-editor' }, [
         h(
           'div',
           { class: ['schema-grid', 'schema-head', schemaProps.mode === 'input' ? 'input-grid' : 'output-grid'] },
           (schemaProps.mode === 'input'
-            ? [t('参数名称'), t('参数描述'), t('类型'), t('传入位置'), t('必填'), t('操作')]
-            : [t('字段名称'), t('字段描述'), t('类型'), t('使用方式'), t('操作')]
+            ? [t('legacy.parameter_name'), t('legacy.description'), t('legacy.type'), t('legacy.location'), t('legacy.required'), t('legacy.actions')]
+            : [t('legacy.field_name'), t('legacy.description_805453d'), t('legacy.type'), t('legacy.usage_mode'), t('legacy.actions')]
           ).map((text) => h('span', text)),
         ),
         flat.map(({ node, depth }) => h(
@@ -535,13 +535,13 @@ const SchemaEditor = defineComponent({
           [
             h(NInput, {
               value: node.name,
-              placeholder: depth > 0 && node.type === 'Array' ? '[Array Item]' : t('请输入'),
+              placeholder: depth > 0 && node.type === 'Array' ? '[Array Item]' : t('legacy.please_enter'),
               style: { marginLeft: `${depth * 24}px`, width: `calc(100% - ${depth * 24}px)` },
               'onUpdate:value': (value: string) => { node.name = value.replace(/[^a-zA-Z0-9_[\] ]/g, '') },
             }),
             h(NInput, {
               value: node.description,
-              placeholder: schemaProps.mode === 'input' ? t('帮助 Agent 理解如何提取参数') : t('帮助 Agent 理解返回字段'),
+              placeholder: schemaProps.mode === 'input' ? t('legacy.help_the_agent_understand_how_to_extract_the_parameter') : t('legacy.help_the_agent_understand_the_response_field'),
               'onUpdate:value': (value: string) => { node.description = value },
             }),
             h(NSelect, {
@@ -579,7 +579,7 @@ const SchemaEditor = defineComponent({
                 onClick: () => emit('add-child', node.id),
               }, {
                 icon: () => h(NIcon, null, { default: () => h(AddOutline) }),
-                default: () => t('子项'),
+                default: () => t('legacy.child'),
               }),
               h(NButton, {
                 size: 'small',
@@ -588,7 +588,7 @@ const SchemaEditor = defineComponent({
                 onClick: () => emit('remove', node.id),
               }, {
                 icon: () => h(NIcon, null, { default: () => h(TrashOutline) }),
-                default: () => t('删除'),
+                default: () => t('additional.delete'),
               }),
             ]),
           ],
@@ -658,32 +658,32 @@ const filters = ref({
 })
 
 const typeOptions = computed(() => [
-  { label: t('HTTP 工具'), value: 'http' },
-  { label: t('MCP 服务'), value: 'mcp' },
+  { label: t('legacy.http_tool'), value: 'http' },
+  { label: t('legacy.mcp_service'), value: 'mcp' },
 ])
 const statusOptions = computed(() => [
-  { label: t('启用'), value: 'active' },
-  { label: t('禁用'), value: 'disabled' },
+  { label: t('additional.enable'), value: 'active' },
+  { label: t('legacy.disabled_be70be5'), value: 'disabled' },
 ])
 const methodOptions = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map((value) => ({ label: value, value }))
 const authOptions = computed(() => [
-  { label: t('无需鉴权'), value: 'none' },
+  { label: t('legacy.no_authentication'), value: 'none' },
   { label: 'Bearer Token', value: 'bearer' },
   { label: 'API Key Header', value: 'api_key' },
 ])
 const steps = computed(() => {
   if (form.value.type === 'mcp') {
     return [
-      { key: 'base', title: t('基础信息'), description: t('名称与说明') },
-      { key: 'request', title: t('连接配置'), description: t('地址、鉴权和 Headers') },
-      { key: 'mcpTools', title: t('发现工具'), description: t('读取远程 MCP 工具 Schema') },
+      { key: 'base', title: t('legacy.basic_information'), description: t('legacy.name_description') },
+      { key: 'request', title: t('legacy.connection_config'), description: t('legacy.url_auth_headers') },
+      { key: 'mcpTools', title: t('legacy.discover_tools'), description: t('legacy.fetch_remote_mcp_tool_schema') },
     ]
   }
   return [
-    { key: 'base', title: t('基础信息'), description: t('名称与说明') },
-    { key: 'request', title: t('请求配置'), description: t('URL、请求方法、鉴权和 Headers') },
-    { key: 'input', title: t('入参定义'), description: t('Agent 调用时需要填写的参数') },
-    { key: 'output', title: t('出参定义'), description: t('响应字段含义和使用方式') },
+    { key: 'base', title: t('legacy.basic_information'), description: t('legacy.name_description') },
+    { key: 'request', title: t('legacy.request_config'), description: t('legacy.url_method_auth_headers') },
+    { key: 'input', title: t('legacy.input_definition'), description: t('legacy.parameters_the_agent_needs_to_pass') },
+    { key: 'output', title: t('legacy.output_definition'), description: t('legacy.meaning_usage_of_response_fields') },
   ]
 })
 const activeKey = computed(() => steps.value[activeStep.value - 1]?.key || 'base')
@@ -703,7 +703,7 @@ const groupedDebugNodes = computed(() => {
   return groups
 })
 const mcpToolOptions = computed(() => discoveredTools.value.map((tool) => ({ label: tool.name, value: tool.name })))
-const debugEndpointText = computed(() => String(form.value.type === 'mcp' ? form.value.config.endpoint || t('未配置地址') : form.value.config.url || t('未配置地址')))
+const debugEndpointText = computed(() => String(form.value.type === 'mcp' ? form.value.config.endpoint || t('legacy.no_endpoint_configured') : form.value.config.url || t('legacy.no_endpoint_configured')))
 const debugRequestPreview = computed(() => {
   if (!Object.keys(lastRequest.value).length) return {}
   if (form.value.type === 'mcp') {
@@ -718,8 +718,8 @@ const debugRequestPreview = computed(() => {
 const canInferOutputSchema = computed(() => form.value.type === 'http' && Boolean(extractTestResponseBody()))
 
 const rules: FormRules = {
-  name: [{ required: true, message: t('请填写名称'), trigger: ['input', 'blur'] }],
-  description: [{ required: true, message: t('请填写工具说明'), trigger: ['input', 'blur'] }],
+  name: [{ required: true, message: t('legacy.enter_a_name'), trigger: ['input', 'blur'] }],
+  description: [{ required: true, message: t('legacy.enter_a_tool_description'), trigger: ['input', 'blur'] }],
 }
 
 const filteredRows = computed(() => {
@@ -744,14 +744,14 @@ const metricCards = computed(() => {
   const mcp = rows.value.filter((row) => row.type === 'mcp').length
   const passed = rows.value.filter((row) => row.lastTestStatus === 'passed').length
   return [
-    { key: 'total', icon: '<svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.66 5.66l-5.3 5.3a2 2 0 1 0 2.83 2.83l5.3-5.3a4 4 0 0 0 5.66-5.66" /></svg>', label: t('Tool 总数'), value: total, note: t('当前空间下我的全部工具') },
-    { key: 'enabled', icon: '<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></svg>', label: t('已启用'), value: enabled, note: total ? t('启用率 {percent}%', { percent: Math.round((enabled / total) * 100) }) : t('当前暂无工具') },
-    { key: 'mcp', icon: '<svg viewBox="0 0 24 24"><path d="M12 3v6" /><path d="M6 15h12" /><circle cx="12" cy="12" r="3" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="18" r="3" /></svg>', label: t('MCP 服务'), value: mcp, note: t('远程 MCP 服务数量') },
-    { key: 'pass', icon: '<svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="9" /></svg>', label: t('测试通过'), value: passed, note: t('最近测试通过数量') },
+    { key: 'total', icon: '<svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.66 5.66l-5.3 5.3a2 2 0 1 0 2.83 2.83l5.3-5.3a4 4 0 0 0 5.66-5.66" /></svg>', label: t('legacy.total_tools'), value: total, note: t('legacy.all_of_my_tools_in_this_workspace') },
+    { key: 'enabled', icon: '<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></svg>', label: t('legacy.enabled'), value: enabled, note: total ? t('legacy.enabled_c33c95e', { percent: Math.round((enabled / total) * 100) }) : t('legacy.no_tools_yet') },
+    { key: 'mcp', icon: '<svg viewBox="0 0 24 24"><path d="M12 3v6" /><path d="M6 15h12" /><circle cx="12" cy="12" r="3" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="18" r="3" /></svg>', label: t('legacy.mcp_service'), value: mcp, note: t('legacy.remote_mcp_services') },
+    { key: 'pass', icon: '<svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="9" /></svg>', label: t('legacy.passed'), value: passed, note: t('legacy.recently_passed_tests') },
   ]
 })
 
-function formatToolTime(value?: string | null, fallback = t('暂无记录')) {
+function formatToolTime(value?: string | null, fallback = t('legacy.no_records')) {
   return formatAppShortDateTime(value, fallback)
 }
 
@@ -761,7 +761,7 @@ function timeValue(value?: string | null) {
 
 function formatUpdatedTime(row: ExternalToolItem) {
   const displayTime = formatToolTime(row.updatedAt, '')
-  return displayTime ? t('更新时间：{time}', { time: displayTime }) : t('更新时间：暂无记录')
+  return displayTime ? t('legacy.updated', { time: displayTime }) : t('legacy.updated_no_record')
 }
 
 function emptyForm(type: ToolType): ToolPayload {
@@ -1228,14 +1228,14 @@ function mergeSchemaNodes(target: SchemaNode[], incoming: SchemaNode[]): number 
 function inferOutputSchemaFromTest() {
   const inferred = schemaFromTestResponse()
   if (!inferred.length) {
-    message.warning(t('当前测试响应无法生成出参定义'))
+    message.warning(t('legacy.the_current_test_response_cannot_generate_an_output_schema'))
     return
   }
   const added = mergeSchemaNodes(outputSchema.value, inferred)
   if (added > 0) {
-    message.success(t('已添加 {count} 个出参字段', { count: added }))
+    message.success(t('legacy.added_output_fields', { count: added }))
   } else {
-    message.info(t('出参定义已包含响应中的字段'))
+    message.info(t('legacy.the_output_schema_already_contains_the_response_fields'))
   }
 }
 
@@ -1317,7 +1317,7 @@ async function loadRows() {
   try {
     rows.value = await fetchTools(props.userId, props.mainId)
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || t('加载工具连接失败'))
+    message.error(error?.response?.data?.detail || t('legacy.failed_to_load_tool_connections'))
   } finally {
     loading.value = false
   }
@@ -1340,10 +1340,10 @@ async function saveTool() {
       : await createTool(props.userId, props.mainId, payload)
     editingId.value = saved.id
     hydrateEditor(saved)
-    message.success(t('Tool 已保存'))
+    message.success(t('legacy.tool_saved'))
     await loadRows()
   } catch (error: any) {
-    if (error?.message) message.error(error.response?.data?.detail || error.message || t('保存失败'))
+    if (error?.message) message.error(error.response?.data?.detail || error.message || t('legacy.failed_to_save'))
   } finally {
     saving.value = false
   }
@@ -1351,7 +1351,7 @@ async function saveTool() {
 
 async function generateDescription() {
   if (!form.value.name.trim()) {
-    message.warning(t('请先填写名称'))
+    message.warning(t('legacy.enter_a_name_first'))
     return
   }
   generatingDescription.value = true
@@ -1363,7 +1363,7 @@ async function generateDescription() {
     })
     form.value.description = String(result.description || '').trim()
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || t('生成失败'))
+    message.error(error?.response?.data?.detail || t('legacy.failed_to_generate'))
   } finally {
     generatingDescription.value = false
   }
@@ -1380,10 +1380,10 @@ async function discoverTools() {
     if (mcpActivationError(buildPayload())) {
       form.value.status = 'disabled'
     }
-    message.success(result.message || t('发现 {count} 个 MCP tools', { count: discoveredTools.value.length }))
+    message.success(result.message || t('legacy.discovered_mcp_tools', { count: discoveredTools.value.length }))
     await loadRows()
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || t('发现 MCP tools 失败'))
+    message.error(error?.response?.data?.detail || t('legacy.failed_to_discover_mcp_tools'))
   } finally {
     discovering.value = false
   }
@@ -1414,8 +1414,8 @@ async function runTest() {
     const rawMessage = String(error?.response?.data?.detail || error?.message || '').trim()
     const isTimeout = error?.code === 'ECONNABORTED' || /timeout|timed out|超时/i.test(rawMessage)
     const errorMessage = isTimeout
-      ? t('请求超时：超过 {seconds} 秒未收到响应', { seconds: configuredTimeout })
-      : (rawMessage || t('测试失败'))
+      ? t('legacy.request_timed_out_after_seconds_without_a_response', { seconds: configuredTimeout })
+      : (rawMessage || t('legacy.test_failed'))
     testResultOk.value = false
     testResult.value = {
       success: false,
@@ -1458,12 +1458,12 @@ async function confirmToggleStatus() {
   statusUpdating.value = true
   try {
     await patchTool(pendingStatusRow.value.id, props.userId, props.mainId, { status: pendingStatusValue.value ? 'active' : 'disabled' })
-    message.success(pendingStatusValue.value ? t('Tool 已启用') : t('Tool 已禁用'))
+    message.success(pendingStatusValue.value ? t('legacy.tool_enabled') : t('legacy.tool_disabled'))
     statusConfirmVisible.value = false
     pendingStatusRow.value = null
     await loadRows()
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || t('状态更新失败'))
+    message.error(error?.response?.data?.detail || t('legacy.failed_to_update_status'))
     return false
   } finally {
     statusUpdating.value = false
@@ -1481,12 +1481,12 @@ async function confirmDelete() {
   deleting.value = true
   try {
     await deleteTool(pendingDeleteRow.value.id, props.userId, props.mainId)
-    message.success(t('Tool 已删除'))
+    message.success(t('legacy.tool_deleted'))
     pendingDeleteRow.value = null
     deleteConfirmVisible.value = false
     await loadRows()
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || t('删除失败'))
+    message.error(error?.response?.data?.detail || t('legacy.failed_to_delete'))
     return false
   } finally {
     deleting.value = false

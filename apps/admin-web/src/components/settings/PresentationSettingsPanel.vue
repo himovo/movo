@@ -2,54 +2,54 @@
   <div class="presentation-settings">
     <header class="panel-header">
       <div>
-        <div class="panel-title">{{ t('PPT 生成设置') }}</div>
-        <div class="panel-subtitle">{{ t('配置内容规划、整页视觉生成与可编辑重建所使用的模型。') }}</div>
+        <div class="panel-title">{{ t('legacy.ppt_generation_settings') }}</div>
+        <div class="panel-subtitle">{{ t('legacy.configure_the_models_used_for_content_planning_full_slide') }}</div>
       </div>
       <n-button type="primary" :loading="saving" :disabled="loading" @click="save">
-        {{ t('保存配置') }}
+        {{ t('legacy.save_817af18') }}
       </n-button>
     </header>
 
     <n-spin :show="loading">
       <section class="settings-section model-section" aria-labelledby="presentation-model-title">
-        <div id="presentation-model-title" class="section-title">{{ t('PPT 模型配置') }}</div>
-        <div class="section-help">{{ t('PPT 生成需要内容、图片生成和视觉理解三类模型，保存时会逐项校验。') }}</div>
+        <div id="presentation-model-title" class="section-title">{{ t('legacy.ppt_model_configuration') }}</div>
+        <div class="section-help">{{ t('legacy.ppt_generation_requires_content_image_generation_and_vision_models') }}</div>
 
         <n-form label-placement="top" :show-feedback="false">
-          <n-form-item :label="t('内容与布局模型')" required>
+          <n-form-item :label="t('legacy.content_layout_model')" required>
             <ModelCapabilitySelect
               v-model="form.llmModelId"
               capability="chat"
-              :placeholder="t('选择支持对话能力的模型')"
+              :placeholder="t('legacy.select_a_chat_capable_model')"
             />
-            <div class="field-help">{{ t('负责故事线、页面内容与可编辑布局规划。') }}</div>
+            <div class="field-help">{{ t('legacy.creates_the_storyline_slide_content_and_editable_layout_plan') }}</div>
           </n-form-item>
 
-          <n-form-item :label="t('图片生成模型')" required>
+          <n-form-item :label="t('legacy.image_generation_model')" required>
             <ModelCapabilitySelect
               v-model="form.imageModelId"
               capability="image_generation"
-              :placeholder="t('选择支持图片生成能力的模型')"
+              :placeholder="t('legacy.select_an_image_generation_model')"
             />
-            <div class="field-help">{{ t('负责生成每页完整视觉稿和必要的图片素材。') }}</div>
+            <div class="field-help">{{ t('legacy.generates_complete_slide_visuals_and_required_image_assets') }}</div>
           </n-form-item>
 
-          <n-form-item :label="t('视觉重建模型')" required>
+          <n-form-item :label="t('legacy.vision_rebuild_model')" required>
             <ModelCapabilitySelect
               v-model="form.visionModelId"
               capability="vision"
-              :placeholder="t('选择支持视觉理解能力的模型')"
+              :placeholder="t('legacy.select_a_vision_capable_model')"
             />
-            <div class="field-help">{{ t('负责理解视觉稿并重建为可编辑的文字、图形和图片元素。') }}</div>
+            <div class="field-help">{{ t('legacy.understands_slide_visuals_and_rebuilds_editable_text_shapes_and') }}</div>
           </n-form-item>
         </n-form>
       </section>
 
       <n-alert v-if="!configured" type="info" :bordered="false" class="status-alert">
-        {{ t('尚未完成企业 PPT 模型配置。请配置三类模型后再生成 PPT。') }}
+        {{ t('legacy.ppt_model_configuration_is_incomplete_configure_all_three_models') }}
       </n-alert>
       <n-alert v-else type="success" :bordered="false" class="status-alert">
-        {{ t('当前配置已生效。模型被禁用或删除后，PPT 生成会停止并提示管理员修复配置。') }}
+        {{ t('legacy.the_configuration_is_active_if_a_selected_model_is') }}
       </n-alert>
     </n-spin>
   </div>
@@ -85,9 +85,9 @@ function applySettings(settings: Awaited<ReturnType<typeof fetchPresentationSett
 
 function errorText(error: unknown): string {
   if (axios.isAxiosError(error)) {
-    return String(error.response?.data?.detail || error.message || t('配置保存失败'));
+    return String(error.response?.data?.detail || error.message || t('legacy.failed_to_save_configuration'));
   }
-  return error instanceof Error ? error.message : String(error || t('配置保存失败'));
+  return error instanceof Error ? error.message : String(error || t('legacy.failed_to_save_configuration'));
 }
 
 async function load() {
@@ -103,17 +103,17 @@ async function load() {
 
 async function save() {
   if (!form.llmModelId) {
-    message.error(t('请选择内容与布局模型'));
+    message.error(t('legacy.select_a_content_and_layout_model'));
     return;
   }
   if (!form.imageModelId || !form.visionModelId) {
-    message.error(t('请选择图片生成模型和视觉重建模型'));
+    message.error(t('legacy.select_an_image_generation_model_and_a_vision_rebuild'));
     return;
   }
   saving.value = true;
   try {
     applySettings(await savePresentationSettings({ ...form }));
-    message.success(t('PPT 生成配置已保存'));
+    message.success(t('legacy.ppt_generation_settings_saved'));
   } catch (error) {
     message.error(errorText(error));
   } finally {

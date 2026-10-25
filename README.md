@@ -59,6 +59,10 @@ http://localhost:3000/admin/setup
 
 The launcher pulls the official prebuilt images, waits for the services to become healthy and prints the setup address. No `.env` file or local image build is required. Windows users should run MOVO inside an Ubuntu WSL 2 distribution; see the [online quick-start guide](https://www.himovo.com/en/guide/getting-started.html).
 
+For users in mainland China, use `./movo --mirror cn up` to pull both MOVO and its MongoDB, Redis, Weaviate and Alpine images from the public Beijing ACR mirror. The default `./movo up` continues to use GHCR and Docker Hub. Mirror selection is explicit rather than inferred from language or IP address; no `.env` changes are required. Use the same flag with `update` when upgrading. The China mirror supports Linux/amd64 and Linux/arm64; Docker selects the matching image for the host. Source builds remain `./movo up --build` without a mirror flag.
+
+If `.env` pins `MOVO_VERSION`, the same tag must exist in the selected registry. The China mirror initially publishes `latest` and the immutable `candidate-<commit SHA>` tag; it does not automatically contain every GHCR release tag. Back up your data before switching an existing deployment between registries.
+
 > Got MOVO running? Please click **Star** in the upper-right corner. It helps more developers discover the project.
 
 ## Product demo
@@ -149,14 +153,14 @@ The default Docker Compose deployment starts 12 services: the gateway, two Web a
 - Docker Desktop, or Docker Engine with Docker Compose v2
 - at least 8 GB of available memory
 - at least 20 GB of available disk space for images and application data
-- network access to GHCR and Docker Hub during the initial image pull
+- network access to the selected image registries during the initial image pull (GHCR/Docker Hub by default, or ACR with `--mirror cn`)
 - credentials for at least one compatible model API to complete setup
 
-The quick-start command above works on Linux and macOS. `./movo up` pulls the published MOVO and infrastructure images sequentially and keeps retrying network failures until the pull succeeds or the user presses `Ctrl+C`. The first startup downloads several container images and can take some time, especially when access to GHCR or Docker Hub is slow. Normal users do **not** need to build the images locally.
+The quick-start command above works on Linux and macOS. The launcher pulls the selected MOVO and infrastructure images sequentially and keeps retrying network failures until the pull succeeds or the user presses `Ctrl+C`. The first startup downloads several container images and can take some time. Normal users do **not** need to build the images locally.
 
 On Windows, use Docker Desktop with WSL 2 and Ubuntu. Check that Ubuntu exists with `wsl -l -v`, then enter it explicitly with `wsl -d Ubuntu`; do not run MOVO from a prompt beginning with `docker-desktop:`. See the [online setup steps](https://www.himovo.com/en/guide/getting-started.html#windows-enter-ubuntu-not-docker-desktop).
 
-You can also start the same official prebuilt images directly with `docker compose up -d`, including from Windows PowerShell or Command Prompt. Neither command requires an `.env` file, but native Compose pulls in parallel and does not provide the launcher's continuous retry loop or readiness wait. To build and start local images from source instead, use `./movo up --build`.
+You can also start the default GHCR/Docker Hub images directly with `docker compose up -d`, including from Windows PowerShell or Command Prompt. Neither command requires an `.env` file, but native Compose pulls in parallel and does not provide the launcher's continuous retry loop or readiness wait. For the China mirror, use the `./movo --mirror cn up` launcher command. To build and start local images from source instead, use `./movo up --build`.
 
 Open:
 

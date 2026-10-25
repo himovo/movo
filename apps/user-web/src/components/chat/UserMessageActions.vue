@@ -29,13 +29,13 @@ onBeforeUnmount(() => { if (copiedTimer) clearTimeout(copiedTimer) })
 </script>
 
 <template>
-  <div class="flex items-center justify-end gap-0.5 text-slate-500" role="group" :aria-label="t('消息操作')">
+  <div class="flex items-center justify-end gap-0.5 text-slate-500" role="group" :aria-label="t('legacy.message_actions')">
     <time v-if="time" class="mr-1 whitespace-nowrap text-[11px] text-slate-400">{{ time }}</time>
     <button
       type="button"
       class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md transition-colors duration-150 hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      :aria-label="copied ? t('已复制') : t('复制消息')"
-      :title="copied ? t('已复制') : t('复制')"
+      :aria-label="copied ? t('legacy.copied') : t('legacy.copy_message')"
+      :title="copied ? t('legacy.copied') : t('legacy.copy')"
       @click="copyMessage"
     >
       <svg v-if="copied" viewBox="0 0 24 24" class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
@@ -45,8 +45,8 @@ onBeforeUnmount(() => { if (copiedTimer) clearTimeout(copiedTimer) })
       type="button"
       class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md transition-colors duration-150 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
       :disabled="scheduleDisabled"
-      :aria-label="t('创建定时任务')"
-      :title="t('创建定时任务')"
+      :aria-label="t('legacy.create_scheduled_task')"
+      :title="t('legacy.create_scheduled_task')"
       @click="emit('schedule')"
     >
       <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>

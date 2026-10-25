@@ -41,6 +41,20 @@ def backend_model_test_events(instance_id: str, main_id: str, prompt: str) -> It
         yield {"type": "error", "message": f"Model connection test failed: {exc}"}
 
 
+def backend_vision_probe(instance_id: str, main_id: str) -> bool:
+    base_url = str(settings.backend_base_url or "http://127.0.0.1:8000").rstrip("/")
+    path_id = urllib.parse.quote(instance_id, safe="")
+    request = urllib.request.Request(
+        f"{base_url}/api/models/{path_id}/test-vision",
+        data=json.dumps({"main_id": main_id}).encode("utf-8"),
+        headers={"Content-Type": "application/json", "X-MOVO-Service-Token": settings.backend_service_token},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=90, context=build_model_test_ssl_context()) as response:
+        payload = json.load(response)
+    return payload.get("data", {}).get("supported") is True
+
+
 async def run_saved_model_test(instance_id: str, main_id: str, prompt: str = "") -> tuple[bool, str]:
     return await asyncio.to_thread(_consume_test_events, instance_id, main_id, prompt)
 

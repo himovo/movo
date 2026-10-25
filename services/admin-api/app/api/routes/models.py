@@ -27,8 +27,9 @@ from app.repositories.model_repository import (
     set_default_instance,
     update_instance_health,
     update_instance,
+    add_vision_capability,
 )
-from app.services.model_connectivity import backend_model_test_events, next_event
+from app.services.model_connectivity import backend_model_test_events, backend_vision_probe, next_event
 from app.services.image_model_configuration import (
     infer_image_runtime_kind,
     normalize_capabilities,
@@ -454,6 +455,44 @@ async def test_image_model_instance(
         "runtimeKind": str(result.get("runtime_kind") or ""),
         "modelSource": str(result.get("model_source") or ""),
     }
+
+
+@router.post("/instances/{instance_id}/test-vision")
+async def test_vision_capability(
+    instance_id: str,
+    current_user: dict = Depends(get_current_admin_user),
+) -> dict[str, bool]:
+    main_id = str(current_user.get("main_id", "default"))
+    try:
+        instance = await find_instance_by_id(instance_id, main_id)
+    except InvalidId as exc:
+        raise HTTPException(status_code=400, detail="模型配置ID无效") from exc
+    if instance is None:
+        raise HTTPException(status_code=404, detail="模型配置不存在")
+    if not set(normalize_capabilities(instance.get("capabilities"))).intersection({"chat", "text"}):
+        return {"supported": False}
+    try:
+        return {"supported": await asyncio.to_thread(backend_vision_probe, instance_id, main_id)}
+    except Exception:
+        return {"supported": False}
+
+
+@router.post("/instances/{instance_id}/enable-vision")
+async def enable_vision_capability(
+    instance_id: str,
+    current_user: dict = Depends(get_current_admin_user),
+) -> dict[str, bool]:
+    main_id = str(current_user.get("main_id", "default"))
+    try:
+        instance = await find_instance_by_id(instance_id, main_id)
+        if instance is None:
+            raise HTTPException(status_code=404, detail="模型配置不存在")
+        if not set(normalize_capabilities(instance.get("capabilities"))).intersection({"chat", "text"}):
+            raise HTTPException(status_code=400, detail="只有对话模型可以启用视觉输入")
+        await add_vision_capability(instance_id, main_id)
+    except InvalidId as exc:
+        raise HTTPException(status_code=400, detail="模型配置ID无效") from exc
+    return {"success": True}
 
 
 @router.post("/instances/{instance_id}/test/stream")

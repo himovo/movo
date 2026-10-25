@@ -7,7 +7,7 @@
         </div>
         <div>
           <div class="eyebrow">MOVO INITIAL SETUP</div>
-          <h1>{{ setupCompleted ? t('系统已准备就绪') : t('初始化企业服务') }}</h1>
+          <h1>{{ setupCompleted ? t('legacy.system_ready') : t('legacy.set_up_enterprise_service') }}</h1>
           <p>{{ heroDescription }}</p>
         </div>
       </header>
@@ -36,11 +36,11 @@
 
         <template v-else>
           <n-alert v-if="currentStep === 1 && !setupStore.ready" type="warning" :show-icon="true" class="readiness-alert">
-            {{ t('部分服务尚未就绪。可以稍后刷新状态；建议全部正常后再完成初始化。') }}
+            {{ t('legacy.some_services_are_not_ready_refresh_later_and_complete') }}
           </n-alert>
           <div v-if="currentStep === 1" class="deployment-actions">
             <n-button block type="primary" size="large" :disabled="!setupStore.ready" @click="currentStep = 2">
-              {{ t('下一步：组织与账号') }}
+              {{ t('legacy.next_organization_accounts') }}
             </n-button>
           </div>
           <SetupAccountStep v-else-if="currentStep === 2" :model-value="accountForm" @next="goToModelStep" />
@@ -136,7 +136,7 @@ const accountForm = reactive<SetupAccountForm>({
   orgName: '',
   adminUsername: 'admin',
   adminPassword: '',
-  adminDisplayName: t('系统管理员'),
+  adminDisplayName: t('legacy.system_administrator'),
   employeeUsername: 'user01',
   employeePassword: '',
   employeeName: '',
@@ -185,8 +185,8 @@ function updateSearchForm(value: SetupSearchForm) {
 }
 
 const heroDescription = computed(() => setupCompleted.value
-  ? t('初始化已完成。请保存以下企业访问地址，然后登录管理后台。')
-  : t('完成部署检测、企业账号和模型配置后，员工即可登录使用。'));
+  ? t('legacy.setup_is_complete_save_the_enterprise_access_addresses_below')
+  : t('legacy.employees_can_sign_in_after_deployment_accounts_and_models'));
 
 function parseError(error: unknown, fallback: string) {
   if (axios.isAxiosError(error)) return String(error.response?.data?.detail || error.message || fallback);
@@ -194,25 +194,25 @@ function parseError(error: unknown, fallback: string) {
 }
 
 function validateAccountForm() {
-  if (!accountForm.orgName.trim()) return t('请填写企业名称');
-  if (!accountForm.adminUsername.trim() || !accountForm.employeeUsername.trim()) return t('请填写管理员和员工账号');
-  if (accountForm.adminUsername.trim() === accountForm.employeeUsername.trim()) return t('管理员账号和员工账号不能相同');
-  if (accountForm.adminPassword.trim().length < 10 || accountForm.employeePassword.trim().length < 10) return t('管理员和员工密码至少 10 位');
-  if (!accountForm.employeeName.trim()) return t('请填写初始员工姓名');
-  if (!accountForm.orgTotalTokens || accountForm.orgTotalTokens <= 0) return t('请填写企业总 Token');
-  if (!accountForm.defaultUserTokens || accountForm.defaultUserTokens <= 0) return t('请填写员工默认 Token');
-  if (accountForm.defaultUserTokens > accountForm.orgTotalTokens) return t('员工默认 Token 不能超过企业总 Token');
-  if (!accountForm.quotaTimezone.trim()) return t('请填写企业时区');
+  if (!accountForm.orgName.trim()) return t('legacy.please_enter_organization_name');
+  if (!accountForm.adminUsername.trim() || !accountForm.employeeUsername.trim()) return t('legacy.enter_both_admin_and_employee_usernames');
+  if (accountForm.adminUsername.trim() === accountForm.employeeUsername.trim()) return t('legacy.admin_and_employee_usernames_must_be_different');
+  if (accountForm.adminPassword.trim().length < 10 || accountForm.employeePassword.trim().length < 10) return t('legacy.admin_and_employee_passwords_must_be_at_least_10');
+  if (!accountForm.employeeName.trim()) return t('legacy.please_enter_initial_employee_name');
+  if (!accountForm.orgTotalTokens || accountForm.orgTotalTokens <= 0) return t('legacy.enter_the_organization_token_quota');
+  if (!accountForm.defaultUserTokens || accountForm.defaultUserTokens <= 0) return t('legacy.enter_the_default_employee_token_quota');
+  if (accountForm.defaultUserTokens > accountForm.orgTotalTokens) return t('legacy.default_employee_tokens_cannot_exceed_the_organization_total');
+  if (!accountForm.quotaTimezone.trim()) return t('legacy.enter_the_organization_time_zone');
   return '';
 }
 
 function validateModelForm() {
-  if (!modelForm.providerId) return t('请选择模型供应商');
-  if (!modelForm.displayName.trim() || !modelForm.modelName.trim()) return t('请填写配置名称和模型 ID');
-  if (!modelForm.baseUrl.trim()) return t('请填写模型服务地址');
-  if (!modelForm.apiKey.trim()) return t('请填写 API Key');
+  if (!modelForm.providerId) return t('legacy.select_a_model_provider');
+  if (!modelForm.displayName.trim() || !modelForm.modelName.trim()) return t('legacy.enter_a_configuration_name_and_model_id');
+  if (!modelForm.baseUrl.trim()) return t('legacy.enter_the_model_service_url');
+  if (!modelForm.apiKey.trim()) return t('legacy.enter_an_api_key');
   const provider = providers.value.find((item) => item.id === modelForm.providerId);
-  if (provider?.providerType === 'azure_openai' && !modelForm.apiVersion.trim()) return t('请填写 API Version');
+  if (provider?.providerType === 'azure_openai' && !modelForm.apiVersion.trim()) return t('legacy.enter_an_api_version');
   return '';
 }
 
@@ -239,7 +239,7 @@ async function loadProviders() {
       searchForm.baseUrl = firstSearchProvider.defaultBaseUrl;
     }
   } catch (error) {
-    message.error(parseError(error, t('模型供应商加载失败')));
+    message.error(parseError(error, t('legacy.failed_to_load_model_providers')));
   } finally {
     providersLoading.value = false;
   }
@@ -247,10 +247,10 @@ async function loadProviders() {
 
 function validateSearchForm() {
   if (!searchForm.enabled) return '';
-  if (!searchForm.provider || !searchForm.apiKey.trim()) return t('请选择搜索服务并填写 API Key');
-  if (searchForm.provider === 'baidu_qianfan' && !searchForm.endpoint.trim()) return t('请填写 Endpoint');
+  if (!searchForm.provider || !searchForm.apiKey.trim()) return t('legacy.choose_a_search_provider_and_enter_its_api_key');
+  if (searchForm.provider === 'baidu_qianfan' && !searchForm.endpoint.trim()) return t('legacy.enter_the_endpoint');
   if (searchForm.provider === 'volc_ark' && (!searchForm.baseUrl.trim() || !searchForm.model.trim())) {
-    return t('请填写 Base URL 和 Bot Model');
+    return t('legacy.enter_the_base_url_and_bot_model');
   }
   return '';
 }
@@ -272,14 +272,14 @@ async function runSearchTest() {
   const error = validateSearchForm();
   if (error) return void message.warning(error);
   searchTestState.value = 'testing';
-  searchTestMessage.value = t('正在测试搜索连接…');
+  searchTestMessage.value = t('legacy.testing_search_connection');
   try {
     const result = await testSetupSearch({ ...searchForm });
     searchTestState.value = 'success';
-    searchTestMessage.value = result.message || t('搜索连接测试成功');
+    searchTestMessage.value = result.message || t('legacy.search_connection_test_succeeded');
   } catch (error) {
     searchTestState.value = 'failed';
-    searchTestMessage.value = parseError(error, t('搜索连接测试失败'));
+    searchTestMessage.value = parseError(error, t('legacy.search_connection_test_failed'));
   }
 }
 
@@ -287,21 +287,21 @@ async function runModelTest() {
   const error = validateModelForm();
   if (error) return void message.warning(error);
   modelTestState.value = 'testing';
-  modelTestMessage.value = t('正在连接模型，请稍候…');
+  modelTestMessage.value = t('legacy.connecting_to_the_model_please_wait');
   try {
     const result = await testSetupModel({ ...modelForm });
     modelTestState.value = result.success ? 'success' : 'failed';
-    modelTestMessage.value = result.success ? t('模型连接测试成功。') : result.message;
+    modelTestMessage.value = result.success ? t('legacy.model_connection_tested_successfully') : result.message;
   } catch (error) {
     modelTestState.value = 'failed';
-    modelTestMessage.value = parseError(error, t('模型连接测试失败'));
+    modelTestMessage.value = parseError(error, t('legacy.model_connection_test_failed'));
   }
 }
 
 async function submitSetup() {
   const error = validateAccountForm() || validateModelForm() || optionalModelsError() || validateSearchForm();
-  if (error || modelTestState.value !== 'success') return void message.warning(error || t('请先完成模型连接测试'));
-  if (searchForm.enabled && searchTestState.value !== 'success') return void message.warning(t('请先完成搜索连接测试'));
+  if (error || modelTestState.value !== 'success') return void message.warning(error || t('legacy.complete_the_model_connection_test_first'));
+  if (searchForm.enabled && searchTestState.value !== 'success') return void message.warning(t('legacy.complete_the_search_connection_test_first'));
   submitting.value = true;
   try {
     const result = await initializeSetup({
@@ -326,30 +326,30 @@ async function submitSetup() {
     await setupStore.ensureStatus(true);
     setupCompleted.value = true;
     currentStep.value = 6;
-    message.success(t('初始化完成，租户ID：{id}', { id: result.mainId }));
+    message.success(t('legacy.initialization_complete_tenant_id', { id: result.mainId }));
   } catch (error) {
-    message.error(parseError(error, t('初始化失败')));
+    message.error(parseError(error, t('legacy.initialization_failed')));
   } finally {
     submitting.value = false;
   }
 }
 
 async function copyText(value: string) {
-  try { await navigator.clipboard.writeText(value); message.success(t('已复制')); }
-  catch { message.error(t('复制失败，请手动复制')); }
+  try { await navigator.clipboard.writeText(value); message.success(t('legacy.copied')); }
+  catch { message.error(t('legacy.copy_failed_please_copy_manually')); }
 }
 
 async function refreshStatus() {
   try { await setupStore.ensureStatus(true); }
-  catch { message.error(t('部署状态刷新失败')); }
+  catch { message.error(t('legacy.failed_to_refresh_deployment_status')); }
 }
 
 function validateSpecificModel(form: SetupModelForm) {
   if (!form.providerId || !form.displayName.trim() || !form.modelName.trim() || !form.baseUrl.trim() || !form.apiKey.trim()) {
-    return t('请完整填写已启用的可选模型配置');
+    return t('legacy.complete_every_enabled_optional_model_configuration');
   }
   const provider = providers.value.find((item) => item.id === form.providerId);
-  if (provider?.providerType === 'azure_openai' && !form.apiVersion.trim()) return t('请填写 API Version');
+  if (provider?.providerType === 'azure_openai' && !form.apiVersion.trim()) return t('legacy.enter_an_api_version');
   return '';
 }
 
@@ -364,11 +364,11 @@ watch(searchForm, () => {
 onMounted(async () => {
   try {
     await setupStore.ensureStatus();
-    if (setupStore.completed) { message.info(t('系统已完成初始化，请直接登录')); router.replace('/login'); return; }
+    if (setupStore.completed) { message.info(t('legacy.the_system_has_been_initialized_please_sign_in_directly')); router.replace('/login'); return; }
     await loadProviders();
   } catch (error) {
     console.error(error);
-    message.error(t('无法获取初始化状态，请检查 admin-api 是否已启动'));
+    message.error(t('legacy.unable_to_fetch_initialization_status_please_check_if_the'));
   }
 });
 </script>

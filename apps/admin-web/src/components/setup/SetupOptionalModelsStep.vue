@@ -1,9 +1,9 @@
 <template>
   <div class="step-content">
     <div class="step-heading">
-      <span class="step-kicker">{{ t('步骤 4 / 5') }}</span>
-      <h2>{{ t('配置其他模型') }}</h2>
-      <p>{{ t('这些模型用于扩展 MOVO 的专项能力，可以跳过并在管理后台随时补充。') }}</p>
+      <span class="step-kicker">{{ t('legacy.step_4_of_5') }}</span>
+      <h2>{{ t('legacy.configure_other_models') }}</h2>
+      <p>{{ t('legacy.these_models_extend_specialized_movo_capabilities_skip_them_now') }}</p>
     </div>
 
     <div class="model-cards">
@@ -14,13 +14,13 @@
             <div class="model-title-row">
               <h3>{{ definitions[item.capability].name }}</h3>
               <n-tag size="small" :type="item.enabled ? 'success' : 'default'">
-                {{ item.enabled ? t('已启用配置') : t('可选') }}
+                {{ item.enabled ? t('legacy.enabled') : t('legacy.optional') }}
               </n-tag>
             </div>
             <p>{{ definitions[item.capability].description }}</p>
             <span class="model-impact">{{ definitions[item.capability].impact }}</span>
             <span v-if="item.capability === 'embedding' || item.capability === 'rerank'" class="model-recommendation">
-              {{ t('推荐优先使用通义千问，也可以选择其他兼容供应商。') }}
+              {{ t('legacy.qwen_is_recommended_first_but_any_compatible_provider_can') }}
             </span>
           </div>
           <n-switch
@@ -40,9 +40,9 @@
     </div>
 
     <div class="actions">
-      <n-button size="large" :disabled="submitting" @click="$emit('back')">{{ t('上一步') }}</n-button>
+      <n-button size="large" :disabled="submitting" @click="$emit('back')">{{ t('legacy.previous') }}</n-button>
       <n-button size="large" type="primary" :loading="submitting" @click="$emit('next')">
-        {{ t('下一步：联网搜索') }}
+        {{ t('legacy.next_web_search') }}
       </n-button>
     </div>
   </div>
@@ -83,24 +83,24 @@ function providersFor(capability: SetupOptionalModelForm['capability']) {
 }
 const definitions = computed(() => ({
   embedding: {
-    name: t('向量模型（Embedding）'),
-    description: t('把文档和问题转换为向量，用于知识库语义检索、文档问答和 RAG。'),
-    impact: t('知识库必需：未配置时仍可对话，但文档无法完成向量学习与检索。'),
+    name: t('legacy.embedding_model_404347c'),
+    description: t('legacy.converts_documents_and_questions_into_vectors_for_semantic_knowledge'),
+    impact: t('additional.required_for_the_knowledge_base_chat_remains_available_without'),
   },
   rerank: {
-    name: t('重排模型（Rerank）'),
-    description: t('对向量检索候选内容再次排序，提高知识库答案的相关性与准确度。'),
-    impact: t('推荐配置：未配置不影响基础检索，但复杂问题的召回排序可能不够准确。'),
+    name: t('additional.rerank_model_rerank'),
+    description: t('additional.rerank_vector_search_candidates_to_improve_the_relevance_and'),
+    impact: t('additional.recommended_basic_search_still_works_without_it_but_ranking'),
   },
   vision: {
-    name: t('视觉模型（Vision）'),
-    description: t('理解图片、截图、扫描件和图表内容，用于视觉问答与图片信息提取。'),
-    impact: t('未配置时：图片理解类任务需稍后配置视觉模型。'),
+    name: t('legacy.vision_model_c7979d9'),
+    description: t('legacy.understands_images_screenshots_scans_and_charts_for_visual_q'),
+    impact: t('legacy.if_skipped_configure_a_vision_model_later_for_image'),
   },
   image: {
-    name: t('文生图模型（Image）'),
-    description: t('根据文字生成图片，用于文章配图、海报、创意素材和视觉草图。'),
-    impact: t('未配置时：不影响文字对话，图片生成能力暂不可用。'),
+    name: t('legacy.image_generation_model_e90dc17'),
+    description: t('legacy.generates_images_from_text_for_article_illustrations_posters_creative'),
+    impact: t('legacy.if_skipped_text_chat_is_unaffected_image_generation_remains'),
   },
 }));
 

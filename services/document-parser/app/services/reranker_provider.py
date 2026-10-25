@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import urllib.error
 import urllib.request
 from typing import Any
@@ -11,6 +12,9 @@ from app.services.model_center_runtime import ModelCenterConfigError, resolve_mo
 
 class RerankerError(RuntimeError):
     pass
+
+
+logger = logging.getLogger(__name__)
 
 
 def rerank(query: str, candidates: list[dict[str, Any]], config: dict[str, Any]) -> list[dict[str, Any]]:
@@ -25,8 +29,9 @@ def rerank(query: str, candidates: list[dict[str, Any]], config: dict[str, Any])
         if provider != "dashscope_qwen":
             raise RerankerError(f"不支持的 rerank provider: {provider}")
         return _dashscope_rerank(query, candidates, rerank_config)
-    except Exception:
+    except Exception as exc:
         fallback = str(rerank_config.get("fallbackPolicy") or "return_vector_results")
+        logger.warning("knowledge rerank failed; fallback=%s error_type=%s", fallback, type(exc).__name__)
         if fallback == "return_vector_results":
             return candidates
         if fallback == "return_empty":
@@ -125,7 +130,15 @@ def _merge_results(
         return candidates[:top_n]
     output: list[dict[str, Any]] = []
     for result in results:
-        index = int(result.get("index") if result.get("index") is not None else result.get("document_index") or -1)
+        raw_index = result.get("index")
+        if raw_index is None:
+            raw_index = result.get("document_index")
+        if raw_index is None:
+            continue
+        try:
+            index = int(raw_index)
+        except (TypeError, ValueError):
+            continue
         if index < 0 or index >= len(candidates):
             continue
         score = float(result.get("relevance_score") or result.get("score") or 0)

@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from typing import Any
+from app.services.chunk_identifiers import extract_identifiers
+from app.services.rag_text_windows import split_with_repeated_heading
 
 
 TEXT_LIKE_TYPES = {
@@ -72,6 +74,8 @@ def build_rag_chunks(raw_chunks: list[dict[str, Any]], options: RagChunkOptions 
         pending.append(raw)
 
     flush_pending()
+    for chunk in output:
+        chunk["searchIdentifiers"] = extract_identifiers(str(chunk.get("text") or ""))
     return output
 
 
@@ -133,7 +137,15 @@ def _table_to_rag_chunks(raw: dict[str, Any], start_index: int, options: RagChun
     text = str(raw.get("text") or "").strip()
     content_type = _normalize_content_type(str(raw.get("contentType") or "table"))
     if content_type == "table_row":
-        return [_make_rag_chunk(start_index, [raw], options, forced_type="table_row")]
+        windows = split_with_repeated_heading(
+            text, max_tokens=options.max_tokens, count_tokens=_estimate_token_count,
+        )
+        return [
+            _make_rag_chunk(
+                start_index + index, [{**raw, "text": window}], options, forced_type="table_row",
+            )
+            for index, window in enumerate(windows)
+        ]
     if _estimate_token_count(text) <= options.max_tokens:
         return [_make_rag_chunk(start_index, [raw], options, forced_type=content_type)]
 
@@ -381,7 +393,5 @@ def _estimate_token_count(text: str) -> int:
 def _is_noise_text(text: str) -> bool:
     compact = re.sub(r"\s+", "", text or "")
     if not compact:
-        return True
-    if len(compact) <= 3:
         return True
     return bool(re.fullmatch(r"[_\-—=~·.。…、|/\\]+", compact))

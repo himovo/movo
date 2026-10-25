@@ -5,20 +5,21 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${ROOT_DIR}"
 DOCKER_BIN="${DOCKER_BIN:-docker}"
 
-case "${1:-}" in
-  --lang)
-    if [[ -z "${2:-}" ]]; then
-      printf 'Error: --lang requires zh-CN or en.\n' >&2
-      exit 2
-    fi
-    MOVO_LANG="$2"
-    shift 2
-    ;;
-  --lang=*)
-    MOVO_LANG="${1#*=}"
-    shift
-    ;;
-esac
+while [[ "${1:-}" == --lang* || "${1:-}" == --mirror* ]]; do
+  case "${1}" in
+    --lang|--mirror)
+      if [[ -z "${2:-}" ]]; then
+        printf 'Error: %s requires a value.\n' "$1" >&2
+        exit 2
+      fi
+      if [[ "$1" == --lang ]]; then MOVO_LANG="$2"; else MOVO_MIRROR="$2"; fi
+      shift 2
+      ;;
+    --lang=*) MOVO_LANG="${1#*=}"; shift ;;
+    --mirror=*) MOVO_MIRROR="${1#*=}"; shift ;;
+    *) break ;;
+  esac
+done
 
 # shellcheck source=deploy/cli/i18n.sh
 source "${ROOT_DIR}/deploy/cli/i18n.sh"
@@ -27,6 +28,7 @@ movo_detect_locale
 source "${ROOT_DIR}/deploy/cli/dsh-version.sh"
 # shellcheck source=deploy/cli/images.sh
 source "${ROOT_DIR}/deploy/cli/images.sh"
+movo_configure_mirror
 # shellcheck source=deploy/cli/migrations.sh
 source "${ROOT_DIR}/deploy/cli/migrations.sh"
 # shellcheck source=deploy/cli/pull.sh
@@ -169,6 +171,10 @@ command_up() {
   require_docker
   deployment_urls
   if movo_has_build_flag "$@"; then
+    if [[ "${MOVO_MIRROR:-global}" == cn ]]; then
+      printf 'Source builds cannot use --mirror cn; run ./movo up --build without the mirror flag.\n' >&2
+      return 2
+    fi
     movo_configure_images true
   else
     movo_configure_images false
@@ -208,6 +214,10 @@ command_up() {
 
 command_build() {
   print_logo
+  if [[ "${MOVO_MIRROR:-global}" == cn ]]; then
+    printf 'Source builds cannot use --mirror cn; run ./movo build without the mirror flag.\n' >&2
+    return 2
+  fi
   require_docker
   movo_configure_images true
   movo_msg building

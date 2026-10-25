@@ -11,7 +11,7 @@ class RetrievalSearchPayload(BaseModel):
     userId: str = ""
     knowledgeBaseId: str = ""
     topN: int = 8
-    retrievalMode: str = "vector"
+    retrievalMode: Optional[str] = None
     rerank: Optional[bool] = None
 
 
@@ -29,6 +29,8 @@ class RetrievalChunkItem(BaseModel):
     score: float = 0
     distance: Optional[float] = None
     rerankScore: Optional[float] = None
+    fusionScore: Optional[float] = None
+    matchType: str = ""
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
 

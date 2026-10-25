@@ -2,11 +2,11 @@
   <aside v-if="guide" class="provider-guide">
     <div class="guide-heading">
       <div>
-        <strong>{{ t('如何获取 API Key') }}</strong>
-        <span>{{ t('仅需配置任意一个搜索服务') }}</span>
+        <strong>{{ t('legacy.how_to_get_an_api_key') }}</strong>
+        <span>{{ t('legacy.configure_any_one_search_provider') }}</span>
       </div>
       <a :href="guide.url" target="_blank" rel="noopener noreferrer">
-        {{ t('打开官方申请页面') }}
+        {{ t('legacy.open_official_signup_page') }}
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M10 14 19 5M19 14v5H5V5h5" /></svg>
       </a>
     </div>

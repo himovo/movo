@@ -10,32 +10,32 @@ const props = defineProps<{
 const loginName = defineModel<string>('loginName', { required: true });
 const password = defineModel<string>('password', { required: true });
 const isLocal = computed(() => props.source === 'local');
-const passwordLabel = computed(() => (props.mode === 'create' ? t('初始密码') : t('重置密码（可选）')));
-const passwordPlaceholder = computed(() => (props.mode === 'create' ? t('至少 10 位') : t('不填则保留当前密码')));
+const passwordLabel = computed(() => (props.mode === 'create' ? t('legacy.initial_password') : t('legacy.reset_password_optional')));
+const passwordPlaceholder = computed(() => (props.mode === 'create' ? t('legacy.at_least_10_characters') : t('legacy.leave_blank_to_keep_current_password')));
 </script>
 
 <template>
   <section class="credentials-section" aria-labelledby="employee-credentials-heading">
     <div class="credentials-heading">
       <div>
-        <h3 id="employee-credentials-heading">{{ t('登录凭据') }}</h3>
+        <h3 id="employee-credentials-heading">{{ t('legacy.sign_in_credentials') }}</h3>
         <p v-if="isLocal">
-          {{ mode === 'create' ? t('为员工创建可直接登录用户端的账号密码。') : t('登录名可修改；密码留空表示不重置。') }}
+          {{ mode === 'create' ? t('legacy.create_credentials_the_employee_can_use_to_sign_in') : t('legacy.the_login_name_can_be_changed_leave_the_password') }}
         </p>
-        <p v-else>{{ t('外部同步用户由身份源负责登录，不能在此设置本地密码。') }}</p>
+        <p v-else>{{ t('legacy.external_users_sign_in_through_their_identity_source_local') }}</p>
       </div>
       <n-tag size="small" :type="isLocal ? 'success' : 'default'">
-        {{ isLocal ? t('本地账号') : t('外部身份') }}
+        {{ isLocal ? t('legacy.local_account') : t('legacy.external_identity') }}
       </n-tag>
     </div>
 
     <n-grid v-if="isLocal" :cols="2" :x-gap="12">
       <n-grid-item>
-        <n-form-item :label="t('登录名')" required>
+        <n-form-item :label="t('legacy.login_name')" required>
           <n-input
             v-model:value="loginName"
             autocomplete="off"
-            :placeholder="t('请输入登录名（登录时使用）')"
+            :placeholder="t('legacy.please_enter_login_name_for_sign_in')"
           />
         </n-form-item>
       </n-grid-item>

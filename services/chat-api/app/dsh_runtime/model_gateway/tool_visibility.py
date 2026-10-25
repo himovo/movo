@@ -1,4 +1,4 @@
-"""Per-turn visibility for immutable Runtime Profile tools."""
+"""Expose tools according to the server-selected turn mode."""
 
 from __future__ import annotations
 
@@ -9,17 +9,14 @@ async def visible_tools(
     *,
     session_id: str,
     tenant_id: str,
+    messages: list[dict[str, Any]] | None = None,
+    knowledge_only: bool = False,
 ) -> list[dict[str, Any]] | None:
-    """Hide tools that are unavailable in the active trusted turn.
-
-    Runtime Profiles remain immutable. Internal knowledge search is available
-    in automatic and strict retrieval modes; ASKAI still injects its governed
-    tenant and knowledge-base scope when the tool executes. URL collection is
-    always available through direct HTTP; Firecrawl is only an optional fallback.
-    """
     if not tools:
         return tools
-    del session_id, tenant_id
+    del session_id, tenant_id, messages
+    if knowledge_only:
+        return [tool for tool in tools if tool.get("name") in {"knowledge_search", "knowledge_read_document"}]
     return list(tools)
 
 

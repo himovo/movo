@@ -50,7 +50,7 @@ movo_write_backup() {
     "${DOCKER_BIN}" run --rm \
       -v "${volume}:/source:ro" \
       -v "${target_dir}:/backup" \
-      alpine:3.21 tar -C /source -czf "/backup/${suffix}.tar.gz" .
+      "${MOVO_ALPINE_IMAGE:-alpine:3.21}" tar -C /source -czf "/backup/${suffix}.tar.gz" .
   done
   printf '%s\n' "${prefix}" > "${target_dir}/volume-prefix.txt"
   printf '%s\n' "${MOVO_VERSION:-latest}" > "${target_dir}/movo-version.txt"
@@ -126,7 +126,7 @@ movo_restore() {
     "${DOCKER_BIN}" run --rm \
       -v "${volume}:/target" \
       -v "${source_dir}:/backup:ro" \
-      alpine:3.21 sh -ec \
+      "${MOVO_ALPINE_IMAGE:-alpine:3.21}" sh -ec \
       "find /target -mindepth 1 -maxdepth 1 -exec rm -rf {} +; tar -xzf '/backup/${suffix}.tar.gz' -C /target"
   done
   movo_compose up -d

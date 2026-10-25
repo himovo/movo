@@ -1,14 +1,14 @@
 <template>
   <n-spin :show="loading">
     <div class="feedback-head">
-      <span>{{ t('来自企业成员的评价') }}</span>
-      <n-tag :bordered="false" type="info">{{ t('点赞数', { count: summary.likes }) }}</n-tag>
+      <span>{{ t('legacy.feedback_from_organization_members') }}</span>
+      <n-tag :bordered="false" type="info">{{ t('legacy.likes', { count: summary.likes }) }}</n-tag>
     </div>
-    <n-empty v-if="!summary.items.length" :description="t('暂无评论')" />
+    <n-empty v-if="!summary.items.length" :description="t('legacy.no_comments_yet')" />
     <div v-else class="comment-list">
       <article v-for="item in summary.items" :key="item.id" class="comment-card">
         <div class="comment-meta">
-          <strong>{{ item.author.displayName || t('企业成员') }}</strong>
+          <strong>{{ item.author.displayName || t('legacy.organization_member') }}</strong>
           <span>{{ item.likes ? `♥ ${item.likes} · ` : '' }}{{ formatAdminDateTime(item.createdAt, '') }}</span>
         </div>
         <p>{{ item.content }}</p>
@@ -34,7 +34,7 @@ onMounted(async () => {
   try {
     summary.value = await fetchSkillFeedback(props.skillId);
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || error?.message || t('评论加载失败'));
+    message.error(error?.response?.data?.detail || error?.message || t('legacy.failed_to_load_comments'));
   } finally {
     loading.value = false;
   }

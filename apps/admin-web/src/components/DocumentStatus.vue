@@ -4,7 +4,7 @@
     type="button"
     class="doc-status-wrapper doc-status-button"
     :style="{ color: displayColor }"
-    :title="t('点击重新学习')"
+    :title="t('additional.click_to_relearn')"
     @click.stop="emit('retry')"
   >
     <span class="status-icon-box" v-html="state.icon"></span>
@@ -52,7 +52,7 @@ const state = computed(() => {
   // 上传成功，但在后续的解析 (parse) 或索引 (index) 阶段发生失败
   if (row.parseStatus === 'failed' || row.indexStatus === 'failed') {
     return {
-      label: t('学习失败'),
+      label: t('legacy.learning_failed'),
       color: '#D32F2F',
       retryable: row.parseStatus === 'failed' || row.chunkStatus === 'failed',
       icon: `<svg class="status-svg" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -66,7 +66,7 @@ const state = computed(() => {
   // 当主文件状态为 failed 且未进入学习阶段时，定义为上传阶段的失败
   if (row.status === 'failed') {
     return {
-      label: t('上传失败'),
+      label: t('legacy.upload_failed'),
       color: '#FF4D4F',
       retryable: false,
       icon: `<svg class="status-svg" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -80,7 +80,7 @@ const state = computed(() => {
   // 两个子状态均为未开始 (not_started)
   if (row.parseStatus === 'not_started' && row.indexStatus === 'not_started') {
     return {
-      label: t('学习未开始'),
+      label: t('legacy.learning_not_started'),
       color: '#90A4AE',
       retryable: false,
       icon: `<svg class="status-svg" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -94,7 +94,7 @@ const state = computed(() => {
   // 解析状态与索引状态均成功 (succeeded)
   if (row.parseStatus === 'succeeded' && row.indexStatus === 'succeeded') {
     return {
-      label: t('学习完成'),
+      label: t('legacy.learning_complete'),
       color: '#52C41A',
       retryable: false,
       icon: `<svg class="status-svg" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -106,7 +106,7 @@ const state = computed(() => {
 
   if (row.parseStatus === 'succeeded' && row.chunkStatus === 'succeeded' && row.indexStatus === 'not_started') {
     return {
-      label: t('解析完成'),
+      label: t('additional.parsing_completed'),
       color: '#2F80ED',
       retryable: false,
       icon: `<svg class="status-svg" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -119,7 +119,7 @@ const state = computed(() => {
   // 5. 学习中
   // 其它任意处理中状态 (如 queued 或 running)
   return {
-    label: t('学习中'),
+    label: t('legacy.learning'),
     color: '#1890FF',
     retryable: false,
     icon: `<svg class="status-svg spin-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">

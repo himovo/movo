@@ -78,6 +78,7 @@ class ParseCallbackPayload(BaseModel):
     ragChunkCount: int = 0
     chunksKey: str = ""
     chunkCount: int = 0
+    parseQuality: dict = Field(default_factory=dict)
     error: str = ""
 
 
@@ -214,6 +215,7 @@ def _serialize(doc: dict[str, Any]) -> dict[str, Any]:
         "parseStatus": str(doc.get("parse_status") or "not_started"),
         "parseJobId": str(doc.get("parse_job_id") or ""),
         "parseError": str(doc.get("parse_error") or ""),
+        "parseQuality": dict(doc.get("parse_quality") or {}),
         "parseUpdatedAt": _time_text(doc.get("parse_updated_at")),
         "parsedMarkdownKey": str(doc.get("parsed_markdown_key") or ""),
         "parsedJsonKey": str(doc.get("parsed_json_key") or ""),
@@ -956,6 +958,7 @@ async def retry_document_parse(document_id: str, current_user: dict = Depends(ge
                 "indexed_at": None,
                 "parse_job_id": parse_job_id,
                 "parse_error": "",
+                "parse_quality": {},
                 "parse_updated_at": now,
                 "updated_at": now,
                 "updated_by": _user_login_name(current_user),
@@ -1329,6 +1332,7 @@ async def document_parse_callback(
                     "ordinal": int(chunk.get("ordinal") or index),
                     "text": text,
                     "contextual_text": str(chunk.get("contextualText") or text),
+                    "search_identifiers": [str(item) for item in chunk.get("searchIdentifiers") or []],
                     "title_path": list(chunk.get("titlePath") or []),
                     "page_no": chunk.get("pageNo"),
                     "content_type": str(chunk.get("contentType") or "text"),
@@ -1358,6 +1362,7 @@ async def document_parse_callback(
                 "parse_updated_at": now,
                 "parsed_markdown_key": payload.markdownKey,
                 "parsed_json_key": payload.jsonKey,
+                "parse_quality": _mongo_safe(payload.parseQuality),
                 "raw_chunks_key": raw_chunks_key,
                 "raw_chunk_count": raw_count,
                 "rag_chunks_key": rag_chunks_key,
@@ -1595,3 +1600,4 @@ async def ensure_indexes() -> None:
     )
     await db[CHUNK_COLLECTION].create_index([("main_id", 1), ("document_id", 1), ("chunk_stage", 1), ("ordinal", 1)], name="knowledge_chunks_doc_stage_order")
     await db[CHUNK_COLLECTION].create_index([("main_id", 1), ("knowledge_base_id", 1), ("chunk_stage", 1), ("document_id", 1)], name="knowledge_chunks_kb_stage_doc")
+    await db[CHUNK_COLLECTION].create_index([("main_id", 1), ("chunk_stage", 1), ("search_identifiers", 1), ("knowledge_base_id", 1)], name="knowledge_chunks_exact_identifier")

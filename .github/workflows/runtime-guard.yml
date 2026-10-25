@@ -23,6 +23,8 @@ jobs:
       - name: Build admin web
         working-directory: apps/admin-web
         run: npm ci --legacy-peer-deps && npm run build
+      - name: Check web locale keys
+        run: node scripts/check_web_i18n_keys.cjs
 
   runtime-boundary-guard:
     runs-on: ubuntu-latest

@@ -2,6 +2,30 @@
 
 MOVO_COMPOSE_BUILD=false
 MOVO_DEFAULT_IMAGE_PREFIX=ghcr.io/himovo/movo
+MOVO_CHINA_IMAGE_PREFIX=registry.cn-beijing.aliyuncs.com/himovo-cn/movo
+
+movo_configure_mirror() {
+  case "${MOVO_MIRROR:-}" in
+    '') ;;
+    global)
+      MOVO_IMAGE_PREFIX="${MOVO_DEFAULT_IMAGE_PREFIX}"
+      MOVO_MONGO_IMAGE=mongo:6.0.20
+      MOVO_REDIS_IMAGE=redis:7.4.2-alpine
+      MOVO_WEAVIATE_IMAGE=semitechnologies/weaviate:1.25.7
+      MOVO_ALPINE_IMAGE=alpine:3.21
+      export MOVO_IMAGE_PREFIX MOVO_MONGO_IMAGE MOVO_REDIS_IMAGE MOVO_WEAVIATE_IMAGE MOVO_ALPINE_IMAGE
+      ;;
+    cn)
+      MOVO_IMAGE_PREFIX="${MOVO_CHINA_IMAGE_PREFIX}"
+      MOVO_MONGO_IMAGE="registry.cn-beijing.aliyuncs.com/himovo-cn/movo-mongo:6.0.20"
+      MOVO_REDIS_IMAGE="registry.cn-beijing.aliyuncs.com/himovo-cn/movo-redis:7.4.2-alpine"
+      MOVO_WEAVIATE_IMAGE="registry.cn-beijing.aliyuncs.com/himovo-cn/movo-weaviate:1.25.7"
+      MOVO_ALPINE_IMAGE="registry.cn-beijing.aliyuncs.com/himovo-cn/movo-alpine:3.21"
+      export MOVO_IMAGE_PREFIX MOVO_MONGO_IMAGE MOVO_REDIS_IMAGE MOVO_WEAVIATE_IMAGE MOVO_ALPINE_IMAGE
+      ;;
+    *) printf 'Unknown mirror: %s (expected global or cn)\n' "${MOVO_MIRROR}" >&2; return 2 ;;
+  esac
+}
 
 movo_compose() {
   local compose_args=(-f "${ROOT_DIR}/docker-compose.yml")

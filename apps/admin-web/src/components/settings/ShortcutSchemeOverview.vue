@@ -14,7 +14,7 @@ const EnterpriseShortcutSettings = adminProductUiExtension.shortcutSettingsExten
 onMounted(async () => {
   loading.value = true
   try { plan.value = await fetchShortcutPlan() }
-  catch { message.error(t('快捷入口方案加载失败')) }
+  catch { message.error(t('legacy.failed_to_load_quick_access_scheme')) }
   finally { loading.value = false }
 })
 </script>
@@ -23,19 +23,19 @@ onMounted(async () => {
   <div class="shortcut-overview">
     <div class="settings-header">
       <div>
-        <div class="settings-title">{{ t('快捷入口方案') }}</div>
-        <div class="settings-subtitle">{{ t('按方案管理不同员工看到的快捷入口。') }}</div>
+        <div class="settings-title">{{ t('legacy.quick_access_scheme') }}</div>
+        <div class="settings-subtitle">{{ t('legacy.manage_the_shortcuts_shown_to_different_employees_by_scheme') }}</div>
       </div>
     </div>
     <n-spin :show="loading">
       <article v-if="plan" class="default-scheme-card">
         <div>
           <strong>{{ plan.name }}</strong>
-          <span>{{ t('所有员工未命中其他方案时使用') }} · {{ t('当前展示 {count} 个入口', { count: plan.entries.filter(item => item.enabled).length }) }}</span>
+          <span>{{ t('legacy.used_when_an_employee_does_not_match_another_scheme') }} · {{ t('legacy.items_currently_visible', { count: plan.entries.filter(item => item.enabled).length }) }}</span>
         </div>
-        <n-button secondary @click="props.onEditDefault?.()">{{ t('维护默认入口') }}</n-button>
+        <n-button secondary @click="props.onEditDefault?.()">{{ t('legacy.manage_default_shortcuts') }}</n-button>
       </article>
-      <n-empty v-else :description="t('暂无默认方案')" />
+      <n-empty v-else :description="t('legacy.no_default_scheme')" />
     </n-spin>
     <component :is="EnterpriseShortcutSettings" v-if="EnterpriseShortcutSettings" />
   </div>

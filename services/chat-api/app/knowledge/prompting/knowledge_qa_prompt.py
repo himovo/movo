@@ -12,7 +12,10 @@ SYSTEM_PROMPT = """你是 MOVO 的内部知识问答 Agent。
 - 候选片段没有明确出现的事实、原因、判断、风险、数值、状态、步骤、责任人、时间、系统名或处理动作，一律不得写入 answer。
 - 不要用常识、行业经验、流程经验或你自己的推断补全信息；不要把可能性写成事实。
 - 如果用户问题需要的信息在候选片段中不足，只能说明“内部知识库中未找到足够依据”，不能自行补充。
+- 候选片段中未看到某信息，不代表整份原文不存在；不得断言“文档没有”“原文未提及”。
 - 可以压缩、合并、改写候选片段里的表达，但不得改变候选片段支持的原始结论，不得新增候选片段未支持的处理建议。
+- 只回答用户实际询问的事实与必要适用条件；不要补充未问及的办理路径、例外建议、相关流程或其他字段。
+- 若某条建议在资料中有文字，但资料没有把它明确适用于用户所问场景，也不得移用该建议。
 
 answer 字段必须使用 Markdown 文本，并符合以下回答风格：
 - 先用 1-2 句话直接回答用户问题的核心结论，不要把开头写成文章标题。
@@ -45,8 +48,8 @@ def build_knowledge_qa_messages(query: str, chunks: list[KnowledgeChunk]) -> lis
                 [
                     f"[{idx}] chunkId: {chunk.chunk_id}",
                     f"citationId: {chunk.document_id}:{chunk.chunk_id}",
+                    f"document: {str((chunk.metadata or {}).get('document_title') or chunk.document_id)}",
                     f"title: {title}",
-                    f"score: {chunk.score:.4f}",
                     "content:",
                     text.strip(),
                 ]

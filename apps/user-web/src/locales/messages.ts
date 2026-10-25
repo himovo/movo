@@ -1,3 +1,4 @@
+import { additionalMessages } from './additionalMessages';
 import { uncoveredMessages } from './uncoveredMessages'
 import { knowledgeMessages } from './knowledgeMessages'
 import { shortcutMessages } from './shortcutMessages'
@@ -61,6 +62,7 @@ export const messages = {
   'evidence.external_knowledge': { zh: '外部知识库', en: 'External knowledge' },
   'evidence.open_external_document': { zh: '在原知识库打开', en: 'Open in source system' },
   ...uncoveredMessages,
+  ...additionalMessages,
   ...knowledgeMessages,
   ...shortcutMessages,
   ...reviewWorkflowMessages,

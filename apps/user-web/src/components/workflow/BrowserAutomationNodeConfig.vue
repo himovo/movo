@@ -38,7 +38,7 @@ const targetUrl = computed({
       clearable
       :placeholder="t('workflow.browser.target_url_placeholder')"
     />
-    <label class="field-label">{{ t('节点要求') }}</label>
+    <label class="field-label">{{ t('legacy.step_instructions') }}</label>
     <n-input
       :value="text"
       type="textarea"

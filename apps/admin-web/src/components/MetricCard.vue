@@ -2,7 +2,7 @@
   <n-card :bordered="false" size="large">
     <div class="metric-head">
       <span class="shell-card-title">{{ title }}</span>
-      <n-tag size="small" :type="tagType">{{ trend || t('稳定') }}</n-tag>
+      <n-tag size="small" :type="tagType">{{ trend || t('legacy.stable') }}</n-tag>
     </div>
     <div class="metric-value">{{ value }}</div>
     <div class="stat-footnote">{{ footnote }}</div>

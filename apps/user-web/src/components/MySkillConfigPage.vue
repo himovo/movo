@@ -146,17 +146,17 @@
                                 :loading="toolOptionsLoading"
                                 :options="toolOptions"
                                 class="node-tool-select"
-                                :placeholder="t('选择我的 Tool / MCP')"
+                                :placeholder="t('legacy.select_my_tool_mcp')"
                                 @update:value="(val: any) => handleToolSelect(step, val)"
                               />
                             </div>
                             <div v-if="step.type === 'script_plugin'" class="script-plugin-panel">
                               <div class="script-processing-instruction">
                                 <div class="script-processing-head">
-                                  <strong>{{ t('处理要求') }}</strong>
+                                  <strong>{{ t('legacy.processing_instructions') }}</strong>
                                   <div class="script-generation-tools">
                                     <span class="script-generation-status" :class="{ ready: isScriptPluginGenerated(step) }">
-                                      {{ isScriptPluginGenerated(step) ? t('已生成') : t('未生成') }}
+                                      {{ isScriptPluginGenerated(step) ? t('legacy.generated') : t('legacy.not_generated') }}
                                     </span>
                                     <n-button
                                       size="small"
@@ -171,7 +171,7 @@
                                           <svg viewBox="0 0 24 24"><path d="M12 3l1.7 4.4L18 9l-4.3 1.6L12 15l-1.7-4.4L6 9l4.3-1.6L12 3z" /><path d="M5 14l.9 2.1L8 17l-2.1.9L5 20l-.9-2.1L2 17l2.1-.9L5 14z" /><path d="M19 14l.9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14z" /></svg>
                                         </span>
                                       </template>
-                                      {{ isScriptPluginGenerated(step) ? t('重新生成') : t('生成代码') }}
+                                      {{ isScriptPluginGenerated(step) ? t('legacy.regenerate') : t('legacy.generate_code') }}
                                     </n-button>
                                   </div>
                                 </div>
@@ -179,14 +179,14 @@
                                   v-model:value="step.businessConfig.processingInstruction"
                                   type="textarea"
                                   :autosize="{ minRows: 3, maxRows: 8 }"
-                                  :placeholder="t('用自然语言描述要处理什么、输入是什么、输出什么。')"
+                                  :placeholder="t('legacy.describe_the_task_inputs_and_outputs_in_plain_language')"
                                   @update:value="() => invalidateScriptPluginCheck(step.id)"
                                 />
                                 <div class="script-instruction-example">
-                                  <b>{{ t('示例') }}</b>
-                                  <span>{{ t('上传文档：读取用户上传的 Word 或 PDF，删除说明文字和空段落，提取标题、表格和图片，按指定顺序重排，输出新的 Word 文件。') }}</span>
-                                  <span>{{ t('工具结果：读取上游工具返回的客户或订单数据，统一字段名和日期格式，去除重复记录，计算每类数量和金额汇总，输出 JSON 或 Excel。') }}</span>
-                                  <span>{{ t('网页采集：读取爬取回来的多篇网页正文，去掉导航和广告文本，提取标题、发布时间、正文和链接，按来源分组输出结构化数据。') }}</span>
+                                  <b>{{ t('legacy.example') }}</b>
+                                  <span>{{ t('legacy.uploaded_document_read_a_word_or_pdf_file_remove') }}</span>
+                                  <span>{{ t('legacy.tool_result_read_customer_or_order_data_from_an') }}</span>
+                                  <span>{{ t('legacy.web_collection_read_several_fetched_pages_remove_navigation_and') }}</span>
                                 </div>
                               </div>
                               <div class="script-plugin-actions">
@@ -200,7 +200,7 @@
                                       <svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5z" /><path d="M19.4 15a1.8 1.8 0 0 0 .4 2l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.8 1.8 0 0 0-2-.4 1.8 1.8 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.8 1.8 0 0 0-1-1.6 1.8 1.8 0 0 0-2 .4l-.1.1A2 2 0 1 1 4.1 17l.1-.1a1.8 1.8 0 0 0 .4-2 1.8 1.8 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.8 1.8 0 0 0 1.6-1 1.8 1.8 0 0 0-.4-2l-.1-.1A2 2 0 1 1 7 4.1l.1.1a1.8 1.8 0 0 0 2 .4 1.8 1.8 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.8 1.8 0 0 0 1 1.6 1.8 1.8 0 0 0 2-.4l.1-.1A2 2 0 1 1 19.9 7l-.1.1a1.8 1.8 0 0 0-.4 2 1.8 1.8 0 0 0 1.6 1h.1a2 2 0 1 1 0 4H21a1.8 1.8 0 0 0-1.6 1z" /></svg>
                                     </span>
                                   </template>
-                                  {{ t('高级') }}
+                                  {{ t('legacy.advanced') }}
                                 </n-button>
                               </div>
                             </div>
@@ -227,18 +227,18 @@
                               @update:output-alias="(value) => step.outputAlias = value"
                             />
                             <div v-if="step.type !== 'read_material' && step.type !== 'review_check'" class="node-description-field">
-                              <div class="node-description-label">{{ t('输出名（供后续节点引用）') }}</div>
-                              <n-input v-model:value="step.outputAlias" size="small" :placeholder="t('例如：待审合同、审核规则')" />
+                              <div class="node-description-label">{{ t('legacy.output_name_for_later_steps') }}</div>
+                              <n-input v-model:value="step.outputAlias" size="small" :placeholder="t('legacy.example_contract_to_review_review_criteria')" />
                             </div>
                             <details v-if="step.type === 'read_material' || step.type === 'review_check'"
                               class="node-optional-requirement" :open="Boolean(step.text?.trim())" @click.stop>
-                              <summary>{{ t('补充要求（可选）') }}<span>{{ t('需要特殊处理时再填写') }}</span></summary>
+                              <summary>{{ t('legacy.additional_instructions_optional') }}<span>{{ t('legacy.fill_this_in_only_when_special_handling_is_needed') }}</span></summary>
                               <n-input v-model:value="step.text" type="textarea"
                                 :autosize="{ minRows: 2, maxRows: 6 }" class="step-input"
                                 :placeholder="t('workflow.preset.' + step.type + '.placeholder')" />
                             </details>
                             <div v-if="step.type !== 'script_plugin' && step.type !== 'browser_automation' && step.type !== 'read_material' && step.type !== 'review_check'" class="node-description-field">
-                              <div class="node-description-label">{{ t('节点要求') }}</div>
+                              <div class="node-description-label">{{ t('legacy.step_instructions') }}</div>
                               <n-input
                                 v-model:value="step.text"
                                 type="textarea"
@@ -258,14 +258,14 @@
                         >
                           <summary>
                             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 8h.01" /></svg>
-                            <span>{{ t('查看使用说明与示例') }}</span>
+                            <span>{{ t('legacy.view_instructions_and_examples') }}</span>
                             <svg class="node-usage-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" /></svg>
                           </summary>
                           <div class="node-usage-content">
-                            <strong>{{ t('使用场景') }}</strong>
+                            <strong>{{ t('legacy.use_case') }}</strong>
                             <p>{{ t(workflowTypeMeta(step.type).usageDescription) }}</p>
                             <div class="node-usage-example">
-                              <span>{{ t('示例') }}</span>
+                              <span>{{ t('legacy.example') }}</span>
                               <p>{{ t(workflowTypeMeta(step.type).usageExample) }}</p>
                             </div>
                           </div>
@@ -344,9 +344,9 @@
                       </button>
                     </template>
                     <div class="quick-node-help">
-                      <strong>{{ t('workflow.preset.' + item.type + '.label') }} · {{ t('使用场景') }}</strong>
+                      <strong>{{ t('workflow.preset.' + item.type + '.label') }} · {{ t('legacy.use_case') }}</strong>
                       <p>{{ t(item.usageDescription || '') }}</p>
-                      <div><span>{{ t('示例') }}</span>{{ t(item.usageExample || '') }}</div>
+                      <div><span>{{ t('legacy.example') }}</span>{{ t(item.usageExample || '') }}</div>
                     </div>
                   </n-popover>
                 </div>
@@ -359,8 +359,8 @@
                   <svg viewBox="0 0 24 24"><path d="M10 2h4" /><path d="M11 2v6L5 19a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 19L13 8V2" /><path d="M7.5 15h9" /></svg>
                 </div>
                 <div>
-                  <div class="panel-title">{{ t('执行顺序预览') }}</div>
-                  <div class="panel-desc">{{ t('查看当前 Skill 的节点执行顺序') }}</div>
+                  <div class="panel-title">{{ t('legacy.execution_order_preview') }}</div>
+                  <div class="panel-desc">{{ t('legacy.view_the_order_of_this_skill_s_steps') }}</div>
                 </div>
               </div>
 
@@ -676,7 +676,7 @@
     <n-drawer v-model:show="scriptAdvancedDrawerVisible" :width="820" placement="right">
       <n-drawer-content
         v-if="activeScriptStep"
-        :title="t('数据处理高级设置')"
+        :title="t('legacy.advanced_data_processing_settings')"
         closable
         :body-content-style="{ height: '100%', overflow: 'hidden' }"
       >
@@ -684,7 +684,7 @@
           <div class="script-drawer-settings">
             <div class="script-drawer-instruction">
               <div class="script-drawer-instruction-head">
-                <strong>{{ t('处理要求') }}</strong>
+                <strong>{{ t('legacy.processing_instructions') }}</strong>
                 <n-button
                   size="small"
                   type="primary"
@@ -697,54 +697,54 @@
                       <svg viewBox="0 0 24 24"><path d="M12 3l1.7 4.4L18 9l-4.3 1.6L12 15l-1.7-4.4L6 9l4.3-1.6L12 3z" /><path d="M5 14l.9 2.1L8 17l-2.1.9L5 20l-.9-2.1L2 17l2.1-.9L5 14z" /><path d="M19 14l.9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14z" /></svg>
                     </span>
                   </template>
-                  {{ String(activeScriptStep.businessConfig?.pluginCode || '').trim() ? t('重新生成代码') : t('生成处理代码') }}
+                  {{ String(activeScriptStep.businessConfig?.pluginCode || '').trim() ? t('legacy.regenerate_code') : t('legacy.generate_processing_code') }}
                 </n-button>
               </div>
               <n-input
                 v-model:value="activeScriptStep.businessConfig.processingInstruction"
                 type="textarea"
                 :autosize="{ minRows: 3, maxRows: 5 }"
-                :placeholder="t('用自然语言描述要处理什么、输入是什么、输出什么。')"
+                :placeholder="t('legacy.describe_the_task_inputs_and_outputs_in_plain_language')"
                 @update:value="() => invalidateScriptPluginCheck(activeScriptStepId)"
               />
             </div>
             <details class="script-drawer-details">
-              <summary>{{ t('节点规范') }}</summary>
+              <summary>{{ t('legacy.step_specification') }}</summary>
               <div class="script-plugin-rules">
-                <strong>{{ t('数据处理节点规范') }}</strong>
+                <strong>{{ t('legacy.data_processing_step_specification') }}</strong>
                 <div class="script-contract-grid">
                   <div>
-                    <b>{{ t('入口') }}</b>
+                    <b>{{ t('legacy.entry_point') }}</b>
                     <code>def run(inputs, context):</code>
                   </div>
                   <div>
-                    <b>{{ t('标准输入') }}</b>
+                    <b>{{ t('legacy.standard_input') }}</b>
                     <code>selected = inputs["selected"]<br>files = selected["files"]<br>images = selected["images"]<br>texts = selected["texts"]</code>
                   </div>
                   <div>
-                    <b>{{ t('输出文件') }}</b>
+                    <b>{{ t('legacy.output_files') }}</b>
                     <code>out_dir = context["output_dir"]<br>out_path = os.path.join(out_dir, "result.docx")</code>
                   </div>
                   <div>
-                    <b>{{ t('返回结果') }}</b>
+                    <b>{{ t('legacy.return_value') }}</b>
                     <code>return {"files": [{"path": "result.docx", "type": "docx"}], "data": {}, "logs": []}</code>
                   </div>
                 </div>
-                <span>{{ t('限制：禁止联网、子进程、eval/exec、固定本机路径；输出只支持 docx/pdf/xlsx/pptx/txt/md/json/csv。') }}</span>
+                <span>{{ t('legacy.restrictions_no_network_subprocesses_eval_exec_or_fixed_local') }}</span>
               </div>
             </details>
           </div>
           <div v-if="!String(activeScriptStep.businessConfig?.pluginCode || '').trim()" class="script-code-empty">
-            {{ t('代码尚未填写。可以手写代码，或点击生成处理代码。保存前需要通过检测。') }}
+            {{ t('legacy.no_code_yet_write_it_or_generate_processing_code') }}
           </div>
           <div class="code-editor-shell script-drawer-code">
             <div class="code-editor-head">
               <span>Python</span>
-              <span>{{ t('按 Tab 插入缩进，必须定义 run(inputs, context)') }}</span>
+              <span>{{ t('legacy.use_tab_to_indent_define_run_inputs_context') }}</span>
             </div>
             <PythonCodeEditor
               v-model="activeScriptStep.businessConfig.pluginCode"
-              :placeholder="t('Python 脚本需定义 run(inputs, context)，返回 { files, data, logs }')"
+              :placeholder="t('legacy.python_script_must_define_run_inputs_context_and_return')"
               @update:model-value="() => invalidateScriptPluginCheck(activeScriptStepId)"
             />
           </div>
@@ -757,7 +757,7 @@
               :disabled="!String(activeScriptStep.businessConfig?.pluginCode || '').trim()"
               @click.stop="checkScriptPluginStep(activeScriptStep)"
             >
-              {{ t('检测代码') }}
+              {{ t('legacy.validate_code') }}
             </n-button>
             <n-button
               v-if="scriptCheckResults[activeScriptStep.id] && !scriptCheckResults[activeScriptStep.id]?.pass"
@@ -767,17 +767,17 @@
               :disabled="!String(activeScriptStep.businessConfig?.pluginCode || '').trim()"
               @click.stop="fixScriptPluginStep(activeScriptStep)"
             >
-              {{ t('AI 修复代码') }}
+              {{ t('legacy.ai_fix_code') }}
             </n-button>
           </div>
           <div v-if="scriptCheckResults[activeScriptStep.id]" class="script-check-result">
             <div class="script-check-summary" :class="{ pass: scriptCheckResults[activeScriptStep.id]?.pass, fail: !scriptCheckResults[activeScriptStep.id]?.pass }">
-              <strong>{{ scriptCheckResults[activeScriptStep.id]?.pass ? t('检测通过') : t('检测未通过') }}</strong>
+              <strong>{{ scriptCheckResults[activeScriptStep.id]?.pass ? t('legacy.validation_passed') : t('legacy.validation_failed') }}</strong>
               <span>
                 {{
                   scriptCheckResults[activeScriptStep.id]?.pass
-                    ? (scriptCheckResults[activeScriptStep.id]?.llm?.summary || scriptCheckResults[activeScriptStep.id]?.message || t('代码已通过规则检测。'))
-                    : (scriptCheckResults[activeScriptStep.id]?.llm?.summary || scriptCheckResults[activeScriptStep.id]?.message || t('代码未通过检测，请查看下方问题或点击 AI 修复代码。'))
+                    ? (scriptCheckResults[activeScriptStep.id]?.llm?.summary || scriptCheckResults[activeScriptStep.id]?.message || t('legacy.code_passed_validation'))
+                    : (scriptCheckResults[activeScriptStep.id]?.llm?.summary || scriptCheckResults[activeScriptStep.id]?.message || t('legacy.code_failed_validation_review_the_issues_below_or_use'))
                 }}
               </span>
             </div>
@@ -787,15 +787,15 @@
               class="script-check-issue"
               :class="item.level"
             >
-              <span>{{ item.level === 'error' ? t('错误') : t('警告') }}</span>
+              <span>{{ item.level === 'error' ? t('legacy.error') : t('legacy.warning') }}</span>
               <p>{{ item.line ? `L${item.line}: ` : '' }}{{ item.message }}</p>
             </div>
           </div>
         </div>
         <template #footer>
           <div class="script-drawer-footer">
-            <n-button @click="scriptAdvancedDrawerVisible = false">{{ t('取消') }}</n-button>
-            <n-button type="primary" :loading="scriptDrawerSaving" @click="saveScriptAdvancedDrawer">{{ t('保存') }}</n-button>
+            <n-button @click="scriptAdvancedDrawerVisible = false">{{ t('legacy.cancel') }}</n-button>
+            <n-button type="primary" :loading="scriptDrawerSaving" @click="saveScriptAdvancedDrawer">{{ t('legacy.save') }}</n-button>
           </div>
         </template>
       </n-drawer-content>
@@ -806,7 +806,7 @@
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue';
-import { t, useLocale } from '../composables/i18n';
+import { t, translateSourceText, useLocale } from '../composables/i18n';
 import { formatAppDateTime } from '../composables/appTimezone';
 import {
   NButton,
@@ -1372,7 +1372,7 @@ function createWorkflowNode(type: WorkflowNodeType = 'extract_info', seed: Parti
     ...(seed.businessConfig || {}),
   };
   if (type === 'review_check' && !seed.businessConfig?.outputAlias) {
-    businessConfig.outputAlias = t('复核结果');
+    businessConfig.outputAlias = t('legacy.review_findings');
   }
   const outputAlias = seed.outputAlias || (seed.businessConfig?.outputAlias
     ? String(businessConfig.outputAlias).trim()
@@ -1381,7 +1381,7 @@ function createWorkflowNode(type: WorkflowNodeType = 'extract_info', seed: Parti
   return {
     id: seed.id || createId(),
     type,
-    title: seed.title || t(meta.defaultTitle),
+    title: seed.title || translateSourceText(meta.defaultTitle),
     text: seed.text || '',
     businessConfig,
     boundWritingSkillId: seed.boundWritingSkillId || '',
@@ -2146,7 +2146,7 @@ function scriptCheckIssueItems(step: WorkflowStep): ScriptPluginCheckIssue[] {
   return [{
     level: 'error',
     code: 'CHECK_FAILED',
-    message: result.message || t('检测未通过，但检测服务没有返回具体错误明细。建议点击 AI 修复代码，或检查是否使用了不支持的输入/输出写法。'),
+    message: result.message || t('legacy.validation_failed_without_details_use_ai_fix_code_or'),
     line: null,
   }];
 }
@@ -2183,11 +2183,11 @@ async function generateScriptPluginStep(step: WorkflowStep, options: { confirmOv
   if (!skill.value) return false;
   const instruction = String(step.businessConfig?.processingInstruction || '').trim();
   if (!instruction) {
-    if (!options.silent) message.warning(t('请先填写处理要求'));
+    if (!options.silent) message.warning(t('legacy.enter_processing_instructions_first'));
     return false;
   }
   const existingCode = String(step.businessConfig?.pluginCode || '').trim();
-  if (existingCode && options.confirmOverwrite && !window.confirm(t('重新生成会覆盖当前高级代码，是否继续？'))) {
+  if (existingCode && options.confirmOverwrite && !window.confirm(t('legacy.regenerating_will_overwrite_the_current_advanced_code_continue'))) {
     return false;
   }
   generatingScriptStepId.value = step.id;
@@ -2204,7 +2204,7 @@ async function generateScriptPluginStep(step: WorkflowStep, options: { confirmOv
       workflowNodes: scriptPluginContextNodes(),
     });
     if (!result.code?.trim()) {
-      message.error(t('AI 未返回可用代码'));
+      message.error(t('legacy.ai_did_not_return_usable_code'));
       return false;
     }
     step.businessConfig.pluginCode = result.code;
@@ -2222,13 +2222,13 @@ async function generateScriptPluginStep(step: WorkflowStep, options: { confirmOv
     }
     const firstNote = (result.notes || [])[0];
     if (check?.pass) {
-      if (!options.silent) message.success(firstNote || t('已生成代码并通过规则检测'));
+      if (!options.silent) message.success(firstNote || t('legacy.code_generated_and_validated'));
       return true;
     }
-    if (!options.silent) message.warning(check?.errors?.[0]?.message || firstNote || t('已生成代码，请根据检测结果修复后保存'));
+    if (!options.silent) message.warning(check?.errors?.[0]?.message || firstNote || t('legacy.code_generated_fix_validation_issues_before_saving'));
     return true;
   } catch (error: any) {
-    if (!options.silent) message.error(error?.response?.data?.detail || error?.message || t('AI 生成代码失败'));
+    if (!options.silent) message.error(error?.response?.data?.detail || error?.message || t('legacy.ai_code_generation_failed'));
     return false;
   } finally {
     generatingScriptStepId.value = '';
@@ -2238,7 +2238,7 @@ async function generateScriptPluginStep(step: WorkflowStep, options: { confirmOv
 async function checkScriptPluginStep(step: WorkflowStep): Promise<boolean> {
   const code = String(step.businessConfig?.pluginCode || '').trim();
   if (!code) {
-    message.warning(t('请先填写脚本代码'));
+    message.warning(t('legacy.enter_script_code_first'));
     return false;
   }
   checkingScriptStepId.value = step.id;
@@ -2255,12 +2255,12 @@ async function checkScriptPluginStep(step: WorkflowStep): Promise<boolean> {
     persistScriptPluginCheck(step, result);
     if (result.pass) {
       step.businessConfig.generatedInstructionSignature = scriptPluginInstructionSignature(step);
-      message.success(result.llm?.summary || t('脚本代码检测通过'));
+      message.success(result.llm?.summary || t('legacy.script_validation_passed'));
       return true;
     }
     return false;
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || error?.message || t('检测脚本代码失败'));
+    message.error(error?.response?.data?.detail || error?.message || t('legacy.script_validation_failed'));
     return false;
   } finally {
     checkingScriptStepId.value = '';
@@ -2270,7 +2270,7 @@ async function checkScriptPluginStep(step: WorkflowStep): Promise<boolean> {
 async function fixScriptPluginStep(step: WorkflowStep): Promise<boolean> {
   const code = String(step.businessConfig?.pluginCode || '').trim();
   if (!code) {
-    message.warning(t('请先填写脚本代码'));
+    message.warning(t('legacy.enter_script_code_first'));
     return false;
   }
   fixingScriptStepId.value = step.id;
@@ -2287,7 +2287,7 @@ async function fixScriptPluginStep(step: WorkflowStep): Promise<boolean> {
       issues,
     });
     if (!result.code?.trim()) {
-      message.error(t('AI 未返回可用代码'));
+      message.error(t('legacy.ai_did_not_return_usable_code'));
       return false;
     }
     step.businessConfig.pluginCode = result.code;
@@ -2305,10 +2305,10 @@ async function fixScriptPluginStep(step: WorkflowStep): Promise<boolean> {
     if (check?.pass) {
       step.businessConfig.generatedInstructionSignature = scriptPluginInstructionSignature(step);
     }
-    message.success((result.notes || [])[0] || t('已完成 AI 修复，请再次确认代码'));
+    message.success((result.notes || [])[0] || t('legacy.ai_fix_complete_review_the_code_again'));
     return Boolean(check?.pass);
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || error?.message || t('AI 修复代码失败'));
+    message.error(error?.response?.data?.detail || error?.message || t('legacy.ai_code_fix_failed'));
     return false;
   } finally {
     fixingScriptStepId.value = '';
@@ -2320,17 +2320,17 @@ async function ensureScriptPluginsChecked(): Promise<boolean> {
   for (const step of scriptSteps) {
     if (!String(step.businessConfig?.processingInstruction || '').trim()) {
       activeStepId.value = step.id;
-      message.warning(t('数据处理节点必须先填写处理要求'));
+      message.warning(t('legacy.enter_processing_instructions_for_the_data_processing_step_first'));
       return false;
     }
     if (!String(step.businessConfig?.pluginCode || '').trim()) {
       activeStepId.value = step.id;
-      message.warning(t('请先填写或生成脚本代码'));
+      message.warning(t('legacy.write_or_generate_script_code_first'));
       return false;
     }
     if (!isScriptPluginCheckPassed(step)) {
       activeStepId.value = step.id;
-      message.warning(t('脚本代码已变更或尚未检测通过，请先点击检测代码'));
+      message.warning(t('legacy.code_has_changed_or_has_not_passed_validation_validate'));
       return false;
     }
   }
@@ -2339,15 +2339,15 @@ async function ensureScriptPluginsChecked(): Promise<boolean> {
 
 async function ensureScriptPluginStepReady(step: WorkflowStep): Promise<boolean> {
   if (!String(step.businessConfig?.processingInstruction || '').trim()) {
-    message.warning(t('请先填写处理要求'));
+    message.warning(t('legacy.enter_processing_instructions_first'));
     return false;
   }
   if (!String(step.businessConfig?.pluginCode || '').trim()) {
-    message.warning(t('请先填写或生成脚本代码'));
+    message.warning(t('legacy.write_or_generate_script_code_first'));
     return false;
   }
   if (!isScriptPluginCheckPassed(step)) {
-    message.warning(t('脚本代码已变更或尚未检测通过，请先点击检测代码'));
+    message.warning(t('legacy.code_has_changed_or_has_not_passed_validation_validate'));
     return false;
   }
   return true;

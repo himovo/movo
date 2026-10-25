@@ -16,7 +16,8 @@ movo_detect_locale() {
 movo_usage() {
   if [[ "${MOVO_LOCALE}" == "zh" ]]; then
     printf '用法：\n'
-    printf '  ./movo [--lang zh-CN|en] up [--build]  启动 MOVO 并输出初始化地址\n'
+    printf '  ./movo [--lang zh-CN|en] [--mirror cn|global] up  启动 MOVO 并输出初始化地址\n'
+    printf '  ./movo up --build                  从源码构建并启动（不与 --mirror cn 合用）\n'
     printf '  ./movo build                          从源码构建 MOVO 镜像\n'
     printf '  ./movo update                         拉取当前版本镜像并更新服务\n'
     printf '  ./movo fix [--yes]                    备份并修复冲突的会话消息序号\n'
@@ -29,7 +30,8 @@ movo_usage() {
     printf '  ./movo down -v                        停止服务并删除全部 MOVO 数据\n'
   else
     printf 'Usage:\n'
-    printf '  ./movo [--lang zh-CN|en] up [--build]  Start MOVO and print the setup URL\n'
+    printf '  ./movo [--lang zh-CN|en] [--mirror cn|global] up  Start MOVO and print the setup URL\n'
+    printf '  ./movo up --build                       Build and start from source (without --mirror cn)\n'
     printf '  ./movo build                           Build MOVO images from source\n'
     printf '  ./movo update                          Pull current images and update services\n'
     printf '  ./movo fix [--yes]                     Back up and repair conflicting chat sequences\n'

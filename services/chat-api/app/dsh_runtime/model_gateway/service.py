@@ -34,6 +34,7 @@ class ModelGatewayRequest(BaseModel):
     tools: list[dict[str, Any]] | None = None
     maxTokens: int | None = Field(default=None, ge=1)
     sessionId: str | None = None
+    knowledgeQaEnabled: bool = False
 
 
 class ModelGatewayResponse(BaseModel):
@@ -70,7 +71,9 @@ class ModelGatewayService:
             if request.maxTokens:
                 kwargs["max_tokens"] = request.maxTokens
             tools = await visible_tools(
-                request.tools, session_id=request.sessionId or "", tenant_id=claims.tenant_id
+                request.tools, session_id=request.sessionId or "", tenant_id=claims.tenant_id,
+                messages=request.messages,
+                knowledge_only=request.knowledgeQaEnabled,
             )
             if tools:
                 kwargs["tools"] = to_openai_chat_tools(tools)
@@ -117,7 +120,9 @@ class ModelGatewayService:
         if request.maxTokens:
             kwargs["max_tokens"] = request.maxTokens
         tools = await visible_tools(
-            request.tools, session_id=request.sessionId or "", tenant_id=claims.tenant_id
+            request.tools, session_id=request.sessionId or "", tenant_id=claims.tenant_id,
+            messages=request.messages,
+            knowledge_only=request.knowledgeQaEnabled,
         )
         if tools:
             kwargs["tools"] = to_openai_chat_tools(tools)
@@ -244,6 +249,7 @@ class ModelGatewayService:
                         ))
                     continue
                 text = "\n".join(str(block.get("text") or "") for block in blocks if block.get("type") == "text")
+                image_blocks = [block for block in blocks if block.get("type") == "image_url"]
                 calls = [
                     {
                         "id": str(block.get("id") or ""),
@@ -258,7 +264,9 @@ class ModelGatewayService:
             else:
                 text = str(content or "")
                 calls = []
-            result.append(Message(role=role, content=text, tool_calls=calls or None))
+                image_blocks = []
+            content: Any = ([{"type": "text", "text": text}, *image_blocks] if image_blocks and role == Role.USER else text)
+            result.append(Message(role=role, content=content, tool_calls=calls or None))
         return result
 
     @staticmethod

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { NAlert, NInput, useMessage } from 'naive-ui'
-import { t } from '@/composables/i18n'
+import { t, translateSourceText } from '@/composables/i18n'
 import { fetchShortcutPlan, saveShortcutPlan, type ShortcutEntry, type ShortcutEntryType, type ShortcutGroup, type ShortcutPlan } from '@/api/shortcut-settings'
 import { fetchSkills, type SkillItem } from '@/api/skills'
 import { ShortcutGroupToggleIcon } from '@/icons/ShortcutGroupToggleIcon'
@@ -72,7 +72,7 @@ async function load() {
     plan.value = result
     savedSnapshot.value = currentSnapshot.value
   }
-  catch (error: any) { message.error(error?.response?.data?.detail || t('快捷入口方案加载失败')) }
+  catch (error: any) { message.error(error?.response?.data?.detail || t('legacy.failed_to_load_quick_access_scheme')) }
   finally { loading.value = false }
 }
 
@@ -156,7 +156,7 @@ function moveEntryToGroup(entry: ShortcutEntry, groupKey: string) {
   const target = plan.value.groups.find(group => group.key === groupKey)
   if (!target) return
   if (plan.value.entries.filter(item => item.categoryKey === groupKey).length >= 6) {
-    message.warning(t('每个分组最多 6 个入口'))
+    message.warning(t('legacy.each_group_can_contain_up_to_6_entries'))
     return
   }
   Object.assign(entry, {
@@ -175,7 +175,7 @@ function openGroupIconPicker(group: { key: string }) {
 
 function openGroupEditor() {
   if (!plan.value || plan.value.groups.length >= 6) {
-    message.warning(t('最多创建 6 个分组，请先删除现有分组'))
+    message.warning(t('legacy.up_to_6_groups_are_allowed_delete_an_existing'))
     return
   }
   groupDraft.value = { label: '', iconKey: 'grid', iconSvg: '' }
@@ -192,7 +192,7 @@ function createGroup() {
 
 function removeGroup(group: { key: string; entries: ShortcutEntry[] }) {
   if (!plan.value || group.entries.length) {
-    message.warning(t('请先将分组内入口移动到其他分组'))
+    message.warning(t('legacy.move_the_group_entries_to_another_group_first'))
     return
   }
   plan.value.groups = plan.value.groups.filter(item => item.key !== group.key)
@@ -239,7 +239,7 @@ function applyCustomSvg(content: string, label: string) {
   const end = content.toLowerCase().lastIndexOf('</svg>')
   const svg = start >= 0 && end > start ? content.slice(start, end + 6).trim() : ''
   if (!svg || /<script\b|<foreignobject\b|\son[a-z]+\s*=|javascript:/i.test(svg)) {
-    message.error(t('SVG 图标格式不安全'))
+    message.error(t('legacy.the_svg_icon_format_is_unsafe'))
     return
   }
   const icon = { label, value: `custom.${Date.now()}`, svg }
@@ -255,7 +255,7 @@ function removeCustomIcon(value: string) {
 function applySvgText() {
   const content = svgText.value.trim()
   if (!content) return
-  applyCustomSvg(content, t('粘贴的 SVG'))
+  applyCustomSvg(content, t('legacy.pasted_svg'))
 }
 
 function toggleGroup(groupKey: string) {
@@ -276,7 +276,7 @@ function saveEntry() {
     const entry = plan.value.entries.find(item => item.id === editingEntryId.value)
     if (entry) {
       if (entry.categoryKey !== draft.value.groupKey && plan.value.entries.filter(item => item.categoryKey === draft.value.groupKey).length >= 6) {
-        message.warning(t('每个分组最多 6 个入口'))
+        message.warning(t('legacy.each_group_can_contain_up_to_6_entries'))
         return
       }
       entry.label = draft.value.label.trim()
@@ -292,7 +292,7 @@ function saveEntry() {
   const group = plan.value.groups.find(item => item.key === draft.value.groupKey) || plan.value.groups[0]
   if (!group) return
   if (plan.value.entries.filter(entry => entry.categoryKey === group.key).length >= 6) {
-    message.warning(t('每个分组最多 6 个入口'))
+    message.warning(t('legacy.each_group_can_contain_up_to_6_entries'))
     editorVisible.value = false
     return
   }
@@ -320,7 +320,7 @@ function openPromptEditor(groupKey?: string) {
   const targetGroup = plan.value.groups.find(group => group.key === groupKey) || plan.value.groups[0]
   if (!targetGroup) return
   if (plan.value.entries.filter(entry => entry.categoryKey === targetGroup.key).length >= 6) {
-    message.warning(t('每个分组最多 6 个入口'))
+    message.warning(t('legacy.each_group_can_contain_up_to_6_entries'))
     return
   }
   editingEntryId.value = null
@@ -372,10 +372,10 @@ async function save() {
         categoryIconSvg: entry.categoryIconSvg || '',
       })),
     })
-    message.success(t('快捷入口方案已保存'))
+    message.success(t('legacy.quick_access_scheme_saved'))
     savedSnapshot.value = currentSnapshot.value
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || t('快捷入口方案保存失败'))
+    message.error(error?.response?.data?.detail || t('legacy.failed_to_save_quick_access_scheme'))
   } finally { saving.value = false }
 }
 
@@ -387,53 +387,53 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', handleBeforeUnl
   <div class="shortcut-settings">
     <div class="settings-header shortcut-settings-header">
       <div class="shortcut-header-copy">
-        <div class="settings-title">{{ t('快捷入口方案') }}</div>
-        <div class="settings-subtitle">{{ t('配置所有员工默认看到的快捷入口；未锁定分组允许员工调整组内顺序。') }}</div>
+        <div class="settings-title">{{ t('legacy.quick_access_scheme') }}</div>
+        <div class="settings-subtitle">{{ t('legacy.configure_default_shortcuts_for_all_employees_they_can_reorder') }}</div>
       </div>
       <n-space>
         <n-button secondary @click="openGroupEditor">
           <template #icon><ShortcutActionIcon kind="add" /></template>
-          {{ t('新建分组') }}
+          {{ t('legacy.new_group_fa4ff6b') }}
         </n-button>
         <n-button type="primary" :loading="saving" :disabled="!hasUnsavedChanges" @click="save">
           <template #icon><ShortcutActionIcon kind="save" /></template>
-          {{ hasUnsavedChanges ? t('保存配置') : t('已保存') }}
+          {{ hasUnsavedChanges ? t('legacy.save_817af18') : t('legacy.saved') }}
         </n-button>
       </n-space>
     </div>
 
-    <n-alert type="info" :bordered="false">{{ t('锁定分组后，员工不能调整该分组及其中的入口；快捷入口不会改变 Skill 本身的权限。') }}</n-alert>
+    <n-alert type="info" :bordered="false">{{ t('legacy.employees_cannot_change_a_locked_group_or_its_entries') }}</n-alert>
     <n-spin :show="loading">
       <div v-if="plan" class="group-list">
         <section v-for="(group, groupIndex) in entryGroups" :key="group.key" class="entry-group">
           <header class="group-header">
             <div class="group-title">
-              <button type="button" class="icon-picker-trigger" :aria-label="t('选择分组图标')" @click="openGroupIconPicker(group)">
+              <button type="button" class="icon-picker-trigger" :aria-label="t('legacy.choose_group_icon')" @click="openGroupIconPicker(group)">
                 <span v-html="group.iconSvg || shortcutIconCatalog.find(icon => icon.value === group.iconKey)?.svg" />
               </button>
               <n-input
                 :value="groupDraftLabels[group.key] ?? group.label"
                 size="small"
-                :aria-label="t('分组名称')"
+                :aria-label="t('legacy.group_name_65731c1')"
                 @update:value="(value: string) => updateGroupLabel(group.key, value)"
                 @blur="() => renameGroup(group)"
               />
-              <span>{{ t('共 {count} 个入口', { count: group.entries.length }) }}</span>
+              <span>{{ t('legacy.shortcuts', { count: group.entries.length }) }}</span>
             </div>
             <div class="group-controls">
-              <n-button secondary size="small" @click="openPromptEditor(group.key)">{{ t('添加入口') }}</n-button>
-              <label class="entry-switch"><span>{{ t('锁定分组') }}</span><n-switch :value="!!group.locked" size="small" @update:value="(value: boolean) => setGroupLocked(group.key, value)" /></label>
-              <n-button quaternary type="error" size="small" :disabled="group.entries.length > 0" @click="removeGroup(group)">{{ t('删除分组') }}</n-button>
+              <n-button secondary size="small" @click="openPromptEditor(group.key)">{{ t('legacy.add_entry') }}</n-button>
+              <label class="entry-switch"><span>{{ t('legacy.lock_group') }}</span><n-switch :value="!!group.locked" size="small" @update:value="(value: boolean) => setGroupLocked(group.key, value)" /></label>
+              <n-button quaternary type="error" size="small" :disabled="group.entries.length > 0" @click="removeGroup(group)">{{ t('legacy.delete_group') }}</n-button>
               <div class="group-order-actions">
-                <n-button quaternary size="tiny" :disabled="groupIndex === 0" :aria-label="t('分组上移')" @click="moveGroup(groupIndex, -1)">↑</n-button>
-                <n-button quaternary size="tiny" :disabled="groupIndex === entryGroups.length - 1" :aria-label="t('分组下移')" @click="moveGroup(groupIndex, 1)">↓</n-button>
+                <n-button quaternary size="tiny" :disabled="groupIndex === 0" :aria-label="t('legacy.move_group_up')" @click="moveGroup(groupIndex, -1)">↑</n-button>
+                <n-button quaternary size="tiny" :disabled="groupIndex === entryGroups.length - 1" :aria-label="t('legacy.move_group_down')" @click="moveGroup(groupIndex, 1)">↓</n-button>
               </div>
             </div>
             <n-button
               quaternary
               size="small"
               class="group-toggle"
-              :aria-label="collapsedGroups.has(group.key) ? t('展开分组') : t('收起分组')"
+              :aria-label="collapsedGroups.has(group.key) ? t('legacy.expand_group') : t('legacy.collapse_group')"
               :aria-expanded="!collapsedGroups.has(group.key)"
               @click="toggleGroup(group.key)"
             >
@@ -447,37 +447,37 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', handleBeforeUnl
               <n-button quaternary size="tiny" :disabled="index === group.entries.length - 1" @click="move(group, index, 1)">↓</n-button>
             </div>
             <div class="entry-main">
-              <strong>{{ t(entry.label) }}</strong>
+              <strong>{{ translateSourceText(entry.label) }}</strong>
               <span>{{ entry.type === 'prompt' ? 'Prompt' : entry.type === 'skill' ? 'Skill' : 'Agent' }}</span>
             </div>
-            <button type="button" class="icon-picker-trigger entry-icon-trigger" :aria-label="t('选择入口图标')" @click="openEntryIconPicker(entry)">
+            <button type="button" class="icon-picker-trigger entry-icon-trigger" :aria-label="t('legacy.choose_shortcut_icon')" @click="openEntryIconPicker(entry)">
               <span v-html="entry.iconSvg || shortcutIconCatalog.find(icon => icon.value === entry.iconKey)?.svg" />
             </button>
             <n-select :value="entry.categoryKey" size="small" class="entry-group-select" :options="plan.groups.map(item => ({ label: item.label, value: item.key }))" @update:value="(value: string) => moveEntryToGroup(entry, value)" />
-            <label class="entry-switch"><span>{{ t('展示') }}</span><n-switch v-model:value="entry.enabled" size="small" /></label>
-            <n-button quaternary size="small" @click="openEntryEditor(entry)">{{ t('编辑') }}</n-button>
-            <n-button quaternary type="error" size="small" @click="remove(entry)">{{ t('删除') }}</n-button>
+            <label class="entry-switch"><span>{{ t('legacy.visible') }}</span><n-switch v-model:value="entry.enabled" size="small" /></label>
+            <n-button quaternary size="small" @click="openEntryEditor(entry)">{{ t('legacy.edit') }}</n-button>
+            <n-button quaternary type="error" size="small" @click="remove(entry)">{{ t('legacy.delete') }}</n-button>
             </article>
           </template>
         </section>
       </div>
     </n-spin>
 
-    <n-modal v-model:show="groupEditorVisible" preset="card" :title="t('新建分组')" style="width: min(460px, calc(100vw - 32px))">
+    <n-modal v-model:show="groupEditorVisible" preset="card" :title="t('legacy.new_group_fa4ff6b')" style="width: min(460px, calc(100vw - 32px))">
       <n-form label-placement="top">
-        <n-form-item :label="t('分组名称')" required><n-input v-model:value="groupDraft.label" :placeholder="t('请输入分组名称')" /></n-form-item>
-        <n-form-item :label="t('分组图标')">
-          <button type="button" class="icon-picker-trigger" :aria-label="t('选择分组图标')" @click="iconPickerTarget = { kind: 'group', key: '__new__' }; iconPickerVisible = true">
+        <n-form-item :label="t('legacy.group_name_65731c1')" required><n-input v-model:value="groupDraft.label" :placeholder="t('legacy.enter_group_name')" /></n-form-item>
+        <n-form-item :label="t('legacy.group_icon')">
+          <button type="button" class="icon-picker-trigger" :aria-label="t('legacy.choose_group_icon')" @click="iconPickerTarget = { kind: 'group', key: '__new__' }; iconPickerVisible = true">
             <span v-html="shortcutIconCatalog.find(icon => icon.value === groupDraft.iconKey)?.svg" />
           </button>
         </n-form-item>
       </n-form>
-      <template #footer><n-space justify="end"><n-button @click="groupEditorVisible = false">{{ t('取消') }}
-      </n-button><n-button type="primary" @click="createGroup">{{ t('创建') }}
+      <template #footer><n-space justify="end"><n-button @click="groupEditorVisible = false">{{ t('legacy.cancel') }}
+      </n-button><n-button type="primary" @click="createGroup">{{ t('legacy.create') }}
       </n-button></n-space></template>
     </n-modal>
 
-    <n-modal v-model:show="iconPickerVisible" preset="card" :title="t('选择图标')" style="width: min(560px, calc(100vw - 32px))">
+    <n-modal v-model:show="iconPickerVisible" preset="card" :title="t('legacy.choose_icon')" style="width: min(560px, calc(100vw - 32px))">
       <div class="icon-picker-grid">
         <button v-for="icon in [...shortcutIconCatalog, ...customIcons]" :key="icon.value" type="button" class="icon-option" @click="selectIcon(icon)">
           <span v-html="icon.svg" />
@@ -487,7 +487,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', handleBeforeUnl
             class="icon-delete"
             role="button"
             tabindex="0"
-            :aria-label="t('删除自定义图标')"
+            :aria-label="t('legacy.delete_custom_icon')"
             @click.stop="removeCustomIcon(icon.value)"
             @keydown.enter.stop="removeCustomIcon(icon.value)"
           >×</span>
@@ -495,28 +495,28 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', handleBeforeUnl
         <label class="icon-option icon-upload-option">
           <input type="file" accept=".svg,image/svg+xml" @change="handleIconUpload" />
           <span class="upload-plus">＋</span>
-          <small>{{ t('上传 SVG') }}</small>
+          <small>{{ t('legacy.upload_svg') }}</small>
         </label>
       </div>
       <div class="svg-code-panel">
-        <n-input v-model:value="svgText" type="textarea" :rows="3" :placeholder="t('粘贴 SVG 代码')" />
-        <n-button type="primary" size="small" :disabled="!svgText.trim()" @click="applySvgText">{{ t('使用 SVG 代码') }}</n-button>
+        <n-input v-model:value="svgText" type="textarea" :rows="3" :placeholder="t('legacy.paste_svg_code')" />
+        <n-button type="primary" size="small" :disabled="!svgText.trim()" @click="applySvgText">{{ t('legacy.use_svg_code') }}</n-button>
       </div>
     </n-modal>
 
-    <n-modal v-model:show="editorVisible" preset="card" :title="t(editingEntryId ? '编辑快捷入口' : '新增快捷入口')" style="width: min(560px, calc(100vw - 32px))">
+    <n-modal v-model:show="editorVisible" preset="card" :title="t(editingEntryId ? 'legacy.edit_shortcut_entry' : 'legacy.new_shortcut_entry')" style="width: min(560px, calc(100vw - 32px))">
       <n-form label-placement="top">
-        <n-form-item :label="t('入口类型')" required>
+        <n-form-item :label="t('legacy.entry_type')" required>
           <n-select v-model:value="draft.type" :options="[{ label: 'Prompt', value: 'prompt' }, { label: 'Skill', value: 'skill' }]" />
         </n-form-item>
-        <n-form-item v-if="draft.type === 'skill'" :label="t('选择 Skill')" required>
+        <n-form-item v-if="draft.type === 'skill'" :label="t('legacy.select_skill')" required>
           <n-select :value="draft.resourceId || null" :options="skillOptions.map(skill => ({ label: skill.name, value: skill.id }))" :loading="skillLoading" filterable @update:value="selectSkill" />
         </n-form-item>
-        <n-form-item :label="t('入口名称')" required><n-input v-model:value="draft.label" /></n-form-item>
-        <n-form-item :label="t('所属分组')" required><n-select v-model:value="draft.groupKey" :options="plan?.groups.map(item => ({ label: item.label, value: item.key })) || []" /></n-form-item>
-        <n-form-item v-if="draft.type === 'prompt'" :label="t('Prompt 内容')" required><n-input v-model:value="draft.prompt" type="textarea" :rows="5" /></n-form-item>
+        <n-form-item :label="t('legacy.shortcut_name')" required><n-input v-model:value="draft.label" /></n-form-item>
+        <n-form-item :label="t('legacy.group')" required><n-select v-model:value="draft.groupKey" :options="plan?.groups.map(item => ({ label: translateSourceText(item.label), value: item.key })) || []" /></n-form-item>
+        <n-form-item v-if="draft.type === 'prompt'" :label="t('legacy.prompt_content')" required><n-input v-model:value="draft.prompt" type="textarea" :rows="5" /></n-form-item>
       </n-form>
-      <template #footer><n-space justify="end"><n-button @click="editorVisible = false">{{ t('取消') }}</n-button><n-button type="primary" @click="saveEntry">{{ t(editingEntryId ? '保存修改' : '添加') }}</n-button></n-space></template>
+      <template #footer><n-space justify="end"><n-button @click="editorVisible = false">{{ t('legacy.cancel') }}</n-button><n-button type="primary" @click="saveEntry">{{ t(editingEntryId ? 'legacy.save_changes' : 'legacy.add_94191ce') }}</n-button></n-space></template>
     </n-modal>
   </div>
 </template>

@@ -81,6 +81,7 @@ class RuntimeProfileSnapshot(BaseModel):
             "modelInstanceId": self.model_instance_id,
             "modelName": self.model_name,
             "displayName": self.display_name,
+            "visionEnabled": "vision" in self.capabilities,
             "contextWindow": self.context_window,
             "maxOutputTokens": self.max_output_tokens,
             "gatewayUrl": gateway_url,

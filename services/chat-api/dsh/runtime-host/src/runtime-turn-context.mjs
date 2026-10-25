@@ -42,7 +42,7 @@ export function normalizeTurnContext(value) {
   })
 }
 
-export function renderTurnContext(value) {
+export function renderTurnContext(value, visionEnabled = false) {
   if (value === undefined) return ''
   const sections = [
     'MOVO interaction language policy: use the language of the user\'s latest message for all user-facing text, including progress notes before tools, retry explanations, questions, and the final answer. If the user explicitly requests another output language, follow that request. Tool commands and source-code identifiers may remain in their technically required language.',
@@ -60,7 +60,9 @@ export function renderTurnContext(value) {
     sections.push(`MOVO document references for this turn:\n${JSON.stringify(value.documents)}\nUse document_parse or document_extract_resources when their contents are needed. Do not invent file contents.`)
   }
   if (value.images.length > 0) {
-    sections.push(`MOVO image references for this turn:\n${JSON.stringify(value.images)}\nUse image_extract_facts when image facts are needed. Do not invent unseen image details.`)
+    sections.push(visionEnabled
+      ? 'MOVO supplied this turn\'s images directly to the selected vision-capable model. Use the actual image content when answering; do not invent unseen details.'
+      : `MOVO image references for this turn:\n${JSON.stringify(value.images)}\nUse image_extract_facts when image facts are needed. Do not invent unseen image details.`)
   }
   if (value.browserResume) {
     sections.push(`A server-authorized browser checkpoint is ready to resume. Call browser_task exactly once with these mission arguments: ${JSON.stringify(value.browserResume)}. Do not start a different browser mission.`)
@@ -75,11 +77,11 @@ export class RuntimeTurnContext {
   #bySession = new Map()
   #dispose
 
-  install(ctx) {
+  install(ctx, { visionEnabled = false } = {}) {
     this.#dispose = ctx.systemPrompt.context({
       name: CONTEXT_NAME,
       order: 30,
-      text: context => renderTurnContext(this.#bySession.get(context.agent?.id)),
+      text: context => renderTurnContext(this.#bySession.get(context.agent?.id), visionEnabled),
     })
   }
 

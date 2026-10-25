@@ -9,6 +9,9 @@ from app.services.embedding_provider import embed_query
 from app.services.reranker_provider import rerank
 from app.services.retrieval_access_policy import knowledge_retrieval_access_policy
 from app.services.vector_store import get_vector_store
+from app.services.exact_identifier_retrieval import exact_identifier_candidates
+from app.services.retrieval_selection import distinct_chunks, fuse_candidate_sources, select_final_chunks
+from app.services.retrieval_trace import trace_stage
 
 SETTINGS_COLLECTION = "knowledge_document_settings"
 
@@ -35,19 +38,30 @@ def search_knowledge(request: RetrievalSearchRequest) -> dict[str, Any]:
         max_candidate_scan=int(retrieval.get("maxCandidateScan") or 10_000),
         score_threshold=score_threshold,
     )
-    candidates = _deduplicate(candidates, retrieval)
+    trace_stage("authorized_candidates", candidates)
+    exact = exact_identifier_candidates(
+        request.query, main_id=request.mainId, user_id=request.userId,
+        knowledge_base_id=request.knowledgeBaseId,
+    )
+    trace_stage("lexical_candidates", exact)
+    candidates = fuse_candidate_sources(distinct_chunks(candidates), exact)
     use_rerank = bool((retrieval.get("rerank") or {}).get("enabled", False)) if request.rerank is None else bool(request.rerank)
     if use_rerank:
         rerank_config = dict(retrieval.get("rerank") or {})
         rerank_config["enabled"] = True
+        rerank_config["topK"] = max(top_n, int(rerank_config.get("topK") or 0))
         config["retrieval"] = {**retrieval, "rerank": rerank_config}
         candidates = rerank(request.query, candidates, config)
+    trace_stage("ranked_candidates", candidates)
+    candidate_total = len(candidates)
+    candidates = select_final_chunks(candidates, top_n=top_n)
+    trace_stage("final_context", candidates)
     return {
         "query": request.query,
         "retrievalMode": mode,
         "topN": top_n,
-        "items": candidates[:top_n],
-        "total": len(candidates),
+        "items": candidates,
+        "total": candidate_total,
     }
 
 
@@ -147,26 +161,8 @@ def _effective_config(main_id: str) -> dict[str, Any]:
         "maxCandidateScan": 10000,
         "scoreThreshold": 0,
         "metadataFiltersEnabled": True,
-        "maxChunksPerDocument": 5,
-        "dedupByDocument": True,
         **dict(config.get("retrieval") or {}),
         "rerank": rerank_config,
     }
     config["_mainId"] = main_id
     return config
-
-
-def _deduplicate(items: list[dict[str, Any]], retrieval: dict[str, Any]) -> list[dict[str, Any]]:
-    if not bool(retrieval.get("dedupByDocument", True)):
-        return items
-    max_per_doc = max(1, int(retrieval.get("maxChunksPerDocument") or 5))
-    counts: dict[str, int] = {}
-    output: list[dict[str, Any]] = []
-    for item in items:
-        document_id = str(item.get("documentId") or "")
-        count = counts.get(document_id, 0)
-        if count >= max_per_doc:
-            continue
-        counts[document_id] = count + 1
-        output.append(item)
-    return output

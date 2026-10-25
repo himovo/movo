@@ -46,7 +46,6 @@ class KnowledgeRetrievalClient:
                     userId=user_id,
                     knowledgeBaseId=knowledge_base_id,
                     topN=top_n,
-                    retrievalMode="vector",
                     rerank=rerank,
                 )
                 try:
@@ -66,7 +65,13 @@ class KnowledgeRetrievalClient:
                 mode = result.retrievalMode or mode
                 all_items.extend(result.items)
 
-        all_items.sort(key=lambda item: float(item.rerankScore if item.rerankScore is not None else item.score or 0), reverse=True)
+        all_items.sort(
+            key=lambda item: float(
+                item.rerankScore if item.rerankScore is not None else
+                item.fusionScore if item.fusionScore is not None else item.score or 0
+            ),
+            reverse=True,
+        )
         return RetrievalSearchResult(
             query=query,
             retrievalMode=mode,

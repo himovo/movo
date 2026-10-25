@@ -22,6 +22,7 @@ export interface KnowledgeDocumentItem {
   parseStatus: KnowledgeProcessStatus;
   parseJobId: string;
   parseError: string;
+  parseQuality?: { pageCount?: number; recoveredPages?: number[]; reviewPages?: number[] };
   parseUpdatedAt: string;
   parsedMarkdownKey: string;
   parsedJsonKey: string;

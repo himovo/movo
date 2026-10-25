@@ -3,36 +3,36 @@
     <div class="login-panel">
       <div class="login-copy">
         <img class="login-logo" :src="movoLogo" alt="MOVO" />
-        <h1>{{ t('MOVO 智能体控制台') }}</h1>
+        <h1>{{ t('legacy.movo_agent_console') }}</h1>
         <p>
-          {{ t('管理组织、模型与流程配置，确保平台运行稳定、可控、可追踪。') }}
+          {{ t('legacy.manage_organizations_models_and_process_configurations_to_ensure_stable') }}
         </p>
       </div>
 
       <n-card class="login-card" :bordered="false">
         <n-form label-placement="top" @submit.prevent="handleLogin">
-          <n-form-item :label="t('账号')">
-            <n-input v-model:value="form.username" :placeholder="t('请输入账号')" @keydown.enter.prevent="handleLogin" />
+          <n-form-item :label="t('legacy.username_email')">
+            <n-input v-model:value="form.username" :placeholder="t('legacy.please_enter_your_username')" @keydown.enter.prevent="handleLogin" />
           </n-form-item>
-          <n-form-item :label="t('密码')">
+          <n-form-item :label="t('legacy.password')">
             <n-input
               v-model:value="form.password"
               type="password"
               show-password-on="click"
-              :placeholder="t('输入密码')"
+              :placeholder="t('legacy.enter_password')"
               @keydown.enter.prevent="handleLogin"
             />
           </n-form-item>
           <n-space vertical :size="14">
             <n-button block type="primary" size="large" :loading="loading" attr-type="submit">
-              {{ t('登录后台') }}
+              {{ t('legacy.sign_in_3481b81') }}
             </n-button>
           </n-space>
         </n-form>
       </n-card>
     </div>
 
-    <n-modal v-model:show="tenantModalVisible" preset="card" :title="t('请选择要进入的企业')" style="width: 520px" :mask-closable="false">
+    <n-modal v-model:show="tenantModalVisible" preset="card" :title="t('legacy.please_select_an_organization_to_enter')" style="width: 520px" :mask-closable="false">
       <div class="tenant-list">
         <button
           v-for="candidate in tenantCandidates"
@@ -43,16 +43,16 @@
           @click="handleTenantSelect(candidate)"
         >
           <span class="tenant-copy">
-            <strong>{{ candidate.orgName || t('未命名企业') }}</strong>
-            <small>{{ candidate.roleName || t('组织管理员') }}</small>
+            <strong>{{ candidate.orgName || t('legacy.unnamed_organization') }}</strong>
+            <small>{{ candidate.roleName || t('legacy.organization_administrator') }}</small>
           </span>
           <span class="tenant-arrow" aria-hidden="true">›</span>
         </button>
       </div>
-      <div v-if="!tenantCandidates.length" class="tenant-empty">{{ t('暂无可选择企业，请重新登录。') }}</div>
+      <div v-if="!tenantCandidates.length" class="tenant-empty">{{ t('legacy.no_organizations_available_please_sign_in_again') }}</div>
       <template #footer>
         <n-space justify="end">
-          <n-button :disabled="selectingTenant" @click="resetTenantSelection">{{ t('重新登录') }}</n-button>
+          <n-button :disabled="selectingTenant" @click="resetTenantSelection">{{ t('legacy.sign_in_again') }}</n-button>
         </n-space>
       </template>
     </n-modal>
@@ -92,11 +92,11 @@ async function handleLogin() {
       return;
     }
     authStore.login(result);
-    message.success(t('登录成功'));
+    message.success(t('legacy.logged_in_successfully'));
     router.push('/dashboard');
   } catch (error) {
     console.error(error);
-    message.error(t('登录失败，请检查账号密码或 admin-api 是否已启动'));
+    message.error(t('legacy.login_failed_please_check_username_password_or_if_the'));
   } finally {
     loading.value = false;
   }
@@ -111,11 +111,11 @@ async function handleTenantSelect(candidate: TenantCandidate) {
       mainId: candidate.mainId,
     });
     authStore.login(result);
-    message.success(t('已进入 {org}', { org: candidate.orgName || t('企业') }));
+    message.success(t('legacy.entered', { org: candidate.orgName || t('legacy.organization') }));
     router.push('/dashboard');
   } catch (error) {
     console.error(error);
-    message.error(t('进入企业失败，请重新登录'));
+    message.error(t('legacy.failed_to_enter_organization_please_sign_in_again'));
     resetTenantSelection();
   } finally {
     selectingTenant.value = false;

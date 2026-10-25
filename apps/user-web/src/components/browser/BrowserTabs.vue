@@ -13,7 +13,7 @@ const emit = defineEmits<{
 
 function label(tab: BrowserTabState): string {
   if (tab.title) return tab.title
-  if (!tab.url || tab.url === 'about:blank') return t('新标签页')
+  if (!tab.url || tab.url === 'about:blank') return t('legacy.new_tab')
   try { return new URL(tab.url).hostname || tab.url } catch { return tab.url }
 }
 </script>
@@ -37,12 +37,12 @@ function label(tab: BrowserTabState): string {
         <button
           class="tab-close"
           type="button"
-          :aria-label="t('关闭标签页')"
+          :aria-label="t('legacy.close_tab')"
           @click.stop="emit('close', tab.id)"
         ><CloseOutline /></button>
       </div>
     </div>
-    <button class="new-tab" type="button" :title="t('新建标签页')" @click="emit('new')"><AddOutline /></button>
+    <button class="new-tab" type="button" :title="t('legacy.new_tab_7b451ec')" @click="emit('new')"><AddOutline /></button>
     <span class="tab-spacer"></span>
     <div class="tab-actions"><slot name="actions" /></div>
   </div>

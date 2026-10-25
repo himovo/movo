@@ -45,6 +45,7 @@ class KnowledgeCitation(BaseModel):
 
 class KnowledgeQAResult(BaseModel):
     answer: str
+    document_status: str = ""
     citations: List[KnowledgeCitation] = Field(default_factory=list)
     retrieved_chunks: List[KnowledgeChunk] = Field(default_factory=list)
     used_chunk_ids: List[str] = Field(default_factory=list)

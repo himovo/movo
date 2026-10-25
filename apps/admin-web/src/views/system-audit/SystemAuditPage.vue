@@ -21,48 +21,48 @@ const detailVisible = ref(false);
 const overview = ref<SystemAuditOverview>({ managementOperations: 0, failedOperations: 0, agentActivities: 0, permissionDenials: 0 });
 
 const categoryOptions = [
-  { label: t('管理操作'), value: 'management' },
-  { label: t('Agent 活动'), value: 'agent' },
-  { label: t('历史记录'), value: 'legacy' },
+  { label: t('legacy.management_actions'), value: 'management' },
+  { label: t('legacy.agent_activity'), value: 'agent' },
+  { label: t('legacy.legacy_records'), value: 'legacy' },
 ];
-const resultOptions = [{ label: t('成功'), value: 'success' }, { label: t('失败 / 拒绝'), value: 'failed' }];
+const resultOptions = [{ label: t('legacy.success_51991a5'), value: 'success' }, { label: t('legacy.failed_denied'), value: 'failed' }];
 const moduleOptions = [
-  { label: t('模型中心'), value: 'models' },
-  { label: t('Skill 管理'), value: 'skills' },
-  { label: t('工具与 MCP'), value: 'tools' },
-  { label: t('知识文档'), value: 'knowledge' },
-  { label: t('组织与用户'), value: 'directory' },
-  { label: t('用户岗位角色'), value: 'position-roles' },
-  { label: t('流量分配'), value: 'traffic-allocations' },
-  { label: t('系统设置'), value: 'settings' },
-  { label: t('账号组与账号'), value: 'organizations' },
+  { label: t('legacy.models'), value: 'models' },
+  { label: t('legacy.skill_management'), value: 'skills' },
+  { label: t('legacy.tools_mcp'), value: 'tools' },
+  { label: t('legacy.knowledge_documents'), value: 'knowledge' },
+  { label: t('legacy.organizations_users'), value: 'directory' },
+  { label: t('legacy.position_roles'), value: 'position-roles' },
+  { label: t('legacy.traffic_allocation'), value: 'traffic-allocations' },
+  { label: t('legacy.system_settings'), value: 'settings' },
+  { label: t('legacy.accounts_org_groups'), value: 'organizations' },
 ];
 const actionLabels: Record<string, string> = {
-  create_or_execute: t('新增 / 执行'), update: t('修改'), delete: t('删除'),
-  'capability.used': t('使用能力'), 'capability.denied': t('权限拒绝'),
-  create: t('创建'), copy: t('复制'), enable: t('启用'), disable: t('停用'), assign: t('分配岗位'), bulk_assign: t('批量分配岗位'),
-  grant_override: t('创建临时授权'), revoke_override: t('撤销临时授权'),
+  create_or_execute: t('legacy.create_execute'), update: t('legacy.update'), delete: t('legacy.delete'),
+  'capability.used': t('legacy.use_capability'), 'capability.denied': t('legacy.permission_denials'),
+  create: t('legacy.create'), copy: t('legacy.copy'), enable: t('legacy.active'), disable: t('legacy.disabled'), assign: t('legacy.assign_position_role'), bulk_assign: t('legacy.bulk_assign_position_roles'),
+  grant_override: t('legacy.create_temporary_authorization'), revoke_override: t('legacy.revoke_temporary_authorization'),
 };
-const categoryLabel = (value: AuditCategory) => ({ management: t('管理操作'), agent: t('Agent 活动'), legacy: t('历史记录') }[value]);
+const categoryLabel = (value: AuditCategory) => ({ management: t('legacy.management_actions'), agent: t('legacy.agent_activity'), legacy: t('legacy.legacy_records') }[value]);
 
 const metrics = computed(() => [
-  { label: t('管理操作'), value: overview.value.managementOperations, hint: t('近 24 小时') },
-  { label: t('失败操作'), value: overview.value.failedOperations, hint: t('近 24 小时'), danger: overview.value.failedOperations > 0 },
-  { label: t('Agent 活动'), value: overview.value.agentActivities, hint: t('近 24 小时') },
-  { label: t('权限拒绝'), value: overview.value.permissionDenials, hint: t('近 24 小时'), danger: overview.value.permissionDenials > 0 },
+  { label: t('legacy.management_actions'), value: overview.value.managementOperations, hint: t('legacy.last_24_hours') },
+  { label: t('legacy.failed_actions'), value: overview.value.failedOperations, hint: t('legacy.last_24_hours'), danger: overview.value.failedOperations > 0 },
+  { label: t('legacy.agent_activity'), value: overview.value.agentActivities, hint: t('legacy.last_24_hours') },
+  { label: t('legacy.permission_denials'), value: overview.value.permissionDenials, hint: t('legacy.last_24_hours'), danger: overview.value.permissionDenials > 0 },
 ]);
 
 function openDetail(row: SystemAuditLog) { selected.value = row; detailVisible.value = true; }
 
 const columns: DataTableColumns<SystemAuditLog> = [
-  { title: t('时间'), key: 'occurredAt', width: 170, render: row => formatAdminDateTime(row.occurredAt, '-') },
-  { title: t('类型'), key: 'category', width: 140, render: row => h(NTag, { bordered: false, type: row.category === 'agent' ? 'info' : 'default' }, { default: () => categoryLabel(row.category) }) },
-  { title: t('模块'), key: 'module', width: 150, ellipsis: { tooltip: true } },
-  { title: t('操作'), key: 'action', width: 150, render: row => actionLabels[row.action] || row.action },
-  { title: t('操作者 / 员工'), key: 'actor', width: 160, ellipsis: { tooltip: true } },
-  { title: t('对象'), key: 'target', ellipsis: { tooltip: true } },
-  { title: t('结果'), key: 'result', width: 90, render: row => h(NTag, { bordered: false, type: row.result === 'success' ? 'success' : 'error' }, { default: () => row.result === 'success' ? t('成功') : t('失败') }) },
-  { title: t('操作'), key: 'detail', width: 80, render: row => h(NButton, { text: true, type: 'primary', onClick: () => openDetail(row) }, { default: () => t('详情') }) },
+  { title: t('legacy.time'), key: 'occurredAt', width: 170, render: row => formatAdminDateTime(row.occurredAt, '-') },
+  { title: t('legacy.type'), key: 'category', width: 140, render: row => h(NTag, { bordered: false, type: row.category === 'agent' ? 'info' : 'default' }, { default: () => categoryLabel(row.category) }) },
+  { title: t('legacy.module'), key: 'module', width: 150, ellipsis: { tooltip: true } },
+  { title: t('legacy.actions'), key: 'action', width: 150, render: row => actionLabels[row.action] || row.action },
+  { title: t('legacy.actor_employee'), key: 'actor', width: 160, ellipsis: { tooltip: true } },
+  { title: t('legacy.object'), key: 'target', ellipsis: { tooltip: true } },
+  { title: t('legacy.result'), key: 'result', width: 90, render: row => h(NTag, { bordered: false, type: row.result === 'success' ? 'success' : 'error' }, { default: () => row.result === 'success' ? t('legacy.success_51991a5') : t('legacy.failed') }) },
+  { title: t('legacy.actions'), key: 'detail', width: 80, render: row => h(NButton, { text: true, type: 'primary', onClick: () => openDetail(row) }, { default: () => t('legacy.details') }) },
 ];
 
 async function load() {
@@ -88,7 +88,7 @@ onMounted(load);
   <div class="page-stack audit-page">
     <n-card class="audit-card" :bordered="false" size="large">
       <div class="audit-content">
-        <div class="page-head"><PageIntro :title="t('系统审计')" :description="t('集中查看管理后台操作、Agent 能力使用和权限拒绝记录。')" :tags="[t('企业留痕'), t('统一审计')]" /><n-button type="primary" secondary :loading="loading" @click="load">{{ t('刷新') }}
+        <div class="page-head"><PageIntro :title="t('legacy.system_audit')" :description="t('legacy.review_admin_actions_agent_capability_use_and_permission_denials')" :tags="[t('legacy.enterprise_audit_trail'), t('legacy.unified_audit')]" /><n-button type="primary" secondary :loading="loading" @click="load">{{ t('legacy.refresh') }}
         </n-button></div>
         <div class="metric-grid">
           <div v-for="item in metrics" :key="item.label" class="metric-card"><span>{{ item.label }}</span><strong :class="{ danger: item.danger }">{{ item.value }}</strong><small>{{ item.hint }}</small></div>
@@ -97,14 +97,14 @@ onMounted(load);
           <div class="toolbar">
             <n-space :size="10" wrap>
               <n-select v-model:value="category" :options="categoryOptions" style="width: 140px" />
-              <n-input v-model:value="keyword" clearable :placeholder="t('搜索操作者、对象或操作')" style="width: 260px" @keyup.enter="applyFilters" />
-              <n-select v-model:value="result" clearable :options="resultOptions" :placeholder="t('全部结果')" style="width: 140px" @update:value="applyFilters" />
-              <n-select v-if="category === 'management'" v-model:value="module" clearable :options="moduleOptions" :placeholder="t('全部模块')" style="width: 170px" @update:value="applyFilters" />
-              <n-button @click="applyFilters">{{ t('查询') }}</n-button>
+              <n-input v-model:value="keyword" clearable :placeholder="t('legacy.search_actor_target_or_action')" style="width: 260px" @keyup.enter="applyFilters" />
+              <n-select v-model:value="result" clearable :options="resultOptions" :placeholder="t('legacy.all_results')" style="width: 140px" @update:value="applyFilters" />
+              <n-select v-if="category === 'management'" v-model:value="module" clearable :options="moduleOptions" :placeholder="t('legacy.all_modules')" style="width: 170px" @update:value="applyFilters" />
+              <n-button @click="applyFilters">{{ t('legacy.query') }}</n-button>
             </n-space>
           </div>
           <n-data-table :columns="columns" :data="rows" :loading="loading" :bordered="false" :pagination="false" :scroll-x="1120" />
-          <div class="pager-row"><span>{{ t('共 {count} 条', { count: total }) }}</span><n-pagination v-model:page="page" :page-size="pageSize" :item-count="total" /></div>
+          <div class="pager-row"><span>{{ t('legacy.total_items', { count: total }) }}</span><n-pagination v-model:page="page" :page-size="pageSize" :item-count="total" /></div>
         </div>
       </div>
     </n-card>

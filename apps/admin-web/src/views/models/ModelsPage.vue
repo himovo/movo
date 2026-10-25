@@ -20,32 +20,32 @@
         type="warning"
         closable
         class="quota-warning-alert"
-        :title="t('企业额度警示')"
+        :title="t('legacy.enterprise_quota_alert')"
         style="margin-bottom: 16px;"
       >
-        {{ t('当前企业本周期总额度为 0，所有模型将无法被调用。请先前往') }}
+        {{ t('legacy.current_enterprise_total_tokens_limit_is_0_all_models') }}
         <router-link to="/organizations/traffic?open=quota" class="alert-link">
-          {{ t('流量分配') }}
+          {{ t('legacy.traffic_allocation') }}
         </router-link>
-        {{ t('配置企业总额度与成员额度。') }}
+        {{ t('legacy.to_configure_enterprise_and_member_quotas') }}
       </n-alert>
 
       <div class="list-filter-row">
 
         <div class="filter-toolbar">
           <n-space align="center" :size="10" class="filter-left">
-            <n-input v-model:value="filters.keyword" :placeholder="t('搜索名称 / 模型 ID / Base URL')" clearable class="keyword-input" />
+            <n-input v-model:value="filters.keyword" :placeholder="t('legacy.search_by_name_model_id_base_url')" clearable class="keyword-input" />
             <n-select
               v-model:value="filters.providerId"
               :options="providerOptions"
-              :placeholder="t('供应商')"
+              :placeholder="t('legacy.provider_703c9eb')"
               clearable
               style="width: 160px"
             />
             <n-select
               v-model:value="filters.status"
               :options="statusOptions"
-              :placeholder="t('状态')"
+              :placeholder="t('legacy.status')"
               clearable
               style="width: 120px"
             />
@@ -60,7 +60,7 @@
                   <path d="M16 16h5v5" />
                 </svg>
               </template>
-              {{ t('刷新') }}
+              {{ t('legacy.refresh') }}
             </n-button>
             <n-button secondary @click="openGroupCreate">{{ t('modelGroup.create') }}</n-button>
             <n-button type="primary" strong @click="openCreate()">
@@ -70,7 +70,7 @@
                   <path d="M12 5v14" />
                 </svg>
               </template>
-              {{ t('新增模型') }}
+              {{ t('legacy.new_model') }}
             </n-button>
           </n-space>
         </div>
@@ -100,7 +100,7 @@
                 <span class="provider-badge">{{ providerLabel({ code: model.providerCode, name: model.providerName, providerType: model.providerType }) }}</span>
                 <n-space :size="6" class="state-tags">
                   <n-tag :type="model.status === 'active' ? 'success' : 'default'" size="small" :bordered="false">
-                    {{ model.status === 'active' ? t('启用') : t('禁用') }}
+                    {{ model.status === 'active' ? t('legacy.active') : t('legacy.disabled_be70be5') }}
                   </n-tag>
                 </n-space>
               </div>
@@ -123,27 +123,27 @@
               </div>
 
               <div class="card-footnote">
-                {{ t('最近更新：') }}{{ formatAdminDateTime(model.updatedAt, t('未知')) }}
+                {{ t('legacy.last_updated') }}{{ formatAdminDateTime(model.updatedAt, t('legacy.unknown')) }}
               </div>
 
               <div class="card-bottom">
                 <div class="card-actions">
-                  <n-button size="small" tertiary @click.stop="runTest(model)">{{ t('测试') }}</n-button>
-                  <n-button size="small" tertiary type="error" @click.stop="confirmDelete(model)">{{ t('删除') }}</n-button>
+                  <n-button size="small" tertiary @click.stop="runTest(model)">{{ t('legacy.test') }}</n-button>
+                  <n-button size="small" tertiary type="error" @click.stop="confirmDelete(model)">{{ t('legacy.delete') }}</n-button>
                 </div>
               </div>
             </button>
 
             <button class="model-config-card add-model-card" type="button" @click="openCreate()">
               <div class="add-symbol">+</div>
-              <div class="add-title">{{ t('新增模型') }}</div>
-              <div class="add-copy">{{ t('配置 OpenAI、Azure OpenAI、通义千问、DeepSeek 或自定义兼容接口。') }}</div>
+              <div class="add-title">{{ t('legacy.new_model') }}</div>
+              <div class="add-copy">{{ t('legacy.configure_openai_azure_openai_qwen_deepseek_or_custom_compatible') }}</div>
             </button>
           </div>
 
-          <n-empty v-else :description="t('暂无模型配置')">
+          <n-empty v-else :description="t('legacy.no_model_configurations')">
             <template #extra>
-              <n-button type="primary" @click="openCreate()">{{ t('新增第一个模型') }}</n-button>
+              <n-button type="primary" @click="openCreate()">{{ t('legacy.add_first_model') }}</n-button>
             </template>
           </n-empty>
         </n-spin>
@@ -166,17 +166,17 @@
       <n-form class="editor-form" :model="form" label-placement="left" label-width="96">
         <n-grid :cols="2" :x-gap="14">
           <n-grid-item v-if="!form.groupId">
-            <n-form-item :label="t('供应商')">
+            <n-form-item :label="t('legacy.provider_703c9eb')">
               <n-select
                 v-model:value="form.providerId"
                 :options="providerOptions"
-                :placeholder="t('选择供应商')"
+                :placeholder="t('legacy.select_provider')"
               />
             </n-form-item>
           </n-grid-item>
           <n-grid-item>
-            <n-form-item :label="t('显示名称')">
-              <n-input v-model:value="form.displayName" :placeholder="t('如: OpenAI 主模型')" />
+            <n-form-item :label="t('legacy.display_name')">
+              <n-input v-model:value="form.displayName" :placeholder="t('legacy.example_openai_main_model')" />
             </n-form-item>
           </n-grid-item>
           <n-grid-item>
@@ -185,7 +185,7 @@
             </n-form-item>
           </n-grid-item>
           <n-grid-item>
-            <n-form-item :label="t('状态')">
+            <n-form-item :label="t('legacy.status')">
               <n-select v-model:value="form.status" :options="statusOptions" />
             </n-form-item>
           </n-grid-item>
@@ -210,7 +210,7 @@
             </n-form-item>
           </n-grid-item>
           <n-grid-item>
-            <n-form-item :label="t('能力')">
+            <n-form-item :label="t('legacy.capabilities')">
               <n-select v-model:value="form.capabilities" multiple :options="capabilityOptions" />
             </n-form-item>
           </n-grid-item>
@@ -236,26 +236,26 @@
       </n-form>
 
       <aside v-if="editorMode === 'edit'" class="test-panel">
-        <div class="test-title">{{ t('配置测试') }}</div>
+        <div class="test-title">{{ t('legacy.configuration_test') }}</div>
         <div class="test-summary">
           <div>
-            <span>{{ t('供应商') }}</span>
+            <span>{{ t('legacy.provider_703c9eb') }}</span>
             <strong>{{ providerLabel(currentProvider) }}</strong>
           </div>
           <div>
-            <span>{{ t('模型 ID') }}</span>
-            <strong>{{ form.modelName || t('未填写') }}</strong>
+            <span>{{ t('legacy.model_id') }}</span>
+            <strong>{{ form.modelName || t('legacy.not_filled') }}</strong>
           </div>
           <div>
             <span>Base URL</span>
-            <strong>{{ form.baseUrl || currentProvider?.defaultBaseUrl || t('未设置') }}</strong>
+            <strong>{{ form.baseUrl || currentProvider?.defaultBaseUrl || t('legacy.not_set') }}</strong>
           </div>
           <div v-if="isAzureProvider">
             <span>API Version</span>
-            <strong>{{ form.apiVersion || t('未填写（默认 2024-10-21）') }}</strong>
+            <strong>{{ form.apiVersion || t('legacy.not_filled_default_2024_10_21') }}</strong>
           </div>
           <div>
-            <span>{{ t('Key 状态') }}</span>
+            <span>{{ t('legacy.key_status') }}</span>
             <strong>{{ keyStateText }}</strong>
           </div>
         </div>
@@ -265,13 +265,13 @@
           v-model:value="testPrompt"
           type="textarea"
           :rows="4"
-          :placeholder="t('测试提示词，后续接入 runtime 后用于发起一次轻量调用')"
+          :placeholder="t('legacy.test_prompt_used_to_trigger_a_light_call')"
         />
         <n-alert v-else type="info" :bordered="false">
-          {{ modelTestKind === 'embedding' ? t('将调用 Embedding 接口并校验返回向量。') : t('将调用 Rerank 接口并校验排序结果。') }}
+          {{ modelTestKind === 'embedding' ? t('legacy.the_embedding_endpoint_will_be_called_and_its_vector') : t('legacy.the_rerank_endpoint_will_be_called_and_its_ranking') }}
         </n-alert>
         <n-button block type="primary" secondary :loading="testing" :disabled="!form.id" @click="runEditorTest">
-          {{ t('测试当前配置') }}
+          {{ t('legacy.test_configuration') }}
         </n-button>
         <div class="test-result" :class="{ success: testResultType === 'success', failed: testResultType === 'failed' }">
           {{ testResultText }}
@@ -280,18 +280,18 @@
           v-if="testImageUrl"
           class="test-image-preview"
           :src="testImageUrl"
-          :alt="t('图片模型测试结果')"
+          :alt="t('additional.image_model_test_result')"
         />
       </aside>
     </div>
 
     <template #footer>
       <n-space justify="space-between" align="center">
-        <n-button v-if="editorMode === 'edit'" tertiary type="error" @click="confirmDeleteFromEditor">{{ t('删除模型') }}</n-button>
+        <n-button v-if="editorMode === 'edit'" tertiary type="error" @click="confirmDeleteFromEditor">{{ t('legacy.delete_model') }}</n-button>
         <span v-else />
         <n-space>
-          <n-button @click="editorVisible = false">{{ t('取消') }}</n-button>
-          <n-button type="primary" :loading="saving" @click="saveModel">{{ t('保存') }}</n-button>
+          <n-button @click="editorVisible = false">{{ t('legacy.cancel') }}</n-button>
+          <n-button type="primary" :loading="saving" @click="saveModel">{{ t('legacy.save') }}</n-button>
         </n-space>
       </n-space>
     </template>
@@ -335,6 +335,7 @@ import { providerLabel } from '@/components/models/providerLabels';
 import { resolveModelTestKind } from '@/components/models/modelTestKind';
 import ModelAccessExtensionPanel from '@/components/models/ModelAccessExtensionPanel.vue';
 import { useModelAccessExtension } from '@/composables/useModelAccessExtension';
+import { useVisionCapabilitySuggestion } from '@/composables/useVisionCapabilitySuggestion';
 
 
 interface ModelForm extends ModelInstancePayload {
@@ -350,6 +351,7 @@ const saving = ref(false);
 const testing = ref(false);
 const message = useMessage();
 const dialog = useDialog();
+const visionSuggestion = useVisionCapabilitySuggestion();
 const router = useRouter();
 const providers = ref<ModelProviderItem[]>([]);
 const instances = ref<ModelInstanceItem[]>([]);
@@ -360,8 +362,8 @@ const selectedGroupModelId = ref('');
 const editorVisible = ref(false);
 const editorMode = ref<'create' | 'edit'>('create');
 const suppressProviderChange = ref(false);
-const testPrompt = ref(t('测试模型默认提示'));
-const testResultText = ref(t('测试模型未保存'));
+const testPrompt = ref(t('legacy.reply_in_one_sentence_to_test_the_current_model'));
+const testResultText = ref(t('legacy.save_the_model_configuration_before_testing'));
 const testResultType = ref<'idle' | 'success' | 'failed'>('idle');
 const testImageUrl = ref('');
 const modelAccess = useModelAccessExtension();
@@ -398,8 +400,8 @@ const orgQuota = ref<number | null>(null);
 
 
 const statusOptions = computed(() => [
-  { label: t('启用'), value: 'active' },
-  { label: t('禁用'), value: 'disabled' },
+  { label: t('legacy.active'), value: 'active' },
+  { label: t('legacy.disabled_be70be5'), value: 'disabled' },
 ]);
 
 const capabilityOptions = computed(() => [
@@ -425,27 +427,27 @@ const isAzureProvider = computed(() => currentProvider.value?.providerType === '
 const hasImageCapability = computed(() => form.value.capabilities.includes('image_generation'));
 const modelTestKind = computed(() => resolveModelTestKind(form.value.capabilities));
 const isUserSelectableModel = computed(() => form.value.capabilities.some((item) => ['chat', 'text', 'image_generation'].includes(item)));
-const editorTitle = computed(() => (editorMode.value === 'create' ? t('新增模型配置') : t('模型配置详情')));
+const editorTitle = computed(() => (editorMode.value === 'create' ? t('legacy.add_model') : t('legacy.model_configuration_details')));
 const apiKeyPlaceholder = computed(() =>
-  editorMode.value === 'create' ? t('请输入 API Key') : t('留空则保留当前 Key'),
+  editorMode.value === 'create' ? t('legacy.please_enter_api_key') : t('legacy.leave_blank_to_retain_current_key'),
 );
-const modelFieldLabel = computed(() => (isAzureProvider.value ? t('Deployment 名称') : t('模型 ID')));
+const modelFieldLabel = computed(() => (isAzureProvider.value ? t('legacy.deployment_name') : t('legacy.model_id')));
 const modelFieldPlaceholder = computed(() =>
   hasImageCapability.value
-    ? (isAzureProvider.value ? t('如: gpt-image-2-prod（Azure 部署名）') : t('如: qwen-image-plus / gpt-image-1'))
-    : (isAzureProvider.value ? t('如: gpt-4o-mini-prod（Azure 部署名）') : t('如: gpt-4.1 / qwen-plus / deepseek-chat')),
+    ? (isAzureProvider.value ? t('additional.e_g_gpt_image_2_prod_azure_deployment_name') : t('additional.e_g_qwen_image_plus_gpt_image_1'))
+    : (isAzureProvider.value ? t('legacy.example_gpt_4o_mini_prod_azure_deploy_name') : t('legacy.example_gpt_4_1_qwen_plus_deepseek_chat_8435735')),
 );
 const baseUrlPlaceholder = computed(() =>
   isAzureProvider.value ? 'https://YOUR-RESOURCE-NAME.openai.azure.com' : 'https://api.openai.com/v1',
 );
 const keyStateText = computed(() => {
   if (form.value.apiKey.trim()) {
-    return t('已填写新 Key');
+    return t('legacy.new_key_entered');
   }
   if (form.value.apiKeyMasked) {
     return form.value.apiKeyMasked;
   }
-  return t('未配置');
+  return t('legacy.not_configured');
 });
 
 const metricCards = computed(() => {
@@ -453,10 +455,10 @@ const metricCards = computed(() => {
   const chatModels = instances.value.filter((item) => item.status === 'active' && item.capabilities.includes('chat')).length;
   const configuredProviders = new Set(instances.value.map((item) => item.providerId)).size;
   return [
-    { key: 'total', icon: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /><rect x="9" y="9" width="6" height="6" /><line x1="9" y1="1" x2="9" y2="4" /><line x1="15" y1="1" x2="15" y2="4" /><line x1="9" y1="20" x2="9" y2="23" /><line x1="15" y1="20" x2="15" y2="23" /><line x1="20" y1="9" x2="23" y2="9" /><line x1="20" y1="15" x2="23" y2="15" /><line x1="1" y1="9" x2="4" y2="9" /><line x1="1" y1="15" x2="4" y2="15" /></svg>', label: t('模型配置'), value: instances.value.length, note: t('当前主账号下的模型实例') },
-    { key: 'active', icon: '<svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>', label: t('已启用'), value: enabled, note: t('可被后续 runtime 路由选用') },
-    { key: 'chat', icon: '<svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" /><path d="M8 9h8M8 13h5" /></svg>', label: t('对话模型'), value: chatModels, note: t('仅使用企业已配置的模型') },
-    { key: 'providers', icon: '<svg viewBox="0 0 24 24"><rect width="20" height="8" x="2" y="2" rx="2" ry="2" /><rect width="20" height="8" x="2" y="14" rx="2" ry="2" /><line x1="6" x2="6.01" y1="6" y2="6" /><line x1="6" x2="6.01" y1="18" y2="18" /></svg>', label: t('供应商'), value: configuredProviders, note: t('OpenAI / Azure OpenAI / Qwen / DeepSeek 等') },
+    { key: 'total', icon: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /><rect x="9" y="9" width="6" height="6" /><line x1="9" y1="1" x2="9" y2="4" /><line x1="15" y1="1" x2="15" y2="4" /><line x1="9" y1="20" x2="9" y2="23" /><line x1="15" y1="20" x2="15" y2="23" /><line x1="20" y1="9" x2="23" y2="9" /><line x1="20" y1="15" x2="23" y2="15" /><line x1="1" y1="9" x2="4" y2="9" /><line x1="1" y1="15" x2="4" y2="15" /></svg>', label: t('legacy.models_configured'), value: instances.value.length, note: t('legacy.model_instances_under_current_master_account') },
+    { key: 'active', icon: '<svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>', label: t('legacy.active_25d2843'), value: enabled, note: t('legacy.can_be_routed_by_runtime') },
+    { key: 'chat', icon: '<svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" /><path d="M8 9h8M8 13h5" /></svg>', label: t('legacy.chat_model'), value: chatModels, note: t('legacy.only_organization_configured_models_are_used') },
+    { key: 'providers', icon: '<svg viewBox="0 0 24 24"><rect width="20" height="8" x="2" y="2" rx="2" ry="2" /><rect width="20" height="8" x="2" y="14" rx="2" ry="2" /><line x1="6" x2="6.01" y1="6" y2="6" /><line x1="6" x2="6.01" y1="18" y2="18" /></svg>', label: t('legacy.provider_703c9eb'), value: configuredProviders, note: t('legacy.openai_azure_qwen_deepseek_etc') },
   ];
 });
 
@@ -503,7 +505,7 @@ function providerInitial(name: string) {
   return (name || 'M').slice(0, 1).toUpperCase();
 }
 
-function resetTestState(text = t('保存模型配置后可测试。')) {
+function resetTestState(text = t('legacy.available_to_test_after_saving_configuration')) {
   testResultText.value = text;
   testResultType.value = 'idle';
   testImageUrl.value = '';
@@ -515,7 +517,7 @@ function recommendedImageRuntime(provider?: ModelProviderItem): ImageRuntimeKind
 }
 
 function defaultProviderDisplayName(provider: ModelProviderItem) {
-  return `${provider.name} ${t('模型')}`;
+  return `${provider.name} ${t('legacy.model')}`;
 }
 
 function isAutoProviderDisplayName(value: string, previousProvider?: ModelProviderItem) {
@@ -571,7 +573,7 @@ function openCreate(group?: ModelGroupItem) {
     form.value.apiVersion = group?.apiVersion || '';
     form.value.displayName = group ? '' : defaultProviderDisplayName(firstProvider);
   }
-  resetTestState(t('新增配置保存后可测试。'));
+  resetTestState(t('legacy.available_to_test_after_saving_new_configuration'));
   modelAccess.reset(Boolean(group));
   editorVisible.value = true;
 }
@@ -597,10 +599,10 @@ function openEdit(row: ModelInstanceItem) {
     status: row.status,
     isDefault: false,
   };
-  resetTestState(t('可在右侧测试当前已保存的配置。'));
+  resetTestState(t('legacy.you_can_test_the_saved_configuration_on_the_right'));
   if (row.capabilities.some((item) => ['chat', 'text', 'image_generation'].includes(item))) {
     void modelAccess.load(row.id).catch((error) => {
-      message.error(readError(error, t('加载失败')));
+      message.error(readError(error, t('additional.failed_to_load')));
     });
   }
   editorVisible.value = true;
@@ -613,15 +615,15 @@ async function saveModel() {
     return;
   }
   if (!form.value.providerId || (!form.value.groupId && !form.value.displayName.trim()) || !form.value.modelName.trim()) {
-    message.warning(t('请补齐供应商、显示名称和模型 ID'));
+    message.warning(t('legacy.please_complete_provider_display_name_and_model_id'));
     return;
   }
   if (editorMode.value === 'create' && !form.value.groupId && !form.value.apiKey.trim()) {
-    message.warning(t('新增模型需要填写 API Key'));
+    message.warning(t('legacy.api_key_is_required_for_new_models'));
     return;
   }
   if (isAzureProvider.value && !form.value.apiVersion.trim()) {
-    message.warning(t('Azure OpenAI 需要填写 API Version'));
+    message.warning(t('legacy.api_version_is_required_for_azure_openai'));
     return;
   }
   if (hasImageCapability.value && form.value.runtimeKind === 'custom_images') {
@@ -629,7 +631,7 @@ async function saveModel() {
       const parsed = JSON.parse(String(form.value.imageSettings.extraParamsJson || '{}').trim() || '{}');
       if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') throw new Error();
     } catch {
-      message.warning(t('请输入有效的 JSON 对象'));
+      message.warning(t('legacy.enter_a_valid_json_object'));
       return;
     }
   }
@@ -666,20 +668,20 @@ async function saveModel() {
       form.value.apiKey = '';
       form.value.apiKeyMasked = saved.apiKeyMasked;
       await reload();
-      message.error(`${t('模型已保存，但使用权限保存失败')}：${readError(error, t('保存失败'))}`);
+      message.error(`${t('legacy.the_model_was_saved_but_its_access_policy_could')}：${readError(error, t('legacy.failed_to_save'))}`);
       return;
     }
     await reload();
     openEdit(saved);
-    testResultText.value = t('模型配置已保存，可以继续测试。');
+    testResultText.value = t('legacy.configuration_saved_you_can_continue_testing');
     testResultType.value = 'success';
     if (isCreatingFirstModel) {
       showFirstModelTrafficAllocationPrompt();
     } else {
-      message.success(t('模型配置已保存'));
+      message.success(t('additional.model_configuration_saved'));
     }
   } catch (error) {
-    message.error(readError(error, t('保存失败')));
+    message.error(readError(error, t('legacy.failed_to_save')));
   } finally {
     saving.value = false;
   }
@@ -687,10 +689,10 @@ async function saveModel() {
 
 function showFirstModelTrafficAllocationPrompt() {
   dialog.success({
-    title: t('模型已添加'),
-    content: t('已添加第一个模型。为了让用户正常使用模型，请前往流量分配页面设置企业总额度和成员额度。'),
-    positiveText: t('前往分配流量'),
-    negativeText: t('稍后处理'),
+    title: t('legacy.model_added'),
+    content: t('legacy.the_first_model_has_been_added_to_let_users'),
+    positiveText: t('legacy.go_to_traffic_allocation'),
+    negativeText: t('legacy.later'),
     onPositiveClick: () => {
       void router.push('/organizations/traffic?open=quota');
     },
@@ -715,7 +717,7 @@ async function runEditorTest() {
   try {
     if (modelTestKind.value === 'image') {
       const result = await testImageModelInstance(form.value.id, testPrompt.value);
-      testResultText.value = result.message || (result.success ? t('图片生成测试成功。') : t('图片生成测试失败。'));
+      testResultText.value = result.message || (result.success ? t('additional.image_generation_test_succeeded') : t('additional.image_generation_test_failed'));
       testResultType.value = result.success ? 'success' : 'failed';
       testImageUrl.value = result.imageUrl || '';
       await reload();
@@ -723,31 +725,31 @@ async function runEditorTest() {
     }
     if (modelTestKind.value === 'embedding' || modelTestKind.value === 'rerank') {
       const result = await testKnowledgeModelInstance(form.value.id, modelTestKind.value);
-      testResultText.value = result.message || (result.success ? t('模型连接测试成功。') : t('测试失败'));
+      testResultText.value = result.message || (result.success ? t('legacy.model_connection_tested_successfully') : t('legacy.test_failed'));
       testResultType.value = result.success ? 'success' : 'failed';
       await reload();
       return;
     }
     await streamModelInstanceTest(form.value.id, testPrompt.value, (event) => {
       if (event.type === 'start') {
-        testResultText.value = event.message || t('正在连接模型...');
+        testResultText.value = event.message || t('legacy.connecting_to_model');
         return;
       }
       if (event.type === 'delta') {
-        if (testResultText.value === t('正在连接模型...')) {
+        if (testResultText.value === t('legacy.connecting_to_model')) {
           testResultText.value = '';
         }
         testResultText.value += event.content || '';
         return;
       }
       if (event.type === 'error') {
-        testResultText.value = event.message || t('测试失败');
+        testResultText.value = event.message || t('legacy.test_failed');
         testResultType.value = 'failed';
         return;
       }
       if (event.type === 'done') {
         if (!testResultText.value) {
-          testResultText.value = event.message || t('模型连接测试成功。');
+          testResultText.value = event.message || t('legacy.model_connection_tested_successfully');
         }
         testResultType.value = 'success';
       }
@@ -756,8 +758,14 @@ async function runEditorTest() {
       testResultType.value = 'success';
     }
     await reload();
+    if (testResultType.value === 'success') {
+      await visionSuggestion.check(instances.value.find((item) => item.id === form.value.id), async () => {
+        form.value.capabilities = [...new Set([...form.value.capabilities, 'vision'])];
+        await reload();
+      });
+    }
   } catch (error) {
-    testResultText.value = readError(error, t('测试失败'));
+    testResultText.value = readError(error, t('legacy.test_failed'));
     testResultType.value = 'failed';
   } finally {
     testing.value = false;
@@ -765,7 +773,7 @@ async function runEditorTest() {
 }
 
 function confirmDelete(row: ModelInstanceItem) {
-  if (!window.confirm(t('确认删除「{name}」？删除后后续路由将不能再使用该模型配置。', { name: row.displayName }))) {
+  if (!window.confirm(t('legacy.are_you_sure_to_delete_routing_will_no_longer', { name: row.displayName }))) {
     return;
   }
   deleteModelInstance(row.id)
@@ -773,7 +781,7 @@ function confirmDelete(row: ModelInstanceItem) {
       await reload();
     })
     .catch((error) => {
-      window.alert(readError(error, t('删除失败')));
+      window.alert(readError(error, t('legacy.failed_to_delete')));
     });
 }
 
@@ -782,7 +790,7 @@ function confirmDeleteFromEditor() {
   if (!row) {
     return;
   }
-  if (!window.confirm(t('确认删除「{name}」？删除后后续路由将不能再使用该模型配置。', { name: row.displayName }))) {
+  if (!window.confirm(t('legacy.are_you_sure_to_delete_routing_will_no_longer', { name: row.displayName }))) {
     return;
   }
   deleteModelInstance(row.id)
@@ -791,7 +799,7 @@ function confirmDeleteFromEditor() {
       await reload();
     })
     .catch((error) => {
-      window.alert(readError(error, t('删除失败')));
+      window.alert(readError(error, t('legacy.failed_to_delete')));
     });
 }
 
@@ -811,7 +819,7 @@ async function reload() {
       orgQuota.value = allocationOverview.orgPolicy.totalTokens;
     }
   } catch (error) {
-    window.alert(readError(error, t('模型配置加载失败')));
+    window.alert(readError(error, t('legacy.failed_to_load_model_configurations')));
   } finally {
     loading.value = false;
   }
@@ -840,13 +848,13 @@ watch(
   (enabled) => {
     if (enabled) {
       form.value.runtimeKind = form.value.runtimeKind || recommendedImageRuntime(currentProvider.value);
-      if (testPrompt.value === t('测试模型默认提示')) {
-        testPrompt.value = t('测试模型图片提示');
+      if (testPrompt.value === t('legacy.reply_in_one_sentence_to_test_the_current_model')) {
+        testPrompt.value = t('legacy.generate_a_clean_futuristic_presentation_cover_image_without_text');
       }
-    } else if (testPrompt.value === t('测试模型图片提示')) {
-      testPrompt.value = t('测试模型默认提示');
+    } else if (testPrompt.value === t('legacy.generate_a_clean_futuristic_presentation_cover_image_without_text')) {
+      testPrompt.value = t('legacy.reply_in_one_sentence_to_test_the_current_model');
     }
-    resetTestState(editorMode.value === 'edit' ? t('可在右侧测试当前已保存的配置。') : t('保存模型配置后可测试。'));
+    resetTestState(editorMode.value === 'edit' ? t('legacy.you_can_test_the_saved_configuration_on_the_right') : t('legacy.available_to_test_after_saving_configuration'));
   },
 );
 

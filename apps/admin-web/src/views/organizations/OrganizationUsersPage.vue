@@ -4,7 +4,7 @@
       <div class="user-layout" :class="{ 'user-layout-collapsed': departmentCollapsed }">
         <aside v-if="!departmentCollapsed" class="dept-panel">
           <div class="panel-head">
-            <span class="panel-title">{{ t('组织架构') }}</span>
+            <span class="panel-title">{{ t('legacy.org_structure') }}</span>
             <n-space :size="6">
               <n-button size="tiny" @click="() => openCreateDept()">
                 <template #icon>
@@ -13,7 +13,7 @@
                     <path d="M12 5v14" />
                   </svg>
                 </template>
-                {{ t('新增') }}
+                {{ t('legacy.add') }}
               </n-button>
               <n-button size="tiny" :disabled="!selectedDeptId" @click="() => openEditDept(selectedDeptId)">
                 <template #icon>
@@ -22,11 +22,11 @@
                     <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
                   </svg>
                 </template>
-                {{ t('编辑') }}
+                {{ t('legacy.edit') }}
               </n-button>
             </n-space>
           </div>
-          <n-input v-model:value="treeKeyword" :placeholder="t('搜索部门')" clearable size="small" />
+          <n-input v-model:value="treeKeyword" :placeholder="t('legacy.search_departments')" clearable size="small" />
           <div class="tree-wrap">
             <n-tree
               block-line
@@ -47,7 +47,7 @@
                   <path d="m5 9-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20" />
                 </svg>
               </template>
-              {{ t('移动') }}
+              {{ t('legacy.move') }}
             </n-button>
             <n-button size="small" type="error" ghost :disabled="!selectedDeptId" @click="deleteSelectedDept">
               <template #icon>
@@ -56,7 +56,7 @@
                   <path d="m4.9 4.9 14.2 14.2" />
                 </svg>
               </template>
-              {{ t('删除') }}
+              {{ t('legacy.delete') }}
             </n-button>
           </n-space>
         </aside>
@@ -68,14 +68,14 @@
                 <template #icon><n-icon><MenuUnfoldOutlined v-if="departmentCollapsed" /><MenuFoldOutlined v-else /></n-icon></template>
               </n-button>
               <n-space :size="10">
-                <n-input v-model:value="keyword" :placeholder="t('搜索姓名/手机号/邮箱')" clearable />
-                <n-select v-model:value="sourceFilter" :options="sourceOptions" :placeholder="t('来源')" clearable style="width: 130px" />
-                <n-select v-model:value="statusFilter" :options="statusOptions" :placeholder="t('状态')" clearable style="width: 120px" />
+                <n-input v-model:value="keyword" :placeholder="t('additional.search_by_name_phone_number_or_email')" clearable />
+                <n-select v-model:value="sourceFilter" :options="sourceOptions" :placeholder="t('legacy.source')" clearable style="width: 130px" />
+                <n-select v-model:value="statusFilter" :options="statusOptions" :placeholder="t('legacy.status')" clearable style="width: 120px" />
               </n-space>
             </div>
             <n-space :size="10">
               <n-button :disabled="!selectedUserIds.length" @click="bulkRoleDialogVisible = true">
-                {{ t('批量分配岗位') }}<template v-if="selectedUserIds.length">（{{ selectedUserIds.length }}）</template>
+                {{ t('legacy.bulk_assign_position_roles') }}<template v-if="selectedUserIds.length">（{{ selectedUserIds.length }}）</template>
               </n-button>
               <n-button @click="fieldManagerVisible = true">
                 <template #icon>
@@ -83,7 +83,7 @@
                     <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" /><line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" /><line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" /><line x1="2" y1="14" x2="6" y2="14" /><line x1="10" y1="8" x2="14" y2="8" /><line x1="18" y1="16" x2="22" y2="16" />
                   </svg>
                 </template>
-                {{ t('用户字段配置') }}
+                {{ t('legacy.user_custom_fields') }}
               </n-button>
               <n-button @click="openInviteUser">
                 <template #icon>
@@ -91,7 +91,7 @@
                     <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                   </svg>
                 </template>
-                {{ t('邀请用户') }}
+                {{ t('legacy.invite_user') }}
               </n-button>
               <n-button @click="inviteHistoryVisible = true"><template #icon><n-icon><TimeOutline /></n-icon></template>{{ t('inviteHistory.title') }}</n-button>
               <n-button type="primary" @click="openCreateUser">
@@ -100,7 +100,7 @@
                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" />
                   </svg>
                 </template>
-                {{ t('新增用户') }}
+                {{ t('legacy.add_user') }}
               </n-button>
             </n-space>
           </div>
@@ -121,7 +121,7 @@
           </div>
 
           <div class="pager-row">
-            <span class="pager-total">{{ t('共 {count} 条', { count: filteredUsers.length }) }}</span>
+            <span class="pager-total">{{ t('legacy.total_items', { count: filteredUsers.length }) }}</span>
             <n-pagination v-model:page="currentPage" :page-size="pageSize" :item-count="filteredUsers.length" />
           </div>
         </section>
@@ -131,34 +131,34 @@
 
   <n-modal v-model:show="deptEditorVisible" preset="card" :title="deptEditorTitle" style="width: 520px">
     <n-form :model="deptForm" label-placement="left" label-width="90">
-      <n-form-item :label="t('部门名称')">
-        <n-input v-model:value="deptForm.name" :placeholder="t('请输入部门名称')" />
+      <n-form-item :label="t('legacy.department_name')">
+        <n-input v-model:value="deptForm.name" :placeholder="t('legacy.please_enter_department_name')" />
       </n-form-item>
-      <n-form-item :label="t('状态')">
+      <n-form-item :label="t('legacy.status')">
         <n-select v-model:value="deptForm.status" :options="statusOptions" />
       </n-form-item>
-      <n-form-item v-if="deptEditorMode === 'create'" :label="t('上级部门')">
-        <n-select v-model:value="deptForm.parentId" :options="departmentOptionsWithRoot" clearable :placeholder="t('根部门')" />
+      <n-form-item v-if="deptEditorMode === 'create'" :label="t('legacy.parent_department')">
+        <n-select v-model:value="deptForm.parentId" :options="departmentOptionsWithRoot" clearable :placeholder="t('legacy.root_department')" />
       </n-form-item>
     </n-form>
     <template #footer>
       <n-space justify="end">
-        <n-button @click="deptEditorVisible = false">{{ t('取消') }}</n-button>
-        <n-button type="primary" :loading="saving" @click="saveDepartment">{{ t('保存') }}</n-button>
+        <n-button @click="deptEditorVisible = false">{{ t('legacy.cancel') }}</n-button>
+        <n-button type="primary" :loading="saving" @click="saveDepartment">{{ t('legacy.save') }}</n-button>
       </n-space>
     </template>
   </n-modal>
 
-  <n-modal v-model:show="deptMoveVisible" preset="card" :title="t('移动部门')" style="width: 520px">
+  <n-modal v-model:show="deptMoveVisible" preset="card" :title="t('legacy.move_department')" style="width: 520px">
     <n-form :model="moveForm" label-placement="left" label-width="90">
-      <n-form-item :label="t('目标上级')">
-        <n-select v-model:value="moveForm.parentId" :options="moveDepartmentOptions" clearable :placeholder="t('根部门')" />
+      <n-form-item :label="t('legacy.target_parent')">
+        <n-select v-model:value="moveForm.parentId" :options="moveDepartmentOptions" clearable :placeholder="t('legacy.root_department')" />
       </n-form-item>
     </n-form>
     <template #footer>
       <n-space justify="end">
-        <n-button @click="deptMoveVisible = false">{{ t('取消') }}</n-button>
-        <n-button type="primary" :loading="saving" @click="saveMoveDepartment">{{ t('确认移动') }}</n-button>
+        <n-button @click="deptMoveVisible = false">{{ t('legacy.cancel') }}</n-button>
+        <n-button type="primary" :loading="saving" @click="saveMoveDepartment">{{ t('legacy.confirm_move') }}</n-button>
       </n-space>
     </template>
   </n-modal>
@@ -173,40 +173,40 @@
       />
       <n-grid :cols="2" :x-gap="12">
         <n-grid-item>
-          <n-form-item :label="t('姓名')" required><n-input v-model:value="userForm.name" /></n-form-item>
+          <n-form-item :label="t('legacy.name')" required><n-input v-model:value="userForm.name" /></n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('手机号')" required><n-input v-model:value="userForm.mobile" /></n-form-item>
+          <n-form-item :label="t('legacy.mobile')" required><n-input v-model:value="userForm.mobile" /></n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('邮箱')" required><n-input v-model:value="userForm.email" /></n-form-item>
+          <n-form-item :label="t('legacy.email')" required><n-input v-model:value="userForm.email" /></n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('主部门')" required>
+          <n-form-item :label="t('legacy.primary_department')" required>
             <n-select v-model:value="userForm.primaryDepartmentId" :options="departmentOptions" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('状态')"><n-select v-model:value="userForm.status" :options="statusOptions" /></n-form-item>
+          <n-form-item :label="t('legacy.status')"><n-select v-model:value="userForm.status" :options="statusOptions" /></n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('主要岗位角色')" required>
+          <n-form-item :label="t('legacy.primary_position_role')" required>
             <n-select v-model:value="userForm.primaryRoleId" :options="roleOptions" @update:value="syncPrimaryRole" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item :span="2">
-          <n-form-item :label="t('其他岗位角色')">
-            <n-select v-model:value="userForm.roleIds" multiple max-tag-count="responsive" :options="roleOptions" :placeholder="t('可多选')" />
+          <n-form-item :label="t('legacy.additional_position_roles')">
+            <n-select v-model:value="userForm.roleIds" multiple max-tag-count="responsive" :options="roleOptions" :placeholder="t('legacy.multiple_selections_allowed')" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item :span="2">
-          <n-form-item :label="t('所属部门')">
+          <n-form-item :label="t('legacy.belongs_to_departments')">
             <n-select
               v-model:value="userForm.departmentIds"
               multiple
               max-tag-count="responsive"
               :options="departmentOptions"
-              :placeholder="t('可多选')"
+              :placeholder="t('legacy.multiple_selections_allowed')"
             />
           </n-form-item>
         </n-grid-item>
@@ -248,8 +248,8 @@
     </n-form>
     <template #footer>
       <n-space justify="end">
-        <n-button @click="userEditorVisible = false">{{ t('取消') }}</n-button>
-        <n-button type="primary" :loading="saving" @click="saveUser">{{ t('保存') }}</n-button>
+        <n-button @click="userEditorVisible = false">{{ t('legacy.cancel') }}</n-button>
+        <n-button type="primary" :loading="saving" @click="saveUser">{{ t('legacy.save') }}</n-button>
       </n-space>
     </template>
   </n-modal>
@@ -261,9 +261,9 @@
     @saved="handleBulkRolesSaved"
   />
 
-  <n-modal v-model:show="fieldManagerVisible" preset="card" :title="t('用户自定义字段')" style="width: 920px">
+  <n-modal v-model:show="fieldManagerVisible" preset="card" :title="t('legacy.user_custom_fields_5eba8b6')" style="width: 920px">
     <div class="toolbar compact-toolbar">
-      <span class="section-muted">{{ t('固定字段外的扩展字段，动态渲染到用户资料。') }}</span>
+      <span class="section-muted">{{ t('legacy.extended_fields_dynamically_rendered_in_the_user_profile') }}</span>
       <n-button type="primary" size="small" @click="openCreateField">
         <template #icon>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -271,7 +271,7 @@
             <path d="M12 5v14" />
           </svg>
         </template>
-        {{ t('新增字段') }}
+        {{ t('legacy.add_field') }}
       </n-button>
     </div>
     <n-data-table :columns="fieldColumns" :data="fieldDefs" :bordered="false" :pagination="{ pageSize: 8 }" />
@@ -279,53 +279,53 @@
 
   <n-modal v-model:show="fieldEditorVisible" preset="card" :title="fieldEditorTitle" style="width: 620px">
     <n-form :model="fieldForm" label-placement="left" label-width="90">
-      <n-form-item :label="t('字段Key')"><n-input v-model:value="fieldForm.fieldKey" :disabled="fieldEditorMode === 'edit'" /></n-form-item>
-      <n-form-item :label="t('字段名称')"><n-input v-model:value="fieldForm.label" /></n-form-item>
-      <n-form-item :label="t('字段类型')"><n-select v-model:value="fieldForm.fieldType" :options="fieldTypeOptions" /></n-form-item>
-      <n-form-item v-if="fieldForm.fieldType === 'select' || fieldForm.fieldType === 'multiselect'" :label="t('选项值')">
-        <n-input v-model:value="fieldForm.optionsText" :placeholder="t('用英文逗号分隔')" />
+      <n-form-item :label="t('legacy.field_key')"><n-input v-model:value="fieldForm.fieldKey" :disabled="fieldEditorMode === 'edit'" /></n-form-item>
+      <n-form-item :label="t('legacy.field_name')"><n-input v-model:value="fieldForm.label" /></n-form-item>
+      <n-form-item :label="t('legacy.field_type')"><n-select v-model:value="fieldForm.fieldType" :options="fieldTypeOptions" /></n-form-item>
+      <n-form-item v-if="fieldForm.fieldType === 'select' || fieldForm.fieldType === 'multiselect'" :label="t('legacy.options')">
+        <n-input v-model:value="fieldForm.optionsText" :placeholder="t('legacy.separated_by_commas')" />
       </n-form-item>
-      <n-form-item v-if="fieldForm.fieldType === 'textarea'" :label="t('默认行数')">
+      <n-form-item v-if="fieldForm.fieldType === 'textarea'" :label="t('additional.default_row_count')">
         <n-input-number v-model:value="fieldForm.rows" :min="2" :max="12" style="width: 100%" />
       </n-form-item>
-      <n-form-item :label="t('排序')">
+      <n-form-item :label="t('legacy.sort_order')">
         <n-input-number v-model:value="fieldForm.sort" :min="0" :max="9999" style="width: 100%" />
       </n-form-item>
       <n-grid :cols="3" :x-gap="12">
-        <n-grid-item><n-form-item :label="t('必填')"><n-switch v-model:value="fieldForm.required" /></n-form-item></n-grid-item>
-        <n-grid-item><n-form-item :label="t('脱敏')"><n-switch v-model:value="fieldForm.masked" /></n-form-item></n-grid-item>
-        <n-grid-item><n-form-item :label="t('启用')"><n-switch v-model:value="fieldForm.enabled" /></n-form-item></n-grid-item>
+        <n-grid-item><n-form-item :label="t('legacy.required')"><n-switch v-model:value="fieldForm.required" /></n-form-item></n-grid-item>
+        <n-grid-item><n-form-item :label="t('legacy.masked')"><n-switch v-model:value="fieldForm.masked" /></n-form-item></n-grid-item>
+        <n-grid-item><n-form-item :label="t('legacy.active')"><n-switch v-model:value="fieldForm.enabled" /></n-form-item></n-grid-item>
       </n-grid>
     </n-form>
     <template #footer>
       <n-space justify="end">
-        <n-button @click="fieldEditorVisible = false">{{ t('取消') }}</n-button>
-        <n-button type="primary" :loading="saving" @click="saveField">{{ t('保存') }}</n-button>
+        <n-button @click="fieldEditorVisible = false">{{ t('legacy.cancel') }}</n-button>
+        <n-button type="primary" :loading="saving" @click="saveField">{{ t('legacy.save') }}</n-button>
       </n-space>
     </template>
   </n-modal>
 
-  <n-modal v-model:show="inviteVisible" preset="card" :title="t('邀请用户')" style="width: 720px">
+  <n-modal v-model:show="inviteVisible" preset="card" :title="t('legacy.invite_user')" style="width: 720px">
     <n-form :model="inviteForm" label-placement="left" label-width="110">
       <n-grid :cols="2" :x-gap="12">
         <n-grid-item>
-          <n-form-item :label="t('默认部门')" :required="inviteDepartmentRequired">
-            <n-select v-model:value="inviteForm.defaultDepartmentId" :options="inviteDepartmentOptions" :clearable="!inviteDepartmentRequired" :placeholder="inviteDepartmentRequired ? t('invite.select_department') : t('默认根部门')" />
+          <n-form-item :label="t('legacy.default_dept')" :required="inviteDepartmentRequired">
+            <n-select v-model:value="inviteForm.defaultDepartmentId" :options="inviteDepartmentOptions" :clearable="!inviteDepartmentRequired" :placeholder="inviteDepartmentRequired ? t('invite.select_department') : t('legacy.default_to_root')" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('有效期(小时)')">
+          <n-form-item :label="t('legacy.validity_hours')">
             <n-input-number v-model:value="inviteForm.expiresHours" :min="1" :max="720" style="width: 100%" />
           </n-form-item>
         </n-grid-item>
       </n-grid>
-      <n-form-item :label="t('岗位角色')" :required="inviteRoleRequired">
+      <n-form-item :label="t('legacy.position_role')" :required="inviteRoleRequired">
         <n-select v-model:value="inviteForm.primaryRoleId" :options="roleOptions" />
       </n-form-item>
       <n-alert v-if="inviteCapabilityPreview" type="info" :bordered="false" style="margin-bottom: 18px">
-        {{ t('接受邀请后可用：') }}{{ inviteCapabilityPreview }}
+        {{ t('additional.available_after_accepting_the_invitation') }}{{ inviteCapabilityPreview }}
       </n-alert>
-      <n-form-item v-if="inviteResult.inviteUrl" :label="t('邀请链接')">
+      <n-form-item v-if="inviteResult.inviteUrl" :label="t('legacy.invitation_link')">
         <div class="invite-link-block">
           <div class="invite-link-row">
             <n-input :value="inviteResult.inviteUrl" readonly />
@@ -336,15 +336,15 @@
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                 </svg>
               </template>
-              {{ t('复制链接') }}
+              {{ t('legacy.copy_link') }}
             </n-button>
           </div>
           <div class="section-muted invite-expire-text">
-            {{ t('用户注册链接，过期时间：{time}', { time: inviteResult.expiresAt }) }}
+            {{ t('legacy.registration_link_expires_at', { time: inviteResult.expiresAt }) }}
           </div>
         </div>
       </n-form-item>
-      <n-form-item v-if="inviteResult.token" :label="t('邀请码')">
+      <n-form-item v-if="inviteResult.token" :label="t('legacy.invitation_code')">
         <div class="invite-link-block">
           <div class="invite-link-row">
             <n-input :value="inviteResult.token" readonly />
@@ -355,18 +355,18 @@
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                 </svg>
               </template>
-              {{ t('复制邀请码') }}
+              {{ t('legacy.copy_code') }}
             </n-button>
           </div>
           <div class="section-muted invite-expire-text">
-            {{ t('用户也可以在注册页手动输入邀请码加入组织。') }}
+            {{ t('legacy.users_can_also_enter_the_code_on_the_sign') }}
           </div>
         </div>
       </n-form-item>
     </n-form>
     <template #footer>
       <n-space justify="end">
-        <n-button @click="inviteVisible = false">{{ t('关闭') }}</n-button>
+        <n-button @click="inviteVisible = false">{{ t('legacy.close') }}</n-button>
         <n-button type="primary" :loading="saving" @click="generateInviteLink">
           <template #icon>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -374,7 +374,7 @@
               <line x1="8" y1="12" x2="16" y2="12" />
             </svg>
           </template>
-          {{ t('生成链接') }}
+          {{ t('legacy.generate_link') }}
         </n-button>
       </n-space>
     </template>
@@ -442,11 +442,11 @@ const inviteHistoryVisible = ref(false);
 const inviteRoleNames = computed(() => Object.fromEntries(positionRoles.value.map(role => [role.id, role.name])));
 const roleOptions = computed<SelectOption[]>(() => positionRoles.value.filter(role => role.status === 'active').map(role => ({ label: role.name, value: role.id })));
 const capabilityNames: Record<string, string> = {
-  content_generation: '内容生成',
-  image_generation: '图片生成',
-  code_generation: '代码生成',
-  browser_automation: '浏览器自动运行',
-  internal_knowledge: '内部知识检索',
+  content_generation: 'legacy.content_generation',
+  image_generation: 'legacy.image_generation',
+  code_generation: 'legacy.code_generation',
+  browser_automation: 'legacy.browser_automation',
+  internal_knowledge: 'legacy.internal_knowledge_search_e7ef223',
 };
 const activeUserFields = computed(() => fieldDefs.value.filter((field) => field.enabled));
 
@@ -459,14 +459,14 @@ const statusFilter = ref<string | null>(null);
 const revealedMaskedFields = ref<Set<string>>(new Set());
 
 const sourceOptions = computed<SelectOption[]>(() => [
-  { label: t('本地'), value: 'local' },
-  { label: t('钉钉'), value: 'dingtalk' },
-  { label: t('企业微信'), value: 'wecom' },
-  { label: t('飞书'), value: 'feishu' },
+  { label: t('legacy.local'), value: 'local' },
+  { label: t('legacy.dingtalk'), value: 'dingtalk' },
+  { label: t('legacy.wecom'), value: 'wecom' },
+  { label: t('legacy.lark'), value: 'feishu' },
 ]);
 const statusOptions = computed<SelectOption[]>(() => [
-  { label: t('启用'), value: 'active' },
-  { label: t('禁用'), value: 'disabled' },
+  { label: t('legacy.active'), value: 'active' },
+  { label: t('legacy.disabled_be70be5'), value: 'disabled' },
 ]);
 
 const treeOptions = computed<TreeOption[]>(() => toTreeOptions(departments.value));
@@ -519,12 +519,12 @@ function parseError(error: unknown) {
   if (axios.isAxiosError(error)) {
     const detail = (error.response?.data as { detail?: string | Array<{ msg?: string }> } | undefined)?.detail;
     if (typeof detail === 'string') return detail;
-    if (Array.isArray(detail)) return t('请求参数有误，请检查后重试');
-    if (error.response?.status === 422) return t('请求参数有误，请检查后重试');
-    if (error.response?.status && error.response.status >= 500) return t('服务器处理失败，请稍后重试');
-    return error.message || t('请求失败');
+    if (Array.isArray(detail)) return t('legacy.invalid_request_please_check_and_try_again');
+    if (error.response?.status === 422) return t('legacy.invalid_request_please_check_and_try_again');
+    if (error.response?.status && error.response.status >= 500) return t('legacy.server_error_please_try_again_later');
+    return error.message || t('legacy.request_failed');
   }
-  return t('请求失败');
+  return t('legacy.request_failed');
 }
 
 function toTreeOptions(nodes: DepartmentNode[]): TreeOption[] {
@@ -548,7 +548,7 @@ function renderTreeLabel(info: { option: TreeOption & { rawName?: string; userCo
         'button',
         {
           class: 'dept-node-action',
-          title: t('新增子部门'),
+          title: t('legacy.add_subdepartment'),
           onClick: (event: MouseEvent) => {
             event.preventDefault();
             event.stopPropagation();
@@ -562,7 +562,7 @@ function renderTreeLabel(info: { option: TreeOption & { rawName?: string; userCo
         'button',
         {
           class: 'dept-node-action',
-          title: t('编辑部门'),
+          title: t('legacy.edit_department'),
           onClick: (event: MouseEvent) => {
             event.preventDefault();
             event.stopPropagation();
@@ -615,38 +615,38 @@ const columns = computed<DataTableColumns<DirectoryUserItem>>(() => {
     }));
   return [
     { type: 'selection', fixed: 'left', width: 44 },
-    { title: t('姓名'), key: 'name', width: 120, fixed: 'left' },
-    { title: t('登录名'), key: 'loginName', width: 140 },
-    { title: t('手机号'), key: 'mobile', width: 140 },
-    { title: t('邮箱'), key: 'email', width: 180 },
-    { title: t('主部门'), key: 'primaryDepartmentName', width: 180 },
+    { title: t('legacy.name'), key: 'name', width: 120, fixed: 'left' },
+    { title: t('legacy.login_name'), key: 'loginName', width: 140 },
+    { title: t('legacy.mobile'), key: 'mobile', width: 140 },
+    { title: t('legacy.email'), key: 'email', width: 180 },
+    { title: t('legacy.primary_department'), key: 'primaryDepartmentName', width: 180 },
     {
-      title: t('岗位角色'), key: 'positionRoles', width: 220,
+      title: t('legacy.position_role'), key: 'positionRoles', width: 220,
       render: row => row.pendingPositionRole
-        ? h(NTag, { type: 'warning', bordered: false, size: 'small' }, { default: () => t('待分配') })
+        ? h(NTag, { type: 'warning', bordered: false, size: 'small' }, { default: () => t('additional.unassigned') })
         : h('div', { class: 'role-tags' }, row.positionRoles.map(role => h(NTag, { type: role.isPrimary ? 'info' : 'default', bordered: false, size: 'small' }, { default: () => role.name }))),
     },
     {
-      title: t('来源'),
+      title: t('legacy.source'),
       key: 'source',
       width: 110,
       render: (row) => h('span', { class: 'source-tag' }, sourceLabel(row.source)),
     },
     ...dynamicColumns,
     {
-      title: t('状态'),
+      title: t('legacy.status'),
       key: 'status',
       width: 90,
-      render: (row) => h('span', { class: row.status === 'active' ? 'status-on' : 'status-off' }, row.status === 'active' ? t('启用') : t('禁用')),
+      render: (row) => h('span', { class: row.status === 'active' ? 'status-on' : 'status-off' }, row.status === 'active' ? t('legacy.active') : t('legacy.disabled_be70be5')),
     },
     {
-      title: t('更新时间'),
+      title: t('legacy.updated_at'),
       key: 'updatedAt',
       width: 170,
       render: (row) => formatAdminDateTime(row.updatedAt, '-'),
     },
     {
-      title: t('操作'),
+      title: t('legacy.actions'),
       key: 'actions',
       width: 240,
       fixed: 'right',
@@ -658,7 +658,7 @@ const columns = computed<DataTableColumns<DirectoryUserItem>>(() => {
               class: 'action-link',
               onClick: () => openEditUser(row),
             },
-            t('编辑'),
+            t('legacy.edit'),
           ),
           row.status === 'active'
             ? h(
@@ -667,7 +667,7 @@ const columns = computed<DataTableColumns<DirectoryUserItem>>(() => {
                   class: 'action-link danger',
                   onClick: () => disableUserRow(row),
                 },
-                t('停用'),
+                t('legacy.disabled'),
               )
             : h(
                 'button',
@@ -675,7 +675,7 @@ const columns = computed<DataTableColumns<DirectoryUserItem>>(() => {
                   class: 'action-link',
                   onClick: () => enableUserRow(row),
                 },
-                t('启用'),
+                t('legacy.active'),
               ),
           h(
             'button',
@@ -683,7 +683,7 @@ const columns = computed<DataTableColumns<DirectoryUserItem>>(() => {
               class: 'action-link danger',
               onClick: () => deleteUserRow(row),
             },
-            t('删除'),
+            t('legacy.delete'),
           ),
         ]),
     },
@@ -694,34 +694,34 @@ const userTableScrollX = computed(() => 1634 + fieldDefs.value
   .reduce((width, field) => width + (field.masked ? 170 : 140), 0));
 
 const fieldColumns = computed<DataTableColumns<UserFieldDef>>(() => [
-  { title: t('字段Key'), key: 'fieldKey' },
-  { title: t('字段名称'), key: 'label' },
+  { title: t('legacy.field_key'), key: 'fieldKey' },
+  { title: t('legacy.field_name'), key: 'label' },
   {
-    title: t('类型'),
+    title: t('legacy.type'),
     key: 'fieldType',
     render: (row) => {
       const map: Record<string, string> = {
-        text: t('单行文本'),
-        textarea: t('多行文本'),
-        select: t('单选'),
-        multiselect: t('多选'),
+        text: t('legacy.single_line_text'),
+        textarea: t('legacy.textarea'),
+        select: t('legacy.single_select'),
+        multiselect: t('legacy.multiple_select'),
       };
       return map[row.fieldType] || row.fieldType;
     },
   },
   {
-    title: t('默认行数'),
+    title: t('additional.default_row_count'),
     key: 'rows',
     render: (row) => (row.fieldType === 'textarea' ? row.rows || 3 : '-'),
   },
   {
-    title: t('状态'),
+    title: t('legacy.status'),
     key: 'enabled',
-    render: (row) => h('span', { class: row.enabled ? 'status-on' : 'status-off' }, row.enabled ? t('启用') : t('禁用')),
+    render: (row) => h('span', { class: row.enabled ? 'status-on' : 'status-off' }, row.enabled ? t('legacy.active') : t('legacy.disabled_be70be5')),
   },
-  { title: t('排序'), key: 'sort' },
+  { title: t('legacy.sort_order'), key: 'sort' },
   {
-    title: t('操作'),
+    title: t('legacy.actions'),
     key: 'actions',
     width: 160,
     render: (row) =>
@@ -732,7 +732,7 @@ const fieldColumns = computed<DataTableColumns<UserFieldDef>>(() => [
             class: 'action-link',
             onClick: () => openEditField(row),
           },
-          t('编辑'),
+          t('legacy.edit'),
         ),
         h(
           'button',
@@ -740,7 +740,7 @@ const fieldColumns = computed<DataTableColumns<UserFieldDef>>(() => [
             class: 'action-link danger',
             onClick: () => removeField(row),
           },
-          t('删除'),
+          t('legacy.delete'),
         ),
       ]),
   },
@@ -748,17 +748,17 @@ const fieldColumns = computed<DataTableColumns<UserFieldDef>>(() => [
 
 function sourceLabel(source: string) {
   const map: Record<string, string> = {
-    local: t('本地'),
-    dingtalk: t('钉钉'),
-    wecom: t('企业微信'),
-    feishu: t('飞书'),
+    local: t('legacy.local'),
+    dingtalk: t('legacy.dingtalk'),
+    wecom: t('legacy.wecom'),
+    feishu: t('legacy.lark'),
   };
   return map[source] || source;
 }
 
 function formatCustomFieldValue(value: unknown) {
   if (value === null || value === undefined || value === '') return '-';
-  if (typeof value === 'boolean') return value ? t('是') : t('否');
+  if (typeof value === 'boolean') return value ? t('legacy.yes') : t('legacy.no');
   if (Array.isArray(value)) return value.join(', ');
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
@@ -827,8 +827,8 @@ function renderCustomFieldValue(row: DirectoryUserItem, field: UserFieldDef) {
       {
         class: 'masked-field-toggle',
         type: 'button',
-        title: revealed ? t('隐藏原始信息') : t('查看原始信息'),
-        'aria-label': revealed ? t('隐藏原始信息') : t('查看原始信息'),
+        title: revealed ? t('additional.hide_original_information') : t('additional.view_original_information'),
+        'aria-label': revealed ? t('additional.hide_original_information') : t('additional.view_original_information'),
         style:
           'display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;flex:0 0 24px;border:0;border-radius:6px;background:transparent;color:#64748b;cursor:pointer;padding:0;',
         onClick: (event: MouseEvent) => {
@@ -858,7 +858,7 @@ function buildCustomFieldPayload() {
   for (const field of activeUserFields.value) {
     const value = userForm.value.customFields[field.fieldKey];
     if (field.required && (value === '' || value === null || value === undefined || (Array.isArray(value) && value.length === 0))) {
-      message.warning(t('请填写 {name}', { name: field.label }));
+      message.warning(t('additional.enter', { name: field.label }));
       return null;
     }
     if (field.fieldType === 'multiselect') {
@@ -873,10 +873,10 @@ function buildCustomFieldPayload() {
 function confirmDanger(content: string) {
   return new Promise<boolean>((resolve) => {
     dialog.warning({
-      title: t('确认操作'),
+      title: t('legacy.confirm_action'),
       content,
-      positiveText: t('确认'),
-      negativeText: t('取消'),
+      positiveText: t('legacy.confirm'),
+      negativeText: t('legacy.cancel'),
       onPositiveClick: () => resolve(true),
       onNegativeClick: () => resolve(false),
       onClose: () => resolve(false),
@@ -900,7 +900,7 @@ const deptForm = ref({
   status: 'active' as 'active' | 'disabled',
   parentId: null as string | null,
 });
-const deptEditorTitle = computed(() => (deptEditorMode.value === 'create' ? t('新增部门') : t('编辑部门')));
+const deptEditorTitle = computed(() => (deptEditorMode.value === 'create' ? t('legacy.add_department') : t('legacy.edit_department')));
 
 const deptMoveVisible = ref(false);
 const moveForm = ref({ parentId: null as string | null });
@@ -923,7 +923,7 @@ const userForm = ref({
   primaryRoleId: '',
   roleIds: [] as string[],
 });
-const userEditorTitle = computed(() => (userEditorMode.value === 'create' ? t('新增用户') : t('编辑用户')));
+const userEditorTitle = computed(() => (userEditorMode.value === 'create' ? t('legacy.add_user') : t('legacy.edit_user')));
 
 const fieldManagerVisible = ref(false);
 const fieldEditorVisible = ref(false);
@@ -940,12 +940,12 @@ const fieldForm = ref({
   enabled: true,
   sort: 0,
 });
-const fieldEditorTitle = computed(() => (fieldEditorMode.value === 'create' ? t('新增字段') : t('编辑字段')));
+const fieldEditorTitle = computed(() => (fieldEditorMode.value === 'create' ? t('legacy.add_field') : t('legacy.edit_field')));
 const fieldTypeOptions = computed<SelectOption[]>(() => [
-  { label: t('单行文本'), value: 'text' },
-  { label: t('多行文本'), value: 'textarea' },
-  { label: t('单选'), value: 'select' },
-  { label: t('多选'), value: 'multiselect' },
+  { label: t('legacy.single_line_text'), value: 'text' },
+  { label: t('legacy.textarea'), value: 'textarea' },
+  { label: t('legacy.single_select'), value: 'select' },
+  { label: t('legacy.multiple_select'), value: 'multiselect' },
 ]);
 
 const inviteVisible = ref(false);
@@ -961,7 +961,7 @@ const inviteCapabilityPreview = computed(() => {
     if (enabled) capabilitySet.add(capabilityNames[key] ? t(capabilityNames[key]) : key);
   }));
   if (!selected.length) return '';
-  return [...capabilitySet].join(t('列表分隔符')) || t('普通问答');
+  return [...capabilitySet].join(t('legacy.message')) || t('legacy.general_q_a');
 });
 
 function syncPrimaryRole(roleId: string) {
@@ -1000,7 +1000,7 @@ function openMoveDept() {
 
 async function saveDepartment() {
   if (!deptForm.value.name.trim()) {
-    message.warning(t('请填写部门名称'));
+    message.warning(t('legacy.please_enter_department_name_e03c7a9'));
     return;
   }
   saving.value = true;
@@ -1011,13 +1011,13 @@ async function saveDepartment() {
         parentId: deptForm.value.parentId,
         status: deptForm.value.status,
       });
-      message.success(t('部门已创建'));
+      message.success(t('legacy.department_created_successfully'));
     } else {
       await updateDepartment(deptForm.value.id, {
         name: deptForm.value.name.trim(),
         status: deptForm.value.status,
       });
-      message.success(t('部门已更新'));
+      message.success(t('legacy.department_updated_successfully'));
     }
     deptEditorVisible.value = false;
     await loadDepartments();
@@ -1032,13 +1032,13 @@ async function saveDepartment() {
 async function saveMoveDepartment() {
   if (!selectedDeptId.value) return;
   if (moveForm.value.parentId && selectedMoveBlockedDeptIds.value.has(moveForm.value.parentId)) {
-    message.warning(t('不能移动到自身或子部门下'));
+    message.warning(t('additional.cannot_move_a_department_into_itself_or_one_of'));
     return;
   }
   saving.value = true;
   try {
     await moveDepartment(selectedDeptId.value, { parentId: moveForm.value.parentId });
-    message.success(t('部门已移动'));
+    message.success(t('legacy.department_moved_successfully'));
     deptMoveVisible.value = false;
     await loadDepartments();
     await loadUsers();
@@ -1052,10 +1052,10 @@ async function saveMoveDepartment() {
 async function deleteSelectedDept() {
   if (!selectedDeptId.value) return;
   const target = findDepartmentById(departments.value, selectedDeptId.value);
-  if (!(await confirmDanger(t('确认删除部门 {name} ? 删除前请确保没有子部门和用户。', { name: target?.name || '' })))) return;
+  if (!(await confirmDanger(t('legacy.delete_department_make_sure_it_has_no_subdepartments_or', { name: target?.name || '' })))) return;
   try {
     await deleteDepartment(selectedDeptId.value);
-    message.success(t('部门已删除'));
+    message.success(t('legacy.department_deleted_successfully'));
     await loadDepartments();
     await loadUsers();
   } catch (error) {
@@ -1118,36 +1118,36 @@ async function openEditUser(row: DirectoryUserItem) {
 
 async function saveUser() {
   if (!userForm.value.name.trim()) {
-    message.warning(t('请填写姓名'));
+    message.warning(t('legacy.please_enter_name'));
     return;
   }
   if (!userForm.value.primaryDepartmentId) {
-    message.warning(t('请选择主部门'));
+    message.warning(t('legacy.please_select_primary_department'));
     return;
   }
   if (!userForm.value.primaryRoleId) {
-    message.warning(t('请选择主要岗位角色'));
+    message.warning(t('legacy.select_a_primary_position_role'));
     return;
   }
   syncPrimaryRole(userForm.value.primaryRoleId);
   if (!userForm.value.mobile.trim()) {
-    message.warning(t('请填写手机号'));
+    message.warning(t('additional.enter_a_phone_number'));
     return;
   }
   if (!userForm.value.email.trim()) {
-    message.warning(t('请填写邮箱'));
+    message.warning(t('additional.enter_an_email_address'));
     return;
   }
   if (!isValidPhone(userForm.value.mobile.trim())) {
-    message.warning(t('手机号格式不正确'));
+    message.warning(t('legacy.invalid_mobile_number_format'));
     return;
   }
   if (!isValidEmail(userForm.value.email.trim())) {
-    message.warning(t('邮箱格式不正确'));
+    message.warning(t('legacy.invalid_email_format'));
     return;
   }
   if (userForm.value.source === 'local' && !userForm.value.loginName.trim()) {
-    message.warning(t('请填写登录名'));
+    message.warning(t('legacy.please_enter_login_name'));
     return;
   }
   if (
@@ -1155,11 +1155,11 @@ async function saveUser() {
     && userEditorMode.value === 'create'
     && userForm.value.credentialPassword.length < 10
   ) {
-    message.warning(t('初始密码至少 10 位'));
+    message.warning(t('legacy.initial_password_must_be_at_least_10_characters'));
     return;
   }
   if (userForm.value.credentialPassword && userForm.value.credentialPassword.length < 10) {
-    message.warning(t('密码至少 10 位'));
+    message.warning(t('legacy.password_must_be_at_least_10_characters'));
     return;
   }
   const customFieldPayload = buildCustomFieldPayload();
@@ -1204,7 +1204,7 @@ async function saveUser() {
     if (savedUserId && activeUserFields.value.length) {
       await updateUserCustomFields(savedUserId, customFieldPayload);
     }
-    message.success(userEditorMode.value === 'create' ? t('用户已创建') : t('用户已更新'));
+    message.success(userEditorMode.value === 'create' ? t('legacy.user_created_successfully') : t('legacy.user_updated_successfully'));
     userEditorVisible.value = false;
     await loadUsers();
     await loadDepartments();
@@ -1236,7 +1236,7 @@ async function generateInviteLink() {
     return;
   }
   if (inviteRoleRequired.value && !inviteForm.value.primaryRoleId) {
-    message.warning(t('请选择岗位角色'));
+    message.warning(t('additional.select_a_position_role'));
     return;
   }
   saving.value = true;
@@ -1248,7 +1248,7 @@ async function generateInviteLink() {
     });
     inviteResult.value = result;
     inviteHistoryRefreshKey.value += 1;
-    message.success(t('邀请链接已生成'));
+    message.success(t('legacy.invitation_link_generated'));
   } catch (error) {
     message.error(parseError(error));
   } finally {
@@ -1260,9 +1260,9 @@ async function copyInviteUrl() {
   if (!inviteResult.value.inviteUrl) return;
   try {
     await navigator.clipboard.writeText(inviteResult.value.inviteUrl);
-    message.success(t('邀请链接已复制'));
+    message.success(t('legacy.invitation_link_copied'));
   } catch (_error) {
-    message.warning(t('复制失败，请手动复制'));
+    message.warning(t('legacy.copy_failed_please_copy_manually'));
   }
 }
 
@@ -1270,17 +1270,17 @@ async function copyInviteCode() {
   if (!inviteResult.value.token) return;
   try {
     await navigator.clipboard.writeText(inviteResult.value.token);
-    message.success(t('邀请码已复制'));
+    message.success(t('legacy.invitation_code_copied'));
   } catch {
-    message.warning(t('复制失败，请手动复制'));
+    message.warning(t('legacy.copy_failed_please_copy_manually'));
   }
 }
 
 async function deleteUserRow(row: DirectoryUserItem) {
-  if (!(await confirmDanger(t('确认删除用户 {name} ? 删除后不可恢复。', { name: row.name })))) return;
+  if (!(await confirmDanger(t('legacy.delete_user_this_cannot_be_undone', { name: row.name })))) return;
   try {
     await deleteUser(row.id);
-    message.success(t('用户已删除'));
+    message.success(t('legacy.user_deleted_successfully'));
     await loadUsers();
     await loadDepartments();
   } catch (error) {
@@ -1318,10 +1318,10 @@ async function updateUserStatus(row: DirectoryUserItem, status: 'active' | 'disa
 }
 
 async function disableUserRow(row: DirectoryUserItem) {
-  if (!(await confirmDanger(t('确认停用用户 {name} ?', { name: row.name })))) return;
+  if (!(await confirmDanger(t('legacy.are_you_sure_to_disable_user', { name: row.name })))) return;
   try {
     await updateUserStatus(row, 'disabled');
-    message.success(t('用户已停用'));
+    message.success(t('legacy.user_disabled_successfully'));
     await loadUsers();
   } catch (error) {
     message.error(parseError(error));
@@ -1329,10 +1329,10 @@ async function disableUserRow(row: DirectoryUserItem) {
 }
 
 async function enableUserRow(row: DirectoryUserItem) {
-  if (!(await confirmDanger(t('确认启用用户 {name} ?', { name: row.name })))) return;
+  if (!(await confirmDanger(t('legacy.are_you_sure_to_enable_user', { name: row.name })))) return;
   try {
     await updateUserStatus(row, 'active');
-    message.success(t('用户已启用'));
+    message.success(t('legacy.user_enabled_successfully'));
     await loadUsers();
   } catch (error) {
     message.error(parseError(error));
@@ -1376,11 +1376,11 @@ function openEditField(row: UserFieldDef) {
 async function saveField() {
   const fieldKey = fieldForm.value.fieldKey.trim();
   if (!fieldKey || !fieldForm.value.label.trim()) {
-    message.warning(t('请填写字段 key 和名称'));
+    message.warning(t('legacy.please_enter_field_key_and_name'));
     return;
   }
   if (!/^[a-zA-Z0-9_]{2,64}$/.test(fieldKey)) {
-    message.warning(t('字段Key只能包含英文字母、数字、下划线，长度为 2-64 位'));
+    message.warning(t('legacy.field_key_can_only_contain_letters_numbers_and_underscores'));
     return;
   }
   const options = fieldForm.value.optionsText
@@ -1388,7 +1388,7 @@ async function saveField() {
     .map((s) => s.trim())
     .filter(Boolean);
   if ((fieldForm.value.fieldType === 'select' || fieldForm.value.fieldType === 'multiselect') && !options.length) {
-    message.warning(t('请填写选项值'));
+    message.warning(t('legacy.please_enter_options'));
     return;
   }
   saving.value = true;
@@ -1406,10 +1406,10 @@ async function saveField() {
     };
     if (fieldEditorMode.value === 'create') {
       await createUserFieldDef(payload);
-      message.success(t('字段已创建'));
+      message.success(t('legacy.field_created_successfully'));
     } else {
       await updateUserFieldDef(fieldForm.value.id, payload);
-      message.success(t('字段已更新'));
+      message.success(t('legacy.field_updated_successfully'));
     }
     fieldEditorVisible.value = false;
     await loadFieldDefs();
@@ -1421,10 +1421,10 @@ async function saveField() {
 }
 
 async function removeField(row: UserFieldDef) {
-  if (!(await confirmDanger(t('确认删除字段 {name} ?', { name: row.label })))) return;
+  if (!(await confirmDanger(t('legacy.are_you_sure_to_delete_field', { name: row.label })))) return;
   try {
     await deleteUserFieldDef(row.id);
-    message.success(t('字段已删除'));
+    message.success(t('legacy.field_deleted_successfully'));
     await loadFieldDefs();
   } catch (error) {
     message.error(parseError(error));

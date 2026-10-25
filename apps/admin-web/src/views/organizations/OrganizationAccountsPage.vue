@@ -3,18 +3,18 @@
     <n-card class="account-card" :bordered="false" size="large">
       <div class="toolbar">
         <n-space align="center" :size="10">
-          <n-input v-model:value="filters.keyword" :placeholder="t('搜索账号/姓名/邮箱')" clearable />
+          <n-input v-model:value="filters.keyword" :placeholder="t('legacy.search_by_username_name_email')" clearable />
           <n-select
             v-model:value="filters.groupCode"
             :options="groupOptions"
-            :placeholder="t('账号组')"
+            :placeholder="t('legacy.account_group')"
             clearable
             style="width: 180px"
           />
           <n-select
             v-model:value="filters.status"
             :options="statusOptions"
-            :placeholder="t('状态')"
+            :placeholder="t('legacy.status')"
             clearable
             style="width: 130px"
           />
@@ -29,7 +29,7 @@
                 <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
             </template>
-            {{ t('账号组管理') }}
+            {{ t('legacy.manage_groups') }}
           </n-button>
           <n-button type="primary" @click="openCreateAccount">
             <template #icon>
@@ -40,7 +40,7 @@
                 <line x1="22" y1="11" x2="16" y2="11" />
               </svg>
             </template>
-            {{ t('新增账号') }}
+            {{ t('legacy.add_account') }}
           </n-button>
         </n-space>
       </div>
@@ -57,7 +57,7 @@
         />
       </div>
       <div class="pager-row">
-        <span class="pager-total">{{ t('共 {count} 条', { count: filteredAccounts.length }) }}</span>
+        <span class="pager-total">{{ t('legacy.total_items', { count: filteredAccounts.length }) }}</span>
         <n-pagination
           v-model:page="currentPage"
           :page-size="pageSize"
@@ -69,9 +69,9 @@
     </n-card>
   </div>
 
-  <n-modal v-model:show="groupManagerVisible" preset="card" :title="t('账号组管理')" style="width: 860px">
+  <n-modal v-model:show="groupManagerVisible" preset="card" :title="t('legacy.manage_groups')" style="width: 860px">
     <div class="toolbar group-toolbar">
-      <span class="section-muted">{{ t('简易版：新增、编辑、删除账号组') }}</span>
+      <span class="section-muted">{{ t('legacy.simple_mode_add_edit_or_delete_account_groups') }}</span>
       <n-button type="primary" size="small" @click="openCreateGroup">
         <template #icon>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -79,7 +79,7 @@
             <path d="M12 5v14" />
           </svg>
         </template>
-        {{ t('新增账号组') }}
+        {{ t('legacy.new_group') }}
       </n-button>
     </div>
     <n-data-table :columns="groupColumns" :data="groups" :pagination="{ pageSize: 6 }" :bordered="false" />
@@ -87,17 +87,17 @@
 
   <n-modal v-model:show="groupEditorVisible" preset="card" :title="groupEditorTitle" style="width: 560px">
     <n-form :model="groupForm" label-placement="left" label-width="84">
-      <n-form-item :label="t('账号组名称')">
-        <n-input v-model:value="groupForm.name" :placeholder="t('如: 组织运营管理员组')" />
+      <n-form-item :label="t('legacy.group_name')">
+        <n-input v-model:value="groupForm.name" :placeholder="t('legacy.example_org_operations_admin_group')" />
       </n-form-item>
-      <n-form-item :label="t('说明')">
-        <n-input v-model:value="groupForm.description" type="textarea" :rows="3" :placeholder="t('账号组说明')" />
+      <n-form-item :label="t('legacy.description')">
+        <n-input v-model:value="groupForm.description" type="textarea" :rows="3" :placeholder="t('legacy.account_group_description')" />
       </n-form-item>
     </n-form>
     <template #footer>
       <n-space justify="end">
-        <n-button @click="groupEditorVisible = false">{{ t('取消') }}</n-button>
-        <n-button type="primary" :loading="saving" @click="saveGroup">{{ t('保存') }}</n-button>
+        <n-button @click="groupEditorVisible = false">{{ t('legacy.cancel') }}</n-button>
+        <n-button type="primary" :loading="saving" @click="saveGroup">{{ t('legacy.save') }}</n-button>
       </n-space>
     </template>
   </n-modal>
@@ -106,61 +106,61 @@
     <n-form :model="accountForm" label-placement="left" label-width="84">
       <n-grid :cols="2" :x-gap="12">
         <n-grid-item>
-          <n-form-item :label="t('登录账号')" required>
+          <n-form-item :label="t('legacy.username')" required>
             <n-input
               v-model:value="accountForm.username"
               :disabled="accountEditorMode === 'edit'"
-              :placeholder="t('如: wang.li')"
+              :placeholder="t('legacy.example_wang_li')"
             />
           </n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('姓名')" required>
-            <n-input v-model:value="accountForm.displayName" :placeholder="t('如: 王丽')" />
+          <n-form-item :label="t('legacy.name')" required>
+            <n-input v-model:value="accountForm.displayName" :placeholder="t('legacy.example_jane_doe')" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('邮箱')">
-            <n-input v-model:value="accountForm.email" :placeholder="t('如: wang.li@company.com')" />
+          <n-form-item :label="t('legacy.email')">
+            <n-input v-model:value="accountForm.email" :placeholder="t('legacy.example_wang_li_company_com')" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('手机号')">
-            <n-input v-model:value="accountForm.phone" :placeholder="t('如: 13800000000')" />
+          <n-form-item :label="t('legacy.mobile')">
+            <n-input v-model:value="accountForm.phone" :placeholder="t('legacy.example_13800000000')" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('账号组')" required>
+          <n-form-item :label="t('legacy.account_group')" required>
             <n-select v-model:value="accountForm.groupCode" :options="groupOptions" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('角色')" required>
+          <n-form-item :label="t('legacy.role')" required>
             <n-select v-model:value="accountForm.roleName" :options="roleOptions" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('状态')">
+          <n-form-item :label="t('legacy.status')">
             <n-select v-model:value="accountForm.status" :options="statusOptions" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item v-if="accountEditorMode === 'create'" :span="2">
-          <n-form-item :label="t('初始密码')" required>
+          <n-form-item :label="t('legacy.initial_password')" required>
             <n-input
               v-model:value="accountForm.initialPassword"
               type="password"
               show-password-on="click"
-              :placeholder="t('至少 10 位')"
+              :placeholder="t('legacy.at_least_10_characters')"
             />
           </n-form-item>
-          <div class="section-muted">{{ t('新建账号需设置初始密码，创建后可直接用于登录后台。') }}</div>
+          <div class="section-muted">{{ t('legacy.new_accounts_require_an_initial_password_to_log_in') }}</div>
         </n-grid-item>
       </n-grid>
     </n-form>
     <template #footer>
       <n-space justify="end">
-        <n-button @click="accountEditorVisible = false">{{ t('取消') }}</n-button>
-        <n-button type="primary" :loading="saving" @click="saveAccount">{{ t('保存') }}</n-button>
+        <n-button @click="accountEditorVisible = false">{{ t('legacy.cancel') }}</n-button>
+        <n-button type="primary" :loading="saving" @click="saveAccount">{{ t('legacy.save') }}</n-button>
       </n-space>
     </template>
   </n-modal>
@@ -171,7 +171,7 @@ import type { DataTableColumns } from 'naive-ui';
 import { useMessage } from 'naive-ui';
 import { computed, h, onMounted, ref, watch } from 'vue';
 import axios from 'axios';
-import { t } from '@/composables/i18n';
+import { t, translateSourceText } from '@/composables/i18n';
 import { formatAdminDateTime } from '@/composables/adminTimezone';
 import {
   createAccount,
@@ -212,10 +212,10 @@ const groups = ref<AccountGroupItem[]>([]);
 const accounts = ref<AccountItem[]>([]);
 
 const roleOptions = computed(() => [
-  { label: t('平台管理员'), value: '平台管理员' },
-  { label: t('组织管理员'), value: '组织管理员' },
-  { label: t('审计员'), value: '审计员' },
-  { label: t('运营人员'), value: '运营人员' },
+  { label: t('legacy.platform_admin'), value: '平台管理员' },
+  { label: t('legacy.organization_administrator'), value: '组织管理员' },
+  { label: t('legacy.auditor'), value: '审计员' },
+  { label: t('legacy.operator'), value: '运营人员' },
 ]);
 
 // Keep compatibility with accounts created by older API versions that persisted
@@ -232,8 +232,8 @@ function roleLabel(value: string) {
 }
 
 const statusOptions = computed(() => [
-  { label: t('启用'), value: 'active' },
-  { label: t('禁用'), value: 'disabled' },
+  { label: t('legacy.active'), value: 'active' },
+  { label: t('legacy.disabled_be70be5'), value: 'disabled' },
 ]);
 
 const filters = ref({
@@ -260,14 +260,14 @@ const accountForm = ref<AccountForm>({
   email: '',
   phone: '',
   groupCode: '',
-  roleName: t('组织管理员'),
+  roleName: t('legacy.organization_administrator'),
   status: 'active',
   initialPassword: '',
 });
 
-const groupEditorTitle = computed(() => (groupEditorMode.value === 'create' ? t('新增账号组') : t('编辑账号组')));
+const groupEditorTitle = computed(() => (groupEditorMode.value === 'create' ? t('legacy.new_group') : t('legacy.edit_group')));
 const accountEditorTitle = computed(() =>
-  accountEditorMode.value === 'create' ? t('新增账号') : t('编辑账号'),
+  accountEditorMode.value === 'create' ? t('legacy.add_account') : t('legacy.edit_account'),
 );
 
 const groupOptions = computed(() =>
@@ -305,11 +305,11 @@ watch(filteredAccounts, (rows) => {
 });
 
 const groupColumns = computed<DataTableColumns<AccountGroupItem>>(() => [
-  { title: t('账号组名称'), key: 'name' },
-  { title: t('说明'), key: 'description' },
-  { title: t('账号数'), key: 'accountCount' },
+  { title: t('legacy.group_name'), key: 'name' },
+  { title: t('legacy.description'), key: 'description' },
+  { title: t('legacy.accounts_count'), key: 'accountCount' },
   {
-    title: t('操作'),
+    title: t('legacy.actions'),
     key: 'actions',
     width: 160,
     render: (row) =>
@@ -320,7 +320,7 @@ const groupColumns = computed<DataTableColumns<AccountGroupItem>>(() => [
             class: 'action-link',
             onClick: () => openEditGroup(row),
           },
-          t('编辑'),
+          t('legacy.edit'),
         ),
         h(
           'button',
@@ -328,34 +328,34 @@ const groupColumns = computed<DataTableColumns<AccountGroupItem>>(() => [
             class: 'action-link danger',
             onClick: () => removeGroup(row),
           },
-          t('删除'),
+          t('legacy.delete'),
         ),
       ]),
   },
 ]);
 
 const accountColumns = computed<DataTableColumns<AccountItem>>(() => [
-  { title: t('登录账号'), key: 'username', width: 150, fixed: 'left' },
-  { title: t('姓名'), key: 'displayName', width: 130, fixed: 'left' },
-  { title: t('账号组'), key: 'groupName', width: 160 },
-  { title: t('角色'), key: 'roleName', width: 140, render: (row) => roleLabel(row.roleName) },
-  { title: t('邮箱'), key: 'email', width: 200 },
-  { title: t('手机号'), key: 'phone', width: 140 },
+  { title: t('legacy.username'), key: 'username', width: 150, fixed: 'left' },
+  { title: t('legacy.name'), key: 'displayName', width: 130, fixed: 'left' },
+  { title: t('legacy.account_group'), key: 'groupName', width: 160 },
+  { title: t('legacy.role'), key: 'roleName', width: 140, render: (row) => roleLabel(row.roleName) },
+  { title: t('legacy.email'), key: 'email', width: 200 },
+  { title: t('legacy.mobile'), key: 'phone', width: 140 },
   {
-    title: t('状态'),
+    title: t('legacy.status'),
     key: 'status',
     width: 90,
     render: (row) =>
       h('span', { class: row.status === 'active' ? 'status-on' : 'status-off' }, formatStatus(row.status)),
   },
   {
-    title: t('更新时间'),
+    title: t('legacy.updated_at'),
     key: 'updatedAt',
     width: 170,
     render: (row) => formatAdminDateTime(row.updatedAt, '-'),
   },
   {
-    title: t('操作'),
+    title: t('legacy.actions'),
     key: 'actions',
     width: 220,
     render: (row) =>
@@ -366,41 +366,41 @@ const accountColumns = computed<DataTableColumns<AccountItem>>(() => [
             class: 'action-link',
             onClick: () => openEditAccount(row),
           },
-          t('编辑'),
+          t('legacy.edit'),
         ),
         row.isProtected
-          ? h('span', { class: 'builtin-tag' }, t('内置账号'))
+          ? h('span', { class: 'builtin-tag' }, t('legacy.built_in'))
           : h(
               'button',
               {
                 class: 'action-link danger',
                 onClick: () => removeAccount(row),
               },
-              t('删除'),
+              t('legacy.delete'),
             ),
       ]),
   },
 ]);
 
 function formatStatus(status: StatusType) {
-  return status === 'active' ? t('启用') : t('禁用');
+  return status === 'active' ? t('legacy.active') : t('legacy.disabled_be70be5');
 }
 
-function parseError(error: unknown, fallback = t('请求失败')) {
+function parseError(error: unknown, fallback = t('legacy.request_failed')) {
   if (axios.isAxiosError(error)) {
     const detail = (error.response?.data as { detail?: string } | undefined)?.detail?.trim();
     if (detail) {
-      return t(detail);
+      return translateSourceText(detail);
     }
     const status = error.response?.status;
     if (status) {
-      if (status >= 500) return t('服务器处理失败，请稍后重试');
-      if (status === 404) return t('请求的资源不存在');
-      if (status === 400 || status === 422) return t('请求参数有误，请检查后重试');
+      if (status >= 500) return t('legacy.server_error_please_try_again_later');
+      if (status === 404) return t('legacy.the_requested_resource_was_not_found');
+      if (status === 400 || status === 422) return t('legacy.invalid_request_please_check_and_try_again');
       return fallback;
     }
-    if (error.code === 'ECONNABORTED') return t('请求超时，请稍后重试');
-    return t('网络异常，请检查 admin-api 是否已启动');
+    if (error.code === 'ECONNABORTED') return t('legacy.request_timed_out_please_try_again_later');
+    return t('legacy.network_error_please_check_whether_admin_api_is_running');
   }
   return fallback;
 }
@@ -431,7 +431,7 @@ function openEditGroup(row: AccountGroupItem) {
 
 async function saveGroup() {
   if (!groupForm.value.name.trim()) {
-    message.warning(t('请填写账号组名称'));
+    message.warning(t('legacy.please_enter_group_name'));
     return;
   }
   saving.value = true;
@@ -441,39 +441,39 @@ async function saveGroup() {
         name: groupForm.value.name.trim(),
         description: groupForm.value.description.trim(),
       });
-      message.success(t('账号组已创建'));
+      message.success(t('legacy.group_created_successfully'));
     } else {
       await updateAccountGroup(groupForm.value.id, {
         name: groupForm.value.name.trim(),
         description: groupForm.value.description.trim(),
       });
-      message.success(t('账号组已更新'));
+      message.success(t('legacy.group_updated_successfully'));
     }
     groupEditorVisible.value = false;
     await loadData();
   } catch (error) {
-    message.error(parseError(error, t('账号组保存失败')));
+    message.error(parseError(error, t('legacy.failed_to_save_group')));
   } finally {
     saving.value = false;
   }
 }
 
 async function removeGroup(row: AccountGroupItem) {
-  if (!window.confirm(t('确认删除账号组 {name} ?', { name: row.name }))) {
+  if (!window.confirm(t('legacy.are_you_sure_to_delete_group', { name: row.name }))) {
     return;
   }
   try {
     await deleteAccountGroup(row.id);
-    message.success(t('账号组已删除'));
+    message.success(t('legacy.group_deleted_successfully'));
     await loadData();
   } catch (error) {
-    message.error(parseError(error, t('账号组删除失败')));
+    message.error(parseError(error, t('legacy.failed_to_delete_group')));
   }
 }
 
 function openCreateAccount() {
   if (!groups.value.length) {
-    message.warning(t('请先创建账号组'));
+    message.warning(t('legacy.please_create_an_account_group_first'));
     return;
   }
   accountEditorMode.value = 'create';
@@ -484,7 +484,7 @@ function openCreateAccount() {
     email: '',
     phone: '',
     groupCode: groups.value[0].code,
-    roleName: t('组织管理员'),
+    roleName: t('legacy.organization_administrator'),
     status: 'active',
     initialPassword: '',
   };
@@ -509,19 +509,19 @@ function openEditAccount(row: AccountItem) {
 
 async function saveAccount() {
   if (!accountForm.value.username.trim() || !accountForm.value.displayName.trim()) {
-    message.warning(t('请填写登录账号和姓名'));
+    message.warning(t('legacy.please_enter_username_and_display_name'));
     return;
   }
   if (!isValidPhone(accountForm.value.phone.trim())) {
-    message.warning(t('手机号格式不正确'));
+    message.warning(t('legacy.invalid_mobile_number_format'));
     return;
   }
   if (!isValidEmail(accountForm.value.email.trim())) {
-    message.warning(t('邮箱格式不正确'));
+    message.warning(t('legacy.invalid_email_format'));
     return;
   }
   if (accountEditorMode.value === 'create' && accountForm.value.initialPassword.trim().length < 10) {
-    message.warning(t('初始密码至少 10 位'));
+    message.warning(t('legacy.initial_password_must_be_at_least_10_characters'));
     return;
   }
   saving.value = true;
@@ -537,7 +537,7 @@ async function saveAccount() {
         status: accountForm.value.status,
         initialPassword: accountForm.value.initialPassword.trim(),
       });
-      message.success(t('账号已创建'));
+      message.success(t('legacy.account_created_successfully'));
     } else {
       await updateAccount(accountForm.value.id, {
         displayName: accountForm.value.displayName.trim(),
@@ -547,27 +547,27 @@ async function saveAccount() {
         roleName: accountForm.value.roleName,
         status: accountForm.value.status,
       });
-      message.success(t('账号已更新'));
+      message.success(t('legacy.account_updated_successfully'));
     }
     accountEditorVisible.value = false;
     await loadData();
   } catch (error) {
-    message.error(parseError(error, t('账号保存失败')));
+    message.error(parseError(error, t('legacy.failed_to_save_account')));
   } finally {
     saving.value = false;
   }
 }
 
 async function removeAccount(row: AccountItem) {
-  if (!window.confirm(t('确认删除账号 {name} ?', { name: row.username }))) {
+  if (!window.confirm(t('legacy.are_you_sure_to_delete_account', { name: row.username }))) {
     return;
   }
   try {
     await deleteAccount(row.id);
-    message.success(t('账号已删除'));
+    message.success(t('legacy.account_deleted_successfully'));
     await loadData();
   } catch (error) {
-    message.error(parseError(error, t('账号删除失败')));
+    message.error(parseError(error, t('legacy.failed_to_delete_account')));
   }
 }
 
@@ -581,7 +581,7 @@ onMounted(async () => {
   try {
     await loadData();
   } catch (error) {
-    message.error(parseError(error, t('账号数据加载失败')));
+    message.error(parseError(error, t('legacy.failed_to_load_account_data')));
   }
 });
 </script>

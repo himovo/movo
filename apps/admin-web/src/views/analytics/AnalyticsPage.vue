@@ -3,7 +3,7 @@
 
     <div ref="metricsRef" class="metrics-row">
       <n-card class="metric-card metric-card-orange" :bordered="false">
-        <div class="metric-label">{{ t('成本统计') }}</div>
+        <div class="metric-label">{{ t('legacy.cost_statistics') }}</div>
         <div class="metric-value" :title="t('tokenStats.currentRate')">{{ formatCurrencyCosts(summary.costsByCurrency, summary.pricedCallsByCurrency) }}</div>
         <div v-if="hasPricedCalls" class="metric-note" :title="costDetails">{{ costDetails }}</div>
         <div v-if="summary.unpricedCalls" class="metric-note">{{ t('tokenStats.unpricedShort', { count: summary.unpricedCalls }) }}</div>
@@ -14,9 +14,9 @@
         </div>
       </n-card>
       <n-card class="metric-card metric-card-blue" :bordered="false">
-        <div class="metric-label">{{ t('总 Token 消耗') }}</div>
+        <div class="metric-label">{{ t('legacy.total_tokens') }}</div>
         <div class="metric-value">{{ formatNumber(summary.totalTokens) }}</div>
-        <div class="metric-note">{{ t('平均每次请求 {count}', { count: formatNumber(summary.avgTokens) }) }}</div>
+        <div class="metric-note">{{ t('legacy.avg_per_call', { count: formatNumber(summary.avgTokens) }) }}</div>
         <div class="metric-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none">
             <path d="M4 5h16v12H4z" />
@@ -31,7 +31,7 @@
       <n-card class="metric-card metric-card-green" :bordered="false">
         <div class="metric-label">Prompt</div>
         <div class="metric-value">{{ formatNumber(summary.promptTokens) }}</div>
-        <div class="metric-note">{{ t('输入 Token') }}</div>
+        <div class="metric-note">{{ t('legacy.prompt_tokens') }}</div>
         <div class="metric-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none">
             <path d="M4 6h16" />
@@ -44,7 +44,7 @@
       <n-card class="metric-card metric-card-purple" :bordered="false">
         <div class="metric-label">Completion</div>
         <div class="metric-value">{{ formatNumber(summary.completionTokens) }}</div>
-        <div class="metric-note">{{ t('输出 Token') }}</div>
+        <div class="metric-note">{{ t('legacy.completion_tokens') }}</div>
         <div class="metric-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none">
             <path d="M4 6h16v12H4z" />
@@ -53,9 +53,9 @@
         </div>
       </n-card>
       <n-card class="metric-card metric-card-cyan" :bordered="false">
-        <div class="metric-label">{{ t('近 24 小时') }}</div>
+        <div class="metric-label">{{ t('legacy.last_24_hours') }}</div>
         <div class="metric-value">{{ formatNumber(summary.last24hTokens) }}</div>
-        <div class="metric-note">{{ t('调用 {count} 次 LLM', { count: formatNumber(summary.last24hCalls) }) }}</div>
+        <div class="metric-note">{{ t('legacy.called_llm_times', { count: formatNumber(summary.last24hCalls) }) }}</div>
         <div class="metric-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none">
             <path d="M12 8v5l3 2" />
@@ -70,10 +70,10 @@
       <div class="list-filter-row">
         <div class="filter-toolbar">
           <n-space align="center" :size="10" class="filter-left">
-            <n-input v-model:value="filters.q" class="filter-search" clearable :placeholder="t('搜索请求 / 模型 / Trace')" />
+            <n-input v-model:value="filters.q" class="filter-search" clearable :placeholder="t('legacy.search_requests_models_traces')" />
             <DirectoryScopePicker v-model="scope" />
-            <n-select v-model:value="filters.modelName" class="filter-select" clearable :options="modelOptions" :placeholder="t('模型')" />
-            <n-select v-model:value="filters.status" class="filter-select-sm" clearable :options="localizedStatusOptions" :placeholder="t('状态')" />
+            <n-select v-model:value="filters.modelName" class="filter-select" clearable :options="modelOptions" :placeholder="t('legacy.model')" />
+            <n-select v-model:value="filters.status" class="filter-select-sm" clearable :options="localizedStatusOptions" :placeholder="t('legacy.status')" />
           </n-space>
           <n-space :size="10" class="filter-right">
             <n-button secondary @click="resetFilters">
@@ -83,7 +83,7 @@
                   <path d="M3 3v5h5" />
                 </svg>
               </template>
-              {{ t('重置') }}
+              {{ t('legacy.reset') }}
             </n-button>
             <n-button type="primary" :loading="loading" @click="runSearch">
               <template #icon>
@@ -92,7 +92,7 @@
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
               </template>
-              {{ t('查询') }}
+              {{ t('legacy.query') }}
             </n-button>
           </n-space>
         </div>
@@ -113,7 +113,7 @@
         </div>
 
         <div ref="tablePaginationRef" class="table-pagination">
-          <div class="table-total">{{ t('共 {count} 条记录', { count: formatNumber(total) }) }}</div>
+          <div class="table-total">{{ t('legacy.total_records', { count: formatNumber(total) }) }}</div>
           <n-pagination
             :page="page"
             :page-size="pageSize"
@@ -128,7 +128,7 @@
     </n-card>
 
     <n-drawer v-model:show="drawerVisible" :width="960" placement="right">
-      <n-drawer-content :title="t('{title} (调用明细)', { title: selectedTraceTitle })" closable>
+      <n-drawer-content :title="t('legacy.call_details', { title: selectedTraceTitle })" closable>
         <div class="drawer-content-wrap">
           <n-data-table
             :loading="drawerLoading"
@@ -141,7 +141,7 @@
             style="flex: 1 1 auto; min-height: 0;"
           />
           <div class="drawer-pagination">
-            <div class="table-total">{{ t('共 {count} 条记录', { count: formatNumber(drawerTotal) }) }}</div>
+            <div class="table-total">{{ t('legacy.total_records', { count: formatNumber(drawerTotal) }) }}</div>
             <n-pagination
               :page="drawerPage"
               :page-size="drawerPageSize"
@@ -169,13 +169,13 @@
               <div :class="['message-bubble', msg.role === 'user' ? 'bubble-user' : 'bubble-assistant']" style="width: 100%;">
                 <!-- 角色标头 -->
                 <div class="bubble-header">
-                  <span class="role-badge">{{ msg.role === 'user' ? t('用户 (User)') : t('AI 助手 (Assistant)') }}</span>
+                  <span class="role-badge">{{ msg.role === 'user' ? t('legacy.user') : t('legacy.assistant') }}</span>
                   <span class="msg-time">{{ formatTime(msg.createdAt) }}</span>
                 </div>
 
                 <!-- 进度步骤 Timeline (仅在 assistant 角色且有 progress 时显示) -->
                 <div v-if="msg.role === 'assistant' && msg.progress && msg.progress.length" class="assistant-timeline-box">
-                  <div class="timeline-title">{{ t('执行步骤与进度：') }}</div>
+                  <div class="timeline-title">{{ t('legacy.execution_steps_progress') }}</div>
                   <n-timeline size="medium" style="margin-top: 8px;">
                     <n-timeline-item
                       v-for="(step, sIdx) in msg.progress"
@@ -229,15 +229,15 @@
                     </div>
                     <div class="doc-info-box">
                       <div class="doc-title" :title="doc.title || doc.filename">
-                        {{ doc.title || doc.filename || t('未命名文档') }}
+                        {{ doc.title || doc.filename || t('legacy.unnamed_document') }}
                       </div>
                       <div class="doc-meta">
-                        {{ doc.filename || t('{type} 文档', { type: (doc.type || doc.kind)?.toUpperCase() || 'DOC' }) }}
+                        {{ doc.filename || t('legacy.document', { type: (doc.type || doc.kind)?.toUpperCase() || 'DOC' }) }}
                       </div>
                     </div>
                     <div class="doc-action-box">
                       <n-button size="small" type="info" secondary @click="downloadDocument(doc)">
-                        {{ t('下载') }}
+                        {{ t('legacy.download') }}
                       </n-button>
                     </div>
                   </div>
@@ -246,7 +246,7 @@
             </div>
           </div>
           <div v-else class="empty-chat-state">
-            {{ t('该调用未关联到可展示的对话消息') }}
+            {{ t('additional.no_displayable_conversation_messages_are_associated_with_this_call') }}
           </div>
         </n-spin>
       </n-drawer-content>
@@ -303,12 +303,12 @@ const statusOptions = ref<TokenStatsOption[]>([]);
 
 function statusLabel(value: string) {
   const key = String(value || '');
-  if (key === 'completed') return t('Token状态.完成');
-  if (key === 'user_cancelled') return t('Token状态.用户终止');
-  if (key === 'runtime_error') return t('Token状态.运行错误');
-  if (key === 'network_error') return t('Token状态.网络故障');
-  if (key === 'failed') return t('Token状态.运行错误');
-  return key || t('未记录');
+  if (key === 'completed') return t('legacy.completed');
+  if (key === 'user_cancelled') return t('legacy.cancelled_by_user');
+  if (key === 'runtime_error') return t('legacy.runtime_error');
+  if (key === 'network_error') return t('legacy.network_error');
+  if (key === 'failed') return t('legacy.runtime_error');
+  return key || t('legacy.unrecorded');
 }
 
 function statusTagType(value: string) {
@@ -347,11 +347,11 @@ const drawerPageSize = ref(20);
 const payloadVisible = ref(false);
 const payloadLoading = ref(false);
 const chatHistory = ref<SessionChatHistory | null>(null);
-const selectedChatTitle = ref(t('对话详情'));
+const selectedChatTitle = ref(t('legacy.chat_details'));
 
 async function showPayloadDetails(row: TokenStatsItem) {
   chatHistory.value = null;
-  selectedChatTitle.value = t('对话详情');
+  selectedChatTitle.value = t('legacy.chat_details');
   payloadLoading.value = true;
   payloadVisible.value = true;
   try {
@@ -362,13 +362,13 @@ async function showPayloadDetails(row: TokenStatsItem) {
       if (titleText.length > 20) {
         titleText = titleText.slice(0, 20) + '...';
       }
-      selectedChatTitle.value = t('{title} (对话详情)', { title: titleText });
+      selectedChatTitle.value = t('legacy.chat_details_3cad716', { title: titleText });
     } else {
-      selectedChatTitle.value = t('对话详情');
+      selectedChatTitle.value = t('legacy.chat_details');
     }
   } catch (err) {
     console.error(err);
-    message.error(t('加载对话详情失败'));
+    message.error(t('legacy.failed_to_load_chat_details'));
     payloadVisible.value = false;
   } finally {
     payloadLoading.value = false;
@@ -410,7 +410,7 @@ function downloadDocument(doc: any) {
   if (url) {
     window.open(url, '_blank');
   } else {
-    message.warning(t('该文档暂无有效的下载链接'));
+    message.warning(t('legacy.no_download_link_available_for_this_document'));
   }
 }
 
@@ -505,26 +505,26 @@ function renderMarkdown(text?: string): string {
 
 const drawerColumns = computed<DataTableColumns<TokenStatsItem>>(() => [
   {
-    title: t('时间'),
+    title: t('legacy.time'),
     key: 'createdAt',
     width: 150,
     render: (row) => formatTime(row.createdAt),
   },
   {
-    title: t('模型'),
+    title: t('legacy.model'),
     key: 'modelName',
     width: 160,
     ellipsis: { tooltip: true },
-    render: (row) => row.modelName || t('未记录'),
+    render: (row) => row.modelName || t('legacy.unrecorded'),
   },
   {
-    title: t('阶段'),
+    title: t('legacy.stage'),
     key: 'stage',
     width: 100,
     render: (row) => row.stage || '—',
   },
   {
-    title: t('状态'),
+    title: t('legacy.status'),
     key: 'status',
     width: 90,
     render: (row) =>
@@ -550,18 +550,18 @@ const drawerColumns = computed<DataTableColumns<TokenStatsItem>>(() => [
       ]),
   },
   {
-    title: t('请求 / Prompt'),
+    title: t('legacy.request_prompt'),
     key: 'requestTitle',
     minWidth: 260,
     ellipsis: { tooltip: true },
     render: (row) =>
       h('div', { class: 'request-cell' }, [
-        h('div', { class: 'request-title' }, row.requestTitle || t('LLM 调用')),
-        h('div', { class: 'request-preview' }, row.promptPreview || t('无 Prompt 预览')),
+        h('div', { class: 'request-title' }, row.requestTitle || t('legacy.llm_call')),
+        h('div', { class: 'request-preview' }, row.promptPreview || t('legacy.no_prompt_preview')),
       ]),
   },
   {
-    title: t('操作'),
+    title: t('legacy.actions'),
     key: 'actions',
     width: 150,
     fixed: 'right',
@@ -575,7 +575,7 @@ const drawerColumns = computed<DataTableColumns<TokenStatsItem>>(() => [
           onClick: () => showPayloadDetails(row),
         },
         {
-          default: () => t('查看内容'),
+          default: () => t('legacy.view_content'),
           icon: () => h(
             'svg',
             {
@@ -612,7 +612,7 @@ async function loadDrawerData() {
     drawerTotal.value = data.total;
   } catch (err) {
     console.error(err);
-    message.error(t('加载调用明细失败'));
+    message.error(t('legacy.failed_to_load_call_details'));
   } finally {
     drawerLoading.value = false;
   }
@@ -620,7 +620,7 @@ async function loadDrawerData() {
 
 function showTraceDetails(row: TokenStatsItem) {
   selectedTraceId.value = row.userRequestId || row.requestId;
-  let shortTitle = row.requestTitle || t('请求调用');
+  let shortTitle = row.requestTitle || t('legacy.request_call');
   if (shortTitle.length > 20) {
     shortTitle = shortTitle.slice(0, 20) + '...';
   }
@@ -643,13 +643,13 @@ function handleDrawerPageSizeChange(nextSize: number) {
 
 const columns = computed<DataTableColumns<TokenStatsItem>>(() => [
   {
-    title: t('时间'),
+    title: t('legacy.time'),
     key: 'createdAt',
     width: 150,
     render: (row) => formatTime(row.createdAt),
   },
   {
-    title: t('用户'),
+    title: t('legacy.user_9ba763e'),
     key: 'userName',
     width: 180,
     ellipsis: {
@@ -657,12 +657,12 @@ const columns = computed<DataTableColumns<TokenStatsItem>>(() => [
     },
     render: (row) =>
       h('div', { class: 'user-cell' }, [
-        h('div', { class: 'user-name' }, row.userName || t('未知用户')),
-        h('div', { class: 'user-dept' }, row.departmentName || t('未分配部门')),
+        h('div', { class: 'user-name' }, row.userName || t('legacy.unknown_user')),
+        h('div', { class: 'user-dept' }, row.departmentName || t('legacy.no_dept')),
       ]),
   },
   {
-    title: t('状态'),
+    title: t('legacy.status'),
     key: 'status',
     width: 100,
     render: (row) =>
@@ -690,7 +690,7 @@ const columns = computed<DataTableColumns<TokenStatsItem>>(() => [
       ]),
   },
   {
-    title: t('请求'),
+    title: t('legacy.request'),
     key: 'requestTitle',
     minWidth: 350,
     ellipsis: { tooltip: true },
@@ -698,14 +698,14 @@ const columns = computed<DataTableColumns<TokenStatsItem>>(() => [
       h('div', { class: 'request-cell' }, [
         h('div', { class: 'request-title' }, [
           row.calls && row.calls > 1
-            ? h(NTag, { size: 'small', type: 'info', bordered: false, style: { marginRight: '8px' } }, { default: () => t('调用 {count} 次 LLM', { count: row.calls ?? 0 }) })
+            ? h(NTag, { size: 'small', type: 'info', bordered: false, style: { marginRight: '8px' } }, { default: () => t('legacy.called_llm_times', { count: row.calls ?? 0 }) })
             : null,
-          h('span', row.requestTitle || t('LLM 调用')),
+          h('span', row.requestTitle || t('legacy.llm_call')),
         ])
       ]),
   },
   {
-    title: t('操作'),
+    title: t('legacy.actions'),
     key: 'actions',
     width: 240,
     fixed: 'right',
@@ -722,7 +722,7 @@ const columns = computed<DataTableColumns<TokenStatsItem>>(() => [
               onClick: () => showTraceDetails(row),
             },
             {
-              default: () => t('调用详情'),
+              default: () => t('legacy.call_details_73e4fae'),
               icon: () => h(
                 'svg',
                 {
@@ -753,7 +753,7 @@ const columns = computed<DataTableColumns<TokenStatsItem>>(() => [
               onClick: () => showPayloadDetails(row),
             },
             {
-              default: () => t('查看内容'),
+              default: () => t('legacy.view_content'),
               icon: () => h(
                 'svg',
                 {
@@ -784,7 +784,7 @@ const columns = computed<DataTableColumns<TokenStatsItem>>(() => [
             onClick: () => showPayloadDetails(row),
           },
           {
-            default: () => t('查看内容'),
+            default: () => t('legacy.view_content'),
             icon: () => h(
               'svg',
               {
@@ -852,7 +852,7 @@ async function loadData() {
     statusOptions.value = data.filterOptions.statuses || [];
   } catch (error) {
     console.error(error);
-    message.error(t('Token 统计加载失败，请稍后重试'));
+    message.error(t('legacy.failed_to_load_token_stats_please_try_again_later'));
   } finally {
     loading.value = false;
     await nextTick();

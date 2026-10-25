@@ -71,21 +71,21 @@
       <div class="list-filter-row">
         <div class="filter-toolbar">
           <n-space align="center" :size="10" class="filter-left">
-            <n-input v-model:value="filters.keyword" clearable :placeholder="t('搜索名称、描述或 URL')" class="keyword-input" />
-            <n-select v-model:value="filters.type" clearable :options="typeOptions" :placeholder="t('类型')" style="width: 140px" />
-            <n-select v-model:value="filters.status" clearable :options="statusOptions" :placeholder="t('状态')" style="width: 140px" />
+            <n-input v-model:value="filters.keyword" clearable :placeholder="t('legacy.search_by_name_description_or_url')" class="keyword-input" />
+            <n-select v-model:value="filters.type" clearable :options="typeOptions" :placeholder="t('legacy.type')" style="width: 140px" />
+            <n-select v-model:value="filters.status" clearable :options="statusOptions" :placeholder="t('legacy.status')" style="width: 140px" />
             <n-select
               v-model:value="filters.testStatus"
               clearable
               :options="testStatusOptions"
-              :placeholder="t('测试结果')"
+              :placeholder="t('legacy.test_result')"
               style="width: 140px"
             />
           </n-space>
           <n-space :size="10" class="filter-right">
-            <n-button secondary @click="loadRows">{{ t('刷新') }}</n-button>
-            <n-button @click="goCreate('mcp')">{{ t('新增 MCP 服务') }}</n-button>
-            <n-button type="primary" strong @click="goCreate('http')">{{ t('新增 HTTP 工具') }}</n-button>
+            <n-button secondary @click="loadRows">{{ t('legacy.refresh') }}</n-button>
+            <n-button @click="goCreate('mcp')">{{ t('legacy.add_mcp_service') }}</n-button>
+            <n-button type="primary" strong @click="goCreate('http')">{{ t('legacy.add_http_tool') }}</n-button>
           </n-space>
         </div>
       </div>
@@ -96,7 +96,7 @@
             <div v-for="row in filteredRows" :key="row.id" class="tool-card" role="button" tabindex="0" @click="goEdit(row.id)" @keydown.enter="goEdit(row.id)">
               <div class="card-head">
                 <n-tag :type="row.type === 'mcp' ? 'info' : 'success'" size="small" :bordered="false">
-                  {{ row.type === 'mcp' ? t('MCP 服务') : t('HTTP 工具') }}
+                  {{ row.type === 'mcp' ? t('legacy.mcp_service') : t('legacy.http_tool') }}
                 </n-tag>
                 <n-space align="center" :size="8">
                   <n-tag
@@ -104,9 +104,9 @@
                     size="small"
                     :bordered="false"
                   >
-                    {{ row.lastTestStatus === 'passed' ? t('测试通过') : row.lastTestStatus === 'failed' ? t('测试失败') : t('未测试') }}
+                    {{ row.lastTestStatus === 'passed' ? t('legacy.passed') : row.lastTestStatus === 'failed' ? t('legacy.test_failed') : t('legacy.untested') }}
                   </n-tag>
-                  <span class="status-switch-label">{{ row.status === 'active' ? t('启用') : t('禁用') }}</span>
+                  <span class="status-switch-label">{{ row.status === 'active' ? t('legacy.active') : t('legacy.disabled_be70be5') }}</span>
                   <n-switch
                     :value="row.status === 'active'"
                     size="small"
@@ -116,21 +116,21 @@
                 </n-space>
               </div>
 
-              <div class="card-title">{{ row.name || t('未命名工具') }}</div>
-              <div class="card-desc">{{ row.description || t('未填写工具说明') }}</div>
+              <div class="card-title">{{ row.name || t('legacy.unnamed_tool') }}</div>
+              <div class="card-desc">{{ row.description || t('legacy.no_tool_description') }}</div>
 
               <div class="tag-row">
                 <n-tag v-for="tag in row.tags" :key="tag" size="small" :bordered="false" class="tool-tag">{{ tag }}</n-tag>
-                <span v-if="!row.tags.length" class="no-tag">{{ t('无标签') }}</span>
+                <span v-if="!row.tags.length" class="no-tag">{{ t('legacy.no_tags') }}</span>
               </div>
 
               <div class="card-footrow">
-                <div class="card-footnote">{{ t('最近测试：') }}{{ formatAdminDateTime(row.lastTestAt, row.lastTestMessage || t('暂无记录')) }}</div>
+                <div class="card-footnote">{{ t('legacy.last_tested') }}{{ formatAdminDateTime(row.lastTestAt, row.lastTestMessage || t('legacy.no_records')) }}</div>
                 <div class="card-actions">
-                  <n-button v-if="toolAccessExtension" class="icon-only-btn" size="small" quaternary circle :title="t('使用权限')" @click.stop="openAccess(row)">
+                  <n-button v-if="toolAccessExtension" class="icon-only-btn" size="small" quaternary circle :title="t('legacy.access')" @click.stop="openAccess(row)">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4" /><path d="M5.5 21a6.5 6.5 0 0 1 13 0" /></svg>
                   </n-button>
-                  <n-button class="icon-only-btn delete-btn" size="small" quaternary circle :title="t('删除工具连接')" @click.stop="askRemove(row)">
+                  <n-button class="icon-only-btn delete-btn" size="small" quaternary circle :title="t('legacy.delete_tool_connection')" @click.stop="askRemove(row)">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M3 6h18" />
                       <path d="M8 6V4h8v2" />
@@ -150,11 +150,11 @@
               <span>MCP</span>
               <span>HTTP</span>
             </div>
-            <div class="empty-title">{{ t('暂未配置工具') }}</div>
-            <div class="empty-desc">{{ t('连接第一个 HTTP 工具或 MCP 服务，扩展平台能力。') }}</div>
+            <div class="empty-title">{{ t('legacy.no_tools_configured') }}</div>
+            <div class="empty-desc">{{ t('legacy.connect_your_first_http_tool_or_mcp_service_to') }}</div>
             <n-space justify="center">
-              <n-button type="primary" @click="goCreate('http')">{{ t('新增 HTTP 工具') }}</n-button>
-              <n-button @click="goCreate('mcp')">{{ t('新增 MCP 服务') }}</n-button>
+              <n-button type="primary" @click="goCreate('http')">{{ t('legacy.add_http_tool') }}</n-button>
+              <n-button @click="goCreate('mcp')">{{ t('legacy.add_mcp_service') }}</n-button>
             </n-space>
           </div>
         </n-spin>
@@ -165,16 +165,16 @@
       v-model:show="deleteConfirmVisible"
       preset="dialog"
       type="warning"
-      :title="t('删除工具连接')"
-      :positive-text="t('删除')"
-      :negative-text="t('取消')"
+      :title="t('legacy.delete_tool_connection')"
+      :positive-text="t('legacy.delete')"
+      :negative-text="t('legacy.cancel')"
       :positive-button-props="{ type: 'error', loading: deleting }"
       @positive-click="confirmRemove"
     >
-      {{ t('确定删除「{name}」吗？删除后不可恢复。', { name: pendingDeleteRow?.name || t('未命名工具') }) }}
+      {{ t('legacy.are_you_sure_to_delete_this_cannot_be_undone', { name: pendingDeleteRow?.name || t('legacy.unnamed_tool') }) }}
     </n-modal>
 
-    <n-modal v-if="toolAccessExtension" v-model:show="accessVisible" preset="card" :title="t('{name} · 使用权限', { name: accessTool?.name || t('未命名工具') })" style="width: min(760px, calc(100vw - 32px))">
+    <n-modal v-if="toolAccessExtension" v-model:show="accessVisible" preset="card" :title="t('legacy.access_44b8122', { name: accessTool?.name || t('legacy.unnamed_tool') })" style="width: min(760px, calc(100vw - 32px))">
       <ResourceAccessExtensionPanel v-if="accessVisible && accessTool" :resource-id="accessTool.id" :extension="toolAccessExtension" />
     </n-modal>
 
@@ -182,9 +182,9 @@
       v-model:show="statusConfirmVisible"
       preset="dialog"
       type="warning"
-      :title="pendingStatusValue ? t('启用') : t('禁用')"
-      :positive-text="pendingStatusValue ? t('确认启用') : t('确认禁用')"
-      :negative-text="t('取消')"
+      :title="pendingStatusValue ? t('legacy.active') : t('legacy.disabled_be70be5')"
+      :positive-text="pendingStatusValue ? t('legacy.enable') : t('legacy.disable')"
+      :negative-text="t('legacy.cancel')"
       :positive-button-props="{ type: pendingStatusValue ? 'primary' : 'warning', loading: statusUpdating }"
       @positive-click="confirmToggleStatus"
     >
@@ -228,19 +228,19 @@ const filters = ref({
 });
 
 const typeOptions = computed(() => [
-  { label: t('HTTP 工具'), value: 'http' },
-  { label: t('MCP 服务'), value: 'mcp' },
+  { label: t('legacy.http_tool'), value: 'http' },
+  { label: t('legacy.mcp_service'), value: 'mcp' },
 ]);
 
 const statusOptions = computed(() => [
-  { label: t('启用'), value: 'active' },
-  { label: t('禁用'), value: 'disabled' },
+  { label: t('legacy.active'), value: 'active' },
+  { label: t('legacy.disabled_be70be5'), value: 'disabled' },
 ]);
 
 const testStatusOptions = computed(() => [
-  { label: t('通过'), value: 'passed' },
-  { label: t('失败'), value: 'failed' },
-  { label: t('未测试'), value: 'untested' },
+  { label: t('legacy.passed_dcc4233'), value: 'passed' },
+  { label: t('legacy.failed'), value: 'failed' },
+  { label: t('legacy.untested'), value: 'untested' },
 ]);
 
 const filteredRows = computed(() => {
@@ -263,10 +263,10 @@ const metricCards = computed(() => {
   const mcpCount = rows.value.filter((row) => row.type === 'mcp').length;
   const passedCount = rows.value.filter((row) => row.lastTestStatus === 'passed').length;
   return [
-    { key: 'total', icon: '工', label: t('工具总数'), value: total, note: t('包含 HTTP 工具与 MCP 服务') },
-    { key: 'enabled', icon: '启', label: t('已启用'), value: enabled, note: total ? t('启用率 {count}%', { count: Math.round((enabled / total) * 100) }) : t('当前暂无工具') },
-    { key: 'mcp', icon: '服', label: t('MCP 服务'), value: mcpCount, note: total ? t('占比 {count}%', { count: Math.round((mcpCount / total) * 100) }) : t('当前暂无 MCP 服务') },
-    { key: 'pass', icon: '测', label: t('测试通过'), value: passedCount, note: t('最近测试通过数量') },
+    { key: 'total', icon: '工', label: t('legacy.total_tools'), value: total, note: t('legacy.includes_http_tools_mcp_services') },
+    { key: 'enabled', icon: '启', label: t('legacy.active_25d2843'), value: enabled, note: total ? t('legacy.enabled_rate', { count: Math.round((enabled / total) * 100) }) : t('legacy.no_tools_currently') },
+    { key: 'mcp', icon: '服', label: t('legacy.mcp_service'), value: mcpCount, note: total ? t('legacy.share', { count: Math.round((mcpCount / total) * 100) }) : t('legacy.no_mcp_services_currently') },
+    { key: 'pass', icon: '测', label: t('legacy.passed'), value: passedCount, note: t('legacy.number_of_recently_passed_tests') },
   ];
 });
 
@@ -288,7 +288,7 @@ async function loadRows() {
   try {
     rows.value = await fetchTools();
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || t('加载工具连接失败'));
+    message.error(error?.response?.data?.detail || t('legacy.failed_to_load_tool_connections'));
   } finally {
     loading.value = false;
   }
@@ -311,12 +311,12 @@ async function confirmToggleStatus() {
   statusUpdating.value = true;
   try {
     await patchTool(pendingStatusRow.value.id, { status: pendingStatusValue.value ? 'active' : 'disabled' });
-    message.success(pendingStatusValue.value ? t('工具已启用') : t('工具已禁用'));
+    message.success(pendingStatusValue.value ? t('legacy.tool_enabled') : t('legacy.tool_disabled'));
     statusConfirmVisible.value = false;
     pendingStatusRow.value = null;
     await loadRows();
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || t('状态更新失败'));
+    message.error(error?.response?.data?.detail || t('legacy.failed_to_update_status'));
     return false;
   } finally {
     statusUpdating.value = false;
@@ -334,12 +334,12 @@ async function confirmRemove() {
   deleting.value = true;
   try {
     await deleteTool(pendingDeleteRow.value.id);
-    message.success(t('工具连接已删除'));
+    message.success(t('legacy.tool_connection_deleted_successfully'));
     deleteConfirmVisible.value = false;
     pendingDeleteRow.value = null;
     await loadRows();
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || t('删除失败'));
+    message.error(error?.response?.data?.detail || t('legacy.failed_to_delete'));
     return false;
   } finally {
     deleting.value = false;

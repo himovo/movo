@@ -19,10 +19,21 @@ export function detectSystemLocale(): Locale {
 
 const _locale = ref<Locale>(detectSystemLocale())
 const productMessages: ProductLocaleMessages = {}
+const sourceTextKeys = new Map<string, string>()
+
+function rebuildSourceTextKeys() {
+  sourceTextKeys.clear()
+  for (const [key, value] of Object.entries({ ...messages, ...productMessages })) {
+    if (value.zh && !sourceTextKeys.has(value.zh)) sourceTextKeys.set(value.zh, key)
+  }
+}
+
+rebuildSourceTextKeys()
 
 export function registerProductMessages(catalog?: ProductLocaleMessages) {
   Object.keys(productMessages).forEach(key => delete productMessages[key])
   if (catalog) Object.assign(productMessages, catalog)
+  rebuildSourceTextKeys()
 }
 
 export function useLocale() {
@@ -47,4 +58,10 @@ export function t(key: string, params?: Record<string, string | number>): string
   const template = entry?.[_locale.value] || entry?.zh || key
   if (!params) return template
   return template.replace(/\{(\w+)\}/g, (_, name) => String(params[name] ?? `{${name}}`))
+}
+
+/** Localize human-readable labels returned by older shortcut or server data. */
+export function translateSourceText(value: string): string {
+  if (!value) return ''
+  return t(sourceTextKeys.get(value) || value)
 }

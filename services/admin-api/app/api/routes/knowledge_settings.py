@@ -114,8 +114,6 @@ class RetrievalSettingsPayload(BaseModel):
     candidateTopK: int = Field(default=50, ge=1, le=500)
     scoreThreshold: float = Field(default=0, ge=0, le=1)
     metadataFiltersEnabled: bool = True
-    maxChunksPerDocument: int = Field(default=5, ge=1, le=50)
-    dedupByDocument: bool = True
     hybrid: HybridSettingsPayload = Field(default_factory=HybridSettingsPayload)
     rerank: RerankSettingsPayload = Field(default_factory=RerankSettingsPayload)
 

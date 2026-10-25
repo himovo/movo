@@ -9,7 +9,7 @@
               <svg viewBox="0 0 24 24"><path d="M19 12H5" /><path d="M12 19l-7-7 7-7" /></svg>
             </span>
           </template>
-          {{ t('返回') }}
+          {{ t('legacy.back') }}
         </n-button>
         <FileIcon :ext="document.fileExt" :size="20" />
         <span class="header-doc-title" :title="document.name">{{ document.name }}</span>
@@ -26,7 +26,7 @@
               <svg viewBox="0 0 24 24"><path d="M12 3v12" /><path d="M7 10l5 5 5-5" /><path d="M5 21h14" /></svg>
             </span>
           </template>
-          {{ t('下载') }}
+          {{ t('legacy.download') }}
         </n-button>
       </n-space>
     </Teleport>
@@ -39,16 +39,16 @@
               <div class="converting-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" class="converting-spin"><path d="M21 12a9 9 0 0 0-15.3-6.4" /><path d="M3 3v5h5" /><path d="M3 12a9 9 0 0 0 15.3 6.4" /><path d="M21 21v-5h-5" /></svg>
               </div>
-              <div class="converting-title">{{ t('在线预览生成中') }}</div>
-              <div class="converting-copy">{{ t('文档正在进行格式转换，请稍候...系统将自动刷新。') }}</div>
-              <n-button type="primary" secondary @click="reload">{{ t('手动刷新') }}</n-button>
+              <div class="converting-title">{{ t('legacy.generating_online_preview') }}</div>
+              <div class="converting-copy">{{ t('legacy.the_document_is_being_converted_please_wait_the_page') }}</div>
+              <n-button type="primary" secondary @click="reload">{{ t('legacy.refresh_manually') }}</n-button>
             </section>
           </template>
 
           <template v-else-if="errorText">
             <n-empty :description="errorText">
               <template #extra>
-                <n-button type="primary" secondary @click="reload">{{ t('重新加载') }}</n-button>
+                <n-button type="primary" secondary @click="reload">{{ t('legacy.reload') }}</n-button>
               </template>
             </n-empty>
           </template>
@@ -74,15 +74,15 @@
               <div class="unsupported-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M16 13H8" /><path d="M16 17H8" /></svg>
               </div>
-              <div class="unsupported-title">{{ t('当前格式暂不支持在线预览') }}</div>
-              <div class="unsupported-copy">{{ t('DOCX/PPTX/XLSX 后续可接入转换预览，当前可下载查看。') }}</div>
+              <div class="unsupported-title">{{ t('legacy.this_format_cannot_be_previewed_online') }}</div>
+              <div class="unsupported-copy">{{ t('legacy.docx_pptx_xlsx_conversion_preview_can_be_added_later') }}</div>
               <n-button type="primary" secondary :loading="downloading" :disabled="downloading" @click="downloadFile">
                 <template #icon>
                   <span class="button-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><path d="M12 3v12" /><path d="M7 10l5 5 5-5" /><path d="M5 21h14" /></svg>
                   </span>
                 </template>
-                {{ t('下载查看') }}
+                {{ t('legacy.download_to_view') }}
               </n-button>
             </section>
           </template>
@@ -94,53 +94,53 @@
       <aside class="detail-sidebar">
         <section class="detail-panel">
           <section v-if="activePanel === 'detail'" class="detail-card">
-            <div class="detail-card-title">{{ t('文档详情') }}</div>
+            <div class="detail-card-title">{{ t('legacy.document_details') }}</div>
             <div class="meta-list">
               <div class="meta-row meta-row-full">
-                <span>{{ t('文件名') }}</span>
+                <span>{{ t('legacy.file_name') }}</span>
                 <strong>{{ document?.originalFilename || '-' }}</strong>
               </div>
               <div class="meta-grid">
                 <div class="meta-row">
-                  <span>{{ t('类型') }}</span>
+                  <span>{{ t('legacy.type') }}</span>
                   <div style="margin-top: 4px; display: inline-flex;">
                     <FileIcon v-if="document" :ext="document.fileExt" :show-label="true" />
                     <span v-else>-</span>
                   </div>
                 </div>
                 <div class="meta-row">
-                  <span>{{ t('大小') }}</span>
+                  <span>{{ t('legacy.size_fd20702') }}</span>
                   <strong>{{ formatFileSize(document?.fileSize || 0) }}</strong>
                 </div>
                 <div class="meta-row">
-                  <span>{{ t('存储') }}</span>
-                  <strong>{{ document?.storageType === 'oss' ? 'OSS' : t('本地') }}</strong>
+                  <span>{{ t('legacy.storage') }}</span>
+                  <strong>{{ document?.storageType === 'oss' ? 'OSS' : t('legacy.local') }}</strong>
                 </div>
                 <div class="meta-row">
-                  <span>{{ t('上传人') }}</span>
+                  <span>{{ t('legacy.uploaded_by') }}</span>
                   <strong>{{ document?.createdByName || '-' }}</strong>
                 </div>
                 <div class="meta-row">
-                  <span>{{ t('更新时间') }}</span>
+                  <span>{{ t('legacy.updated_at') }}</span>
                   <strong>{{ formatAdminDateTime(document?.updatedAt, '-') }}</strong>
                 </div>
                 <div class="meta-row">
-                  <span>{{ t('状态') }}</span>
+                  <span>{{ t('legacy.status') }}</span>
                   <div style="margin-top: 4px; display: inline-flex;">
                     <DocumentStatus v-if="document" :row="document" @retry="retryParse" />
                     <span v-else>-</span>
                   </div>
                 </div>
                 <div class="meta-row">
-                  <span>{{ t('预览状态') }}</span>
+                  <span>{{ t('legacy.preview_status') }}</span>
                   <strong>{{ previewStatusLabel(document?.previewStatus || 'not_required') }}</strong>
                 </div>
                 <div class="meta-row">
-                  <span>{{ t('分段状态') }}</span>
+                  <span>{{ t('legacy.segmentation_status') }}</span>
                   <strong>{{ processLabel(document?.chunkStatus || 'not_started') }}</strong>
                 </div>
                 <div class="meta-row">
-                  <span>{{ t('分段数量') }}</span>
+                  <span>{{ t('legacy.segment_count') }}</span>
                   <strong>{{ document?.chunkCount || 0 }}</strong>
                 </div>
               </div>
@@ -150,7 +150,7 @@
           <section v-else-if="activePanel === 'chunks'" class="chunks-card">
             <div class="chunks-head">
               <div>
-                <div class="detail-card-title">{{ t('文档分段') }}</div>
+                <div class="detail-card-title">{{ t('legacy.document_segments') }}</div>
                 <div class="chunks-subtitle">{{ chunkTotalText }}</div>
               </div>
               <n-button size="small" secondary :loading="chunksLoading" @click="loadChunks">
@@ -167,15 +167,15 @@
                 <span class="source-target-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
                 </span>
-                <div class="source-target-title">{{ t('当前依据') }}</div>
+                <div class="source-target-title">{{ t('legacy.current_source') }}</div>
               </div>
               <div class="source-target-meta">
                 <span>{{ targetChunkId }}</span>
-                <span v-if="targetPageNo">{{ t('第 {page} 页', { page: targetPageNo }) }}</span>
+                <span v-if="targetPageNo">{{ t('legacy.page', { page: targetPageNo }) }}</span>
               </div>
               <div v-if="targetSourceText" class="source-target-path">{{ targetSourceText }}</div>
               <pre v-if="targetChunk" class="source-target-text">{{ targetChunk.text }}</pre>
-              <div v-else-if="targetChunkLoading" class="source-target-loading">{{ t('依据加载中') }}</div>
+              <div v-else-if="targetChunkLoading" class="source-target-loading">{{ t('legacy.loading_source') }}</div>
             </section>
 
             <div class="chunks-filter">
@@ -183,7 +183,7 @@
                 v-model:value="chunkKeyword"
                 size="small"
                 clearable
-                :placeholder="t('搜索分段内容')"
+                :placeholder="t('legacy.search_segment_content')"
                 @keyup.enter="handleChunkSearch"
                 @clear="handleChunkSearch"
               >
@@ -200,24 +200,24 @@
                 <div class="empty-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
                 </div>
-                <div class="empty-title">{{ t('解析失败') }}</div>
-                <div class="empty-copy">{{ document.parseError || t('请重新上传或稍后重试。') }}</div>
+                <div class="empty-title">{{ t('legacy.parsing_failed') }}</div>
+                <div class="empty-copy">{{ document.parseError || t('additional.please_upload_again_or_try_later') }}</div>
               </section>
 
               <section v-else-if="document && document.chunkStatus !== 'succeeded'" class="chunks-empty">
                 <div class="empty-icon empty-icon-running" aria-hidden="true">
                   <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 0-15.3-6.4" /><path d="M3 3v5h5" /><path d="M3 12a9 9 0 0 0 15.3 6.4" /><path d="M21 21v-5h-5" /></svg>
                 </div>
-                <div class="empty-title">{{ t('分段生成中') }}</div>
-                <div class="empty-copy">{{ t('解析完成后，这里会自动展示 MongoDB 中保存的分段。') }}</div>
+                <div class="empty-title">{{ t('legacy.generating_segments') }}</div>
+                <div class="empty-copy">{{ t('additional.after_parsing_the_segments_saved_in_mongodb_will_appear') }}</div>
               </section>
 
               <section v-else-if="!chunks.length" class="chunks-empty">
                 <div class="empty-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z" /><path d="M9 10h6" /><path d="M9 14h4" /></svg>
                 </div>
-                <div class="empty-title">{{ t('暂无分段') }}</div>
-                <div class="empty-copy">{{ t('当前文档没有可展示的分段内容。') }}</div>
+                <div class="empty-title">{{ t('legacy.no_segments') }}</div>
+                <div class="empty-copy">{{ t('legacy.this_document_has_no_segments_to_display') }}</div>
               </section>
 
               <div v-else class="chunk-list">
@@ -231,10 +231,10 @@
                   <div class="chunk-item-head">
                     <div class="chunk-index">#{{ String(chunk.ordinal + 1).padStart(3, '0') }}</div>
                     <div class="chunk-badges">
-                      <span v-if="isImageDerivedChunk(chunk)" class="chunk-badge chunk-badge-image">{{ t('图片 OCR') }}</span>
+                      <span v-if="isImageDerivedChunk(chunk)" class="chunk-badge chunk-badge-image">{{ t('legacy.image_ocr') }}</span>
                       <span class="chunk-badge">{{ chunk.contentType || 'text' }}</span>
-                      <span v-if="chunk.rowCount > 1" class="chunk-badge">{{ chunk.rowCount }} {{ t('行') }}</span>
-                      <span v-if="chunk.pageNo" class="chunk-badge">{{ t('第 {page} 页', { page: chunk.pageNo }) }}</span>
+                      <span v-if="chunk.rowCount > 1" class="chunk-badge">{{ chunk.rowCount }} {{ t('additional.rows') }}</span>
+                      <span v-if="chunk.pageNo" class="chunk-badge">{{ t('legacy.page', { page: chunk.pageNo }) }}</span>
                       <button
                         v-if="isImageDerivedChunk(chunk) && ['image', 'pdf'].includes(previewKind) && objectUrl"
                         type="button"
@@ -242,7 +242,7 @@
                         @click="openChunkSourceImage(chunk)"
                       >
                         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
-                        {{ t('查看图片') }}
+                        {{ t('legacy.view_image') }}
                       </button>
                     </div>
                   </div>
@@ -274,13 +274,13 @@
           </section>
         </section>
 
-        <nav class="detail-rail" :aria-label="t('详情导航')">
+        <nav class="detail-rail" :aria-label="t('legacy.detail_navigation')">
           <button
             type="button"
             class="rail-button"
             :class="{ active: activePanel === 'detail' }"
-            :title="t('文档详情')"
-            :aria-label="t('文档详情')"
+            :title="t('legacy.document_details')"
+            :aria-label="t('legacy.document_details')"
             @click="activePanel = 'detail'"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M16 13H8" /><path d="M16 17H8" /></svg>
@@ -289,8 +289,8 @@
             type="button"
             class="rail-button"
             :class="{ active: activePanel === 'chunks' }"
-            :title="t('文档分段')"
-            :aria-label="t('文档分段')"
+            :title="t('legacy.document_segments')"
+            :aria-label="t('legacy.document_segments')"
             @click="openChunksPanel"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16" /><path d="M4 12h16" /><path d="M4 18h10" /><path d="M3 4v4" /><path d="M3 10v4" /><path d="M3 16v4" /></svg>
@@ -301,8 +301,8 @@
             type="button"
             class="rail-button"
             :class="{ active: activePanel === 'permissions' }"
-            :title="t('文档权限')"
-            :aria-label="t('文档权限')"
+            :title="t('legacy.document_permissions')"
+            :aria-label="t('legacy.document_permissions')"
             @click="activePanel = 'permissions'"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4" /><path d="m11 12 8-8" /><path d="m16 7 2 2" /><path d="m14 9 2 2" /></svg>
@@ -313,9 +313,9 @@
 
     <n-modal v-model:show="imagePreviewVisible" class="chunk-image-modal">
       <div class="chunk-image-modal-body">
-        <button type="button" class="chunk-image-modal-close" :aria-label="t('关闭')" @click="imagePreviewVisible = false">×</button>
+        <button type="button" class="chunk-image-modal-close" :aria-label="t('legacy.close')" @click="imagePreviewVisible = false">×</button>
         <n-spin :show="imagePreviewLoading">
-          <img v-if="imagePreviewUrl" :src="imagePreviewUrl" :alt="document?.name || t('图片来源')" />
+          <img v-if="imagePreviewUrl" :src="imagePreviewUrl" :alt="document?.name || t('additional.image_source')" />
         </n-spin>
       </div>
     </n-modal>
@@ -395,7 +395,7 @@ const targetPageNo = computed(() => {
 });
 const chunkTotalText = computed(() => {
   const fallback = document.value?.ragChunkCount || document.value?.chunkCount || 0;
-  return t('共分段', { count: chunkPagination.total || fallback });
+  return t('legacy.segments', { count: chunkPagination.total || fallback });
 });
 
 const displayChunks = computed<DisplayChunkItem[]>(() => {
@@ -440,7 +440,7 @@ const targetSourceText = computed(() => {
   if (targetChunk.value?.titlePath?.length) {
     return targetChunk.value.titlePath.join(' / ');
   }
-  return targetPageNo.value ? t('已定位到第 {page} 页', { page: targetPageNo.value }) : t('已定位到引用分段');
+  return targetPageNo.value ? t('legacy.located_at_page', { page: targetPageNo.value }) : t('legacy.located_at_the_cited_segment');
 });
 const previewKind = computed(() => {
   const mime = document.value?.mimeType || '';
@@ -502,7 +502,7 @@ async function openChunkSourceImage(chunk: KnowledgeDocumentChunkItem) {
       await pdf.destroy();
     }
   } catch (error) {
-    window.alert(readError(error, t('图片加载失败')));
+    window.alert(readError(error, t('additional.image_failed_to_load')));
     imagePreviewVisible.value = false;
   } finally {
     imagePreviewLoading.value = false;
@@ -552,23 +552,23 @@ function mergeTableRowMarkdown(current: string, next: string) {
 
 function processLabel(value: string) {
   const map: Record<string, string> = {
-    not_started: t('未开始'),
-    queued: t('排队'),
-    running: t('运行中'),
-    succeeded: t('成功'),
-    failed: t('失败'),
+    not_started: t('additional.not_started'),
+    queued: t('legacy.queued'),
+    running: t('legacy.running'),
+    succeeded: t('legacy.success_51991a5'),
+    failed: t('legacy.failed'),
   };
   return map[value] || value;
 }
 
 function previewStatusLabel(value: string) {
   const map: Record<string, string> = {
-    not_required: t('无需转换'),
-    pending: t('等待生成'),
-    queued: t('排队中'),
-    running: t('生成中'),
-    succeeded: t('已生成'),
-    failed: t('生成失败'),
+    not_required: t('legacy.no_conversion_needed'),
+    pending: t('legacy.waiting_to_generate'),
+    queued: t('legacy.queued_4dcbbcf'),
+    running: t('legacy.generating'),
+    succeeded: t('legacy.generated'),
+    failed: t('legacy.failed_to_generate'),
   };
   return map[value] || value;
 }
@@ -593,7 +593,7 @@ async function loadChunks() {
     }
     chunkPagination.total = result.total;
   } catch (error) {
-    window.alert(readError(error, t('分段加载失败')));
+    window.alert(readError(error, t('legacy.failed_to_load_segments')));
   } finally {
     chunksLoading.value = false;
   }
@@ -712,7 +712,7 @@ async function loadBlob() {
         return;
       }
       if (convertedOfficeFile && status === 'failed') {
-        throw new Error(document.value?.previewError || t('预览文件生成失败'));
+        throw new Error(document.value?.previewError || t('additional.failed_to_generate_preview_file'));
       }
       objectUrl.value = knowledgeDocumentPreviewUrl(documentId.value);
       return;
@@ -743,7 +743,7 @@ async function loadBlob() {
 
 async function reload() {
   if (!documentId.value) {
-    errorText.value = t('文档 ID 无效');
+    errorText.value = t('additional.invalid_document_id');
     return;
   }
   loading.value = true;
@@ -751,7 +751,7 @@ async function reload() {
   try {
     document.value = await fetchKnowledgeDocument(documentId.value);
   } catch (error) {
-    errorText.value = readError(error, t('文档详情加载失败'));
+    errorText.value = readError(error, t('additional.failed_to_load_document_details'));
     loading.value = false;
     return;
   }
@@ -763,7 +763,7 @@ async function reload() {
     await loadBlob();
     await applySourceTarget();
   } catch (error) {
-    errorText.value = readError(error, t('文档预览加载失败'));
+    errorText.value = readError(error, t('additional.failed_to_load_document_preview'));
   } finally {
     loading.value = false;
   }
@@ -781,7 +781,7 @@ async function retryParse() {
     chunkPagination.total = 0;
     startPolling();
   } catch (error) {
-    window.alert(readError(error, t('重新学习失败')));
+    window.alert(readError(error, t('additional.failed_to_relearn')));
   }
 }
 
@@ -805,7 +805,7 @@ async function downloadFile() {
     link.remove();
     URL.revokeObjectURL(url);
   } catch (error) {
-    window.alert(readError(error, t('文件下载失败')));
+    window.alert(readError(error, t('additional.failed_to_download_file')));
   } finally {
     downloading.value = false;
   }

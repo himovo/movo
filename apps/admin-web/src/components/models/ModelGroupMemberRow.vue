@@ -44,6 +44,11 @@ watch(() => props.model?.id, async () => {
   }
 }, { immediate: true });
 watch(() => props.expanded, (value) => { if (value) open.value = true; });
+watch(() => props.model?.capabilities, (capabilities) => {
+  if (capabilities?.includes('vision') && !form.value.capabilities.includes('vision')) {
+    form.value.capabilities = [...form.value.capabilities, 'vision'];
+  }
+});
 
 async function save() {
   const warning = selectable.value ? extension?.validate?.(access.value) : null;
@@ -53,7 +58,7 @@ async function save() {
     try {
       const parsed = JSON.parse(String(form.value.imageSettings.extraParamsJson || '{}').trim() || '{}');
       if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') throw new Error();
-    } catch { message.warning(t('请输入有效的 JSON 对象')); return; }
+    } catch { message.warning(t('legacy.enter_a_valid_json_object')); return; }
   }
   saving.value = true;
   try {
@@ -100,18 +105,18 @@ async function remove() {
     <div v-if="open" class="member-fields">
       <n-form label-placement="top">
         <div class="field-grid">
-          <n-form-item :label="t('模型 ID')"><n-input v-model:value="form.modelName" :placeholder="t('modelGroup.modelIdPlaceholder')" /></n-form-item>
-          <n-form-item :label="t('显示名称')"><n-input v-model:value="form.displayName" :placeholder="t('modelGroup.nameDefaultsToId')" /></n-form-item>
-          <n-form-item :label="t('能力')"><n-select v-model:value="form.capabilities" multiple :options="capabilityOptions" /></n-form-item>
-          <n-form-item :label="t('状态')"><n-select v-model:value="form.status" :options="[{ label: t('modelGroup.active'), value: 'active' }, { label: t('modelGroup.disabled'), value: 'disabled' }]" /></n-form-item>
+          <n-form-item :label="t('legacy.model_id')"><n-input v-model:value="form.modelName" :placeholder="t('modelGroup.modelIdPlaceholder')" /></n-form-item>
+          <n-form-item :label="t('legacy.display_name')"><n-input v-model:value="form.displayName" :placeholder="t('modelGroup.nameDefaultsToId')" /></n-form-item>
+          <n-form-item :label="t('legacy.capabilities')"><n-select v-model:value="form.capabilities" multiple :options="capabilityOptions" /></n-form-item>
+          <n-form-item :label="t('legacy.status')"><n-select v-model:value="form.status" :options="[{ label: t('modelGroup.active'), value: 'active' }, { label: t('modelGroup.disabled'), value: 'disabled' }]" /></n-form-item>
         </div>
         <ModelPricingFields v-model="form.pricing" />
         <n-collapse v-if="imageModel"><n-collapse-item :title="t('modelGroup.imageSettings')" name="image"><ImageModelRuntimeFields v-model:runtimeKind="form.runtimeKind" v-model:imageSettings="form.imageSettings" :provider-type="provider?.providerType || ''" /></n-collapse-item></n-collapse>
         <n-collapse v-if="extension && selectable"><n-collapse-item :title="t('modelGroup.memberAccess')" name="access"><ModelAccessExtensionPanel v-model="access" :loading="accessLoading" grouped /></n-collapse-item></n-collapse>
       </n-form>
       <div class="member-actions">
-        <n-button v-if="model" size="small" tertiary type="error" :disabled="saving" @click="remove"><template #icon><n-icon><TrashOutline /></n-icon></template>{{ t('删除模型') }}</n-button>
-        <n-button v-else size="small" @click="emit('cancel')">{{ t('取消') }}</n-button>
+        <n-button v-if="model" size="small" tertiary type="error" :disabled="saving" @click="remove"><template #icon><n-icon><TrashOutline /></n-icon></template>{{ t('legacy.delete_model') }}</n-button>
+        <n-button v-else size="small" @click="emit('cancel')">{{ t('legacy.cancel') }}</n-button>
         <n-button size="small" type="primary" :loading="saving || accessLoading" @click="save"><template #icon><n-icon><SaveOutline /></n-icon></template>{{ t('modelGroup.saveMember') }}</n-button>
       </div>
     </div>

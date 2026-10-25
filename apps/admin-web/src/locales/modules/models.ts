@@ -2,6 +2,12 @@ import type { LabelMap } from '../messages';
 
 /** Model-center labels kept separate from page components so locale changes stay consistent. */
 export const modelMessages: Record<string, LabelMap> = {
+  'modelVision.detectedTitle': { 'zh-CN': '检测到视觉能力', 'en-US': 'Vision capability detected' },
+  'modelVision.detectedDescription': { 'zh-CN': '图文测试成功，当前模型可以理解图片。是否为此模型启用“视觉”能力？', 'en-US': 'The image test passed. This model can understand images. Enable Vision for this model?' },
+  'modelVision.enable': { 'zh-CN': '启用视觉', 'en-US': 'Enable Vision' },
+  'modelVision.later': { 'zh-CN': '暂不启用', 'en-US': 'Not now' },
+  'modelVision.enabled': { 'zh-CN': '已启用视觉能力', 'en-US': 'Vision capability enabled' },
+  'modelVision.enableFailed': { 'zh-CN': '启用视觉能力失败', 'en-US': 'Failed to enable Vision' },
   'model.capability.chat': { 'zh-CN': '对话', 'en-US': 'Chat' },
   'model.capability.vision': { 'zh-CN': '视觉', 'en-US': 'Vision' },
   'model.capability.embedding': { 'zh-CN': '向量', 'en-US': 'Embedding' },

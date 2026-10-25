@@ -3,6 +3,7 @@ const ALLOWED_FIELDS = new Set([
   'modelInstanceId',
   'modelName',
   'displayName',
+  'visionEnabled',
   'contextWindow',
   'maxOutputTokens',
   'gatewayUrl',

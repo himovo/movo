@@ -2,24 +2,24 @@
   <div class="document-picker">
     <button type="button" class="picker-trigger" @click.stop="openPicker">
       <span class="trigger-icon" aria-hidden="true">▤</span>
-      <span class="trigger-copy"><strong>{{ selectedName || t('按目录或名称查找文档') }}</strong>
-        <small>{{ selectedName ? t('点击更换知识文档') : t('从组织知识文档中选择') }}</small></span>
+      <span class="trigger-copy"><strong>{{ selectedName || t('legacy.find_a_document_by_folder_or_name') }}</strong>
+        <small>{{ selectedName ? t('legacy.click_to_change_the_knowledge_document') : t('legacy.choose_from_organization_knowledge_documents') }}</small></span>
       <span class="trigger-arrow" aria-hidden="true">›</span>
     </button>
-    <n-modal v-model:show="visible" preset="card" class="picker-modal" :title="t('选择知识文档')" :style="{ width: 'min(760px, calc(100vw - 32px))' }">
+    <n-modal v-model:show="visible" preset="card" class="picker-modal" :title="t('legacy.select_knowledge_document')" :style="{ width: 'min(760px, calc(100vw - 32px))' }">
       <div class="picker-filters">
         <n-select :value="directoryId" :options="directoryOptions"
-          filterable size="medium" :aria-label="t('筛选目录')" :placeholder="t('选择目录')"
+          filterable size="medium" :aria-label="t('legacy.filter_folders')" :placeholder="t('legacy.select_folder')"
           @update:value="setDirectory" />
-        <n-input v-model:value="keyword" clearable size="medium" :aria-label="t('搜索文档')"
-          :placeholder="t('搜索文档名称或文件名')" @keyup.enter="search" />
-        <n-button type="primary" secondary @click="search">{{ t('搜索') }}</n-button>
+        <n-input v-model:value="keyword" clearable size="medium" :aria-label="t('legacy.search_documents')"
+          :placeholder="t('legacy.search_document_name_or_filename')" @keyup.enter="search" />
+        <n-button type="primary" secondary @click="search">{{ t('legacy.search') }}</n-button>
       </div>
-      <div class="result-heading"><strong>{{ t('文档列表') }}</strong><span>{{ t('共') }} {{ total }} {{ t('条 · 仅可选择已解析文档') }}</span></div>
+      <div class="result-heading"><strong>{{ t('legacy.documents') }}</strong><span>{{ t('legacy.total') }} {{ total }} {{ t('legacy.parsed_documents_only') }}</span></div>
       <div class="result-list" :class="{ loading }">
-        <div v-if="loading" class="empty-state">{{ t('正在查找文档…') }}</div>
-        <div v-else-if="error" class="empty-state error-state">{{ error }} <button type="button" @click="load">{{ t('重试') }}</button></div>
-        <div v-else-if="!items.length" class="empty-state">{{ t('没有找到文档，试试其他目录或关键词') }}</div>
+        <div v-if="loading" class="empty-state">{{ t('legacy.searching_documents') }}</div>
+        <div v-else-if="error" class="empty-state error-state">{{ error }} <button type="button" @click="load">{{ t('legacy.retry') }}</button></div>
+        <div v-else-if="!items.length" class="empty-state">{{ t('legacy.no_documents_found_try_another_folder_or_keyword') }}</div>
         <button v-for="item in items" v-else :key="item.id" type="button" class="document-row"
           :class="{ selected: pendingId === item.id, unavailable: !isAvailable(item) }"
           :disabled="!isAvailable(item)" @click="choose(item)">
@@ -27,16 +27,16 @@
           <span class="document-copy"><strong>{{ item.name }}</strong>
             <small>{{ directoryLabel(item.directoryId) }}
               <span v-if="item.updatedAt"> · {{ item.updatedAt.slice(0, 10) }}</span></small></span>
-          <span class="document-status" :class="{ ready: isAvailable(item) }">{{ isAvailable(item) ? t('可选') : t('尚未解析') }}</span>
+          <span class="document-status" :class="{ ready: isAvailable(item) }">{{ isAvailable(item) ? t('legacy.optional') : t('legacy.not_parsed') }}</span>
           <span class="document-check" aria-hidden="true">{{ pendingId === item.id ? '✓' : '' }}</span>
         </button>
       </div>
       <div class="picker-footer">
-        <div class="footer-selection">{{ t('已选：') }}<strong>{{ pendingName || t('尚未选择') }}</strong></div>
+        <div class="footer-selection">{{ t('legacy.selected') }}<strong>{{ pendingName || t('legacy.none_selected') }}</strong></div>
         <n-pagination :page="page" :page-size="pageSize" :item-count="total" simple
           @update:page="setPage" />
-        <n-button @click="visible = false">{{ t('取消') }}</n-button>
-        <n-button type="primary" :disabled="!pendingId" @click="confirm">{{ t('使用这份文档') }}</n-button>
+        <n-button @click="visible = false">{{ t('legacy.cancel') }}</n-button>
+        <n-button type="primary" :disabled="!pendingId" @click="confirm">{{ t('legacy.use_this_document') }}</n-button>
       </div>
     </n-modal>
   </div>
@@ -66,7 +66,7 @@ const error = ref('');
 let requestId = 0;
 
 const directoryOptions = computed(() => {
-  const options = [{ label: t('全部目录'), value: 'all' }];
+  const options = [{ label: t('legacy.all_folders'), value: 'all' }];
   const visit = (nodes: KnowledgeDirectoryNode[], parents: string[] = []) => {
     for (const node of nodes) {
       const path = [...parents, node.name];
@@ -78,7 +78,7 @@ const directoryOptions = computed(() => {
   return options;
 });
 function directoryLabel(id?: string) {
-  return directoryOptions.value.find(item => item.value === id)?.label || t('根目录');
+  return directoryOptions.value.find(item => item.value === id)?.label || t('legacy.root_folder');
 }
 function isAvailable(item: KnowledgeDocumentItem) {
   return item.parseStatus === 'succeeded' && !item.deletedAt;
@@ -86,7 +86,7 @@ function isAvailable(item: KnowledgeDocumentItem) {
 async function resolveSelected() {
   if (!props.value) { selectedName.value = ''; return; }
   const item = await fetchKnowledgeDocument(props.value).catch(() => null);
-  selectedName.value = item?.name || t('已选文档');
+  selectedName.value = item?.name || t('legacy.selected_document');
 }
 async function openPicker() {
   pendingId.value = props.value || '';
@@ -112,7 +112,7 @@ async function load() {
     total.value = result.total;
   } catch {
     if (current !== requestId) return;
-    error.value = t('文档加载失败');
+    error.value = t('legacy.failed_to_load_documents');
     items.value = [];
   } finally {
     if (current === requestId) loading.value = false;

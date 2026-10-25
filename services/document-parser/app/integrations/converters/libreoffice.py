@@ -118,7 +118,10 @@ def _prepare_spreadsheet_for_pdf_preview(source_path: Path, output_dir: Path) ->
     except ImportError as exc:
         raise RuntimeError("openpyxl is required to prepare spreadsheet PDF previews") from exc
 
-    workbook = load_workbook(source_path, keep_vba=source_path.suffix.lower() == ".xlsm")
+    from app.services.spreadsheet_ingest import normalized_workbook_path
+
+    normalized_source, _ = normalized_workbook_path(source_path, output_dir)
+    workbook = load_workbook(normalized_source, keep_vba=source_path.suffix.lower() == ".xlsm")
     for sheet in workbook.worksheets:
         if sheet.sheet_state != "visible":
             continue

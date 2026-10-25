@@ -167,7 +167,7 @@ export class RuntimeHttpServer {
       if (request.method === 'GET' && parts.length === 5) return sendJson(response, 200, await runtime.describeLiveSession(sessionId))
       if (request.method === 'POST' && parts[5] === 'resume') return sendJson(response, 200, await runtime.resumeSession(sessionId))
       if (request.method === 'POST' && parts[5] === 'send') {
-        return sendJson(response, 202, runtime.send({ sessionId, ...await readJson(request) }))
+        return sendJson(response, 202, await runtime.send({ sessionId, ...await readJson(request) }))
       }
       if (request.method === 'POST' && parts[5] === 'cancel') {
         const body = await readJson(request)

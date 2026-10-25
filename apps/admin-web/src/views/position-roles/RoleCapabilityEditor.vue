@@ -15,15 +15,15 @@ const draft = computed({
 });
 
 const capabilityOptions: Array<{ key: AgentCapabilityKey; label: string; description: string }> = [
-  { key: 'content_generation', label: t('内容生成'), description: t('文章、报告、方案等专业内容生产') },
-  { key: 'image_generation', label: t('图片生成'), description: t('直接生成图片或为内容任务生成配图') },
-  { key: 'code_generation', label: t('代码生成'), description: t('Code Agent、项目、文件、终端与 Git 操作') },
-  { key: 'browser_automation', label: t('浏览器自动运行'), description: t('允许 Agent 操作本地浏览器完成网页任务') },
-  { key: 'internal_knowledge', label: t('内部知识检索'), description: t('在既有知识权限范围内检索企业资料') },
+  { key: 'content_generation', label: t('legacy.content_generation'), description: t('legacy.create_professional_articles_reports_and_plans') },
+  { key: 'image_generation', label: t('legacy.image_generation'), description: t('legacy.generate_images_directly_or_for_content_tasks') },
+  { key: 'code_generation', label: t('legacy.code_generation'), description: t('legacy.code_agent_project_file_terminal_and_git_operations') },
+  { key: 'browser_automation', label: t('legacy.browser_automation'), description: t('legacy.allow_the_agent_to_use_the_local_browser_for') },
+  { key: 'internal_knowledge', label: t('legacy.internal_knowledge_search_e7ef223'), description: t('legacy.search_enterprise_material_within_existing_knowledge_permissions') },
 ];
 const impactPreview = computed(() => {
   const enabled = capabilityOptions.filter(item => draft.value.capabilities[item.key]).map(item => item.label);
-  return enabled.length ? enabled.join(t('列表分隔符')) : t('普通问答');
+  return enabled.length ? enabled.join(t('legacy.message')) : t('legacy.general_q_a');
 });
 
 function setCapability(key: AgentCapabilityKey, enabled: boolean) {
@@ -34,8 +34,8 @@ function setCapability(key: AgentCapabilityKey, enabled: boolean) {
 <template>
   <div class="capability-editor">
     <section>
-      <h3>{{ t('Agent 能力') }}</h3>
-      <p class="section-help">{{ t('员工端入口与运行时调用将同时遵守这些设置。') }}</p>
+      <h3>{{ t('legacy.agent_capabilities') }}</h3>
+      <p class="section-help">{{ t('legacy.employee_entry_points_and_runtime_calls_both_follow_these') }}</p>
       <div class="capability-grid">
         <button
           v-for="item in capabilityOptions"
@@ -53,8 +53,8 @@ function setCapability(key: AgentCapabilityKey, enabled: boolean) {
     </section>
 
     <n-alert type="info" :bordered="false">
-      <strong>{{ t('员工端影响预览：') }}</strong>{{ impactPreview }}
-      <div class="resource-note">{{ t('具体 Skill、MCP 与工具的使用对象，请在对应资源中配置。') }}</div>
+      <strong>{{ t('legacy.employee_impact_preview') }}</strong>{{ impactPreview }}
+      <div class="resource-note">{{ t('legacy.configure_the_audience_for_each_skill_mcp_server_or') }}</div>
     </n-alert>
   </div>
 </template>

@@ -2,6 +2,7 @@ import { LlmAdapter, LlmError } from '@deepseek-ai/dsh-llm'
 
 import { stableModelRequest } from './official-host/model-request-compat.mjs'
 import { compatibleModelToolCall } from './official-host/model-tool-call-compat.mjs'
+import { materializeModelImages } from './official-host/model-image-compat.mjs'
 
 async function *readNdjson(response) {
   if (response.body === null) throw new Error('MOVO Model Gateway returned an empty stream')
@@ -21,14 +22,25 @@ async function *readNdjson(response) {
 }
 
 export class AskaiModelGatewayAdapter extends LlmAdapter {
-  constructor(config) {
+  #knowledgeModeBySession = new Map()
+
+  constructor(config, attachments) {
     super()
     this.config = Object.freeze(structuredClone(config))
+    this.attachments = attachments
   }
 
   updateCredential({ gatewayUrl, accessToken }) {
     if (!gatewayUrl || !accessToken) throw new Error('MOVO Model Gateway credential is incomplete')
     this.config = Object.freeze({ ...this.config, gatewayUrl, accessToken })
+  }
+
+  setKnowledgeMode(sessionId, enabled) {
+    this.#knowledgeModeBySession.set(sessionId, enabled === true)
+  }
+
+  clearKnowledgeMode(sessionId) {
+    this.#knowledgeModeBySession.delete(sessionId)
   }
 
   async listModels(provider) {
@@ -37,6 +49,7 @@ export class AskaiModelGatewayAdapter extends LlmAdapter {
       name: this.config.displayName || this.config.modelName,
       provider,
       contextWindow: this.config.contextWindow || undefined,
+      inputModalities: this.config.visionEnabled ? ['text', 'image'] : ['text'],
     }]
   }
 
@@ -47,11 +60,13 @@ export class AskaiModelGatewayAdapter extends LlmAdapter {
       id: model,
       name: this.config.displayName || model,
       contextWindow: this.config.contextWindow || undefined,
+      inputModalities: this.config.visionEnabled ? ['text', 'image'] : ['text'],
     }
   }
 
   async *stream(options) {
     const request = stableModelRequest(options)
+    const messages = await materializeModelImages(request.messages, this.attachments, this.config.visionEnabled === true)
     const response = await fetch(this.config.gatewayUrl, {
       method: 'POST',
       headers: {
@@ -64,10 +79,11 @@ export class AskaiModelGatewayAdapter extends LlmAdapter {
         provider: options.provider,
         model: options.model,
         system: request.system,
-        messages: request.messages,
+        messages,
         tools: options.tools,
         maxTokens: options.maxTokens,
         sessionId: options.sessionId,
+        knowledgeQaEnabled: this.#knowledgeModeBySession.get(options.sessionId) === true,
       }),
       signal: options.signal,
     })

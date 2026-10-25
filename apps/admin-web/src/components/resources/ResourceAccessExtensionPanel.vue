@@ -20,7 +20,7 @@ async function load() {
   try {
     value.value = await props.extension.load(props.resourceId)
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || error?.message || t('加载使用权限失败'))
+    message.error(error?.response?.data?.detail || error?.message || t('legacy.failed_to_load_access_policy'))
   } finally {
     loading.value = false
   }
@@ -32,9 +32,9 @@ async function save() {
   saving.value = true
   try {
     await props.extension.save(props.resourceId, value.value)
-    message.success(t('使用权限已保存'))
+    message.success(t('legacy.access_policy_saved'))
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || error?.message || t('保存使用权限失败'))
+    message.error(error?.response?.data?.detail || error?.message || t('legacy.failed_to_save_access_policy'))
   } finally {
     saving.value = false
   }
@@ -52,7 +52,7 @@ onMounted(load)
       @update:model-value="value = $event"
     />
     <n-space justify="end" class="resource-access-actions">
-      <n-button type="primary" :loading="saving" @click="save">{{ t('保存使用权限') }}</n-button>
+      <n-button type="primary" :loading="saving" @click="save">{{ t('legacy.save_access') }}</n-button>
     </n-space>
   </n-spin>
 </template>

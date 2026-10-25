@@ -50,7 +50,7 @@ MOVO 帮助企业将 DSH Agent 从开发验证推进到生产使用。它在 DSH
 git clone https://github.com/himovo/movo.git
 cd movo
 chmod +x movo
-./movo --lang zh-CN up
+./movo --lang zh-CN --mirror cn up
 ```
 
 随后打开：
@@ -60,6 +60,10 @@ http://localhost:3000/admin/setup
 ```
 
 启动器会拉取官方预构建镜像、等待服务健康并输出初始化地址，无需创建 `.env` 文件，也无需在本地构建镜像。Windows 用户应在 Ubuntu WSL 2 发行版中运行 MOVO，完整步骤见[官网快速开始](https://www.himovo.com/guide/getting-started.html)。
+
+`--mirror cn` 会从北京 ACR 公共镜像仓库拉取 MOVO、MongoDB、Redis、Weaviate 和 Alpine 镜像；升级时同样执行 `./movo --lang zh-CN --mirror cn update`。不带 `--mirror cn` 的 `./movo up` 仍使用 GHCR 和 Docker Hub。镜像源由命令明确指定，不根据语言或 IP 自动猜测，也不需要修改 `.env`。国内镜像支持 Linux/amd64 和 Linux/arm64，Docker 会按主机架构自动选择镜像。从源码构建仍使用 `./movo up --build`，不要与 `--mirror cn` 合用。
+
+如果 `.env` 中固定了 `MOVO_VERSION`，所选仓库也必须有相同标签。国内仓库初期提供 `latest` 和不可变的 `candidate-<提交 SHA>` 标签，不保证已有 GHCR 发布版本标签都存在。现有部署切换镜像源前请先备份数据。
 
 > 已经成功运行 MOVO？欢迎点击页面右上角的 **Star**，让更多开发者发现这个项目。
 
@@ -151,14 +155,14 @@ flowchart LR
 - Docker Desktop，或 Docker Engine 与 Docker Compose v2
 - 至少 8 GB 可用内存
 - 至少 20 GB 可用磁盘空间，用于镜像和应用数据
-- 首次拉取镜像时可以访问 GHCR 和 Docker Hub
+- 首次拉取时可以访问所选镜像源（默认 GHCR/Docker Hub，或 `--mirror cn` 对应的 ACR）
 - 至少一个兼容模型 API 的访问凭证，用于完成初始化
 
-上方快速启动命令适用于 Linux 和 macOS。`./movo up` 会串行拉取已发布的 MOVO 及基础镜像；遇到网络失败时会持续重试，直到拉取成功或用户按 `Ctrl+C` 停止。首次启动需要下载多个容器镜像，在 GHCR 或 Docker Hub 访问较慢时可能需要较长时间。普通用户**不需要在本地构建镜像**。
+上方快速启动命令适用于 Linux 和 macOS。启动器会串行拉取所选镜像源的 MOVO 及基础镜像；遇到网络失败时会持续重试，直到拉取成功或用户按 `Ctrl+C` 停止。首次启动需要下载多个容器镜像，可能需要一段时间。普通用户**不需要在本地构建镜像**。
 
 Windows 用户推荐使用 Docker Desktop、WSL 2 与 Ubuntu。请先通过 `wsl -l -v` 确认已经安装 Ubuntu，再使用 `wsl -d Ubuntu` 进入；不要在提示符以 `docker-desktop:` 开头的内部发行版中执行 MOVO。完整步骤见[官网安装说明](https://www.himovo.com/guide/getting-started.html#windows-必须进入-ubuntu-而不是-docker-desktop)。
 
-也可以直接执行 `docker compose up -d` 启动同一套官方预构建镜像，包括在 Windows PowerShell 或命令提示符中使用。这两种方式默认都不需要 `.env` 文件；但原生 Compose 会并发拉取镜像，不包含启动器的持续重试与健康等待。如需从源码构建本地镜像并启动，请使用 `./movo up --build`。
+也可以直接执行 `docker compose up -d` 启动默认的 GHCR/Docker Hub 镜像，包括在 Windows PowerShell 或命令提示符中使用。这两种方式默认都不需要 `.env` 文件；但原生 Compose 会并发拉取镜像，不包含启动器的持续重试与健康等待。使用国内镜像源时请执行 `./movo --mirror cn up`。如需从源码构建本地镜像并启动，请使用 `./movo up --build`。
 
 打开：
 

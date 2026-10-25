@@ -90,7 +90,7 @@ function closeMiniView() {
       <div
         class="split-handle"
         role="separator"
-        :aria-label="t('调整对话和浏览器宽度')"
+        :aria-label="t('legacy.resize_chat_and_browser_panes')"
         aria-orientation="vertical"
         tabindex="0"
         @pointerdown="panel.beginDrag"

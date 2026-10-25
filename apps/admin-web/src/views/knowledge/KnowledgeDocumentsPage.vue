@@ -25,7 +25,7 @@
         <!-- 左侧目录树 -->
         <aside class="dept-panel">
           <div class="panel-head">
-            <span class="panel-title">{{ t('知识目录') }}</span>
+            <span class="panel-title">{{ t('legacy.knowledge_directories') }}</span>
             <n-space :size="6">
               <n-button size="tiny" @click="openCreateDir(null)">
                 <template #icon>
@@ -34,7 +34,7 @@
                     <path d="M12 5v14" />
                   </svg>
                 </template>
-                {{ t('新增') }}
+                {{ t('legacy.add') }}
               </n-button>
               <n-button size="tiny" :disabled="!selectedDirId" @click="openEditDir(null)">
                 <template #icon>
@@ -43,11 +43,11 @@
                     <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
                   </svg>
                 </template>
-                {{ t('编辑') }}
+                {{ t('legacy.edit') }}
               </n-button>
             </n-space>
           </div>
-          <n-input v-model:value="treeKeyword" :placeholder="t('搜索目录')" clearable size="small" />
+          <n-input v-model:value="treeKeyword" :placeholder="t('legacy.search_directories')" clearable size="small" />
           <div class="tree-wrap">
             <n-tree
               block-line
@@ -68,7 +68,7 @@
                   <path d="m5 9-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20" />
                 </svg>
               </template>
-              {{ t('移动') }}
+              {{ t('legacy.move') }}
             </n-button>
             <n-button
               size="tiny"
@@ -85,7 +85,7 @@
                   <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
                 </svg>
               </template>
-              {{ t('删除') }}
+              {{ t('legacy.delete') }}
             </n-button>
           </n-space>
         </aside>
@@ -104,7 +104,7 @@
                   />
                   <n-input
                     v-model:value="filters.keyword"
-                    :placeholder="t('搜索文档名称')"
+                    :placeholder="t('legacy.search_document_name')"
                     clearable
                     class="keyword-input"
                     @keyup.enter="handleSearch"
@@ -114,7 +114,7 @@
                 <n-select
                   v-model:value="filters.fileType"
                   :options="fileTypeOptions"
-                  :placeholder="t('文件类型')"
+                  :placeholder="t('legacy.file_type')"
                   clearable
                   class="compact-filter-select"
                   @update:value="handleSearch"
@@ -122,7 +122,7 @@
                 <n-select
                   v-model:value="filters.statusValue"
                   :options="statusOptions"
-                  :placeholder="t('状态')"
+                  :placeholder="t('legacy.status')"
                   clearable
                   class="compact-filter-select"
                   @update:value="handleSearch"
@@ -148,7 +148,7 @@
                       <svg viewBox="0 0 24 24"><path d="M12 3v12" /><path d="M7 8l5-5 5 5" /><path d="M5 21h14" /><path d="M5 17h14" /></svg>
                     </span>
                   </template>
-                  {{ t('上传文档') }}
+                  {{ t('legacy.upload_document') }}
                 </n-button>
               </div>
             </div>
@@ -189,9 +189,9 @@
     </div>
   </div>
 
-  <n-modal v-model:show="uploadVisible" preset="card" :title="t('上传知识文档')" style="width: 720px">
+  <n-modal v-model:show="uploadVisible" preset="card" :title="t('legacy.upload_knowledge_document')" style="width: 720px">
     <div style="margin-bottom: 16px;">
-      <div style="margin-bottom: 8px; font-weight: 600; font-size: 14px;">{{ t('目标目录') }}</div>
+      <div style="margin-bottom: 8px; font-weight: 600; font-size: 14px;">{{ t('additional.destination_folder') }}</div>
       <n-select v-model:value="uploadDirectoryId" :options="directoryOptionsWithRoot" />
     </div>
     <section
@@ -207,15 +207,15 @@
         <span class="upload-drop-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M12 18v-6" /><path d="M9 15l3-3 3 3" /></svg>
         </span>
-        <span class="upload-drop-title">{{ t('点击选择或拖入文档/文件夹') }}</span>
-        <span class="upload-drop-copy">{{ t('支持多次选择、批量上传，也支持拖入文件夹；上传会保存到当前目标目录。') }}</span>
+        <span class="upload-drop-title">{{ t('legacy.click_to_choose_or_drop_documents_folders') }}</span>
+        <span class="upload-drop-copy">{{ t('additional.select_files_multiple_times_upload_in_batches_or_drag') }}</span>
       </button>
       <div v-if="uploadQueue.length" class="upload-queue-panel">
         <div class="upload-queue-head">
-          <span class="upload-queue-title">{{ t('待上传文件') }}</span>
-          <span class="upload-queue-count">{{ t('已选择 {count} 个文件', { count: uploadQueue.length }) }}</span>
+          <span class="upload-queue-title">{{ t('additional.files_to_upload') }}</span>
+          <span class="upload-queue-count">{{ t('additional.files_selected', { count: uploadQueue.length }) }}</span>
           <button class="upload-queue-clear" type="button" :disabled="uploading" @click="clearUploadQueue">
-            {{ t('清空') }}
+            {{ t('additional.clear') }}
           </button>
         </div>
         <div class="upload-queue-list">
@@ -244,7 +244,7 @@
               class="upload-queue-remove"
               type="button"
               :disabled="uploading"
-              :title="t('移除')"
+              :title="t('additional.remove')"
               @click="removeUploadItem(item.id)"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
@@ -255,14 +255,14 @@
     </section>
     <template #footer>
       <n-space justify="end">
-        <n-button :disabled="uploading" @click="uploadVisible = false">{{ t('取消') }}</n-button>
+        <n-button :disabled="uploading" @click="uploadVisible = false">{{ t('legacy.cancel') }}</n-button>
         <n-button type="primary" :loading="uploading" :disabled="!uploadQueue.length" @click="submitUpload">
           <template #icon>
             <span class="button-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" /></svg>
             </span>
           </template>
-          {{ uploadQueue.length ? t('上传 {count} 个文档', { count: uploadQueue.length }) : t('上传文档') }}
+          {{ uploadQueue.length ? t('additional.upload_documents', { count: uploadQueue.length }) : t('legacy.upload_document') }}
         </n-button>
       </n-space>
     </template>
@@ -278,37 +278,37 @@
   <!-- 目录新建/编辑 Modal -->
   <n-modal v-model:show="dirEditorVisible" preset="card" :title="dirEditorTitle" style="width: 520px">
     <n-form :model="dirForm" label-placement="left" label-width="90">
-      <n-form-item :label="t('目录名称')">
-        <n-input v-model:value="dirForm.name" :placeholder="t('请输入目录名称')" />
+      <n-form-item :label="t('legacy.directory_name')">
+        <n-input v-model:value="dirForm.name" :placeholder="t('additional.enter_a_folder_name')" />
       </n-form-item>
-      <n-form-item v-if="dirEditorMode === 'create'" :label="t('上级目录')">
-        <n-select v-model:value="dirForm.parentId" :options="directoryOptionsWithRoot" clearable :placeholder="t('根目录')" />
+      <n-form-item v-if="dirEditorMode === 'create'" :label="t('additional.parent_folder')">
+        <n-select v-model:value="dirForm.parentId" :options="directoryOptionsWithRoot" clearable :placeholder="t('legacy.root_folder')" />
       </n-form-item>
     </n-form>
     <template #footer>
       <n-space justify="end">
-        <n-button @click="dirEditorVisible = false">{{ t('取消') }}</n-button>
-        <n-button type="primary" :loading="loading" @click="saveDirectory">{{ t('保存') }}</n-button>
+        <n-button @click="dirEditorVisible = false">{{ t('legacy.cancel') }}</n-button>
+        <n-button type="primary" :loading="loading" @click="saveDirectory">{{ t('legacy.save') }}</n-button>
       </n-space>
     </template>
   </n-modal>
 
   <!-- 目录移动 Modal -->
-  <n-modal v-model:show="dirMoveVisible" preset="card" :title="t('移动目录')" style="width: 520px">
+  <n-modal v-model:show="dirMoveVisible" preset="card" :title="t('legacy.move_directory')" style="width: 520px">
     <n-form :model="moveForm" label-placement="left" label-width="90">
-      <n-form-item :label="t('目标上级')">
-        <n-select v-model:value="moveForm.parentId" :options="moveDirectoryOptions" clearable :placeholder="t('根目录')" />
+      <n-form-item :label="t('legacy.target_parent')">
+        <n-select v-model:value="moveForm.parentId" :options="moveDirectoryOptions" clearable :placeholder="t('legacy.root_folder')" />
       </n-form-item>
     </n-form>
     <template #footer>
       <n-space justify="end">
-        <n-button @click="dirMoveVisible = false">{{ t('取消') }}</n-button>
-        <n-button type="primary" :loading="loading" @click="saveMoveDirectory">{{ t('确认移动') }}</n-button>
+        <n-button @click="dirMoveVisible = false">{{ t('legacy.cancel') }}</n-button>
+        <n-button type="primary" :loading="loading" @click="saveMoveDirectory">{{ t('legacy.confirm_move') }}</n-button>
       </n-space>
     </template>
   </n-modal>
 
-  <n-modal v-model:show="deleteConfirmVisible" preset="card" :title="t('删除知识文档')" style="width: 460px">
+  <n-modal v-model:show="deleteConfirmVisible" preset="card" :title="t('additional.delete_knowledge_document')" style="width: 460px">
     <div class="delete-confirm">
       <div class="delete-confirm-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24">
@@ -320,21 +320,21 @@
         </svg>
       </div>
       <div class="delete-confirm-body">
-        <div class="delete-confirm-title">{{ deleteTarget?.name || t('未命名文档') }}</div>
+        <div class="delete-confirm-title">{{ deleteTarget?.name || t('legacy.unnamed_document') }}</div>
         <div class="delete-confirm-copy">
-          {{ t('删除后列表默认不再展示，该文档的分段、检索索引和向量会同步失效，后续知识问答不会再召回它。') }}
+          {{ t('additional.the_document_will_no_longer_appear_in_the_list') }}
         </div>
       </div>
     </div>
     <template #footer>
       <n-space justify="end">
-        <n-button :disabled="deleteSubmitting" @click="closeDeleteConfirm">{{ t('取消') }}</n-button>
-        <n-button type="error" :loading="deleteSubmitting" @click="submitDeleteDocument">{{ t('确认删除') }}</n-button>
+        <n-button :disabled="deleteSubmitting" @click="closeDeleteConfirm">{{ t('legacy.cancel') }}</n-button>
+        <n-button type="error" :loading="deleteSubmitting" @click="submitDeleteDocument">{{ t('additional.confirm_deletion') }}</n-button>
       </n-space>
     </template>
   </n-modal>
 
-  <n-modal v-model:show="batchDeleteConfirmVisible" preset="card" :title="t('批量删除知识文档')" style="width: 480px">
+  <n-modal v-model:show="batchDeleteConfirmVisible" preset="card" :title="t('additional.delete_knowledge_documents_in_bulk')" style="width: 480px">
     <div class="delete-confirm">
       <div class="delete-confirm-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24">
@@ -348,14 +348,14 @@
       <div class="delete-confirm-body">
         <div class="delete-confirm-title">{{ selectedBatchDeleteTitle }}</div>
         <div class="delete-confirm-copy">
-          {{ t('删除后列表默认不再展示，所选文档的分段、检索索引和向量会同步失效，后续知识问答不会再召回它们。') }}
+          {{ t('additional.the_selected_documents_will_no_longer_appear_in_the') }}
         </div>
       </div>
     </div>
     <template #footer>
       <n-space justify="end">
-        <n-button :disabled="batchDeleteSubmitting" @click="closeBatchDeleteConfirm">{{ t('取消') }}</n-button>
-        <n-button type="error" :loading="batchDeleteSubmitting" @click="submitBatchDeleteDocuments">{{ t('确认删除') }}</n-button>
+        <n-button :disabled="batchDeleteSubmitting" @click="closeBatchDeleteConfirm">{{ t('legacy.cancel') }}</n-button>
+        <n-button type="error" :loading="batchDeleteSubmitting" @click="submitBatchDeleteDocuments">{{ t('additional.confirm_deletion') }}</n-button>
       </n-space>
     </template>
   </n-modal>
@@ -370,10 +370,10 @@
             <line x1="12" y1="3" x2="12" y2="15" />
           </svg>
         </span>
-        <span class="upload-progress-title">{{ t('上传进度') }}</span>
+        <span class="upload-progress-title">{{ t('additional.upload_progress') }}</span>
         <span class="upload-progress-count">({{ uploadFinishedCount }}/{{ uploadQueue.length }})</span>
       </div>
-      <button class="upload-progress-close" type="button" @click="closeFloatPanel" :title="t('关闭')">
+      <button class="upload-progress-close" type="button" @click="closeFloatPanel" :title="t('legacy.close')">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -527,16 +527,16 @@ const acceptTypes = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.md,.png,.jpg,.j
 const supportedUploadExtensions = new Set(acceptTypes.split(',').map((item) => item.trim().toLowerCase()));
 
 const statusOptions = computed(() => [
-  { label: t('学习成功'), value: 'indexed' },
-  { label: t('学习失败'), value: 'failed' },
+  { label: t('additional.learning_succeeded'), value: 'indexed' },
+  { label: t('legacy.learning_failed'), value: 'failed' },
 ]);
 
 const searchScopeOptions = computed(() => selectedDirectoryId.value
   ? [
-      { label: t('当前目录及子目录'), value: 'current' },
-      { label: t('全部目录'), value: 'all' },
+      { label: t('legacy.current_directory_and_subdirectories'), value: 'current' },
+      { label: t('legacy.all_folders'), value: 'all' },
     ]
-  : [{ label: t('全部目录'), value: 'all' }]);
+  : [{ label: t('legacy.all_folders'), value: 'all' }]);
 
 const effectiveSearchScope = computed<'current' | 'all'>({
   get: () => selectedDirectoryId.value ? filters.searchScope : 'all',
@@ -554,7 +554,7 @@ const fileTypeOptions = computed(() => [
   { label: 'Excel', value: 'spreadsheet' },
   { label: 'Markdown', value: 'markdown' },
   { label: 'Text', value: 'txt' },
-  { label: t('图片'), value: 'image' },
+  { label: t('legacy.image'), value: 'image' },
 ]);
 
 const uploadFinishedCount = computed(() =>
@@ -562,10 +562,10 @@ const uploadFinishedCount = computed(() =>
 );
 
 const batchDeleteButtonText = computed(() =>
-  selectedDocumentKeys.value.length ? `${t('批量删除')} ${selectedDocumentKeys.value.length} ${t('项')}` : t('批量删除'),
+  selectedDocumentKeys.value.length ? `${t('additional.delete_in_bulk')} ${selectedDocumentKeys.value.length} ${t('additional.items')}` : t('additional.delete_in_bulk'),
 );
 
-const selectedBatchDeleteTitle = computed(() => `${t('已选择')} ${selectedDocumentKeys.value.length} ${t('个文档')}`);
+const selectedBatchDeleteTitle = computed(() => `${t('additional.selected')} ${selectedDocumentKeys.value.length} ${t('additional.documents')}`);
 const documentTableScrollX = 1078;
 const tableScrollbarProps = { trigger: 'none' as const };
 
@@ -573,30 +573,30 @@ const metricCards = computed(() => [
   {
     key: 'total',
     icon: '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M16 13H8" /><path d="M16 17H8" /></svg>',
-    label: t('文档总数'),
+    label: t('legacy.documents_e6994dd'),
     value: stats.value.total,
-    note: t('当前主账号下的知识文档'),
+    note: t('additional.knowledge_documents_under_the_current_primary_account'),
   },
   {
     key: 'indexed',
     icon: '<svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z" /><path d="M9 10l2 2 4-4" /></svg>',
-    label: t('已学习'),
+    label: t('legacy.learned'),
     value: stats.value.indexed,
-    note: t('后续解析并学习完成后自动更新'),
+    note: t('legacy.automatically_updated_after_parsing_and_learning_completes'),
   },
   {
     key: 'storage',
     icon: '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5" /><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3" /></svg>',
-    label: t('文档总容量'),
+    label: t('legacy.total_document_size'),
     value: formatFileSize(stats.value.totalSize),
-    note: t('当前主账号下所有知识文档的文件大小合计'),
+    note: t('additional.total_file_size_of_all_knowledge_documents_under_the'),
   },
   {
     key: 'failed',
     icon: '<svg viewBox="0 0 24 24"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>',
-    label: t('失败状态'),
+    label: t('legacy.failed_10fbe09'),
     value: stats.value.failed,
-    note: t('解析或学习失败状态的文档数'),
+    note: t('legacy.number_of_documents_that_failed_during_parsing_or_learning'),
   },
 ]);
 
@@ -607,7 +607,7 @@ const columns = computed<DataTableColumns<KnowledgeDocumentItem>>(() => [
     fixed: 'left',
   },
   {
-    title: t('文档'),
+    title: t('additional.document'),
     key: 'name',
     width: 300,
     fixed: 'left',
@@ -651,7 +651,7 @@ const columns = computed<DataTableColumns<KnowledgeDocumentItem>>(() => [
                   h('path', { d: 'M3 6.5A2.5 2.5 0 0 1 5.5 4H9l2 2h7.5A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z' }),
                 ]),
               ]),
-              h('span', { class: 'doc-directory-label' }, `${t('所在目录')}：`),
+              h('span', { class: 'doc-directory-label' }, `${t('additional.folder')}：`),
               h('span', { class: 'doc-directory-value' }, directoryPath),
             ])
           : null,
@@ -659,7 +659,7 @@ const columns = computed<DataTableColumns<KnowledgeDocumentItem>>(() => [
     },
   },
   {
-    title: t('类型'),
+    title: t('legacy.type'),
     key: 'fileExt',
     width: 80,
     align: 'center',
@@ -668,7 +668,7 @@ const columns = computed<DataTableColumns<KnowledgeDocumentItem>>(() => [
     },
   },
   {
-    title: t('大小'),
+    title: t('legacy.size_fd20702'),
     key: 'fileSize',
     width: 110,
     render(row) {
@@ -676,7 +676,7 @@ const columns = computed<DataTableColumns<KnowledgeDocumentItem>>(() => [
     },
   },
   {
-    title: t('状态'),
+    title: t('legacy.status'),
     key: 'status',
     width: 140,
     render(row) {
@@ -684,7 +684,7 @@ const columns = computed<DataTableColumns<KnowledgeDocumentItem>>(() => [
     },
   },
   {
-    title: t('更新时间'),
+    title: t('legacy.updated_at'),
     key: 'updatedAt',
     width: 150,
     render(row) {
@@ -692,17 +692,17 @@ const columns = computed<DataTableColumns<KnowledgeDocumentItem>>(() => [
     },
   },
   {
-    title: t('操作'),
+    title: t('legacy.actions'),
     key: 'actions',
     width: 250,
     render(row) {
       return h(NSpace, { size: 6 }, {
         default: () => [
           h(NButton, { size: 'small', tertiary: true, onClick: () => openDetail(row) }, {
-            default: () => actionContent('preview', t('预览')),
+            default: () => actionContent('preview', t('legacy.preview')),
           }),
           h(NButton, { size: 'small', tertiary: true, type: 'error', onClick: () => confirmDelete(row) }, {
-            default: () => actionContent('delete', t('删除')),
+            default: () => actionContent('delete', t('legacy.delete')),
           }),
         ],
       });
@@ -777,10 +777,10 @@ function statusTagType(value: string) {
 
 function uploadStatusLabel(value: UploadStatus) {
   const map: Record<UploadStatus, string> = {
-    pending: t('待上传'),
-    uploading: t('上传中'),
-    success: t('完成'),
-    failed: t('失败'),
+    pending: t('additional.waiting_to_upload'),
+    uploading: t('legacy.uploading'),
+    success: t('legacy.success'),
+    failed: t('legacy.failed'),
   };
   return map[value];
 }
@@ -859,7 +859,7 @@ function formatFileSize(bytes: number) {
 }
 
 function formatDocumentDisplayName(row: KnowledgeDocumentItem) {
-  const name = String(row.name || row.originalFilename || t('未命名文档')).trim();
+  const name = String(row.name || row.originalFilename || t('legacy.unnamed_document')).trim();
   const ext = String(row.fileExt || '').trim().replace(/^\./, '');
   if (!ext) {
     return name;
@@ -869,7 +869,7 @@ function formatDocumentDisplayName(row: KnowledgeDocumentItem) {
 
 function formatDirectoryPath(directoryId?: string) {
   const path = directoryPathMap.value.get(directoryId || '');
-  return path ? `${t('根目录')} / ${path}` : t('根目录');
+  return path ? `${t('legacy.root_folder')} / ${path}` : t('legacy.root_folder');
 }
 
 function readError(error: unknown, fallback: string) {
@@ -963,12 +963,12 @@ function appendUploadCandidates(candidates: UploadFileCandidate[]) {
       error: '',
     }));
   if (!nextItems.length) {
-    message.info(skippedCount ? t('未找到支持的文档类型') : t('所选文件已在列表中'));
+    message.info(skippedCount ? t('additional.no_supported_document_types_found') : t('additional.the_selected_file_is_already_in_the_list'));
     return;
   }
   uploadQueue.value = [...uploadQueue.value, ...nextItems];
   if (skippedCount) {
-    message.warning(t('已跳过 {count} 个不支持的文件', { count: skippedCount }));
+    message.warning(t('additional.skipped_unsupported_files', { count: skippedCount }));
   }
 }
 
@@ -1098,10 +1098,10 @@ function isDuplicateFilenameError(error: unknown) {
 function confirmAction(content: string, options: { title?: string; positiveText?: string } = {}) {
   return new Promise<boolean>((resolve) => {
     dialog.warning({
-      title: options.title || t('确认操作'),
+      title: options.title || t('legacy.confirm_action'),
       content,
-      positiveText: options.positiveText || t('确认'),
-      negativeText: t('取消'),
+      positiveText: options.positiveText || t('legacy.confirm'),
+      negativeText: t('legacy.cancel'),
       onPositiveClick: () => resolve(true),
       onNegativeClick: () => resolve(false),
       onClose: () => resolve(false),
@@ -1111,10 +1111,10 @@ function confirmAction(content: string, options: { title?: string; positiveText?
 
 function confirmDuplicateReplace(filename: string) {
   return confirmAction(
-    t('知识文档中已存在同名文件「{name}」，是否上传并替换原文档？', { name: filename }),
+    t('additional.a_document_named_already_exists_upload_and_replace_the', { name: filename }),
     {
-      title: t('同名文件已存在'),
-      positiveText: t('替换上传'),
+      title: t('additional.a_file_with_the_same_name_already_exists'),
+      positiveText: t('additional.upload_and_replace'),
     },
   );
 }
@@ -1134,7 +1134,7 @@ async function uploadQueueItem(item: UploadQueueItem, replaceExisting = false) {
 
 async function submitUpload() {
   if (!uploadQueue.value.length) {
-    message.warning(t('请选择要上传的文档'));
+    message.warning(t('additional.select_documents_to_upload'));
     return;
   }
   uploading.value = true;
@@ -1160,13 +1160,13 @@ async function submitUpload() {
               item.progress = 100;
               continue;
             } catch (replaceError) {
-              item.error = readError(replaceError, t('替换失败'));
+              item.error = readError(replaceError, t('additional.replacement_failed'));
             }
           } else {
-            item.error = t('已取消替换');
+            item.error = t('additional.replacement_cancelled');
           }
         } else {
-          item.error = readError(error, t('上传失败'));
+          item.error = readError(error, t('legacy.upload_failed'));
         }
         item.status = 'failed';
         item.progress = 100;
@@ -1183,8 +1183,8 @@ async function submitUpload() {
 async function closeFloatPanel() {
   if (uploading.value) {
     const confirmed = await confirmAction(
-      t('正在上传中，隐藏窗口不会取消上传，确定隐藏吗？'),
-      { title: t('确认隐藏上传进度') },
+      t('additional.an_upload_is_in_progress_hiding_this_window_will'),
+      { title: t('additional.hide_upload_progress') },
     );
     if (!confirmed) {
       return;
@@ -1222,13 +1222,13 @@ async function submitDeleteDocument() {
   deleteSubmitting.value = true;
   try {
     await deleteKnowledgeDocument(target.id);
-    message.success(t('已删除文档并同步失效检索索引'));
+    message.success(t('additional.document_deleted_and_search_index_invalidated'));
     deleteConfirmVisible.value = false;
     deleteTarget.value = null;
     await reload();
     await loadDirectories();
   } catch (error) {
-    message.error(readError(error, t('删除失败')));
+    message.error(readError(error, t('legacy.failed_to_delete')));
   } finally {
     deleteSubmitting.value = false;
   }
@@ -1245,13 +1245,13 @@ async function submitBatchDeleteDocuments() {
   batchDeleteSubmitting.value = true;
   try {
     await Promise.all(ids.map((id) => deleteKnowledgeDocument(id)));
-    message.success(`${t('已删除')} ${ids.length} ${t('个文档并同步失效检索索引')}`);
+    message.success(`${t('legacy.deleted')} ${ids.length} ${t('additional.documents_deleted_and_search_indexes_invalidated')}`);
     selectedDocumentKeys.value = [];
     batchDeleteConfirmVisible.value = false;
     await reload();
     await loadDirectories();
   } catch (error) {
-    message.error(readError(error, t('批量删除失败')));
+    message.error(readError(error, t('additional.bulk_deletion_failed')));
   } finally {
     batchDeleteSubmitting.value = false;
   }
@@ -1260,11 +1260,11 @@ async function submitBatchDeleteDocuments() {
 async function retryParse(row: KnowledgeDocumentItem) {
   try {
     await retryKnowledgeDocumentParse(row.id);
-    message.success(t('已重新提交学习任务'));
+    message.success(t('additional.learning_task_resubmitted'));
     await reload({ silent: true });
     syncProcessingPoll();
   } catch (error) {
-    message.error(readError(error, t('重新学习失败')));
+    message.error(readError(error, t('additional.failed_to_relearn')));
   }
 }
 
@@ -1288,12 +1288,12 @@ const selectedDirectoryDocumentCount = computed(() => {
 const deleteDirectoryDisabled = computed(() => !selectedDirId.value || selectedDirectoryDocumentCount.value > 0);
 const deleteDirectoryDisabledReason = computed(() => {
   if (!selectedDirId.value) {
-    return t('请选择目录');
+    return t('additional.select_a_folder');
   }
   if (selectedDirectoryDocumentCount.value > 0) {
-    return t('该目录或其子目录下存在知识文档，无法删除');
+    return t('additional.this_folder_or_its_subfolders_contain_knowledge_documents_and');
   }
-  return t('删除');
+  return t('legacy.delete');
 });
 
 const selectedDirectoryId = computed(() => {
@@ -1306,8 +1306,8 @@ const treeOptions = computed<TreeOption[]>(() => {
   return [
     {
       key: 'root',
-      label: `${t('全部文档')} (${stats.value.total})`,
-      rawName: t('全部文档'),
+      label: `${t('legacy.all_documents')} (${stats.value.total})`,
+      rawName: t('legacy.all_documents'),
       totalDocumentCount: stats.value.total,
       isRoot: true,
       children: nodes,
@@ -1364,9 +1364,9 @@ function renderTreeLabel(info: { option: TreeOption & { rawName?: string; totalD
   const count = Number(info.option.totalDocumentCount ?? 0);
   const isRoot = info.option.isRoot || false;
   const menuOptions = [
-    { label: t('新增子目录'), key: 'create' },
-    ...(!isRoot ? [{ label: t('编辑目录'), key: 'edit' }] : []),
-    ...(ProductKnowledgeDirectoryPermissions ? [{ label: t('权限设置'), key: 'permissions' }] : []),
+    { label: t('legacy.new_subdirectory'), key: 'create' },
+    ...(!isRoot ? [{ label: t('legacy.edit_directory'), key: 'edit' }] : []),
+    ...(ProductKnowledgeDirectoryPermissions ? [{ label: t('additional.permission_settings'), key: 'permissions' }] : []),
   ];
   const handleMenu = (key: string) => {
     selectedDirKeys.value = [nodeId];
@@ -1380,7 +1380,7 @@ function renderTreeLabel(info: { option: TreeOption & { rawName?: string; totalD
       h(NDropdown, { options: menuOptions, trigger: 'click', onSelect: handleMenu }, {
         default: () => h('button', {
           class: 'dept-node-action',
-          title: t('目录操作'),
+          title: t('additional.folder_actions'),
           onClick: (event: MouseEvent) => {
             event.preventDefault();
             event.stopPropagation();
@@ -1398,7 +1398,7 @@ function openDirectoryPermissions(directoryId: string, directoryName: string) {
 }
 
 function flattenDirectoryOptions(nodes: KnowledgeDirectoryNode[], includeRoot: boolean, excludeIds: Set<string> = new Set()): SelectOption[] {
-  const result: SelectOption[] = includeRoot ? [{ label: t('根目录'), value: 'root' }] : [];
+  const result: SelectOption[] = includeRoot ? [{ label: t('legacy.root_folder'), value: 'root' }] : [];
   const dfs = (items: KnowledgeDirectoryNode[], lineage: string[] = []) => {
     for (const item of items) {
       if (excludeIds.has(item.id)) {
@@ -1450,7 +1450,7 @@ const dirForm = ref({
   name: '',
   parentId: null as string | null,
 });
-const dirEditorTitle = computed(() => dirEditorMode.value === 'create' ? t('新增目录') : t('编辑目录'));
+const dirEditorTitle = computed(() => dirEditorMode.value === 'create' ? t('legacy.new_directory') : t('legacy.edit_directory'));
 
 const dirMoveVisible = ref(false);
 const moveForm = ref({
@@ -1540,7 +1540,7 @@ function restoreListState() {
 
 async function saveDirectory() {
   if (!dirForm.value.name.trim()) {
-    message.warning(t('请填写目录名称'));
+    message.warning(t('additional.enter_a_folder_name_8fc7792'));
     return;
   }
   loading.value = true;
@@ -1551,18 +1551,18 @@ async function saveDirectory() {
         name: dirForm.value.name.trim(),
         parentId,
       });
-      message.success(t('目录已创建'));
+      message.success(t('additional.folder_created'));
     } else {
       await updateDirectory(dirForm.value.id, {
         name: dirForm.value.name.trim(),
       });
-      message.success(t('目录已更新'));
+      message.success(t('additional.folder_updated'));
     }
     dirEditorVisible.value = false;
     await loadDirectories();
     await reload();
   } catch (error) {
-    message.error(readError(error, t('保存失败')));
+    message.error(readError(error, t('legacy.failed_to_save')));
   } finally {
     loading.value = false;
   }
@@ -1574,12 +1574,12 @@ async function saveMoveDirectory() {
   loading.value = true;
   try {
     await moveDirectory(selectedDirId.value, { parentId });
-    message.success(t('目录已移动'));
+    message.success(t('additional.folder_moved'));
     dirMoveVisible.value = false;
     await loadDirectories();
     await reload();
   } catch (error) {
-    message.error(readError(error, t('移动失败')));
+    message.error(readError(error, t('additional.move_failed')));
   } finally {
     loading.value = false;
   }
@@ -1590,23 +1590,23 @@ async function deleteSelectedDir() {
   const target = selectedDirectory.value;
   if (!target) return;
   if (selectedDirectoryDocumentCount.value > 0) {
-    message.warning(t('该目录或其子目录下存在知识文档，无法删除'));
+    message.warning(t('additional.this_folder_or_its_subfolders_contain_knowledge_documents_and'));
     return;
   }
   const confirmed = await confirmAction(
-    t('确认删除目录「{name}」？', { name: target.name }),
-    { title: t('删除目录') },
+    t('additional.delete_folder', { name: target.name }),
+    { title: t('legacy.delete_directory') },
   );
   if (!confirmed) return;
   
   try {
     await deleteDirectory(selectedDirId.value);
-    message.success(t('目录已删除'));
+    message.success(t('additional.folder_deleted'));
     selectedDirKeys.value = ['root'];
     await loadDirectories();
     await reload();
   } catch (error) {
-    message.error(readError(error, t('删除失败')));
+    message.error(readError(error, t('legacy.failed_to_delete')));
   }
 }
 
@@ -1670,9 +1670,9 @@ async function reload(options: { silent?: boolean } = {}) {
     pagination.total = listResult.total;
   } catch (error) {
     if (options.silent) {
-      console.warn(readError(error, t('知识文档加载失败')));
+      console.warn(readError(error, t('additional.failed_to_load_knowledge_documents')));
     } else {
-      message.error(readError(error, t('知识文档加载失败')));
+      message.error(readError(error, t('additional.failed_to_load_knowledge_documents')));
     }
   } finally {
     if (!options.silent) {

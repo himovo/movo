@@ -158,6 +158,15 @@ export async function testModelInstance(id: string) {
   return data;
 }
 
+export async function testModelVision(id: string): Promise<boolean> {
+  const { data } = await apiClient.post<{ supported: boolean }>(`/api/models/instances/${id}/test-vision`);
+  return data.supported === true;
+}
+
+export async function enableModelVision(id: string): Promise<void> {
+  await apiClient.post(`/api/models/instances/${id}/enable-vision`);
+}
+
 export async function testImageModelInstance(id: string, prompt: string) {
   const { data } = await apiClient.post<{
     success: boolean;

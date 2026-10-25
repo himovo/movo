@@ -16,27 +16,27 @@
         <n-card class="panel-card span-8 activity-panel" :bordered="false" size="large">
           <template #header>
             <div class="panel-header">
-              <span>{{ t('最近运行观察') }}</span>
-              <n-button quaternary size="small" @click="go('/token-stats')">{{ t('查看全部') }}</n-button>
+              <span>{{ t('legacy.recent_activities') }}</span>
+              <n-button quaternary size="small" @click="go('/token-stats')">{{ t('legacy.view_all') }}</n-button>
             </div>
           </template>
 
           <div v-if="recentActivity.length" class="activity-table">
             <div class="table-row table-head">
-              <span>{{ t('任务') }}</span>
-              <span>{{ t('模型') }}</span>
-              <span>{{ t('状态') }}</span>
+              <span>{{ t('legacy.task') }}</span>
+              <span>{{ t('legacy.model') }}</span>
+              <span>{{ t('legacy.status') }}</span>
               <span>{{ t('Token') }}</span>
-              <span>{{ t('耗时') }}</span>
+              <span>{{ t('legacy.duration') }}</span>
             </div>
             <div v-for="(item, index) in visibleRecentActivity" :key="item.requestId || item.sessionId || `activity-${index}`" class="table-row">
               <div class="activity-main">
-                <strong>{{ item.title ? t(item.title) : t('LLM 调用') }}</strong>
-                <small>{{ item.userName || t('未知用户') }} · {{ item.departmentName || t('未分配部门') }} · {{ formatTime(item.createdAt) }}</small>
+                <strong>{{ item.title ? translateSourceText(item.title) : t('legacy.llm_call') }}</strong>
+                <small>{{ item.userName || t('legacy.unknown_user') }} · {{ item.departmentName || t('legacy.no_dept') }} · {{ formatTime(item.createdAt) }}</small>
               </div>
-              <span class="table-muted table-model" :title="item.modelName || t('默认模型')">{{ item.modelName || t('默认模型') }}</span>
+              <span class="table-muted table-model" :title="item.modelName || t('legacy.default_model')">{{ item.modelName || t('legacy.default_model') }}</span>
               <n-tag size="small" :type="item.status === 'failed' ? 'error' : 'success'" :bordered="false">
-                {{ item.status === 'failed' ? t('失败') : t('完成') }}
+                {{ item.status === 'failed' ? t('legacy.failed') : t('legacy.success') }}
               </n-tag>
               <span>{{ formatNumber(item.totalTokens) }}</span>
               <span>{{ formatDuration(item.durationMs) }}</span>
@@ -52,8 +52,8 @@
                 <path d="M16 15v-2" />
               </svg>
             </div>
-            <div class="empty-title">{{ t('暂无运行记录') }}</div>
-            <div class="empty-copy">{{ t('当前组织还没有 LLM 调用数据，产生调用后会在这里展示最近活动。') }}</div>
+            <div class="empty-title">{{ t('legacy.no_activity_log') }}</div>
+            <div class="empty-copy">{{ t('legacy.no_llm_calls_yet_recent_activity_will_be_shown') }}</div>
           </div>
         </n-card>
 
@@ -62,7 +62,7 @@
             <div class="deployment-head">
               <div class="deployment-title">
                 <span class="health-dot" aria-hidden="true"></span>
-                <strong>{{ overview?.billing.orgName || t('组织空间') }}</strong>
+                <strong>{{ overview?.billing.orgName || t('legacy.org_space') }}</strong>
               </div>
               <component :is="ProductDashboardEditionBadge" v-if="ProductDashboardEditionBadge" />
               <n-tag v-else size="small" :bordered="false" :type="editionTagType">{{ productEditionLabel }}</n-tag>
@@ -73,7 +73,7 @@
             </div>
             <div class="deployment-facts">
               <span><strong>{{ overview?.billing.currentMembersCount ?? 0 }}</strong> {{ memberCapacityLabel }}</span>
-              <span><strong>{{ overview?.billing.isOwnModel ? t('已开启') : t('未开启') }}</strong> {{ t('自有模型') }}</span>
+              <span><strong>{{ overview?.billing.isOwnModel ? t('legacy.enabled_d78cde0') : t('legacy.disabled_b9004e6') }}</strong> {{ t('legacy.own_models') }}</span>
             </div>
             <component
               :is="ProductDashboardBillingActions"
@@ -85,8 +85,8 @@
           <n-card class="panel-card todo-panel" :bordered="false" size="large">
             <template #header>
               <div class="panel-header">
-                <span>{{ t('待处理事项') }}</span>
-                <n-button quaternary size="small" @click="loadOverview">{{ t('刷新') }}</n-button>
+                <span>{{ t('legacy.todo_list') }}</span>
+                <n-button quaternary size="small" @click="loadOverview">{{ t('legacy.refresh') }}</n-button>
               </div>
             </template>
 
@@ -101,8 +101,8 @@
               </button>
             </div>
             <div v-else class="empty-state compact">
-              <div class="empty-title">{{ t('暂无待处理事项') }}</div>
-              <div class="empty-copy">{{ t('模型、Skill、工具与近 24 小时运行状态未发现需要立即处理的问题。') }}</div>
+              <div class="empty-title">{{ t('legacy.no_pending_actions') }}</div>
+              <div class="empty-copy">{{ t('legacy.everything_looks_good_no_issues_found_with_models_skills') }}</div>
             </div>
           </n-card>
 
@@ -111,7 +111,7 @@
 
       <section class="content-grid">
         <n-card class="panel-card span-8" :bordered="false" size="large">
-          <template #header>{{ t('核心资产状态') }}</template>
+          <template #header>{{ t('legacy.core_assets') }}</template>
           <div class="asset-grid">
             <button v-for="asset in assetCards" :key="asset.key" class="asset-card" type="button" @click="go(asset.route)">
               <div class="asset-title">{{ asset.title }}</div>
@@ -124,7 +124,7 @@
         </n-card>
 
         <n-card class="panel-card span-4" :bordered="false" size="large">
-          <template #header>{{ t('快捷操作') }}</template>
+          <template #header>{{ t('legacy.quick_actions') }}</template>
           <div class="quick-grid">
             <n-button v-for="action in quickActions" :key="action.label" secondary @click="go(action.route)">
               <template #icon>
@@ -148,7 +148,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { apiClient } from '@/api/client';
-import { t, useLocale } from '@/composables/i18n';
+import { t, translateSourceText, useLocale } from '@/composables/i18n';
 import { formatAdminShortDateTime } from '@/composables/adminTimezone';
 import { translateDashboardText } from './dashboardText';
 import adminProductUiExtension from '@movo-admin-product-extension';
@@ -238,30 +238,30 @@ const isCommunity = computed(() => overview.value?.billing.edition === 'communit
 const ProductDashboardEditionBadge = adminProductUiExtension.dashboardEditionBadge;
 const productEditionLabel = computed(() => {
   const extensionLabel = adminProductUiExtension.productEditionLabel;
-  return extensionLabel ? t(extensionLabel) : tierLabel.value;
+  return extensionLabel ? translateSourceText(extensionLabel) : tierLabel.value;
 });
 const editionTagType = computed(() => adminProductUiExtension.productEditionTagType || (isCommunity.value ? 'success' : 'info'));
 const tierLabel = computed(() => {
-  if (isCommunity.value) return t('社区版');
+  if (isCommunity.value) return t('legacy.community_edition');
   const tier = overview.value?.billing.tier;
-  if (tier === 'plus') return t('Plus 个人版');
-  if (tier === 'pro') return t('专业团队版');
-  if (tier === 'enterprise') return t('企业定制版');
-  return t('免费版');
+  if (tier === 'plus') return t('legacy.plus_personal');
+  if (tier === 'pro') return t('legacy.pro_team');
+  if (tier === 'enterprise') return t('legacy.enterprise');
+  return t('legacy.free_edition');
 });
 const memberCapacityLabel = computed(() => {
   const limit = overview.value?.billing.userLimit;
-  return limit === null || limit === undefined ? t('名成员 · 不限人数') : t(' / {count} 名成员', { count: limit });
+  return limit === null || limit === undefined ? t('legacy.members_unlimited') : t('additional.members', { count: limit });
 });
 const healthLabel = computed(() => {
-  if (healthStatus.value === 'critical') return t('需要处理');
-  if (healthStatus.value === 'warning') return t('有待确认');
-  return t('运行正常');
+  if (healthStatus.value === 'critical') return t('legacy.need_action');
+  if (healthStatus.value === 'warning') return t('legacy.to_be_confirmed');
+  return t('legacy.healthy');
 });
 const healthNote = computed(() => {
   const warnings = overview.value?.health.warnings || [];
-  if (!warnings.length) return t('模型、工具与近 24 小时调用未发现明显异常');
-  return warnings.slice(0, 2).map(w => t(w)).join('、');
+  if (!warnings.length) return t('legacy.no_anomalies_detected_in_the_last_24h');
+  return warnings.slice(0, 2).map(w => translateSourceText(w)).join(locale.value === 'zh-CN' ? '、' : ', ');
 });
 
 const icons = {
@@ -278,44 +278,44 @@ const icons = {
 const metricCards = computed(() => [
   {
     key: 'calls',
-    label: t('近 24h 调用'),
+    label: t('legacy.calls_24h'),
     value: formatNumber(metrics.value.calls24h),
-    note: t('失败 {count} 次', { count: metrics.value.failedCalls24h }),
+    note: t('legacy.failed_times', { count: metrics.value.failedCalls24h }),
     icon: icons.calls,
   },
   {
     key: 'tokens',
-    label: t('Token 消耗'),
+    label: t('legacy.tokens_consumed'),
     value: formatCompact(metrics.value.tokens24h),
-    note: t('近 24 小时累计'),
+    note: t('legacy.last_24_hours_total'),
     icon: icons.tokens,
   },
   {
     key: 'users',
-    label: t('活跃用户'),
+    label: t('legacy.active_users'),
     value: formatNumber(metrics.value.activeUsers24h),
-    note: t('{count} 个活跃部门', { count: metrics.value.activeDepartments24h }),
+    note: t('legacy.active_departments', { count: metrics.value.activeDepartments24h }),
     icon: icons.users,
   },
   {
     key: 'success',
-    label: t('成功率'),
+    label: t('legacy.success_rate'),
     value: metrics.value.successRate24h === null ? '—' : `${metrics.value.successRate24h}%`,
-    note: metrics.value.lastCalledAt ? t('最近 {time}', { time: formatTime(metrics.value.lastCalledAt) }) : t('暂无调用'),
+    note: metrics.value.lastCalledAt ? t('legacy.last_called', { time: formatTime(metrics.value.lastCalledAt) }) : t('legacy.no_calls'),
     icon: icons.success,
   },
   {
     key: 'cost',
-    label: t('近 24h 成本'),
+    label: t('legacy.cost_24h'),
     value: formatCurrencyCosts(metrics.value.costs24hByCurrency, metrics.value.pricedCalls24hByCurrency),
     note: metrics.value.unpricedCalls24h ? t('tokenStats.unpriced', { count: metrics.value.unpricedCalls24h }) : t('tokenStats.currentRate'),
     icon: icons.cost,
   },
   {
     key: 'speed',
-    label: t('平均耗时'),
+    label: t('legacy.avg_duration'),
     value: formatDuration(metrics.value.avgDurationMs24h),
-    note: t('仅统计有起止时间的调用'),
+    note: t('legacy.timed_calls_only'),
     icon: icons.speed,
   },
 ]);
@@ -325,47 +325,47 @@ const assetCards = computed(() => {
   return [
     {
       key: 'models',
-      title: t('模型中心'),
+      title: t('legacy.models'),
       value: current ? formatNumber(current.models.total) : '0',
       lines: current
-        ? [t('企业模型') + ' ' + current.models.total, t('启用') + ' ' + current.models.active, t('异常') + ' ' + current.models.failedHealth]
-        : [t('暂无数据')],
+        ? [t('legacy.organization_models') + ' ' + current.models.total, t('legacy.active') + ' ' + current.models.active, t('legacy.failed_5caf279') + ' ' + current.models.failedHealth]
+        : [t('legacy.no_data')],
       route: '/models',
     },
     {
       key: 'skills',
-      title: t('Skill管理'),
+      title: t('legacy.skills'),
       value: current ? formatNumber(current.skills.total) : '0',
       lines: current
-        ? [t('启用') + ' ' + current.skills.enabled, t('工作流') + ' ' + current.skills.workflow, t('写作规范') + ' ' + current.skills.writingStyle]
-        : [t('暂无数据')],
+        ? [t('legacy.active') + ' ' + current.skills.enabled, t('legacy.workflow') + ' ' + current.skills.workflow, t('legacy.writing_guidelines') + ' ' + current.skills.writingStyle]
+        : [t('legacy.no_data')],
       route: '/skills',
     },
     {
       key: 'tools',
-      title: t('工具与 MCP'),
+      title: t('legacy.tools_mcp'),
       value: current ? formatNumber(current.tools.total) : '0',
       lines: current
-        ? [t('启用') + ' ' + current.tools.active, 'MCP ' + current.tools.mcp, t('失败') + ' ' + current.tools.failed + ' / ' + t('未设置') + ' ' + current.tools.untested]
-        : [t('暂无数据')],
+        ? [t('legacy.active') + ' ' + current.tools.active, 'MCP ' + current.tools.mcp, t('legacy.failed') + ' ' + current.tools.failed + ' / ' + t('legacy.not_set') + ' ' + current.tools.untested]
+        : [t('legacy.no_data')],
       route: '/tools',
     },
     {
       key: 'users',
-      title: t('用户管理'),
+      title: t('legacy.users'),
       value: current ? formatNumber(current.users.total) : '0',
-      lines: current ? [t('部门') + ' ' + current.users.departments, t('停用') + ' ' + current.users.disabled] : [t('暂无数据')],
+      lines: current ? [t('legacy.dept') + ' ' + current.users.departments, t('legacy.disabled') + ' ' + current.users.disabled] : [t('legacy.no_data')],
       route: '/organizations/users',
     },
   ];
 });
 
 const quickActions = computed(() => [
-  { label: t('新增模型'), route: '/models', icon: icons.plus },
-  { label: t('添加 Skill'), route: '/skills', icon: icons.plus },
-  { label: t('新增工具连接'), route: '/tools/new', icon: icons.plus },
-  { label: t('用户管理'), route: '/organizations/users', icon: icons.users },
-  { label: t('Token 统计'), route: '/token-stats', icon: icons.chart },
+  { label: t('legacy.new_model'), route: '/models', icon: icons.plus },
+  { label: t('legacy.add_skill'), route: '/skills', icon: icons.plus },
+  { label: t('legacy.new_tool'), route: '/tools/new', icon: icons.plus },
+  { label: t('legacy.users'), route: '/organizations/users', icon: icons.users },
+  { label: t('legacy.token_stats'), route: '/token-stats', icon: icons.chart },
 ]);
 
 async function loadOverview() {
@@ -375,7 +375,7 @@ async function loadOverview() {
     const { data } = await apiClient.get<DashboardOverview>('/api/dashboard/overview');
     overview.value = data;
   } catch (err: any) {
-    errorText.value = err?.response?.data?.detail || err?.message || t('工作台数据加载失败');
+    errorText.value = err?.response?.data?.detail || err?.message || t('legacy.failed_to_load_dashboard_data');
     overview.value = null;
   } finally {
     loading.value = false;
@@ -423,7 +423,7 @@ function formatDuration(value: number) {
 }
 
 function formatTime(value: string | null) {
-  return formatAdminShortDateTime(value, t('暂无'));
+  return formatAdminShortDateTime(value, t('legacy.none_5dbd015'));
 }
 
 onMounted(loadOverview);

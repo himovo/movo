@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ShortcutEntry, ShortcutGroup } from '../../api/shortcuts'
 import { promptGuideIcons } from '../chat/promptGuideConfig'
-import { t } from '../../composables/i18n'
+import { t, translateSourceText } from '../../composables/i18n'
 
 defineProps<{ group: ShortcutGroup; entries: ShortcutEntry[] }>()
 const emit = defineEmits<{
@@ -21,7 +21,7 @@ function groupIcon(group: ShortcutGroup): string {
   <section class="group-card" :class="{ locked: group.locked }">
     <header>
       <span class="group-icon" v-html="groupIcon(group)" />
-      <strong>{{ t(group.label) }}</strong>
+      <strong>{{ translateSourceText(group.label) }}</strong>
       <span class="count">{{ entries.length }} / 6</span>
       <span v-if="group.locked" class="lock-label">{{ t('shortcuts.locked') }}</span>
       <n-button v-if="group.personal" class="shortcut-action-button" size="tiny" secondary :disabled="entries.length >= 6" @click="emit('add')">{{ t('shortcuts.add') }}</n-button>
@@ -30,7 +30,7 @@ function groupIcon(group: ShortcutGroup): string {
     </header>
     <div v-for="(entry, index) in entries" :key="entry.id" class="entry-row">
       <div class="entry-icon" v-html="entry.iconSvg || promptGuideIcons[entry.iconKey as keyof typeof promptGuideIcons] || promptGuideIcons.document" />
-      <div class="entry-name"><strong>{{ t(entry.label) }}</strong><small>{{ entry.type === 'skill' ? 'Skill' : 'Prompt' }}</small></div>
+      <div class="entry-name"><strong>{{ translateSourceText(entry.label) }}</strong><small>{{ entry.type === 'skill' ? 'Skill' : 'Prompt' }}</small></div>
       <template v-if="!group.locked">
         <button type="button" class="shortcut-icon-button" :disabled="index === 0" :aria-label="t('shortcuts.move_up')" @click="emit('move', group.key, index, -1)">↑</button>
         <button type="button" class="shortcut-icon-button" :disabled="index === entries.length - 1" :aria-label="t('shortcuts.move_down')" @click="emit('move', group.key, index, 1)">↓</button>

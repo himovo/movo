@@ -17,6 +17,7 @@ from app.llm.configured_models import (
     update_model_health,
 )
 from app.services.image_generation import generate_image_asset
+from app.services.model_vision_probe import probe_model_vision
 from app.llm.types import Message, Role
 from app.api.principal import ApiPrincipal, require_api_principal
 from app.product.extensions import get_product_extension
@@ -192,6 +193,23 @@ async def image_model_test(model_id: str, payload: Optional[ImageModelTestPayloa
         message = f"图片模型连接测试失败: {exc}"
         await update_model_health(model_id, main_id, "failed", message)
         return {"code": 0, "data": {"success": False, "status": "failed", "message": message}}
+
+
+@router.post("/models/{model_id}/test-vision")
+async def model_vision_test(
+    model_id: str,
+    payload: Optional[ModelTestPayload] = None,
+    principal: ApiPrincipal = Depends(require_api_principal),
+) -> dict[str, Any]:
+    if principal.kind != "admin_service":
+        raise HTTPException(status_code=403, detail="Admin model testing is required")
+    main_id = resolve_main_id((payload.main_id if payload else "") or "default")
+    try:
+        supported, answer = await probe_model_vision(model_id, main_id)
+        return {"code": 0, "data": {"supported": supported, "answer": answer}}
+    except Exception:
+        # A failed image probe must not downgrade a successful text connectivity test.
+        return {"code": 0, "data": {"supported": False, "answer": ""}}
 
 
 def _sse(event: dict[str, object]) -> str:

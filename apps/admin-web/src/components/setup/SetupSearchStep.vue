@@ -1,28 +1,28 @@
 <template>
   <div class="step-content">
     <div class="step-heading">
-      <span class="step-kicker">{{ t('步骤 5 / 5') }}</span>
-      <h2>{{ t('配置联网搜索') }}</h2>
-      <p>{{ t('任选一个搜索服务即可启用网页搜索与多源研究；也可以跳过并稍后在管理后台配置。') }}</p>
+      <span class="step-kicker">{{ t('legacy.step_5_of_5') }}</span>
+      <h2>{{ t('legacy.configure_web_search') }}</h2>
+      <p>{{ t('legacy.choose_any_one_search_provider_to_enable_web_search') }}</p>
     </div>
 
     <n-alert :type="model.enabled ? 'info' : 'warning'" :show-icon="true">
       {{ model.enabled
-        ? t('API Key 将加密保存，连接测试成功后才能随初始化一并保存。')
-        : t('暂不配置时，普通对话仍可使用，但网页搜索和多源研究不可用。') }}
+        ? t('legacy.the_api_key_is_encrypted_and_saved_with_setup')
+        : t('legacy.if_skipped_regular_chat_remains_available_but_web_search') }}
     </n-alert>
 
     <div class="enable-row">
       <div>
-        <strong>{{ t('现在配置联网搜索') }}</strong>
-        <span>{{ t('推荐') }}</span>
+        <strong>{{ t('legacy.configure_web_search_now') }}</strong>
+        <span>{{ t('legacy.recommended') }}</span>
       </div>
-      <n-switch v-model:value="model.enabled" :aria-label="t('现在配置联网搜索')" />
+      <n-switch v-model:value="model.enabled" :aria-label="t('legacy.configure_web_search_now')" />
     </div>
 
     <template v-if="model.enabled">
       <fieldset class="provider-fieldset" :disabled="providersLoading || testing">
-        <legend>{{ t('选择一个搜索服务') }}</legend>
+        <legend>{{ t('legacy.choose_one_search_provider') }}</legend>
         <button
           v-for="provider in providers"
           :key="provider.id"
@@ -37,7 +37,7 @@
           </span>
           <span>
             <strong>{{ provider.name }}</strong>
-            <small>{{ t(provider.description) }}</small>
+            <small>{{ translateSourceText(provider.description) }}</small>
           </span>
         </button>
       </fieldset>
@@ -59,23 +59,23 @@
             <n-form-item label="Bot Model" required><n-input v-model:value="model.model" placeholder="bot-..." :disabled="testing" /></n-form-item>
           </n-grid-item>
         </n-grid>
-        <n-form-item :label="t('测试查询')">
+        <n-form-item :label="t('legacy.test_query')">
           <n-input v-model:value="model.query" :disabled="testing" />
         </n-form-item>
       </n-form>
 
       <div class="test-row">
         <n-button size="large" :loading="testing" :disabled="submitting" @click="$emit('test')">
-          {{ t('测试搜索连接') }}
+          {{ t('legacy.test_search_connection') }}
         </n-button>
         <span v-if="testMessage" class="test-message" :class="testState" role="status">{{ testMessage }}</span>
       </div>
     </template>
 
     <div class="actions">
-      <n-button size="large" :disabled="submitting || testing" @click="$emit('back')">{{ t('上一步') }}</n-button>
+      <n-button size="large" :disabled="submitting || testing" @click="$emit('back')">{{ t('legacy.previous') }}</n-button>
       <n-button size="large" type="primary" :loading="submitting" :disabled="testing" @click="$emit('submit')">
-        {{ model.enabled ? t('保存并完成初始化') : t('跳过并完成初始化') }}
+        {{ model.enabled ? t('legacy.save_and_complete_setup') : t('legacy.skip_and_complete_setup') }}
       </n-button>
     </div>
   </div>
@@ -84,7 +84,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { SetupSearchProvider } from '@/api/setup';
-import { t } from '@/composables/i18n';
+import { t, translateSourceText } from '@/composables/i18n';
 import SearchProviderGuide from '@/components/search-provider/SearchProviderGuide.vue';
 import type { SearchTestState, SetupSearchForm } from './types';
 

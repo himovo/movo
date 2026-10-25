@@ -1,17 +1,17 @@
 <template>
   <div class="image-runtime-fields">
-    <n-form-item :label="t('接口类型')" required>
+    <n-form-item :label="t('legacy.api_type')" required>
       <n-select
         :value="runtimeKind || null"
         :options="runtimeOptions"
-        :placeholder="t('选择图片生成接口')"
+        :placeholder="t('legacy.select_an_image_api')"
         @update:value="updateRuntimeKind"
       />
     </n-form-item>
-    <n-form-item :label="t('生成尺寸')">
+    <n-form-item :label="t('legacy.size')">
       <n-input
         :value="imageSettings.size || ''"
-        :placeholder="t('留空则不传')"
+        :placeholder="t('legacy.omit_when_empty')"
         @update:value="updateSetting('size', $event)"
       />
     </n-form-item>
@@ -19,63 +19,63 @@
       <n-collapse-item name="advanced">
         <template #header>
           <div class="advanced-title">
-            <span>{{ t('高级设置') }}</span>
-            <span>{{ t('仅在模型接口需要时填写') }}</span>
+            <span>{{ t('legacy.advanced_settings') }}</span>
+            <span>{{ t('legacy.fill_in_only_when_required_by_the_model_api') }}</span>
           </div>
         </template>
         <div class="advanced-fields">
-          <n-form-item :label="t('生成质量')">
+          <n-form-item :label="t('legacy.quality')">
             <n-select
               :value="imageSettings.quality || null"
               :options="qualityOptions"
-              :placeholder="t('留空则不传')"
+              :placeholder="t('legacy.omit_when_empty')"
               filterable
               tag
               clearable
               @update:value="updateSetting('quality', $event || '')"
             />
           </n-form-item>
-          <n-form-item :label="t('输出格式')">
+          <n-form-item :label="t('legacy.output_format')">
             <n-select
               :value="imageSettings.outputFormat || null"
               :options="outputFormatOptions"
-              :placeholder="t('留空则不传')"
+              :placeholder="t('legacy.omit_when_empty')"
               filterable
               tag
               clearable
               @update:value="updateSetting('outputFormat', $event || '')"
             />
           </n-form-item>
-          <n-form-item :label="t('返回格式')">
+          <n-form-item :label="t('legacy.response_format')">
             <n-select
               :value="imageSettings.responseFormat || null"
               :options="responseFormatOptions"
-              :placeholder="t('留空则不传')"
+              :placeholder="t('legacy.omit_when_empty')"
               filterable
               tag
               clearable
               @update:value="updateSetting('responseFormat', $event || '')"
             />
           </n-form-item>
-          <n-form-item :label="t('生成数量')">
+          <n-form-item :label="t('legacy.image_count')">
             <n-input-number
               :value="imageSettings.n ?? null"
               :min="1"
               :max="10"
-              :placeholder="t('留空则不传')"
+              :placeholder="t('legacy.omit_when_empty')"
               clearable
               style="width: 100%"
               @update:value="updateSetting('n', $event)"
             />
           </n-form-item>
-          <n-form-item :label="t('宽高比')">
+          <n-form-item :label="t('legacy.aspect_ratio')">
             <n-input
               :value="imageSettings.ratio || ''"
-              :placeholder="t('如: 16:9；留空则不传')"
+              :placeholder="t('legacy.example_16_9_omit_when_empty')"
               @update:value="updateSetting('ratio', $event)"
             />
           </n-form-item>
-          <n-form-item v-if="runtimeKind === 'azure_openai_images'" :label="t('Azure 图片 API')">
+          <n-form-item v-if="runtimeKind === 'azure_openai_images'" :label="t('legacy.azure_image_api')">
             <n-select
               :value="imageSettings.apiStyle || 'v1'"
               :options="azureApiOptions"
@@ -83,28 +83,28 @@
             />
           </n-form-item>
           <template v-if="runtimeKind === 'custom_images'">
-            <n-form-item :label="t('请求路径')">
+            <n-form-item :label="t('legacy.request_path')">
               <n-input
                 :value="imageSettings.requestPath || ''"
                 placeholder="/images/generations"
                 @update:value="updateSetting('requestPath', $event)"
               />
             </n-form-item>
-            <n-form-item :label="t('图片 URL 响应路径')">
+            <n-form-item :label="t('legacy.image_url_response_path')">
               <n-input
                 :value="imageSettings.responseUrlPath || ''"
                 placeholder="data.0.url"
                 @update:value="updateSetting('responseUrlPath', $event)"
               />
             </n-form-item>
-            <n-form-item :label="t('Base64 响应路径')">
+            <n-form-item :label="t('legacy.base64_response_path')">
               <n-input
                 :value="imageSettings.responseBase64Path || ''"
                 placeholder="data.0.b64_json"
                 @update:value="updateSetting('responseBase64Path', $event)"
               />
             </n-form-item>
-            <n-form-item class="full-width" :label="t('额外请求参数（JSON）')">
+            <n-form-item class="full-width" :label="t('legacy.extra_request_parameters_json')">
               <div class="json-editor">
                 <n-input
                   :value="imageSettings.extraParamsJson || ''"
@@ -113,13 +113,13 @@
                   placeholder='{ "extra_body": { "response_format": "url" } }'
                   @update:value="updateSetting('extraParamsJson', $event)"
                 />
-                <n-button size="small" secondary @click="formatExtraParams">{{ t('格式化 JSON') }}</n-button>
+                <n-button size="small" secondary @click="formatExtraParams">{{ t('legacy.format_json') }}</n-button>
               </div>
             </n-form-item>
           </template>
           <div class="runtime-help">
             <div>{{ runtimeHelp }}</div>
-            <div>{{ t('仅发送已填写的字段；留空字段不会出现在请求体中。') }}</div>
+            <div>{{ t('legacy.only_filled_fields_are_sent_empty_fields_are_omitted') }}</div>
           </div>
         </div>
       </n-collapse-item>
@@ -148,8 +148,8 @@ const message = useMessage();
 const allRuntimeOptions = computed(() => [
   { label: 'OpenAI Images API', value: 'openai_images' },
   { label: 'Azure OpenAI Images API', value: 'azure_openai_images' },
-  { label: t('阿里云百炼 DashScope 图片 API'), value: 'dashscope_image' },
-  { label: t('自定义图片接口'), value: 'custom_images' },
+  { label: t('legacy.alibaba_cloud_dashscope_image_api'), value: 'dashscope_image' },
+  { label: t('legacy.custom_image_api'), value: 'custom_images' },
 ]);
 
 const runtimeOptions = computed(() => {
@@ -160,10 +160,10 @@ const runtimeOptions = computed(() => {
 });
 
 const qualityOptions = computed(() => [
-  { label: t('低（速度优先）'), value: 'low' },
-  { label: t('中'), value: 'medium' },
-  { label: t('高（质量优先）'), value: 'high' },
-  { label: t('自动'), value: 'auto' },
+  { label: t('legacy.low_faster'), value: 'low' },
+  { label: t('legacy.medium'), value: 'medium' },
+  { label: t('legacy.high_quality_first'), value: 'high' },
+  { label: t('legacy.auto'), value: 'auto' },
 ]);
 
 const outputFormatOptions = ['png', 'jpeg', 'webp'].map(value => ({ label: value, value }));
@@ -171,20 +171,20 @@ const responseFormatOptions = ['url', 'b64_json'].map(value => ({ label: value, 
 
 const azureApiOptions = computed(() => [
   { label: 'OpenAI v1 · /openai/v1/images/generations', value: 'v1' },
-  { label: t('Azure Deployment 路径'), value: 'deployment' },
+  { label: t('legacy.azure_deployment_path'), value: 'deployment' },
 ]);
 
 const runtimeHelp = computed(() => {
   if (props.runtimeKind === 'dashscope_image') {
-    return t('通义千问图片模型使用 DashScope 原生接口；qwen-image-max/plus 推荐 1664*928（16:9）。');
+    return t('legacy.uses_the_native_dashscope_image_api_qwen_image_max');
   }
   if (props.runtimeKind === 'azure_openai_images') {
-    return t('模型 ID 请填写 Azure Deployment 名称；GPT Image 1 系列推荐 1536x1024，GPT Image 2 可使用 1536x864。');
+    return t('legacy.use_the_azure_deployment_name_as_the_model_id');
   }
   if (props.runtimeKind === 'custom_images') {
-    return t('系统自动发送 model 和 prompt，并按配置解析图片响应。');
+    return t('legacy.the_system_sends_model_and_prompt_automatically_and_parses');
   }
-  return t('适用于实现 /images/generations 的 OpenAI 兼容图片服务。');
+  return t('legacy.for_openai_compatible_image_services_implementing_images_generations');
 });
 
 function updateRuntimeKind(value: ImageRuntimeKind) {
@@ -210,7 +210,7 @@ function formatExtraParams() {
     if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') throw new Error();
     updateSetting('extraParamsJson', JSON.stringify(parsed, null, 2));
   } catch {
-    message.error(t('请输入有效的 JSON 对象'));
+    message.error(t('legacy.enter_a_valid_json_object'));
   }
 }
 

@@ -204,6 +204,16 @@ async def update_instance(instance_id: str, payload: dict[str, Any]) -> bool:
     return result.matched_count > 0
 
 
+async def add_vision_capability(instance_id: str, main_id: str) -> bool:
+    """Add one capability without rewriting model credentials or group settings."""
+    db = get_db()
+    result = await db[INSTANCE_COLLECTION].update_one(
+        {"_id": ObjectId(instance_id), "main_id": main_id},
+        {"$addToSet": {"capabilities": "vision"}, "$set": {"updated_at": utcnow()}},
+    )
+    return result.matched_count > 0
+
+
 async def delete_instance(instance_id: str, main_id: str) -> bool:
     db = get_db()
     result = await db[INSTANCE_COLLECTION].delete_one({"_id": ObjectId(instance_id), "main_id": main_id})

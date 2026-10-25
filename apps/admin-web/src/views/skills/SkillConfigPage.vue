@@ -16,7 +16,7 @@
                 <svg viewBox="0 0 24 24"><path d="M13 2l1.9 5.1L20 9l-5.1 1.9L13 16l-1.9-5.1L6 9l5.1-1.9L13 2z" /><path d="M5 14l.9 2.4L8.5 17l-2.6.6L5 20l-.9-2.4L1.5 17l2.6-.6L5 14z" /></svg>
               </span>
             </template>
-            {{ t('AI 优化当前步骤') }}
+            {{ t('legacy.ai_optimize_steps') }}
           </n-button>
           <n-button
             class="regenerate-button"
@@ -29,7 +29,7 @@
                 <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.3 6.4" /><path d="M3 12A9 9 0 0 1 18.3 5.6" /><path d="M18 2v4h-4" /><path d="M6 22v-4h4" /></svg>
               </span>
             </template>
-            {{ t('重新生成步骤') }}
+            {{ t('legacy.regenerate_steps') }}
           </n-button>
           <n-button
             v-if="workflowAiUndoStack.length"
@@ -39,7 +39,7 @@
             :disabled="generatingSteps || optimizing || supplementingStep || !!polishingStepId"
             @click="undoLastAiWorkflowChange"
           >
-            {{ t('撤回 AI 修改') }}
+            {{ t('legacy.undo_ai_change') }}
           </n-button>
           <n-button size="small" type="primary" :loading="saving" @click="saveWorkflow">
             <template #icon>
@@ -51,11 +51,11 @@
                 </svg>
               </span>
             </template>
-            {{ t('保存草稿') }}
+            {{ t('legacy.save_draft') }}
           </n-button>
           <n-button size="small" type="primary" secondary :loading="saving" @click="prepareWorkflowPublish">
             <template #icon><span class="button-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v12" /><path d="m7 8 5-5 5 5" /><path d="M5 14v5h14v-5" /></svg></span></template>
-            {{ t('发布') }}
+            {{ t('legacy.publish') }}
           </n-button>
         </template>
         <template v-else>
@@ -71,7 +71,7 @@
                 <svg viewBox="0 0 24 24"><path d="M13 2l1.9 5.1L20 9l-5.1 1.9L13 16l-1.9-5.1L6 9l5.1-1.9L13 2z" /><path d="M5 14l.9 2.4L8.5 17l-2.6.6L5 20l-.9-2.4L1.5 17l2.6-.6L5 14z" /></svg>
               </span>
             </template>
-            {{ t('智能补全') }}
+            {{ t('legacy.smart_fill') }}
           </n-button>
           <n-button size="small" type="primary" :loading="saving" @click="saveWritingStyle">
             <template #icon>
@@ -83,11 +83,11 @@
                 </svg>
               </span>
             </template>
-            {{ t('保存草稿') }}
+            {{ t('legacy.save_draft') }}
           </n-button>
           <n-button size="small" type="primary" secondary :loading="saving" @click="prepareStylePublish">
             <template #icon><span class="button-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v12" /><path d="m7 8 5-5 5 5" /><path d="M5 14v5h14v-5" /></svg></span></template>
-            {{ t('发布') }}
+            {{ t('legacy.publish') }}
           </n-button>
         </template>
       </div>
@@ -144,7 +144,7 @@
                                 filterable
                                 :options="writingSkillOptions"
                                 class="node-writing-skill-select"
-                                :placeholder="t('选择写作 Skill')"
+                                :placeholder="t('legacy.select_writing_skill')"
                               />
                               <n-select
                                 v-if="step.type === 'extract_resources'"
@@ -152,12 +152,12 @@
                                 multiple
                                 size="small"
                                 :options="[
-                                  { label: t('图片'), value: 'images' },
+                                  { label: t('legacy.image'), value: 'images' },
                                   { label: t('URL'), value: 'urls' },
-                                  { label: t('附件'), value: 'attachments' }
+                                  { label: t('legacy.attachment'), value: 'attachments' }
                                 ]"
                                 class="node-resource-types-select"
-                                :placeholder="t('选择资源类型')"
+                                :placeholder="t('legacy.select_resource_type')"
                               />
                               <n-select
                                 v-if="step.type === 'call_tool'"
@@ -179,17 +179,17 @@
                                 filterable
                                 :options="mcpToolOptions(step)"
                                 class="node-tool-select"
-                                :placeholder="t('优先使用的 MCP 子工具（可选）')"
+                                :placeholder="t('legacy.preferred_mcp_sub_tool_optional')"
                                 @update:value="(val: any) => handleMcpToolSelect(step, val)"
                               />
                             </div>
                             <div v-if="step.type === 'script_plugin'" class="script-plugin-panel">
                               <div class="script-processing-instruction">
                                 <div class="script-processing-head">
-                                  <strong>{{ t('处理要求') }}</strong>
+                                  <strong>{{ t('legacy.processing_requirement') }}</strong>
                                   <div class="script-generation-tools">
                                     <span class="script-generation-status" :class="{ ready: isScriptPluginGenerated(step) }">
-                                      {{ isScriptPluginGenerated(step) ? t('已生成') : t('未生成') }}
+                                      {{ isScriptPluginGenerated(step) ? t('legacy.generated') : t('legacy.not_generated') }}
                                     </span>
                                     <n-button
                                       size="small"
@@ -204,7 +204,7 @@
                                           <svg viewBox="0 0 24 24"><path d="M12 3l1.7 4.4L18 9l-4.3 1.6L12 15l-1.7-4.4L6 9l4.3-1.6L12 3z" /><path d="M5 14l.9 2.1L8 17l-2.1.9L5 20l-.9-2.1L2 17l2.1-.9L5 14z" /><path d="M19 14l.9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14z" /></svg>
                                         </span>
                                       </template>
-                                      {{ isScriptPluginGenerated(step) ? t('重新生成') : t('生成代码') }}
+                                      {{ isScriptPluginGenerated(step) ? t('legacy.regenerate') : t('legacy.generate_code') }}
                                     </n-button>
                                   </div>
                                 </div>
@@ -212,14 +212,14 @@
                                   v-model:value="step.businessConfig.processingInstruction"
                                   type="textarea"
                                   :autosize="{ minRows: 3, maxRows: 8 }"
-                                  :placeholder="t('用自然语言描述要处理什么、输入是什么、输出什么。')"
+                                  :placeholder="t('legacy.describe_the_task_inputs_and_outputs_in_plain_language')"
                                   @update:value="() => invalidateScriptPluginCheck(step.id)"
                                 />
                                 <div class="script-instruction-example">
-                                  <b>{{ t('示例') }}</b>
-                                  <span>{{ t('上传文档：读取用户上传的 Word 或 PDF，删除说明文字和空段落，提取标题、表格和图片，按指定顺序重排，输出新的 Word 文件。') }}</span>
-                                  <span>{{ t('工具结果：读取上游工具返回的客户或订单数据，统一字段名和日期格式，去除重复记录，计算每类数量和金额汇总，输出 JSON 或 Excel。') }}</span>
-                                  <span>{{ t('网页采集：读取爬取回来的多篇网页正文，去掉导航和广告文本，提取标题、发布时间、正文和链接，按来源分组输出结构化数据。') }}</span>
+                                  <b>{{ t('legacy.example') }}</b>
+                                  <span>{{ t('legacy.uploaded_document_read_a_word_or_pdf_file_remove') }}</span>
+                                  <span>{{ t('legacy.tool_result_read_customer_or_order_data_from_an') }}</span>
+                                  <span>{{ t('legacy.web_collection_read_several_fetched_pages_remove_navigation_and') }}</span>
                                 </div>
                               </div>
                               <div class="script-plugin-actions">
@@ -233,7 +233,7 @@
                                       <svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5z" /><path d="M19.4 15a1.8 1.8 0 0 0 .4 2l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.8 1.8 0 0 0-2-.4 1.8 1.8 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.8 1.8 0 0 0-1-1.6 1.8 1.8 0 0 0-2 .4l-.1.1A2 2 0 1 1 4.1 17l.1-.1a1.8 1.8 0 0 0 .4-2 1.8 1.8 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.8 1.8 0 0 0 1.6-1 1.8 1.8 0 0 0-.4-2l-.1-.1A2 2 0 1 1 7 4.1l.1.1a1.8 1.8 0 0 0 2 .4 1.8 1.8 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.8 1.8 0 0 0 1 1.6 1.8 1.8 0 0 0 2-.4l.1-.1A2 2 0 1 1 19.9 7l-.1.1a1.8 1.8 0 0 0-.4 2 1.8 1.8 0 0 0 1.6 1h.1a2 2 0 1 1 0 4H21a1.8 1.8 0 0 0-1.6 1z" /></svg>
                                     </span>
                                   </template>
-                                  {{ t('高级') }}
+                                  {{ t('legacy.advanced') }}
                                 </n-button>
                               </div>
                             </div>
@@ -253,17 +253,17 @@
                               @update:output-alias="(value) => step.outputAlias = value"
                             />
                             <div v-if="step.type !== 'read_material' && step.type !== 'review_check'" class="node-description-field">
-                              <div class="node-description-label">{{ t('输出名（供后续节点引用）') }}</div>
-                              <n-input v-model:value="step.outputAlias" size="small" :placeholder="t('例如：待审合同、审核规则')" />
+                              <div class="node-description-label">{{ t('legacy.output_name_for_later_steps') }}</div>
+                              <n-input v-model:value="step.outputAlias" size="small" :placeholder="t('legacy.example_contract_to_review_review_criteria')" />
                             </div>
                             <details v-if="step.type === 'read_material' || step.type === 'review_check'"
                               class="node-optional-requirement" :open="Boolean(step.text?.trim())" @click.stop>
-                              <summary>{{ t('补充要求（可选）') }}<span>{{ t('需要特殊处理时再填写') }}</span></summary>
+                              <summary>{{ t('legacy.additional_instructions_optional') }}<span>{{ t('legacy.fill_this_in_only_when_special_handling_is_needed') }}</span></summary>
                               <div class="node-description-head">
-                                <div class="node-description-label">{{ t('补充要求') }}</div>
+                                <div class="node-description-label">{{ t('legacy.additional_instructions') }}</div>
                                 <n-button size="tiny" secondary :loading="polishingStepId === step.id"
                                   :disabled="generatingSteps || optimizing || supplementingStep || (!!polishingStepId && polishingStepId !== step.id)"
-                                  @click.stop="polishStepRequirement(step)">{{ t('AI 润色') }}</n-button>
+                                  @click.stop="polishStepRequirement(step)">{{ t('legacy.ai_polish') }}</n-button>
                               </div>
                               <n-input v-model:value="step.text" type="textarea"
                                 :autosize="{ minRows: 2, maxRows: 6 }" class="step-input"
@@ -271,7 +271,7 @@
                             </details>
                             <div v-if="step.type !== 'script_plugin' && step.type !== 'read_material' && step.type !== 'review_check'" class="node-description-field">
                               <div class="node-description-head">
-                                <div class="node-description-label">{{ t('节点要求') }}</div>
+                                <div class="node-description-label">{{ t('legacy.node_requirement') }}</div>
                                 <n-button
                                   size="tiny"
                                   secondary
@@ -279,7 +279,7 @@
                                   :disabled="generatingSteps || optimizing || supplementingStep || (!!polishingStepId && polishingStepId !== step.id)"
                                   @click.stop="polishStepRequirement(step)"
                                 >
-                                  {{ t('AI 润色') }}
+                                  {{ t('legacy.ai_polish') }}
                                 </n-button>
                               </div>
                               <n-input
@@ -301,27 +301,27 @@
                         >
                           <summary>
                             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 8h.01" /></svg>
-                            <span>{{ t('查看使用说明与示例') }}</span>
+                            <span>{{ t('legacy.view_instructions_and_examples') }}</span>
                             <svg class="node-usage-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" /></svg>
                           </summary>
                           <div class="node-usage-content">
-                            <strong>{{ t('使用场景') }}</strong>
+                            <strong>{{ t('legacy.usage_scenario') }}</strong>
                             <p>{{ workflowTypeMeta(step.type).usageDescription }}</p>
                             <div class="node-usage-example">
-                              <span>{{ t('示例') }}</span>
+                              <span>{{ t('legacy.example') }}</span>
                               <p>{{ workflowTypeMeta(step.type).usageExample }}</p>
                             </div>
                           </div>
                         </details>
                       </div>
                       <div class="step-tools">
-                        <button class="icon-button" type="button" :title="t('上移')" :disabled="index === 0" @click.stop="moveStep(index, -1)">
+                        <button class="icon-button" type="button" :title="t('legacy.move_up')" :disabled="index === 0" @click.stop="moveStep(index, -1)">
                           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5" /><path d="M5 12l7-7 7 7" /></svg>
                         </button>
-                        <button class="icon-button" type="button" :title="t('下移')" :disabled="index === workflowSteps.length - 1" @click.stop="moveStep(index, 1)">
+                        <button class="icon-button" type="button" :title="t('legacy.move_down')" :disabled="index === workflowSteps.length - 1" @click.stop="moveStep(index, 1)">
                           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14" /><path d="M19 12l-7 7-7-7" /></svg>
                         </button>
-                        <button class="icon-button danger" type="button" :title="t('删除步骤')" @click.stop="removeStep(step.id)">
+                        <button class="icon-button danger" type="button" :title="t('legacy.delete_step')" @click.stop="removeStep(step.id)">
                           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M6 6l1 16h10l1-16" /><path d="M10 11v6" /><path d="M14 11v6" /></svg>
                         </button>
                       </div>
@@ -330,10 +330,10 @@
                     <n-empty
                       v-if="!workflowSteps.length && !generatingSteps"
                       class="step-empty"
-                      :description="stepGenerationError || t('还没有业务逻辑步骤')"
+                      :description="stepGenerationError || t('legacy.no_business_logic_steps_yet')"
                     >
                       <template #extra>
-                        <n-button type="primary" secondary @click="regenerateSteps">{{ t('重新生成步骤') }}</n-button>
+                        <n-button type="primary" secondary @click="regenerateSteps">{{ t('legacy.regenerate_steps') }}</n-button>
                       </template>
                     </n-empty>
                   </div>
@@ -342,7 +342,7 @@
 
               <section class="add-step-box">
                 <div class="add-title-row">
-                  <div class="add-title">{{ t('添加业务流程步骤') }}</div>
+                  <div class="add-title">{{ t('legacy.add_business_flow_step') }}</div>
                   <n-button
                     class="ai-supplement-button"
                     size="small"
@@ -355,7 +355,7 @@
                         <svg viewBox="0 0 24 24"><path d="M13 2l1.9 5.1L20 9l-5.1 1.9L13 16l-1.9-5.1L6 9l5.1-1.9L13 2z" /><path d="M5 14l.9 2.4L8.5 17l-2.6.6L5 20l-.9-2.4L1.5 17l2.6-.6L5 14z" /></svg>
                       </span>
                     </template>
-                    {{ t('AI 优化添加') }}
+                    {{ t('legacy.ai_optimize_add') }}
                   </n-button>
                 </div>
                 <n-input
@@ -364,7 +364,7 @@
                   :autosize="{ minRows: 1, maxRows: 10 }"
                   maxlength="200"
                   show-count
-                  :placeholder="t('例如：如果查不到部分数据，需要提示用户并继续分析已有数据')"
+                  :placeholder="t('legacy.example_if_some_data_is_not_found_prompt_the')"
                 />
                 <div class="quick-node-row">
                   <n-popover
@@ -387,9 +387,9 @@
                       </button>
                     </template>
                     <div class="quick-node-help">
-                      <strong>{{ item.label }} · {{ t('使用场景') }}</strong>
+                      <strong>{{ item.label }} · {{ t('legacy.usage_scenario') }}</strong>
                       <p>{{ item.usageDescription }}</p>
-                      <div><span>{{ t('示例') }}</span>{{ item.usageExample }}</div>
+                      <div><span>{{ t('legacy.example') }}</span>{{ item.usageExample }}</div>
                     </div>
                   </n-popover>
                 </div>
@@ -402,15 +402,15 @@
                   <svg viewBox="0 0 24 24"><path d="M10 2h4" /><path d="M11 2v6L5 19a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 19L13 8V2" /><path d="M7.5 15h9" /></svg>
                 </div>
                 <div>
-                  <div class="panel-title">{{ t('执行顺序预览') }}</div>
-                  <div class="panel-desc">{{ t('查看当前 Skill 的节点执行顺序') }}</div>
+                  <div class="panel-title">{{ t('legacy.execution_order_preview') }}</div>
+                  <div class="panel-desc">{{ t('legacy.view_the_execution_order_of_this_skill_s_nodes') }}</div>
                 </div>
               </div>
 
               <div class="divider"></div>
 
               <section class="execution-preview-block">
-                <div class="result-title">{{ t('执行预览') }}</div>
+                <div class="result-title">{{ t('legacy.execution_preview') }}</div>
                 <div v-if="workflowPreviewNodes.length" class="flow-preview">
                   <template v-for="(node, index) in workflowPreviewNodes" :key="node.id">
                     <div class="flow-node" :style="{ color: workflowAccent(node.color, activeTheme === 'dark') }">
@@ -420,7 +420,7 @@
                     <div v-if="index < workflowPreviewNodes.length - 1" class="flow-arrow">↓</div>
                   </template>
                 </div>
-                <div v-else class="flow-empty">{{ t('添加节点后展示执行顺序') }}</div>
+                <div v-else class="flow-empty">{{ t('legacy.show_execution_sequence_after_adding_nodes') }}</div>
               </section>
 
             </aside>
@@ -431,116 +431,116 @@
           <div class="style-grid">
             <main class="shell-panel style-panel">
               <section class="style-section">
-                <div class="config-title">{{ t('定位') }}</div>
-                <div class="config-note">{{ t('定义这类内容更适合投放到哪里，以及它面向什么读者。') }}</div>
+                <div class="config-title">{{ t('legacy.positioning') }}</div>
+                <div class="config-note">{{ t('legacy.define_where_this_type_of_content_is_best_suited') }}</div>
                 <div class="style-grid-fields style-grid-fields-2">
                   <div class="style-field">
-                    <label class="field-label">{{ t('发布渠道') }}</label>
+                    <label class="field-label">{{ t('legacy.publish_channels') }}</label>
                     <n-select
                       v-model:value="publishChannelInput"
                       multiple
                       filterable
                       tag
                       :options="publishChannelOptions"
-                      :placeholder="t('添加渠道，例如 website / docs / wechat_official')"
+                      :placeholder="t('legacy.add_channels_e_g_website_docs_wechat_official_account')"
                     />
                   </div>
                   <div class="style-field">
-                    <label class="field-label">{{ t('内容形式') }}</label>
+                    <label class="field-label">{{ t('legacy.content_forms') }}</label>
                     <n-select
                       v-model:value="contentFormInput"
                       multiple
                       filterable
                       tag
                       :options="contentFormOptions"
-                      :placeholder="t('添加内容形式，例如 report / article / memo')"
+                      :placeholder="t('legacy.add_content_forms_e_g_report_article_memo')"
                     />
                   </div>
                   <div class="style-field">
-                    <label class="field-label">{{ t('目标受众') }}</label>
+                    <label class="field-label">{{ t('legacy.target_audience') }}</label>
                     <n-select
                       v-model:value="targetAudienceInput"
                       multiple
                       filterable
                       tag
                       :options="targetAudienceOptions"
-                      :placeholder="t('添加目标受众')"
+                      :placeholder="t('legacy.add_target_audience')"
                     />
                   </div>
                   <div class="style-field">
-                    <label class="field-label">{{ t('偏好风格') }}</label>
+                    <label class="field-label">{{ t('legacy.preferred_styles') }}</label>
                     <n-select
                       v-model:value="preferredStyleInput"
                       multiple
                       filterable
                       tag
                       :options="preferredStyleOptions"
-                      :placeholder="t('添加偏好风格')"
+                      :placeholder="t('legacy.add_preferred_styles')"
                     />
                   </div>
                   <div class="style-field">
-                    <label class="field-label">{{ t('目标字数下限') }}</label>
+                    <label class="field-label">{{ t('legacy.min_word_count') }}</label>
                     <n-input-number
                       v-model:value="targetLengthMin"
                       :min="0"
                       :step="100"
                       clearable
-                      :placeholder="t('例如 3500')"
+                      :placeholder="t('legacy.example_3500')"
                     />
                   </div>
                   <div class="style-field">
-                    <label class="field-label">{{ t('目标字数上限') }}</label>
+                    <label class="field-label">{{ t('legacy.max_word_count') }}</label>
                     <n-input-number
                       v-model:value="targetLengthMax"
                       :min="0"
                       :step="100"
                       clearable
-                      :placeholder="t('例如 4500')"
+                      :placeholder="t('legacy.example_4500')"
                     />
                   </div>
                 </div>
               </section>
 
               <section class="style-section">
-                <div class="config-title">{{ t('结构与边界') }}</div>
-                <div class="config-note">{{ t('章节结构控制最终标题层级；每个章节内的包含/避免项会作为该章节的写作约束。') }}</div>
+                <div class="config-title">{{ t('legacy.structure_boundaries') }}</div>
+                <div class="config-note">{{ t('legacy.the_section_structure_controls_heading_hierarchy_must_include_avoid') }}</div>
                 <div class="section-builder">
                   <div class="section-builder-head">
-                    <label class="field-label">{{ t('章节结构') }}</label>
-                    <n-button size="small" secondary @click="addSection()">{{ t('添加一级章节') }}</n-button>
+                    <label class="field-label">{{ t('legacy.section_structure') }}</label>
+                    <n-button size="small" secondary @click="addSection()">{{ t('legacy.add_section') }}</n-button>
                   </div>
                   <div v-if="sectionStructure.length" class="section-node-list">
                     <article v-for="(node, index) in sectionStructure" :key="node.id" class="section-node-card">
                       <div class="section-node-main">
                         <div class="section-node-index">{{ index + 1 }}</div>
                         <div class="section-node-content">
-                          <n-input v-model:value="node.title" :placeholder="t('章节标题，例如：一、主题报道总体情况')" />
+                          <n-input v-model:value="node.title" :placeholder="t('legacy.section_title_e_g_i_general_situation')" />
                           <div class="section-node-fields">
                             <n-input
                               v-model:value="node.mustIncludeText"
                               type="textarea"
                               :autosize="{ minRows: 1, maxRows: 10 }"
-                              :placeholder="t('本章必须包含，每行一条')"
+                              :placeholder="t('legacy.must_include_in_this_section_one_per_line')"
                             />
                             <n-input
                               v-model:value="node.avoidText"
                               type="textarea"
                               :autosize="{ minRows: 1, maxRows: 10 }"
-                              :placeholder="t('本章必须避免，每行一条')"
+                              :placeholder="t('legacy.must_avoid_in_this_section_one_per_line')"
                             />
                           </div>
                           <n-input
                             v-model:value="node.notes"
                             type="textarea"
                             :autosize="{ minRows: 1, maxRows: 10 }"
-                            :placeholder="t('本章补充说明，可选')"
+                            :placeholder="t('legacy.additional_notes_for_this_section_optional')"
                           />
                         </div>
                         <div class="section-node-actions">
-                          <n-button size="tiny" quaternary :disabled="index === 0" @click="moveSection(sectionStructure, index, -1)">{{ t('上移') }}</n-button>
-                          <n-button size="tiny" quaternary :disabled="index === sectionStructure.length - 1" @click="moveSection(sectionStructure, index, 1)">{{ t('下移') }}</n-button>
-                          <n-button size="tiny" secondary @click="addSection(node)">{{ t('加子节') }}</n-button>
-                          <n-button size="tiny" quaternary type="error" @click="removeSection(sectionStructure, index)">{{ t('删除') }}</n-button>
+                          <n-button size="tiny" quaternary :disabled="index === 0" @click="moveSection(sectionStructure, index, -1)">{{ t('legacy.move_up') }}</n-button>
+                          <n-button size="tiny" quaternary :disabled="index === sectionStructure.length - 1" @click="moveSection(sectionStructure, index, 1)">{{ t('legacy.move_down') }}</n-button>
+                          <n-button size="tiny" secondary @click="addSection(node)">{{ t('legacy.add_subsection') }}</n-button>
+                          <n-button size="tiny" quaternary type="error" @click="removeSection(sectionStructure, index)">{{ t('legacy.delete') }}</n-button>
                         </div>
                       </div>
                       <div class="section-child-list">
@@ -548,61 +548,61 @@
                           <div class="section-node-main">
                             <div class="section-node-index">{{ index + 1 }}.{{ childIndex + 1 }}</div>
                             <div class="section-node-content">
-                              <n-input v-model:value="child.title" :placeholder="t('二级标题，例如：（一）多语种记者现场采访')" />
+                              <n-input v-model:value="child.title" :placeholder="t('legacy.subsection_title_e_g_1_on_site_interview')" />
                               <div class="section-node-fields">
                                 <n-input
                                   v-model:value="child.mustIncludeText"
                                   type="textarea"
                                   :autosize="{ minRows: 1, maxRows: 10 }"
-                                  :placeholder="t('本节必须包含，每行一条')"
+                                  :placeholder="t('legacy.must_include_in_this_subsection_one_per_line')"
                                 />
                                 <n-input
                                   v-model:value="child.avoidText"
                                   type="textarea"
                                   :autosize="{ minRows: 2, maxRows: 4 }"
-                                  :placeholder="t('本节必须避免，每行一条')"
+                                  :placeholder="t('legacy.must_avoid_in_this_subsection_one_per_line')"
                                 />
                               </div>
                               <n-input
                                 v-model:value="child.notes"
                                 type="textarea"
                                 :autosize="{ minRows: 1, maxRows: 3 }"
-                                :placeholder="t('本节补充说明，可选')"
+                                :placeholder="t('legacy.additional_notes_for_this_subsection_optional')"
                               />
                             </div>
                             <div class="section-node-actions">
-                              <n-button size="tiny" quaternary :disabled="childIndex === 0" @click="moveSection(node.children, childIndex, -1)">{{ t('上移') }}</n-button>
-                              <n-button size="tiny" quaternary :disabled="childIndex === node.children.length - 1" @click="moveSection(node.children, childIndex, 1)">{{ t('下移') }}</n-button>
-                              <n-button size="tiny" quaternary type="error" @click="removeSection(node.children, childIndex)">{{ t('删除') }}</n-button>
+                              <n-button size="tiny" quaternary :disabled="childIndex === 0" @click="moveSection(node.children, childIndex, -1)">{{ t('legacy.move_up') }}</n-button>
+                              <n-button size="tiny" quaternary :disabled="childIndex === node.children.length - 1" @click="moveSection(node.children, childIndex, 1)">{{ t('legacy.move_down') }}</n-button>
+                              <n-button size="tiny" quaternary type="error" @click="removeSection(node.children, childIndex)">{{ t('legacy.delete') }}</n-button>
                             </div>
                           </div>
                         </article>
                       </div>
                     </article>
                   </div>
-                  <n-empty v-else class="section-empty" :description="t('还没有章节结构')">
+                  <n-empty v-else class="section-empty" :description="t('legacy.no_section_structure_yet')">
                     <template #extra>
-                      <n-button type="primary" secondary @click="addSection()">{{ t('添加章节') }}</n-button>
+                      <n-button type="primary" secondary @click="addSection()">{{ t('legacy.add_section_7420b47') }}</n-button>
                     </template>
                   </n-empty>
                 </div>
                 <div class="style-grid-fields style-grid-fields-2">
                   <div class="style-field">
-                    <label class="field-label">{{ t('必须包含') }}</label>
+                    <label class="field-label">{{ t('legacy.must_include') }}</label>
                     <n-input
                       v-model:value="requiredElementsText"
                       type="textarea"
                       :autosize="{ minRows: 1, maxRows: 10 }"
-                      :placeholder="t('每行一条，例如：标题')"
+                      :placeholder="t('legacy.one_per_line_e_g_title')"
                     />
                   </div>
                   <div class="style-field">
-                    <label class="field-label">{{ t('必须避免') }}</label>
+                    <label class="field-label">{{ t('legacy.must_avoid') }}</label>
                     <n-input
                       v-model:value="forbiddenElementsText"
                       type="textarea"
                       :autosize="{ minRows: 1, maxRows: 10 }"
-                      :placeholder="t('每行一条，例如：编造数据')"
+                      :placeholder="t('legacy.one_per_line_e_g_fake_data')"
                     />
                   </div>
                 </div>
@@ -613,49 +613,49 @@
             <aside class="shell-panel style-preview-panel">
               <div class="panel-head">
                 <div>
-                  <div class="panel-title">{{ t('当前生效摘要') }}</div>
-                  <div class="panel-desc">{{ t('这里展示将注入 runtime 的核心写作约束。') }}</div>
+                  <div class="panel-title">{{ t('legacy.active_summary') }}</div>
+                  <div class="panel-desc">{{ t('legacy.core_writing_constraints_that_will_be_injected_into_runtime') }}</div>
                 </div>
               </div>
 
               <div class="style-preview-group">
-                <div class="preview-label">{{ t('内容形式') }}</div>
+                <div class="preview-label">{{ t('legacy.content_forms') }}</div>
                 <div class="preview-value">{{ formatLocalizedValues(contentFormInput, ' / ') }}</div>
               </div>
               <div class="style-preview-group">
-                <div class="preview-label">{{ t('目标受众') }}</div>
+                <div class="preview-label">{{ t('legacy.target_audience') }}</div>
                 <div class="preview-value">{{ formatLocalizedValues(targetAudienceInput) }}</div>
               </div>
               <div class="style-preview-group">
-                <div class="preview-label">{{ t('偏好风格') }}</div>
+                <div class="preview-label">{{ t('legacy.preferred_styles') }}</div>
                 <div class="preview-value">{{ formatLocalizedValues(preferredStyleInput) }}</div>
               </div>
               <div class="style-preview-group">
-                <div class="preview-label">{{ t('目标字数') }}</div>
+                <div class="preview-label">{{ t('legacy.target_word_count') }}</div>
                 <div class="preview-value">{{ targetLengthLabel }}</div>
               </div>
               <div class="style-preview-group">
-                <div class="preview-label">{{ t('章节结构') }}</div>
+                <div class="preview-label">{{ t('legacy.section_structure') }}</div>
                 <div v-if="sectionStructurePreview.length" class="preview-section-tree">
                   <div v-for="item in sectionStructurePreview" :key="item.key" class="preview-section-row" :class="{ child: item.level > 1 }">
                     <span class="preview-section-title">{{ item.title }}</span>
-                    <span v-if="item.mustInclude.length" class="preview-section-meta">{{ t('含 {count} 项', { count: item.mustInclude.length }) }}</span>
+                    <span v-if="item.mustInclude.length" class="preview-section-meta">{{ t('legacy.contains_items', { count: item.mustInclude.length }) }}</span>
                   </div>
                 </div>
-                <span v-else class="preview-empty">{{ t('未配置') }}</span>
+                <span v-else class="preview-empty">{{ t('legacy.not_configured') }}</span>
               </div>
               <div class="style-preview-group">
-                <div class="preview-label">{{ t('必须包含') }}</div>
+                <div class="preview-label">{{ t('legacy.must_include') }}</div>
                 <div class="preview-list">
                   <span v-for="item in requiredElementsItems" :key="item" class="preview-chip">{{ item }}</span>
-                  <span v-if="!requiredElementsItems.length" class="preview-empty">{{ t('未配置') }}</span>
+                  <span v-if="!requiredElementsItems.length" class="preview-empty">{{ t('legacy.not_configured') }}</span>
                 </div>
               </div>
               <div class="style-preview-group">
-                <div class="preview-label">{{ t('禁止项') }}</div>
+                <div class="preview-label">{{ t('legacy.avoided_items') }}</div>
                 <div class="preview-list preview-list-danger">
                   <span v-for="item in forbiddenElementsItems" :key="item" class="preview-chip preview-chip-danger">{{ item }}</span>
-                  <span v-if="!forbiddenElementsItems.length" class="preview-empty">{{ t('未配置') }}</span>
+                  <span v-if="!forbiddenElementsItems.length" class="preview-empty">{{ t('legacy.not_configured') }}</span>
                 </div>
               </div>
             </aside>
@@ -663,12 +663,12 @@
         </template>
       </template>
 
-      <n-empty v-else :description="t('Skill 不存在或已删除')" />
+      <n-empty v-else :description="t('legacy.skill_does_not_exist_or_has_been_deleted')" />
     </n-spin>
     <n-drawer v-model:show="scriptAdvancedDrawerVisible" :width="820" placement="right">
       <n-drawer-content
         v-if="activeScriptStep"
-        :title="t('数据处理高级设置')"
+        :title="t('legacy.advanced_data_processing_settings')"
         closable
         :body-content-style="{ height: '100%', overflow: 'hidden' }"
       >
@@ -676,7 +676,7 @@
           <div class="script-drawer-settings">
             <div class="script-drawer-instruction">
               <div class="script-drawer-instruction-head">
-                <strong>{{ t('处理要求') }}</strong>
+                <strong>{{ t('legacy.processing_requirement') }}</strong>
                 <n-button
                   size="small"
                   type="primary"
@@ -689,54 +689,54 @@
                       <svg viewBox="0 0 24 24"><path d="M12 3l1.7 4.4L18 9l-4.3 1.6L12 15l-1.7-4.4L6 9l4.3-1.6L12 3z" /><path d="M5 14l.9 2.1L8 17l-2.1.9L5 20l-.9-2.1L2 17l2.1-.9L5 14z" /><path d="M19 14l.9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14z" /></svg>
                     </span>
                   </template>
-                  {{ String(activeScriptStep.businessConfig?.pluginCode || '').trim() ? t('重新生成代码') : t('生成处理代码') }}
+                  {{ String(activeScriptStep.businessConfig?.pluginCode || '').trim() ? t('legacy.regenerate_code') : t('legacy.generate_processing_code') }}
                 </n-button>
               </div>
               <n-input
                 v-model:value="activeScriptStep.businessConfig.processingInstruction"
                 type="textarea"
                 :autosize="{ minRows: 3, maxRows: 5 }"
-                :placeholder="t('用自然语言描述要处理什么、输入是什么、输出什么。')"
+                :placeholder="t('legacy.describe_the_task_inputs_and_outputs_in_plain_language')"
                 @update:value="() => invalidateScriptPluginCheck(activeScriptStepId)"
               />
             </div>
             <details class="script-drawer-details">
-              <summary>{{ t('节点规范') }}</summary>
+              <summary>{{ t('legacy.step_specification') }}</summary>
               <div class="script-plugin-rules">
-                <strong>{{ t('数据处理节点规范') }}</strong>
+                <strong>{{ t('legacy.data_processing_node_guidelines') }}</strong>
                 <div class="script-contract-grid">
                   <div>
-                    <b>{{ t('入口') }}</b>
+                    <b>{{ t('legacy.entry_point') }}</b>
                     <code>def run(inputs, context):</code>
                   </div>
                   <div>
-                    <b>{{ t('标准输入') }}</b>
+                    <b>{{ t('legacy.standard_input') }}</b>
                     <code>selected = inputs["selected"]<br>files = selected["files"]<br>images = selected["images"]<br>texts = selected["texts"]</code>
                   </div>
                   <div>
-                    <b>{{ t('输出文件') }}</b>
+                    <b>{{ t('legacy.output_files') }}</b>
                     <code>out_dir = context["output_dir"]<br>out_path = os.path.join(out_dir, "result.docx")</code>
                   </div>
                   <div>
-                    <b>{{ t('返回结果') }}</b>
+                    <b>{{ t('legacy.return_value') }}</b>
                     <code>return {"files": [{"path": "result.docx", "type": "docx"}], "data": {}, "logs": []}</code>
                   </div>
                 </div>
-                <span>{{ t('限制：禁止联网、子进程、eval/exec、固定本机路径；输出只支持 docx/pdf/xlsx/pptx/txt/md/json/csv。') }}</span>
+                <span>{{ t('legacy.restrictions_no_network_subprocesses_eval_exec_or_fixed_local') }}</span>
               </div>
             </details>
           </div>
           <div v-if="!String(activeScriptStep.businessConfig?.pluginCode || '').trim()" class="script-code-empty">
-            {{ t('代码尚未填写。可以手写代码，或点击生成处理代码。保存前需要通过检测。') }}
+            {{ t('legacy.no_code_yet_write_it_or_generate_processing_code') }}
           </div>
           <div class="code-editor-shell script-drawer-code">
             <div class="code-editor-head">
               <span>Python</span>
-              <span>{{ t('按 Tab 插入缩进，必须定义 run(inputs, context)') }}</span>
+              <span>{{ t('legacy.use_tab_to_indent_define_run_inputs_context') }}</span>
             </div>
             <PythonCodeEditor
               v-model="activeScriptStep.businessConfig.pluginCode"
-              :placeholder="t('Python 脚本需定义 run(inputs, context)，返回 { files, data, logs }')"
+              :placeholder="t('legacy.python_script_must_define_run_inputs_context_and_return')"
               @update:model-value="() => invalidateScriptPluginCheck(activeScriptStepId)"
             />
           </div>
@@ -749,7 +749,7 @@
               :disabled="!String(activeScriptStep.businessConfig?.pluginCode || '').trim()"
               @click.stop="checkScriptPluginStep(activeScriptStep)"
             >
-              {{ t('检测代码') }}
+              {{ t('legacy.validate_code') }}
             </n-button>
             <n-button
               v-if="scriptCheckResults[activeScriptStep.id] && !scriptCheckResults[activeScriptStep.id]?.pass"
@@ -759,17 +759,17 @@
               :disabled="!String(activeScriptStep.businessConfig?.pluginCode || '').trim()"
               @click.stop="fixScriptPluginStep(activeScriptStep)"
             >
-              {{ t('AI 修复代码') }}
+              {{ t('legacy.ai_fix_code') }}
             </n-button>
           </div>
           <div v-if="scriptCheckResults[activeScriptStep.id]" class="script-check-result">
             <div class="script-check-summary" :class="{ pass: scriptCheckResults[activeScriptStep.id]?.pass, fail: !scriptCheckResults[activeScriptStep.id]?.pass }">
-              <strong>{{ scriptCheckResults[activeScriptStep.id]?.pass ? t('检测通过') : t('检测未通过') }}</strong>
+              <strong>{{ scriptCheckResults[activeScriptStep.id]?.pass ? t('legacy.validation_passed') : t('legacy.validation_failed') }}</strong>
               <span>
                 {{
                   scriptCheckResults[activeScriptStep.id]?.pass
-                    ? (scriptCheckResults[activeScriptStep.id]?.llm?.summary || scriptCheckResults[activeScriptStep.id]?.message || t('代码已通过规则检测。'))
-                    : (scriptCheckResults[activeScriptStep.id]?.llm?.summary || scriptCheckResults[activeScriptStep.id]?.message || t('代码未通过检测，请查看下方问题或点击 AI 修复代码。'))
+                    ? (scriptCheckResults[activeScriptStep.id]?.llm?.summary || scriptCheckResults[activeScriptStep.id]?.message || t('legacy.code_passed_validation'))
+                    : (scriptCheckResults[activeScriptStep.id]?.llm?.summary || scriptCheckResults[activeScriptStep.id]?.message || t('legacy.code_failed_validation_review_the_issues_below_or_use'))
                 }}
               </span>
             </div>
@@ -779,15 +779,15 @@
               class="script-check-issue"
               :class="item.level"
             >
-              <span>{{ item.level === 'error' ? t('错误') : t('警告') }}</span>
+              <span>{{ item.level === 'error' ? t('legacy.error') : t('legacy.warning') }}</span>
               <p>{{ item.line ? `L${item.line}: ` : '' }}{{ item.message }}</p>
             </div>
           </div>
         </div>
         <template #footer>
           <div class="script-drawer-footer">
-            <n-button @click="scriptAdvancedDrawerVisible = false">{{ t('取消') }}</n-button>
-            <n-button type="primary" :loading="scriptDrawerSaving" @click="saveScriptAdvancedDrawer">{{ t('保存') }}</n-button>
+            <n-button @click="scriptAdvancedDrawerVisible = false">{{ t('legacy.cancel') }}</n-button>
+            <n-button type="primary" :loading="scriptDrawerSaving" @click="saveScriptAdvancedDrawer">{{ t('legacy.save') }}</n-button>
           </div>
         </template>
       </n-drawer-content>
@@ -800,7 +800,7 @@
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, onUpdated, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useMessage } from 'naive-ui';
-import { t, useLocale } from '@/composables/i18n';
+import { t, translateSourceText, useLocale } from '@/composables/i18n';
 import { useTheme } from '@/composables/theme';
 import { workflowAccent, workflowButtonColors } from '@/theme/workflow-colors';
 import { formatAdminDateTime } from '@/composables/adminTimezone';
@@ -952,7 +952,7 @@ const toolRows = ref<ExternalToolItem[]>([]);
 const toolOptionsLoading = ref(false);
 const activeScriptStep = computed(() => workflowSteps.value.find((item) => item.id === activeScriptStepId.value && item.type === 'script_plugin') || null);
 const toolOptions = computed(() => toolRows.value.map((item) => ({
-  label: `${item.name} (${item.type.toUpperCase()})${item.status === 'disabled' ? ` - ${t('已停用')}` : ''}`,
+  label: `${item.name} (${item.type.toUpperCase()})${item.status === 'disabled' ? ` - ${t('legacy.disabled_6c7dcbb')}` : ''}`,
   value: item.id,
   disabled: item.status === 'disabled',
 })));
@@ -972,130 +972,130 @@ const workflowNodeTypes = computed<Array<{
 }>>(() => [
   {
     type: 'read_material',
-    label: t('读取材料'),
-    shortLabel: t('材料'),
+    label: t('legacy.read_material'),
+    shortLabel: t('legacy.material'),
     color: '#2f6bff',
     bg: '#eef4ff',
     icon: readMaterialIcon,
     defaultTitle: '读取上传材料',
-    placeholder: t('例如：读取用户上传的传播数据文档和原始材料。'),
+    placeholder: t('legacy.example_read_communication_data_documents_and_raw_materials_uploaded'),
     defaultConfig: { sourceType: 'upload', source: '上传材料', outputAlias: '原始材料' },
-    usageDescription: t('读取用户上传材料，或按权限读取指定的组织知识文档。知识文档会按顺序续读，不使用相似度片段代替全文。'),
-    usageExample: t('读取用户上传的《华东区域项目进展报告.docx》和《项目执行数据.xlsx》，获取报告正文，以及 Excel 中“项目清单”和“月度进度”两个工作表的全部内容。'),
+    usageDescription: t('legacy.read_uploaded_material_or_an_authorized_organization_knowledge_document'),
+    usageExample: t('legacy.read_the_uploaded_east_china_project_progress_report_and'),
   },
   {
     type: 'extract_resources',
-    label: t('提取资源'),
-    shortLabel: t('资源'),
+    label: t('legacy.extract_resources'),
+    shortLabel: t('legacy.resource'),
     color: '#0891b2',
     bg: '#ecfeff',
     icon: extractResourcesIcon,
     defaultTitle: '提取可处理资源',
-    placeholder: t('例如：从上传文档中提取图片、URL 和附件，供后续理解或采集使用。'),
+    placeholder: t('legacy.example_extract_images_urls_and_attachments_from_uploaded_documents'),
     defaultConfig: { resourceTypes: ['images', 'urls', 'attachments'], outputAlias: '资源列表' },
-    usageDescription: t('用于从上游材料中分离图片、网页链接和附件，形成可供后续节点逐项处理的资源列表。它只定位并提取资源，不识别图片内容，也不采集网页正文。'),
-    usageExample: t('从《品牌传播复盘.docx》中提取所有内嵌截图、以 http 或 https 开头的网页链接及附件对象，分别输出为图片、链接和附件列表。'),
+    usageDescription: t('legacy.separate_images_web_links_and_attachments_from_upstream_materials'),
+    usageExample: t('legacy.extract_all_embedded_screenshots_http_https_links_and_attachment'),
   },
   {
     type: 'understand_image',
-    label: t('图片理解'),
-    shortLabel: t('识图'),
+    label: t('legacy.image_understanding'),
+    shortLabel: t('legacy.ocr'),
     color: '#4f46e5',
     bg: '#eef2ff',
     icon: understandImageIcon,
     defaultTitle: '理解图片内容',
-    placeholder: t('例如：对上一步提取出的图片进行多模态识别，提取图中对象、文字、图表和关键信息。'),
+    placeholder: t('legacy.example_perform_multimodal_recognition_on_the_images_extracted_from'),
     defaultConfig: { input: '上游图片资源', outputAlias: '图片理解结果' },
-    usageDescription: t('用于识别上游图片中的文字、对象、界面、图表和关键视觉信息，并输出可继续处理的文字描述或结构化结果。它不负责从文档中提取图片。'),
-    usageExample: t('识别上游的 8 张社交平台截图，逐张提取账号名称、发布时间、阅读量和互动量；无法看清的字段标记为“无法识别”。'),
+    usageDescription: t('legacy.recognize_text_objects_interfaces_charts_and_key_visual_details'),
+    usageExample: t('legacy.analyze_eight_upstream_social_platform_screenshots_and_extract_the'),
   },
   {
     type: 'extract_info',
-    label: t('抽取信息'),
-    shortLabel: t('抽取'),
+    label: t('legacy.extract_info'),
+    shortLabel: t('legacy.extract'),
     color: '#2563eb',
     bg: '#edf5ff',
     icon: extractInfoIcon,
     defaultTitle: '抽取关键信息',
-    placeholder: t('例如：从上传文档中抽取总阅读量、播放量、互动量。'),
+    placeholder: t('legacy.example_extract_total_readership_plays_and_interactions_from_uploaded'),
     defaultConfig: { target: '关键字段 / 事实 / 指标', method: '自动识别', outputAlias: '抽取结果' },
-    usageDescription: t('用于从上游文本、表格或识图结果中提取指定字段、事实和指标，并整理为结构化结果。它适合明确“要哪些信息”的场景，不负责汇总计算。'),
-    usageExample: t('从项目报告中提取项目名称、负责人、起止日期、合同金额、当前进度和主要风险；缺失字段保留为空，不自行推测。'),
+    usageDescription: t('legacy.extract_specified_fields_facts_and_metrics_from_upstream_text'),
+    usageExample: t('legacy.extract_the_project_name_owner_dates_contract_amount_current'),
   },
   {
     type: 'compute_metric',
-    label: t('统计计算'),
-    shortLabel: t('统计'),
+    label: t('legacy.calculate_metrics'),
+    shortLabel: t('legacy.stats'),
     color: '#16a36f',
     bg: '#effaf4',
     icon: computeMetricIcon,
     defaultTitle: '计算核心指标',
-    placeholder: t('例如：汇总各渠道数据，计算占比、排序并识别异常波动。'),
+    placeholder: t('legacy.example_aggregate_data_from_various_channels_calculate_proportions_sort'),
     defaultConfig: { method: '求和 / 占比 / 排序 / 异常识别', outputAlias: '指标分析' },
-    usageDescription: t('用于对上游结构化数据执行求和、平均、占比、同比环比、排序和异常识别等确定口径的统计计算。计算规则和分组维度应在节点要求中写清楚。'),
-    usageExample: t('按区域汇总 2026 年第一季度合同金额和回款金额，计算回款率，按回款率从高到低排序，并标记回款率低于 60% 的区域。'),
+    usageDescription: t('legacy.run_defined_calculations_on_upstream_structured_data_such_as'),
+    usageExample: t('legacy.aggregate_q1_2026_contract_and_collection_amounts_by_region'),
   },
   {
     type: 'data_collect',
-    label: t('数据采集'),
-    shortLabel: t('采集'),
+    label: t('legacy.collect_data'),
+    shortLabel: t('legacy.collect'),
     color: '#0d9488',
     bg: '#ecfdf5',
     icon: dataCollectIcon,
     defaultTitle: '采集网页数据',
-    placeholder: t('例如：从上一步抽取出的网页链接采集正文内容，作为后续分析和生成依据。'),
+    placeholder: t('legacy.example_collect_body_text_from_the_web_links_extracted'),
     defaultConfig: { source: '网页链接 / 上游 URL', outputAlias: '采集内容' },
-    usageDescription: t('用于访问上游提供的网页链接并采集页面标题、正文、发布时间、来源等内容。它面向已知链接的页面采集，不负责通过关键词搜索互联网。'),
-    usageExample: t('采集上游链接列表中的新闻页面，保存标题、发布时间、来源、正文和原始 URL；过滤导航、页脚和广告文字，失败链接记录失败原因。'),
+    usageDescription: t('legacy.visit_upstream_web_links_and_collect_page_titles_body'),
+    usageExample: t('legacy.collect_news_pages_from_the_upstream_url_list_keeping'),
   },
   {
     type: 'internal_search',
-    label: t('内部搜索'),
-    shortLabel: t('内搜'),
+    label: t('legacy.internal_search_304b39b'),
+    shortLabel: t('legacy.internal_search'),
     color: '#a16207',
     bg: '#fff8e8',
     icon: internalSearchIcon,
     defaultTitle: '查询内部口径',
-    placeholder: t('例如：查找公司过往复盘口径和内部评价标准。'),
+    placeholder: t('legacy.example_search_for_company_history_review_caliber_and_internal'),
     defaultConfig: { source: '知识库 / 制度库 / 历史材料', outputAlias: '内部依据' },
-    usageDescription: t('用于在已配置的企业知识库、制度库或历史材料中检索内部依据，并返回相关内容和来源。适合查制度、口径、案例和内部知识，不访问公开互联网。'),
-    usageExample: t('在“项目管理制度库”中检索项目延期认定标准、风险分级规则和周报提交要求，返回对应条款、制度名称及原文位置。'),
+    usageDescription: t('legacy.search_configured_enterprise_knowledge_bases_policy_libraries_or_historical'),
+    usageExample: t('legacy.search_the_project_management_policy_library_for_project_delay'),
   },
   {
     type: 'external_search',
-    label: t('外部搜索'),
-    shortLabel: t('外搜'),
+    label: t('legacy.web_search_b84b2fd'),
+    shortLabel: t('legacy.web_search_5742069'),
     color: '#d97706',
     bg: '#fff7ed',
     icon: externalSearchIcon,
     defaultTitle: '搜索外部资料',
-    placeholder: t('例如：检索公开行业数据和新闻背景，补充外部依据。'),
+    placeholder: t('legacy.example_search_public_industry_data_and_news_background_to'),
     defaultConfig: { source: '公开网页 / 新闻 / 行业资料', outputAlias: '外部资料' },
-    usageDescription: t('用于按关键词搜索公开网页、新闻和行业资料，获得外部信息线索及来源链接。适合开放式资料发现；如需读取某个已知网页的完整正文，应使用数据采集。'),
-    usageExample: t('搜索 2026 年上半年中国新能源汽车出口量相关的官方统计和行业报告，优先采用政府部门及行业协会来源，返回数据摘要、发布日期和链接。'),
+    usageDescription: t('legacy.search_public_web_pages_news_and_industry_materials_by'),
+    usageExample: t('legacy.search_official_statistics_and_industry_reports_on_china_s'),
   },
   {
     type: 'call_tool',
-    label: t('调用工具'),
-    shortLabel: t('工具'),
+    label: t('legacy.call_tool'),
+    shortLabel: t('legacy.tool'),
     color: '#0f83a5',
     bg: '#eefbff',
     icon: callToolIcon,
     defaultTitle: '调用业务工具',
-    placeholder: t('例如：调用 MCP 或企业工具查询本月渠道投放数据。'),
+    placeholder: t('legacy.example_call_mcp_or_corporate_tools_to_query_channel'),
     defaultConfig: { preferredToolId: '', preferredToolName: '', preferredMcpToolName: '', outputAlias: '工具数据' },
-    usageDescription: t('用于调用已接入平台的 Tool 或 MCP，向业务系统查询数据或执行其开放的操作。节点要求应明确工具、输入参数和期望返回内容。'),
-    usageExample: t('调用“订单查询”工具，查询 2026-06-01 至 2026-06-30 华东区域状态为“已完成”的订单，返回订单号、客户名称、成交金额和完成时间。'),
+    usageDescription: t('legacy.call_connected_tools_or_mcp_services_to_query_business'),
+    usageExample: t('legacy.call_the_order_query_tool_for_completed_east_china'),
   },
   {
     type: 'script_plugin',
-    label: t('数据处理'),
-    shortLabel: t('处理'),
+    label: t('legacy.data_processing'),
+    shortLabel: t('legacy.processing'),
     color: '#475569',
     bg: '#f1f5f9',
     icon: dataProcessingIcon,
     defaultTitle: '处理数据',
-    placeholder: t('例如：规整上传 DOCX、整理图片链接，并输出新的交付文件。'),
+    placeholder: t('legacy.example_clean_up_an_uploaded_docx_organize_image_links'),
     defaultConfig: {
       runtime: 'python',
       outputAlias: '处理结果',
@@ -1104,75 +1104,75 @@ const workflowNodeTypes = computed<Array<{
       selectedInputTypes: ['files', 'documents', 'images', 'urls', 'texts', 'data'],
       pluginCode: '',
     },
-    usageDescription: t('用于按照自然语言要求生成并执行确定性的处理代码，对上游文件、文本、链接或结构化数据进行清洗、转换、合并、重排和文件生成。适合规则明确且需要可重复执行的处理。'),
-    usageExample: t('读取上游《项目执行数据.xlsx》，统一日期为 YYYY-MM-DD，删除订单号重复的记录，按区域汇总合同金额和回款金额，输出《区域项目汇总.xlsx》。'),
+    usageDescription: t('legacy.generate_and_run_deterministic_processing_code_from_natural_language'),
+    usageExample: t('legacy.read_the_project_execution_workbook_normalize_dates_to_yyyy'),
   },
   {
     type: 'generate_content',
-    label: t('生成内容'),
-    shortLabel: t('生成'),
+    label: t('legacy.generate_content'),
+    shortLabel: t('legacy.generate'),
     color: '#7c3aed',
     bg: '#f4f0ff',
     icon: generateContentIcon,
     defaultTitle: '生成业务内容',
-    placeholder: t('例如：基于指标分析和原始材料生成正式复盘稿。'),
+    placeholder: t('legacy.example_generate_formal_review_draft_based_on_metrics_analysis_2288fbd'),
     defaultConfig: { input: '上游结果', outputAlias: '生成稿' },
-    usageDescription: t('用于根据上游材料和分析结果撰写报告、文章、摘要、方案等内容，可结合选定的写作规范 Skill 控制结构和表达。它负责内容生成，不负责最终文件格式导出。'),
-    usageExample: t('根据项目报告和季度指标，生成一份 1500 字以内的《华东区域一季度项目复盘》，包含总体情况、关键成果、主要问题和下一步计划四个部分。'),
+    usageDescription: t('legacy.write_reports_articles_summaries_and_plans_from_upstream_materials'),
+    usageExample: t('legacy.write_a_project_review_under_1_500_chinese_characters'),
   },
   {
     type: 'translate_rewrite',
-    label: t('文档翻译'),
-    shortLabel: t('翻译'),
+    label: t('legacy.translate_document'),
+    shortLabel: t('legacy.translate'),
     color: '#9333ea',
     bg: '#faf0ff',
     icon: translateRewriteIcon,
     defaultTitle: '翻译文档',
-    placeholder: t('例如：将报告翻译成目标语言，并保持术语和表达一致。'),
+    placeholder: t('legacy.example_translate_report_into_target_language_while_keeping_terminology'),
     defaultConfig: { mode: '翻译 / 润色 / 扩写 / 压缩', outputAlias: '改写稿' },
-    usageDescription: t('用于翻译或改写上游文档内容，在保留原意的前提下统一术语、语气和表达。应明确目标语言、保留项及专有名词处理规则。'),
-    usageExample: t('将《产品发布说明.docx》翻译为英文，保留标题层级、表格和数字格式；“智汇云”统一译为“Insight Cloud”，产品型号不翻译。'),
+    usageDescription: t('legacy.translate_or_rewrite_upstream_documents_while_preserving_meaning_and'),
+    usageExample: t('legacy.translate_the_product_release_notes_into_english_while_preserving'),
   },
   {
     type: 'fill_table',
-    label: t('填表制表'),
-    shortLabel: t('填表'),
+    label: t('legacy.fill_create_table'),
+    shortLabel: t('legacy.fill_table'),
     color: '#0f766e',
     bg: '#effdfa',
     icon: fillTableIcon,
     defaultTitle: '填表或制表',
-    placeholder: t('例如：把统计结果填入指定 Excel 或生成结构化明细表。'),
+    placeholder: t('legacy.example_fill_statistical_results_into_designated_excel_or_generate'),
     defaultConfig: { target: 'Word / Excel / PDF / 表格', outputAlias: '表格结果' },
-    usageDescription: t('用于把上游结构化结果写入指定表格模板，或按明确列结构生成新表。应说明目标模板、工作表、字段对应关系和空值处理方式。'),
-    usageExample: t('将上游项目数据填入《月度项目台账.xlsx》的“6月台账”工作表，按项目编号匹配行，填写负责人、完成率、回款金额和风险等级。'),
+    usageDescription: t('legacy.write_upstream_structured_results_into_a_specified_spreadsheet_template'),
+    usageExample: t('legacy.fill_the_june_ledger_sheet_in_the_monthly_project'),
   },
   {
     type: 'review_check',
-    label: t('校验复核'),
-    shortLabel: t('复核'),
+    label: t('legacy.review_check'),
+    shortLabel: t('legacy.review'),
     color: '#b45309',
     bg: '#fffbeb',
     icon: reviewCheckIcon,
-    defaultTitle: t('复核上游结果'),
-    placeholder: t('例如：依据审核规则逐项核对合同条款，列出风险、缺失项和无法确认的事项。'),
+    defaultTitle: t('legacy.review_an_earlier_result'),
+    placeholder: t('legacy.example_review_contract_clauses_against_the_rules_and_list'),
     defaultConfig: {
-      reviewSubject: '', reviewCriteria: '', reviewCriteriaMode: 'upstream', outputAlias: t('复核结果'),
+      reviewSubject: '', reviewCriteria: '', reviewCriteriaMode: 'upstream', outputAlias: t('legacy.review_findings'),
     },
-    usageDescription: t('指导 Agent 根据已有依据检查上游事实或生成结果，逐项给出判断、原文证据和待人工确认项。'),
-    usageExample: t('用审核规则逐条核对合同条款：每条规则给出合同原文和规则原文，无法核实时标记需要人工复核。'),
+    usageDescription: t('legacy.guide_the_agent_to_review_earlier_facts_or_results'),
+    usageExample: t('legacy.compare_each_contract_clause_with_the_rules_cite_both'),
   },
   {
     type: 'export_delivery',
-    label: t('导出交付'),
-    shortLabel: t('导出'),
+    label: t('legacy.export_delivery'),
+    shortLabel: t('legacy.export'),
     color: '#ea580c',
     bg: '#fff4ed',
     icon: exportDeliveryIcon,
     defaultTitle: '导出交付文件',
-    placeholder: t('例如：将复盘稿导出为 Word 和 PDF，便于提交归档。'),
+    placeholder: t('legacy.example_export_review_draft_as_word_and_pdf_for'),
     defaultConfig: { format: 'Word / PDF / Excel / PPT', outputAlias: '交付文件' },
-    usageDescription: t('用于把上游最终内容导出为 Word、PDF、Excel 或 PPT 等交付文件。它处理交付格式和文件命名，不应承担内容分析、改写或统计计算。'),
-    usageExample: t('将上游《华东区域一季度项目复盘》导出为 Word 和 PDF，文件名分别为《华东区域一季度项目复盘.docx》和《华东区域一季度项目复盘.pdf》。'),
+    usageDescription: t('legacy.export_upstream_final_content_to_deliverables_such_as_word'),
+    usageExample: t('legacy.export_the_east_china_q1_project_review_as_word'),
   },
 ]);
 
@@ -1242,7 +1242,7 @@ const localizedValueMap = computed(() => {
 const formatLocalizedValues = (items: string[], separator = '、') => (
   items.length
     ? items.map((item) => localizedValueMap.value.get(item) || item).join(separator)
-    : t('未配置')
+    : t('legacy.not_configured')
 );
 const toSelectOptions = (items: LocalizedSelectOption[]) => computed(() => (
   items.map((item) => ({ label: localizedOptionLabel(item), value: item.value }))
@@ -1267,9 +1267,9 @@ const workflowPreviewNodes = computed(() => workflowSteps.value.map((item) => ({
   icon: workflowTypeMeta(item.type).icon,
 })));
 const stepListLoadingText = computed(() => {
-  if (optimizing.value) return t('正在优化当前业务步骤');
-  if (supplementingStep.value) return t('正在补充业务步骤');
-  return t('正在生成业务逻辑步骤');
+  if (optimizing.value) return t('legacy.optimizing_current_business_steps');
+  if (supplementingStep.value) return t('legacy.supplementing_business_steps');
+  return t('legacy.generating_business_logic_steps');
 });
 const canEnrichWritingStyle = computed(() => {
   if (!skill.value?.name?.trim()) return false;
@@ -1282,10 +1282,10 @@ const sectionStructurePreview = computed(() => flattenSectionPreview(sectionStru
 const targetLengthLabel = computed(() => {
   const min = Number(targetLengthMin.value || 0);
   const max = Number(targetLengthMax.value || 0);
-  if (min > 0 && max > 0) return t('{min}-{max} 字', { min, max });
-  if (min > 0) return t('不少于 {min} 字', { min });
-  if (max > 0) return t('不超过 {max} 字', { max });
-  return t('未配置');
+  if (min > 0 && max > 0) return t('legacy.words', { min, max });
+  if (min > 0) return t('legacy.min_words', { min });
+  if (max > 0) return t('legacy.max_words', { max });
+  return t('legacy.not_configured');
 });
 
 watch(normalizedStepText, () => {
@@ -1299,7 +1299,7 @@ watch(normalizedStepText, () => {
 });
 
 function typeLabel(type: SkillType): string {
-  return type === 'workflow' ? t('工作流') : t('写作规范');
+  return type === 'workflow' ? t('legacy.workflow') : t('legacy.writing_guidelines');
 }
 
 function createId(): string {
@@ -1336,7 +1336,7 @@ function createWorkflowNode(type: WorkflowNodeType = 'extract_info', seed: Parti
   return {
     id: seed.id || createId(),
     type,
-    title: seed.title || t(meta.defaultTitle),
+    title: seed.title || translateSourceText(meta.defaultTitle),
     text: seed.text || '',
     businessConfig,
     boundWritingSkillId: seed.boundWritingSkillId || '',
@@ -1493,7 +1493,7 @@ function undoLastAiWorkflowChange() {
   activeStepId.value = latest.activeStepId || workflowSteps.value[0]?.id || '';
   workflowAiUndoStack.value = rest;
   testResult.value = null;
-  message.success(t('已撤回上一次 AI 修改'));
+  message.success(t('legacy.last_ai_change_undone'));
 }
 
 function currentStepSnapshot(): string[] {
@@ -1508,14 +1508,14 @@ function normalizeStoredCheck(value: any): WorkflowTestResult | null {
     testedAt: String(result.testedAt || value?.checkedAt || ''),
     pass: Boolean(result.pass),
     logic: {
-      label: String(logic.label || t('需要澄清')),
+      label: String(logic.label || t('legacy.clarify_needed')),
       level: logic.level === 'success' ? 'success' : 'warning',
-      summary: String(logic.summary || t('未保存明确的逻辑说明。')),
+      summary: String(logic.summary || t('legacy.no_logical_explanation_saved')),
     },
     coverage: Array.isArray(result.coverage) ? result.coverage : [],
     readiness: Array.isArray(result.readiness) ? result.readiness : [],
     suggestions: Array.isArray(result.suggestions) ? result.suggestions : [],
-    conclusion: String(result.conclusion || t('未保存明确结论。')),
+    conclusion: String(result.conclusion || t('legacy.no_clear_conclusion_was_saved')),
   };
 }
 
@@ -1838,7 +1838,7 @@ function onDragEnd() {
 
 function removeStep(stepId: string) {
   if (workflowSteps.value.length <= 1) {
-    message.warning(t('至少保留一个业务步骤'));
+    message.warning(t('legacy.keep_at_least_one_business_step'));
     return;
   }
   workflowSteps.value = workflowSteps.value.filter((item) => item.id !== stepId);
@@ -1918,7 +1918,7 @@ async function persistWorkflowCheck(result: WorkflowTestResult) {
     });
     skill.value = updated;
   } catch (error: any) {
-    message.warning(error?.response?.data?.detail || t('检查结果未能保存到 Skill'));
+    message.warning(error?.response?.data?.detail || t('legacy.failed_to_save_check_result_to_skill'));
   }
 }
 
@@ -1938,18 +1938,18 @@ async function regenerateSteps() {
     });
     const generated = mapGeneratedNodes(result.nodes || []);
     if (generated.length) {
-      pushWorkflowAiUndo(t('重新生成步骤'));
+      pushWorkflowAiUndo(t('legacy.regenerate_steps'));
       workflowSteps.value = generated;
       activeStepId.value = workflowSteps.value[0]?.id || '';
       testResult.value = null;
       stepGenerationError.value = '';
-      message.success(t('已生成业务逻辑步骤'));
+      message.success(t('legacy.business_logic_steps_generated_successfully'));
     } else {
-      stepGenerationError.value = result.message || t('未生成可用业务逻辑步骤');
-      message.warning(result.message || t('未生成可用业务逻辑步骤，请调整 Skill 描述后重试'));
+      stepGenerationError.value = result.message || t('legacy.no_usable_business_logic_steps_generated');
+      message.warning(result.message || t('legacy.no_business_logic_steps_generated_please_adjust_the_description'));
     }
   } catch (error: any) {
-    stepGenerationError.value = error?.response?.data?.detail || error?.message || t('生成步骤失败，请稍后重试');
+    stepGenerationError.value = error?.response?.data?.detail || error?.message || t('legacy.failed_to_generate_steps_please_try_again_later');
     message.error(stepGenerationError.value);
   } finally {
     generatingSteps.value = false;
@@ -1960,7 +1960,7 @@ async function optimizeSteps() {
   if (!skill.value) return;
   const existingNodes = serializeWorkflowNodes();
   if (!existingNodes.length) {
-    message.warning(t('请先生成或填写业务步骤，再使用 AI 优化当前步骤'));
+    message.warning(t('legacy.please_generate_or_enter_steps_before_optimizing'));
     return;
   }
   optimizing.value = true;
@@ -1977,17 +1977,17 @@ async function optimizeSteps() {
     });
     const optimized = mapGeneratedNodes(result.nodes || []);
     if (!optimized.length) {
-      stepGenerationError.value = result.message || t('未返回可用的优化结果');
+      stepGenerationError.value = result.message || t('legacy.no_usable_optimization_results_returned');
       message.warning(stepGenerationError.value);
       return;
     }
-    pushWorkflowAiUndo(t('AI 优化当前步骤'));
+    pushWorkflowAiUndo(t('legacy.ai_optimize_steps'));
     workflowSteps.value = optimized;
     activeStepId.value = workflowSteps.value[0]?.id || '';
     testResult.value = null;
-    message.success(t('已基于当前步骤完成优化'));
+    message.success(t('legacy.optimization_completed_based_on_current_steps'));
   } catch (error: any) {
-    stepGenerationError.value = error?.response?.data?.detail || error?.message || t('优化当前步骤失败，请稍后重试');
+    stepGenerationError.value = error?.response?.data?.detail || error?.message || t('legacy.failed_to_optimize_please_try_again_later');
     message.error(stepGenerationError.value);
   } finally {
     optimizing.value = false;
@@ -2011,7 +2011,7 @@ async function supplementStepWithAi() {
     });
     const supplemented = mapGeneratedNodes(result.nodes || []);
     if (!supplemented.length) {
-      stepGenerationError.value = result.message || t('未返回可用的补充结果');
+      stepGenerationError.value = result.message || t('legacy.no_usable_supplemental_results_returned');
       message.warning(stepGenerationError.value);
       return;
     }
@@ -2024,14 +2024,14 @@ async function supplementStepWithAi() {
       boundWritingSkillId: supplemented[0]?.boundWritingSkillId || '',
       outputAlias: supplemented[0]?.outputAlias || '',
     };
-    pushWorkflowAiUndo(t('AI 优化添加'));
+    pushWorkflowAiUndo(t('legacy.ai_optimize_add'));
     workflowSteps.value = [...workflowSteps.value, nextStep];
     activeStepId.value = nextStep.id;
     newStepText.value = '';
     testResult.value = null;
-    message.success(t('已补充并加入新的业务步骤'));
+    message.success(t('legacy.new_step_supplemented_and_added'));
   } catch (error: any) {
-    stepGenerationError.value = error?.response?.data?.detail || error?.message || t('补充业务步骤失败，请稍后重试');
+    stepGenerationError.value = error?.response?.data?.detail || error?.message || t('legacy.failed_to_supplement_step_please_try_again_later');
     message.error(stepGenerationError.value);
   } finally {
     supplementingStep.value = false;
@@ -2042,7 +2042,7 @@ async function polishStepRequirement(step: WorkflowStep) {
   if (!skill.value) return;
   const currentText = String(step.text || '').trim();
   if (!currentText) {
-    message.warning(t('请先填写节点要求'));
+    message.warning(t('legacy.please_enter_node_requirement_first'));
     return;
   }
   polishingStepId.value = step.id;
@@ -2066,21 +2066,21 @@ async function polishStepRequirement(step: WorkflowStep) {
     });
     const polished = String(result.text || '').trim();
     if (!polished) {
-      stepGenerationError.value = result.message || t('未返回可用的润色结果');
+      stepGenerationError.value = result.message || t('legacy.no_usable_polish_result_returned');
       message.warning(stepGenerationError.value);
       return;
     }
     if (polished === currentText) {
-      message.info(t('AI 润色后内容未发生变化'));
+      message.info(t('legacy.ai_polish_did_not_change_the_content'));
       return;
     }
-    pushWorkflowAiUndo(t('AI 润色'));
+    pushWorkflowAiUndo(t('legacy.ai_polish'));
     step.text = polished;
     activeStepId.value = step.id;
     testResult.value = null;
-    message.success(t('已润色节点要求'));
+    message.success(t('legacy.node_requirement_polished'));
   } catch (error: any) {
-    stepGenerationError.value = error?.response?.data?.detail || error?.message || t('润色节点要求失败，请稍后重试');
+    stepGenerationError.value = error?.response?.data?.detail || error?.message || t('legacy.failed_to_polish_node_requirement_please_try_again_later');
     message.error(stepGenerationError.value);
   } finally {
     polishingStepId.value = '';
@@ -2091,7 +2091,7 @@ async function runWorkflowTest() {
   if (!skill.value) return;
   const steps = workflowSteps.value.map((item) => buildNodeText(item).trim()).filter(Boolean);
   if (!steps.length) {
-    message.warning(t('请先生成或填写业务步骤'));
+    message.warning(t('legacy.please_generate_or_enter_steps_first'));
     return;
   }
   testing.value = true;
@@ -2108,21 +2108,21 @@ async function runWorkflowTest() {
       testedAt: checkedAt,
       pass: Boolean(result.pass),
       logic: {
-        label: result.logic?.label || t('需要澄清'),
+        label: result.logic?.label || t('legacy.clarify_needed'),
         level: result.logic?.level === 'success' ? 'success' : 'warning',
-        summary: result.logic?.summary || t('后端未返回明确的逻辑说明。'),
+        summary: result.logic?.summary || t('legacy.the_backend_did_not_return_a_clear_logic_explanation'),
       },
       coverage: Array.isArray(result.coverage) ? result.coverage : [],
       readiness: Array.isArray(result.readiness) ? result.readiness : [],
       suggestions: Array.isArray(result.suggestions) && result.suggestions.length
         ? result.suggestions
-        : [t('后端未返回具体建议，请检查步骤是否覆盖目标、输入、判断、异常和输出。')],
-      conclusion: result.conclusion || t('本次检查未返回明确结论。'),
+        : [t('legacy.no_suggestions_returned_check_if_steps_cover_goals_inputs')],
+      conclusion: result.conclusion || t('legacy.no_conclusion_returned'),
     };
     testResult.value = nextResult;
     await persistWorkflowCheck(nextResult);
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || error?.message || t('检查业务逻辑失败，请稍后重试'));
+    message.error(error?.response?.data?.detail || error?.message || t('legacy.failed_to_check_business_logic_please_try_again_later'));
   } finally {
     testing.value = false;
   }
@@ -2185,7 +2185,7 @@ function scriptCheckIssueItems(step: WorkflowStep): ScriptPluginCheckIssue[] {
   return [{
     level: 'error',
     code: 'CHECK_FAILED',
-    message: result.message || t('检测未通过，但检测服务没有返回具体错误明细。建议点击 AI 修复代码，或检查是否使用了不支持的输入/输出写法。'),
+    message: result.message || t('legacy.validation_failed_without_details_use_ai_fix_code_or'),
     line: null,
   }];
 }
@@ -2222,11 +2222,11 @@ async function generateScriptPluginStep(step: WorkflowStep, options: { confirmOv
   if (!skill.value) return false;
   const instruction = String(step.businessConfig?.processingInstruction || '').trim();
   if (!instruction) {
-    if (!options.silent) message.warning(t('请先填写处理要求'));
+    if (!options.silent) message.warning(t('legacy.enter_processing_instructions_first'));
     return false;
   }
   const existingCode = String(step.businessConfig?.pluginCode || '').trim();
-  if (existingCode && options.confirmOverwrite && !window.confirm(t('重新生成会覆盖当前高级代码，是否继续？'))) {
+  if (existingCode && options.confirmOverwrite && !window.confirm(t('legacy.regenerating_will_overwrite_the_current_advanced_code_continue'))) {
     return false;
   }
   generatingScriptStepId.value = step.id;
@@ -2243,7 +2243,7 @@ async function generateScriptPluginStep(step: WorkflowStep, options: { confirmOv
       workflowNodes: scriptPluginContextNodes(),
     });
     if (!result.code?.trim()) {
-      message.error(t('AI 未返回可用代码'));
+      message.error(t('legacy.ai_did_not_return_usable_code'));
       return false;
     }
     step.businessConfig.pluginCode = result.code;
@@ -2261,13 +2261,13 @@ async function generateScriptPluginStep(step: WorkflowStep, options: { confirmOv
     }
     const firstNote = (result.notes || [])[0];
     if (check?.pass) {
-      if (!options.silent) message.success(firstNote || t('已生成代码并通过规则检测'));
+      if (!options.silent) message.success(firstNote || t('legacy.code_generated_and_validated'));
       return true;
     }
-    if (!options.silent) message.warning(check?.errors?.[0]?.message || firstNote || t('已生成代码，请根据检测结果修复后保存'));
+    if (!options.silent) message.warning(check?.errors?.[0]?.message || firstNote || t('legacy.code_generated_fix_validation_issues_before_saving'));
     return true;
   } catch (error: any) {
-    if (!options.silent) message.error(error?.response?.data?.detail || error?.message || t('AI 生成代码失败'));
+    if (!options.silent) message.error(error?.response?.data?.detail || error?.message || t('legacy.ai_code_generation_failed'));
     return false;
   } finally {
     generatingScriptStepId.value = '';
@@ -2277,7 +2277,7 @@ async function generateScriptPluginStep(step: WorkflowStep, options: { confirmOv
 async function checkScriptPluginStep(step: WorkflowStep): Promise<boolean> {
   const code = String(step.businessConfig?.pluginCode || '').trim();
   if (!code) {
-    message.warning(t('请先填写脚本代码'));
+    message.warning(t('legacy.enter_script_code_first'));
     return false;
   }
   checkingScriptStepId.value = step.id;
@@ -2294,12 +2294,12 @@ async function checkScriptPluginStep(step: WorkflowStep): Promise<boolean> {
     persistScriptPluginCheck(step, result);
     if (result.pass) {
       step.businessConfig.generatedInstructionSignature = scriptPluginInstructionSignature(step);
-      message.success(result.llm?.summary || t('脚本代码检测通过'));
+      message.success(result.llm?.summary || t('legacy.script_validation_passed'));
       return true;
     }
     return false;
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || error?.message || t('检测脚本代码失败'));
+    message.error(error?.response?.data?.detail || error?.message || t('legacy.script_validation_failed'));
     return false;
   } finally {
     checkingScriptStepId.value = '';
@@ -2309,7 +2309,7 @@ async function checkScriptPluginStep(step: WorkflowStep): Promise<boolean> {
 async function fixScriptPluginStep(step: WorkflowStep): Promise<boolean> {
   const code = String(step.businessConfig?.pluginCode || '').trim();
   if (!code) {
-    message.warning(t('请先填写脚本代码'));
+    message.warning(t('legacy.enter_script_code_first'));
     return false;
   }
   fixingScriptStepId.value = step.id;
@@ -2326,7 +2326,7 @@ async function fixScriptPluginStep(step: WorkflowStep): Promise<boolean> {
       issues,
     });
     if (!result.code?.trim()) {
-      message.error(t('AI 未返回可用代码'));
+      message.error(t('legacy.ai_did_not_return_usable_code'));
       return false;
     }
     step.businessConfig.pluginCode = result.code;
@@ -2344,10 +2344,10 @@ async function fixScriptPluginStep(step: WorkflowStep): Promise<boolean> {
     if (check?.pass) {
       step.businessConfig.generatedInstructionSignature = scriptPluginInstructionSignature(step);
     }
-    message.success((result.notes || [])[0] || t('已完成 AI 修复，请再次确认代码'));
+    message.success((result.notes || [])[0] || t('legacy.ai_fix_complete_review_the_code_again'));
     return Boolean(check?.pass);
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || error?.message || t('AI 修复代码失败'));
+    message.error(error?.response?.data?.detail || error?.message || t('legacy.ai_code_fix_failed'));
     return false;
   } finally {
     fixingScriptStepId.value = '';
@@ -2359,17 +2359,17 @@ async function ensureScriptPluginsChecked(): Promise<boolean> {
   for (const step of scriptSteps) {
     if (!String(step.businessConfig?.processingInstruction || '').trim()) {
       activeStepId.value = step.id;
-      message.warning(t('数据处理节点必须先填写处理要求'));
+      message.warning(t('legacy.enter_processing_instructions_for_the_data_processing_step_first'));
       return false;
     }
     if (!String(step.businessConfig?.pluginCode || '').trim()) {
       activeStepId.value = step.id;
-      message.warning(t('请先填写或生成脚本代码'));
+      message.warning(t('legacy.write_or_generate_script_code_first'));
       return false;
     }
     if (!isScriptPluginCheckPassed(step)) {
       activeStepId.value = step.id;
-      message.warning(t('脚本代码已变更或尚未检测通过，请先点击检测代码'));
+      message.warning(t('legacy.code_has_changed_or_has_not_passed_validation_validate'));
       return false;
     }
   }
@@ -2378,15 +2378,15 @@ async function ensureScriptPluginsChecked(): Promise<boolean> {
 
 async function ensureScriptPluginStepReady(step: WorkflowStep): Promise<boolean> {
   if (!String(step.businessConfig?.processingInstruction || '').trim()) {
-    message.warning(t('请先填写处理要求'));
+    message.warning(t('legacy.enter_processing_instructions_first'));
     return false;
   }
   if (!String(step.businessConfig?.pluginCode || '').trim()) {
-    message.warning(t('请先填写或生成脚本代码'));
+    message.warning(t('legacy.write_or_generate_script_code_first'));
     return false;
   }
   if (!isScriptPluginCheckPassed(step)) {
-    message.warning(t('脚本代码已变更或尚未检测通过，请先点击检测代码'));
+    message.warning(t('legacy.code_has_changed_or_has_not_passed_validation_validate'));
     return false;
   }
   return true;
@@ -2410,7 +2410,7 @@ async function saveWorkflow(): Promise<boolean> {
   if (!skill.value) return false;
   const workflowNodes = serializeWorkflowNodes();
   if (!workflowNodes.length) {
-    message.warning(t('请至少填写一个业务步骤'));
+    message.warning(t('legacy.please_fill_in_at_least_one_business_step'));
     return false;
   }
   const missingSelection = missingWorkflowSelection(workflowNodes);
@@ -2421,13 +2421,13 @@ async function saveWorkflow(): Promise<boolean> {
   }
   const aliases = workflowNodes.map(node => String(node.outputAlias || '').trim()).filter(Boolean);
   if (aliases.length !== new Set(aliases).size) {
-    message.warning(t('节点输出名不能重复，请为不同材料设置不同名称'));
+    message.warning(t('legacy.step_output_names_must_be_unique_give_each_material'));
     return false;
   }
   const invalidReviewId = bindReviewSources(workflowNodes);
   if (invalidReviewId) {
     activeStepId.value = invalidReviewId;
-    message.warning(t('请为校验复核选择有效的上游复核对象和判定依据'));
+    message.warning(t('legacy.select_a_valid_earlier_result_and_criteria_for_review'));
     return false;
   }
   saving.value = true;
@@ -2450,10 +2450,10 @@ async function saveWorkflow(): Promise<boolean> {
     });
     skill.value = updated;
     hydrateWorkflow(updated);
-    message.success(t('工作流配置已保存'));
+    message.success(t('legacy.workflow_configuration_saved'));
     return true;
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || t('保存 Skill 失败'));
+    message.error(error?.response?.data?.detail || t('legacy.failed_to_save_skill'));
     return false;
   } finally {
     saving.value = false;
@@ -2473,9 +2473,9 @@ async function enrichWritingStyle() {
     styleInputProfile.value = result.inputProfile || {};
     styleSkillMarkdown.value = String(result.skillMarkdown || '').trim();
     applyWritingStyleContract(result.contractJson || buildWritingStyleContractJson());
-    message.success(t('已补全写作规范配置'));
+    message.success(t('legacy.writing_guidelines_completed'));
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || error?.message || t('写作规范补全失败'));
+    message.error(error?.response?.data?.detail || error?.message || t('legacy.failed_to_complete_writing_guidelines'));
   } finally {
     styleEnriching.value = false;
   }
@@ -2505,10 +2505,10 @@ async function saveWritingStyle(): Promise<boolean> {
     });
     skill.value = updated;
     hydrateWritingStyle(updated);
-    message.success(t('写作规范配置已保存'));
+    message.success(t('legacy.writing_guidelines_saved'));
     return true;
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || error?.message || t('保存 Skill 失败'));
+    message.error(error?.response?.data?.detail || error?.message || t('legacy.failed_to_save_skill'));
     return false;
   } finally {
     saving.value = false;
@@ -2555,7 +2555,7 @@ async function loadDetail() {
     if (requestSequence !== detailRequestSequence.value) return;
     skill.value = null;
     updateHeaderTitle(null);
-    message.error(error?.response?.data?.detail || t('加载 Skill 详情失败'));
+    message.error(error?.response?.data?.detail || t('legacy.failed_to_load_skill_details'));
   } finally {
     if (requestSequence === detailRequestSequence.value) {
       loading.value = false;

@@ -18,7 +18,7 @@
           <line x1="9" y1="8" x2="15" y2="8" />
           <line x1="17" y1="16" x2="23" y2="16" />
         </svg>
-        <span>{{ t('通用设置') }}</span>
+        <span>{{ t('legacy.general_settings') }}</span>
       </button>
       <button
         class="settings-nav-item"
@@ -27,7 +27,7 @@
         @click="switchSection('shortcuts')"
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="nav-icon"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        <span>{{ t('快捷入口') }}</span>
+        <span>{{ t('legacy.quick_access') }}</span>
       </button>
       <button
         class="settings-nav-item"
@@ -39,7 +39,7 @@
           <rect x="3" y="3" width="18" height="14" rx="2" />
           <path d="M8 21h8M12 17v4M7 8h4M7 12h10" />
         </svg>
-        <span>{{ t('PPT 生成') }}</span>
+        <span>{{ t('legacy.ppt_generation') }}</span>
       </button>
       <button
         class="settings-nav-item"
@@ -52,7 +52,7 @@
           <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
           <path d="M2 12h20" />
         </svg>
-        <span>{{ t('外部搜索') }}</span>
+        <span>{{ t('legacy.web_search_b84b2fd') }}</span>
       </button>
       <button
         class="settings-nav-item"
@@ -63,7 +63,7 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="nav-icon">
           <path d="M2 17 12 22 22 17M2 12 12 17 22 12M12 2 2 7 12 12 22 7 12 2Z" />
         </svg>
-        <span>{{ t('页面采集') }}</span>
+        <span>{{ t('legacy.page_collection') }}</span>
       </button>
       <button
         class="settings-nav-item"
@@ -89,11 +89,11 @@
     <main v-if="activeSection === 'general'" class="settings-main">
       <div class="settings-header">
         <div>
-          <div class="settings-title">{{ t('通用设置') }}</div>
-          <div class="settings-subtitle">{{ t('配置管理后台的语言、时区及界面主题显示。') }}</div>
+          <div class="settings-title">{{ t('legacy.general_settings') }}</div>
+          <div class="settings-subtitle">{{ t('legacy.configure_the_language_timezone_and_theme_display_of_the') }}</div>
         </div>
         <n-space>
-          <n-button type="primary" @click="saveGeneralSettings">{{ t('保存配置') }}</n-button>
+          <n-button type="primary" @click="saveGeneralSettings">{{ t('legacy.save_817af18') }}</n-button>
         </n-space>
       </div>
 
@@ -101,7 +101,7 @@
         <n-form class="provider-form" label-placement="top">
           <n-grid :cols="2" :x-gap="16" :y-gap="16">
             <n-grid-item :span="2">
-              <n-form-item :label="t('界面语言')">
+              <n-form-item :label="t('legacy.interface_language')">
                 <n-select v-model:value="generalForm.language" :options="languageSelectOptions">
                   <template #prefix>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-prefix-icon">
@@ -115,7 +115,7 @@
             </n-grid-item>
 
             <n-grid-item :span="2">
-              <n-form-item :label="t('系统时区')">
+              <n-form-item :label="t('legacy.system_timezone')">
                 <n-select v-model:value="generalForm.timezone" :options="timezoneSelectOptions" filterable>
                   <template #prefix>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-prefix-icon">
@@ -128,12 +128,12 @@
             </n-grid-item>
 
             <n-grid-item :span="2">
-              <n-form-item :label="t('界面主题')">
+              <n-form-item :label="t('legacy.interface_theme')">
                 <div class="theme-radio-wrapper">
                   <n-radio-group v-model:value="generalForm.themeMode" @update:value="handleThemeChange">
-                    <n-radio-button value="light">{{ t('浅色模式') }}</n-radio-button>
-                    <n-radio-button value="dark">{{ t('深色模式') }}</n-radio-button>
-                    <n-radio-button value="system">{{ t('跟随系统') }}</n-radio-button>
+                    <n-radio-button value="light">{{ t('legacy.light_mode') }}</n-radio-button>
+                    <n-radio-button value="dark">{{ t('legacy.dark_mode') }}</n-radio-button>
+                    <n-radio-button value="system">{{ t('legacy.follow_system') }}</n-radio-button>
                   </n-radio-group>
                 </div>
               </n-form-item>
@@ -144,9 +144,9 @@
     </main>
 
     <main v-else-if="activeSection === 'shortcuts'" class="settings-main">
-      <div v-if="hasShortcutSchemes" class="shortcut-page-tabs" role="tablist" :aria-label="t('快捷入口')">
-        <button type="button" :class="{ active: shortcutView === 'schemes' }" @click="switchShortcutView('schemes')">{{ t('方案列表') }}</button>
-        <button type="button" :class="{ active: shortcutView === 'default' }" @click="switchShortcutView('default')">{{ t('默认入口') }}</button>
+      <div v-if="hasShortcutSchemes" class="shortcut-page-tabs" role="tablist" :aria-label="t('legacy.quick_access')">
+        <button type="button" :class="{ active: shortcutView === 'schemes' }" @click="switchShortcutView('schemes')">{{ t('legacy.schemes') }}</button>
+        <button type="button" :class="{ active: shortcutView === 'default' }" @click="switchShortcutView('default')">{{ t('legacy.default_shortcuts') }}</button>
       </div>
       <ShortcutSchemeOverview v-if="hasShortcutSchemes && shortcutView === 'schemes'" :on-edit-default="() => switchShortcutView('default')" />
       <ShortcutSettingsPanel v-else ref="shortcutSettingsRef" />
@@ -163,12 +163,12 @@
     <main v-else-if="activeSection === 'external-search'" class="settings-main">
       <div class="settings-header">
         <div>
-          <div class="settings-title">{{ t('外部搜索') }}</div>
-          <div class="settings-subtitle">{{ t('配置 web_search 默认调用的外部搜索源。') }}</div>
+          <div class="settings-title">{{ t('legacy.web_search_b84b2fd') }}</div>
+          <div class="settings-subtitle">{{ t('legacy.configure_the_external_search_provider_used_by_web_search') }}</div>
         </div>
         <n-space>
-          <n-button secondary :loading="loading" @click="loadProviders">{{ t('刷新') }}</n-button>
-          <n-button type="primary" :loading="saving" @click="saveCurrent">{{ t('保存配置') }}</n-button>
+          <n-button secondary :loading="loading" @click="loadProviders">{{ t('legacy.refresh') }}</n-button>
+          <n-button type="primary" :loading="saving" @click="saveCurrent">{{ t('legacy.save_817af18') }}</n-button>
         </n-space>
       </div>
 
@@ -193,9 +193,9 @@
                   <div class="provider-name">{{ item.label }}</div>
                 </div>
                 <div class="provider-meta">
-                  <n-tag v-if="item.isDefault" type="info" size="small" :bordered="false">{{ t('默认') }}</n-tag>
+                  <n-tag v-if="item.isDefault" type="info" size="small" :bordered="false">{{ t('legacy.default') }}</n-tag>
                   <n-tag :type="item.enabled ? 'success' : 'default'" size="small" :bordered="false">
-                    {{ item.enabled ? t('启用') : t('禁用') }}
+                    {{ item.enabled ? t('legacy.active') : t('legacy.disabled_be70be5') }}
                   </n-tag>
                   <n-tag :type="healthTagType(item.healthStatus)" size="small" :bordered="false">
                     {{ healthText(item.healthStatus) }}
@@ -214,12 +214,12 @@
                   </svg>
                   {{ activeProvider.label }}
                 </div>
-                <div class="editor-state">{{ activeProvider.apiKeyMasked || t('未保存 API Key') }}</div>
+                <div class="editor-state">{{ activeProvider.apiKeyMasked || t('legacy.api_key_not_saved') }}</div>
               </div>
               <n-space>
                 <n-switch v-model:value="form.enabled" />
                 <n-button secondary :disabled="!form.enabled || activeProvider.isDefault || saving" @click="makeDefault">
-                  {{ activeProvider.isDefault ? t('当前默认') : t('设为默认') }}
+                  {{ activeProvider.isDefault ? t('legacy.current_default') : t('legacy.set_as_default') }}
                 </n-button>
               </n-space>
             </div>
@@ -232,7 +232,7 @@
                       v-model:value="form.apiKey"
                       type="password"
                       show-password-on="click"
-                      :placeholder="activeProvider.apiKeyMasked ? t('留空则保留已保存 Key') : t('填写 API Key')"
+                      :placeholder="activeProvider.apiKeyMasked ? t('legacy.leave_blank_to_keep_the_saved_key') : t('legacy.enter_api_key')"
                     >
                       <template #prefix>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-prefix-icon">
@@ -288,7 +288,7 @@
                 </n-grid-item>
 
                 <n-grid-item :span="2">
-                  <n-form-item :label="t('测试查询')">
+                  <n-form-item :label="t('legacy.test_query')">
                     <n-input v-model:value="testQuery">
                       <template #prefix>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-prefix-icon">
@@ -303,7 +303,7 @@
             </n-form>
 
             <div class="test-actions">
-              <n-button :loading="testing" @click="runTest">{{ t('测试连接') }}</n-button>
+              <n-button :loading="testing" @click="runTest">{{ t('legacy.test_connection') }}</n-button>
             </div>
 
             <n-alert
@@ -313,7 +313,7 @@
               class="test-result"
             >
               <div class="test-result-title">
-                {{ testResult.ok ? t('连接测试通过') : t('连接测试失败') }}
+                {{ testResult.ok ? t('legacy.connection_test_passed') : t('legacy.connection_test_failed') }}
               </div>
               <div class="test-result-message">{{ testResult.message }}</div>
             </n-alert>
@@ -337,12 +337,12 @@
     <main v-else-if="activeSection === 'page-collection'" class="settings-main">
       <div class="settings-header">
         <div>
-          <div class="settings-title">{{ t('页面采集') }}</div>
-          <div class="settings-subtitle">{{ t('配置网页正文采集能力，用于从 URL 提取页面内容。') }}</div>
+          <div class="settings-title">{{ t('legacy.page_collection') }}</div>
+          <div class="settings-subtitle">{{ t('legacy.configure_page_content_extraction_from_urls') }}</div>
         </div>
         <n-space>
-          <n-button secondary :loading="pageCollectionLoading" @click="loadPageCollection">{{ t('刷新') }}</n-button>
-          <n-button type="primary" :loading="pageCollectionSaving" @click="savePageCollection">{{ t('保存配置') }}</n-button>
+          <n-button secondary :loading="pageCollectionLoading" @click="loadPageCollection">{{ t('legacy.refresh') }}</n-button>
+          <n-button type="primary" :loading="pageCollectionSaving" @click="savePageCollection">{{ t('legacy.save_817af18') }}</n-button>
         </n-space>
       </div>
 
@@ -356,7 +356,7 @@
                 </svg>
                 {{ pageCollectionSettings?.label || 'Firecrawl' }}
               </div>
-              <div class="editor-state">{{ pageCollectionSettings?.apiKeyMasked || t('未保存 API Key') }}</div>
+              <div class="editor-state">{{ pageCollectionSettings?.apiKeyMasked || t('legacy.api_key_not_saved') }}</div>
             </div>
             <n-switch v-model:value="pageCollectionForm.enabled" />
           </div>
@@ -369,7 +369,7 @@
                     v-model:value="pageCollectionForm.apiKey"
                     type="password"
                     show-password-on="click"
-                    :placeholder="pageCollectionSettings?.apiKeyMasked ? t('留空则保留已保存 Key') : t('填写 API Key')"
+                    :placeholder="pageCollectionSettings?.apiKeyMasked ? t('legacy.leave_blank_to_keep_the_saved_key') : t('legacy.enter_api_key')"
                   >
                     <template #prefix>
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-prefix-icon">
@@ -393,8 +393,8 @@
         </div>
         <n-space>
           <n-tag v-if="hasKnowledgeEdits" type="warning" round>{{ t('knowledgeSource.unsaved') }}</n-tag>
-          <n-button secondary :loading="knowledgeLoading" @click="refreshKnowledgeConfiguration">{{ t('刷新') }}</n-button>
-          <n-button type="primary" :loading="knowledgeSaving || knowledgeSourceRef?.saving" @click="saveKnowledgeConfiguration">{{ t('保存') }}</n-button>
+          <n-button secondary :loading="knowledgeLoading" @click="refreshKnowledgeConfiguration">{{ t('legacy.refresh') }}</n-button>
+          <n-button type="primary" :loading="knowledgeSaving || knowledgeSourceRef?.saving" @click="saveKnowledgeConfiguration">{{ t('legacy.save') }}</n-button>
         </n-space>
       </div>
 
@@ -403,10 +403,10 @@
         <section class="knowledge-settings-panel">
           <n-form class="provider-form knowledge-form" label-placement="top">
             <div class="knowledge-config-card">
-              <div class="knowledge-card-title">{{ t('文档分段设置') }}</div>
+              <div class="knowledge-card-title">{{ t('legacy.document_chunking_settings') }}</div>
               <n-grid :cols="2" :x-gap="16" :y-gap="10">
                 <n-grid-item>
-                  <n-form-item :label="t('每段最大长度')">
+                  <n-form-item :label="t('legacy.max_chunk_size')">
                     <n-input-number
                       v-model:value="knowledgeForm.parse.maxChunkSize"
                       :min="200"
@@ -417,7 +417,7 @@
                   </n-form-item>
                 </n-grid-item>
                 <n-grid-item>
-                  <n-form-item :label="t('相邻段落保留重叠')">
+                  <n-form-item :label="t('legacy.chunk_overlap')">
                     <n-input-number
                       v-model:value="knowledgeForm.parse.chunkOverlap"
                       :min="0"
@@ -429,33 +429,33 @@
                 </n-grid-item>
                 <n-grid-item :span="2">
                   <n-alert type="warning" :bordered="false">
-                    {{ t('这部分只影响新上传或重新学习后的文档。已经学习过的文档不会自动重新切段。') }}
+                    {{ t('legacy.this_setting_only_affects_newly_uploaded_or_re_processed') }}
                   </n-alert>
                 </n-grid-item>
               </n-grid>
             </div>
 
             <div class="knowledge-config-card">
-              <div class="knowledge-card-title">{{ t('问答效果设置') }}</div>
+              <div class="knowledge-card-title">{{ t('legacy.q_a_effect_settings') }}</div>
               <n-grid :cols="2" :x-gap="16" :y-gap="10">
                 <n-grid-item>
-                  <n-form-item :label="t('检索方式')">
+                  <n-form-item :label="t('legacy.retrieval_mode')">
                     <n-select v-model:value="knowledgeForm.retrieval.mode" :options="retrievalModeOptions" />
                   </n-form-item>
                 </n-grid-item>
                 <n-grid-item>
-                  <n-form-item :label="t('先找多少个候选片段 (Top N)')">
+                  <n-form-item :label="t('legacy.candidates_to_retrieve_top_n')">
                     <n-input-number v-model:value="knowledgeForm.retrieval.topN" :min="1" :max="50" style="width: 100%" />
                   </n-form-item>
                 </n-grid-item>
                 <n-grid-item>
-                  <n-form-item :label="t('开启重排')">
+                  <n-form-item :label="t('legacy.enable_rerank')">
                     <n-switch v-model:value="knowledgeForm.retrieval.rerank.enabled" />
-                    <div class="field-help">{{ t('开启后会对召回的候选片段再按相关性重排，通常更准但会更慢。') }}</div>
+                    <div class="field-help">{{ t('legacy.rerank_retrieved_candidates_by_relevance_usually_more_accurate_but') }}</div>
                   </n-form-item>
                 </n-grid-item>
                 <n-grid-item>
-                  <n-form-item :label="t('重排最多处理 (Top K)')">
+                  <n-form-item :label="t('legacy.max_candidate_segments_for_reranking_top_k')">
                     <n-input-number
                       v-model:value="knowledgeForm.retrieval.rerank.topK"
                       :min="knowledgeForm.retrieval.topN"
@@ -466,12 +466,12 @@
                   </n-form-item>
                 </n-grid-item>
                 <n-grid-item>
-                  <n-form-item :label="t('最多喂给模型的资料长度')">
+                  <n-form-item :label="t('legacy.max_context_tokens')">
                     <n-input-number v-model:value="knowledgeForm.context.maxContextTokens" :min="500" :max="200000" :step="500" style="width: 100%" />
                   </n-form-item>
                 </n-grid-item>
                 <n-grid-item>
-                  <n-form-item :label="t('回答中最多展示来源')">
+                  <n-form-item :label="t('legacy.max_citations_to_show')">
                     <n-input-number v-model:value="knowledgeForm.citation.maxCount" :min="1" :max="20" style="width: 100%" />
                   </n-form-item>
                 </n-grid-item>
@@ -481,63 +481,63 @@
             <div class="knowledge-advanced">
               <div class="knowledge-advanced-summary">
                 <div>
-                  <div class="knowledge-advanced-title">{{ t('高级配置') }}</div>
-                  <div class="knowledge-advanced-desc">{{ t('模型、向量库、索引等参数已隐藏，普通问答测试通常不用修改。') }}</div>
+                  <div class="knowledge-advanced-title">{{ t('legacy.advanced_configuration') }}</div>
+                  <div class="knowledge-advanced-desc">{{ t('legacy.parameters_such_as_models_vector_stores_and_indices_are') }}</div>
                 </div>
                 <n-button secondary size="small" @click="showKnowledgeAdvanced = !showKnowledgeAdvanced">
-                  {{ showKnowledgeAdvanced ? t('隐藏高级配置') : t('显示高级配置') }}
+                  {{ showKnowledgeAdvanced ? t('legacy.hide_advanced_config') : t('legacy.show_advanced_config') }}
                 </n-button>
               </div>
               <template v-if="showKnowledgeAdvanced">
                 <div class="knowledge-config-card knowledge-advanced-panel">
-                  <div class="knowledge-card-title">{{ t('高级配置') }}</div>
+                  <div class="knowledge-card-title">{{ t('legacy.advanced_configuration') }}</div>
                   <n-alert type="default" :bordered="false" class="knowledge-advanced-note">
-                    {{ t('这些配置主要给管理员和工程人员排查使用。普通问答测试通常不用修改。') }}
+                    {{ t('legacy.these_configurations_are_mainly_for_admins_and_engineers_to') }}
                   </n-alert>
 
-                  <div class="knowledge-section-title">{{ t('向量模型') }}</div>
+                  <div class="knowledge-section-title">{{ t('legacy.embedding_model') }}</div>
                   <n-grid :cols="2" :x-gap="16" :y-gap="10">
                   <n-grid-item :span="2">
-                    <n-form-item :label="t('选择向量模型')" required>
+                    <n-form-item :label="t('legacy.select_embedding_model')" required>
                       <ModelCapabilitySelect
                         v-model="knowledgeForm.embedding.modelInstanceId"
                         capability="embedding"
-                        :placeholder="t('请选择模型中心中的向量模型')"
+                        :placeholder="t('legacy.select_an_embedding_model_from_model_center')"
                       />
-                      <div class="field-help">{{ t('仅显示模型中心中已启用且支持向量能力的模型。') }}</div>
+                      <div class="field-help">{{ t('legacy.only_enabled_model_center_models_with_embedding_capability_are') }}</div>
                     </n-form-item>
                   </n-grid-item>
                   <n-grid-item>
-                    <n-form-item :label="t('向量维度')">
+                    <n-form-item :label="t('legacy.embedding_dimension')">
                       <n-input-number v-model:value="knowledgeForm.embedding.dimension" :min="1" :max="20000" style="width: 100%" />
                     </n-form-item>
                   </n-grid-item>
                   <n-grid-item>
-                    <n-form-item :label="t('批量大小')">
+                    <n-form-item :label="t('legacy.batch_size')">
                       <n-input-number v-model:value="knowledgeForm.embedding.batchSize" :min="1" :max="256" style="width: 100%" />
                     </n-form-item>
                   </n-grid-item>
                 </n-grid>
 
-                <div class="knowledge-section-title">{{ t('向量数据库') }}</div>
+                <div class="knowledge-section-title">{{ t('legacy.vector_database') }}</div>
                 <n-grid :cols="2" :x-gap="16" :y-gap="10">
                   <n-grid-item>
-                    <n-form-item :label="t('数据库类型')">
+                    <n-form-item :label="t('legacy.database_type')">
                       <n-select v-model:value="knowledgeForm.vectorStore.type" :options="vectorStoreOptions" />
                     </n-form-item>
                   </n-grid-item>
                   <n-grid-item>
-                    <n-form-item :label="t('距离算法')">
+                    <n-form-item :label="t('legacy.distance_metric')">
                       <n-select v-model:value="knowledgeForm.vectorStore.distanceMetric" :options="distanceMetricOptions" />
                     </n-form-item>
                   </n-grid-item>
                   <n-grid-item>
-                    <n-form-item :label="t('服务地址')">
+                    <n-form-item :label="t('legacy.endpoint')">
                       <n-input v-model:value="knowledgeForm.vectorStore.endpoint" placeholder="http://127.0.0.1:8080" />
                     </n-form-item>
                   </n-grid-item>
                   <n-grid-item>
-                    <n-form-item :label="t('Collection / Class 名称')">
+                    <n-form-item :label="t('legacy.collection_class_name')">
                       <n-input v-model:value="knowledgeForm.vectorStore.collectionName" />
                     </n-form-item>
                   </n-grid-item>
@@ -547,56 +547,50 @@
                         v-model:value="knowledgeForm.vectorStore.apiKey"
                         type="password"
                         show-password-on="click"
-                        :placeholder="knowledgeForm.vectorStore.apiKeyMasked ? t('留空则保留已保存 Key') : t('本地 Weaviate 可留空')"
+                        :placeholder="knowledgeForm.vectorStore.apiKeyMasked ? t('legacy.leave_blank_to_keep_the_saved_key') : t('legacy.leave_blank_for_local_weaviate')"
                       />
                     </n-form-item>
                   </n-grid-item>
                 </n-grid>
 
-                <div class="knowledge-section-title">{{ t('底层检索策略') }}</div>
+                <div class="knowledge-section-title">{{ t('legacy.underlying_retrieval_strategy') }}</div>
                 <n-grid :cols="2" :x-gap="16" :y-gap="10">
                   <n-grid-item>
-                    <n-form-item :label="t('最小分段长度')">
+                    <n-form-item :label="t('legacy.min_chunk_size')">
                       <n-input-number v-model:value="knowledgeForm.parse.minChunkSize" :min="50" :max="4000" :step="50" style="width: 100%" />
                     </n-form-item>
                   </n-grid-item>
                   <n-grid-item>
-                    <n-form-item :label="t('候选召回数')">
+                    <n-form-item :label="t('legacy.candidate_top_k')">
                       <n-input-number v-model:value="knowledgeForm.retrieval.candidateTopK" :min="knowledgeForm.retrieval.topN" :max="500" style="width: 100%" />
                     </n-form-item>
                   </n-grid-item>
                   <n-grid-item>
-                    <n-form-item :label="t('分数阈值')">
+                    <n-form-item :label="t('legacy.score_threshold')">
                       <n-input-number v-model:value="knowledgeForm.retrieval.scoreThreshold" :min="0" :max="1" :step="0.01" style="width: 100%" />
                     </n-form-item>
                   </n-grid-item>
                   <n-grid-item>
-                    <n-form-item :label="t('每个文档最多取几个片段')">
-                      <n-input-number v-model:value="knowledgeForm.retrieval.maxChunksPerDocument" :min="1" :max="50" style="width: 100%" />
-                      <div class="field-help">{{ t('问答检索时使用，避免同一篇文档占用太多上下文；不影响文档上传后的实际切段。') }}</div>
-                    </n-form-item>
-                  </n-grid-item>
-                  <n-grid-item>
-                    <n-form-item :label="t('启用元数据过滤')">
+                    <n-form-item :label="t('legacy.enable_metadata_filtering')">
                       <n-switch v-model:value="knowledgeForm.retrieval.metadataFiltersEnabled" />
                     </n-form-item>
                   </n-grid-item>
                 </n-grid>
 
-                <div class="knowledge-section-title">{{ t('混合检索细节') }}</div>
+                <div class="knowledge-section-title">{{ t('legacy.hybrid_retrieval_details') }}</div>
                 <n-grid :cols="2" :x-gap="16" :y-gap="10">
                   <n-grid-item>
-                    <n-form-item :label="t('向量权重')">
+                    <n-form-item :label="t('legacy.vector_weight')">
                       <n-input-number v-model:value="knowledgeForm.retrieval.hybrid.vectorWeight" :min="0" :max="1" :step="0.05" style="width: 100%" />
                     </n-form-item>
                   </n-grid-item>
                   <n-grid-item>
-                    <n-form-item :label="t('关键词权重')">
+                    <n-form-item :label="t('legacy.keyword_weight')">
                       <n-input-number v-model:value="knowledgeForm.retrieval.hybrid.keywordWeight" :min="0" :max="1" :step="0.05" style="width: 100%" />
                     </n-form-item>
                   </n-grid-item>
                   <n-grid-item>
-                    <n-form-item :label="t('融合方式')">
+                    <n-form-item :label="t('legacy.fusion_method')">
                       <n-select v-model:value="knowledgeForm.retrieval.hybrid.fusionMethod" :options="fusionMethodOptions" />
                     </n-form-item>
                   </n-grid-item>
@@ -606,41 +600,41 @@
                     </n-form-item>
                   </n-grid-item>
                   <n-grid-item>
-                    <n-form-item :label="t('关键词分析器')">
+                    <n-form-item :label="t('legacy.keyword_analyzer')">
                       <n-select v-model:value="knowledgeForm.retrieval.hybrid.keywordAnalyzer" :options="keywordAnalyzerOptions" />
                     </n-form-item>
                   </n-grid-item>
                   <n-grid-item>
-                    <n-form-item :label="t('关键词候选数')">
+                    <n-form-item :label="t('legacy.keyword_top_k')">
                       <n-input-number v-model:value="knowledgeForm.retrieval.hybrid.keywordTopK" :min="1" :max="500" style="width: 100%" />
                     </n-form-item>
                   </n-grid-item>
                 </n-grid>
 
-                <div class="knowledge-section-title">{{ t('重排服务细节') }}</div>
+                <div class="knowledge-section-title">{{ t('legacy.rerank_service_details') }}</div>
                 <n-grid :cols="2" :x-gap="16" :y-gap="10">
                   <n-grid-item :span="2">
-                    <n-form-item :label="t('选择重排模型')" :required="knowledgeForm.retrieval.rerank.enabled">
+                    <n-form-item :label="t('legacy.select_rerank_model')" :required="knowledgeForm.retrieval.rerank.enabled">
                       <ModelCapabilitySelect
                         v-model="knowledgeForm.retrieval.rerank.modelInstanceId"
                         capability="rerank"
-                        :placeholder="t('请选择模型中心中的重排模型')"
+                        :placeholder="t('legacy.select_a_rerank_model_from_model_center')"
                       />
-                      <div class="field-help">{{ t('仅显示模型中心中已启用且支持重排能力的模型；关闭重排时可以不选择。') }}</div>
+                      <div class="field-help">{{ t('legacy.only_enabled_model_center_models_with_rerank_capability_are') }}</div>
                     </n-form-item>
                   </n-grid-item>
                   <n-grid-item>
-                    <n-form-item :label="t('重排超时秒数')">
+                    <n-form-item :label="t('legacy.rerank_timeout_s')">
                       <n-input-number v-model:value="knowledgeForm.retrieval.rerank.timeoutSeconds" :min="1" :max="120" style="width: 100%" />
                     </n-form-item>
                   </n-grid-item>
                   <n-grid-item>
-                    <n-form-item :label="t('重排分数阈值')">
+                    <n-form-item :label="t('legacy.rerank_score_threshold')">
                       <n-input-number v-model:value="knowledgeForm.retrieval.rerank.scoreThreshold" :min="0" :max="1" :step="0.01" style="width: 100%" />
                     </n-form-item>
                   </n-grid-item>
                   <n-grid-item>
-                    <n-form-item :label="t('重排失败时')">
+                    <n-form-item :label="t('legacy.on_rerank_failure')">
                       <n-select v-model:value="knowledgeForm.retrieval.rerank.fallbackPolicy" :options="rerankFallbackOptions" />
                     </n-form-item>
                   </n-grid-item>
@@ -717,7 +711,7 @@ const hasKnowledgeEdits = computed(() => Boolean(knowledgeSourceRef.value?.hasUn
 
 function confirmShortcutNavigation(): boolean {
   if (activeSection.value !== 'shortcuts' || shortcutView.value !== 'default' || !shortcutSettingsRef.value?.hasUnsavedChanges) return true;
-  return window.confirm(t('快捷入口有未保存的修改，确定放弃并离开吗？'));
+  return window.confirm(t('legacy.quick_access_has_unsaved_changes_discard_them_and_leave'));
 }
 
 function confirmSettingsNavigation(): boolean {
@@ -862,7 +856,7 @@ function handleThemeChange(val: string) {
 function saveGeneralSettings() {
   setLocale(generalForm.language as any);
   setAdminTimezone(generalForm.timezone);
-  message.success(t('通用配置已保存'));
+  message.success(t('legacy.general_settings_saved'));
 }
 
 const providers = ref<ExternalSearchProviderItem[]>([]);
@@ -920,8 +914,6 @@ function defaultKnowledgeSettings(): KnowledgeSettings {
       candidateTopK: 50,
       scoreThreshold: 0,
       metadataFiltersEnabled: true,
-      maxChunksPerDocument: 5,
-      dedupByDocument: true,
       hybrid: {
         vectorWeight: 0.7,
         keywordWeight: 0.3,
@@ -986,25 +978,25 @@ const distanceMetricOptions = [
 ];
 
 const retrievalModeOptions = [
-  { label: t('向量检索'), value: 'vector' },
-  { label: t('混合检索'), value: 'hybrid' },
+  { label: t('legacy.vector_retrieval'), value: 'vector' },
+  { label: t('legacy.hybrid_retrieval'), value: 'hybrid' },
 ];
 
 const fusionMethodOptions = [
   { label: 'RRF', value: 'rrf' },
-  { label: t('加权融合'), value: 'weighted' },
+  { label: t('legacy.weighted_fusion'), value: 'weighted' },
 ];
 
 const keywordAnalyzerOptions = [
-  { label: t('通用'), value: 'standard' },
-  { label: t('中文/日文/韩文'), value: 'cjk' },
+  { label: t('legacy.standard'), value: 'standard' },
+  { label: t('legacy.cjk_chinese_japanese_korean'), value: 'cjk' },
   { label: 'IK', value: 'ik' },
 ];
 
 const rerankFallbackOptions = [
-  { label: t('失败时仍返回初步检索结果'), value: 'return_vector_results' },
-  { label: t('失败时不返回结果'), value: 'return_empty' },
-  { label: t('失败时直接报错'), value: 'fail' },
+  { label: t('legacy.return_vector_results_on_failure'), value: 'return_vector_results' },
+  { label: t('legacy.return_empty_on_failure'), value: 'return_empty' },
+  { label: t('legacy.fail_directly_on_failure'), value: 'fail' },
 ];
 
 function healthTagType(status: string) {
@@ -1014,9 +1006,9 @@ function healthTagType(status: string) {
 }
 
 function healthText(status: string) {
-  if (status === 'healthy') return t('测试通过');
-  if (status === 'failed') return t('测试失败');
-  return t('未测试');
+  if (status === 'healthy') return t('legacy.passed');
+  if (status === 'failed') return t('legacy.test_failed');
+  return t('legacy.untested');
 }
 
 function fillForm(item: ExternalSearchProviderItem) {
@@ -1094,7 +1086,7 @@ async function saveCurrent() {
     const provider = selectedProvider.value;
     await saveExternalSearchProvider(provider, { ...form });
     await loadProviders();
-    message.success(t('配置已保存'));
+    message.success(t('legacy.configuration_saved'));
   } finally {
     saving.value = false;
   }
@@ -1104,7 +1096,7 @@ async function makeDefault() {
   if (!form.enabled) return;
   await saveCurrent();
   await setDefaultExternalSearchProvider(selectedProvider.value);
-  message.success(t('默认搜索源已更新'));
+  message.success(t('legacy.default_search_provider_updated'));
   await loadProviders();
 }
 
@@ -1115,7 +1107,7 @@ async function savePageCollection() {
     pageCollectionSettings.value = saved;
     pageCollectionForm.enabled = saved.enabled;
     pageCollectionForm.apiKey = '';
-    message.success(t('配置已保存'));
+    message.success(t('legacy.configuration_saved'));
   } finally {
     pageCollectionSaving.value = false;
   }
@@ -1125,11 +1117,11 @@ async function saveKnowledgeParse() {
   knowledgeSaving.value = true;
   try {
     if (!knowledgeForm.embedding.modelInstanceId) {
-      message.error(t('请选择向量模型'));
+      message.error(t('legacy.select_an_embedding_model'));
       return;
     }
     if (knowledgeForm.retrieval.rerank.enabled && !knowledgeForm.retrieval.rerank.modelInstanceId) {
-      message.error(t('开启重排后请选择重排模型'));
+      message.error(t('legacy.select_a_rerank_model_after_enabling_reranking'));
       return;
     }
     knowledgeForm.embedding.provider = 'model_center';
@@ -1140,7 +1132,7 @@ async function saveKnowledgeParse() {
     const saved = await saveKnowledgeSettings(JSON.parse(JSON.stringify(knowledgeForm)));
     applyKnowledgeSettings(saved);
     knowledgeParseSnapshot.value = JSON.stringify(knowledgeForm);
-    message.success(t('配置已保存'));
+    message.success(t('legacy.configuration_saved'));
   } finally {
     knowledgeSaving.value = false;
   }
@@ -1174,13 +1166,13 @@ async function runTest() {
       provider: result?.provider || selectedProvider.value,
       resultCount: Number(result?.resultCount || 0),
       sampleResults: Array.isArray(result?.sampleResults) ? result.sampleResults : [],
-      message: String(result?.message || (result?.ok ? t('连接成功') : t('测试完成，但未返回可展示结果'))),
+      message: String(result?.message || (result?.ok ? t('legacy.connection_successful') : t('legacy.test_completed_but_returned_no_displayable_result'))),
     };
     testResult.value = normalizedResult;
     if (normalizedResult.ok) {
-      message.success(t('连接测试通过'));
+      message.success(t('legacy.connection_test_passed'));
     } else {
-      message.error(normalizedResult.message || t('连接测试失败'));
+      message.error(normalizedResult.message || t('legacy.connection_test_failed'));
     }
     const index = providers.value.findIndex((item) => item.provider === selectedProvider.value);
     if (index >= 0) {
@@ -1196,7 +1188,7 @@ async function runTest() {
       : error instanceof Error
         ? error.message
         : String(error);
-    const errorMessage = String(detail || t('连接测试失败'));
+    const errorMessage = String(detail || t('legacy.connection_test_failed'));
     testResult.value = {
       ok: false,
       provider: selectedProvider.value,

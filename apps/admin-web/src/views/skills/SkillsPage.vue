@@ -17,8 +17,8 @@
       <div class="list-filter-row">
         <div class="filter-toolbar">
           <n-space align="center" :size="10" class="filter-left">
-            <n-input v-model:value="filters.keyword" clearable :placeholder="t('搜索技能名称、描述')" class="keyword-input" />
-            <n-select v-model:value="filters.type" clearable :options="typeOptions" :placeholder="t('类型')" style="width: 160px" />
+            <n-input v-model:value="filters.keyword" clearable :placeholder="t('legacy.search_by_name_or_description')" class="keyword-input" />
+            <n-select v-model:value="filters.type" clearable :options="typeOptions" :placeholder="t('legacy.type')" style="width: 160px" />
           </n-space>
           <n-space :size="10" class="filter-right">
             <n-button secondary @click="loadRows">
@@ -30,9 +30,9 @@
                   <path d="M16 16h5v5" />
                 </svg>
               </template>
-              {{ t('刷新') }}
+              {{ t('legacy.refresh') }}
             </n-button>
-            <n-button secondary @click="installVisible = true">{{ t('从 ZIP 安装') }}</n-button>
+            <n-button secondary @click="installVisible = true">{{ t('legacy.install_from_zip') }}</n-button>
             <n-button type="primary" strong @click="openCreateModal">
               <template #icon>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -40,7 +40,7 @@
                   <path d="M12 5v14" />
                 </svg>
               </template>
-              {{ t('创建 Skill') }}
+              {{ t('legacy.create_skill') }}
             </n-button>
           </n-space>
         </div>
@@ -63,22 +63,22 @@
                     {{ typeText(row.type) }}
                   </n-tag>
                   <n-tag size="small" :bordered="false" :type="row.enabled ? 'success' : 'default'">
-                    {{ row.enabled ? t('已启用') : t('已禁用') }}
+                    {{ row.enabled ? t('legacy.active_25d2843') : t('legacy.disabled_0fe5a98') }}
                   </n-tag>
                   <n-tag v-if="row.lifecycle?.authoringMode === 'platform'" size="small" :bordered="false" :type="row.lifecycle.publicationStatus === 'draft' || row.lifecycle.hasUnpublishedChanges ? 'warning' : 'success'">
-                    {{ row.lifecycle.publicationStatus === 'draft' ? t('草稿') : row.lifecycle.hasUnpublishedChanges ? t('有未发布修改') : `v${row.lifecycle.publishedVersion}` }}
+                    {{ row.lifecycle.publicationStatus === 'draft' ? t('additional.draft') : row.lifecycle.hasUnpublishedChanges ? t('additional.unpublished_changes') : `v${row.lifecycle.publishedVersion}` }}
                   </n-tag>
                 </div>
-                <span class="card-time">{{ formatAdminDateTime(row.updatedAt || row.createdAt, t('刚创建')) }}</span>
+                <span class="card-time">{{ formatAdminDateTime(row.updatedAt || row.createdAt, t('legacy.just_created')) }}</span>
               </div>
 
               <div class="card-title">{{ row.name }}</div>
-              <div class="card-desc">{{ row.description || t('未填写技能描述') }}</div>
+              <div class="card-desc">{{ row.description || t('legacy.no_description_filled') }}</div>
 
               <div class="card-footrow">
                 <div class="card-actions">
                   <div class="card-switch" @click.stop>
-                    <span class="card-switch-label">{{ row.enabled ? t('启用中') : t('已禁用') }}</span>
+                    <span class="card-switch-label">{{ row.enabled ? t('legacy.active_595aabc') : t('legacy.disabled_0fe5a98') }}</span>
                     <n-switch
                       size="small"
                       :value="row.enabled"
@@ -86,21 +86,21 @@
                       @update:value="handleEnabledUpdate(row, $event)"
                     />
                   </div>
-                  <n-button class="icon-only-btn" size="small" quaternary circle :title="t('查看成员评价')" @click.stop="openFeedback(row)">
+                  <n-button class="icon-only-btn" size="small" quaternary circle :title="t('legacy.view_member_feedback')" @click.stop="openFeedback(row)">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
                     </svg>
                   </n-button>
-                  <n-button v-if="row.type === 'writing_style' || row.type === 'workflow'" class="icon-only-btn" size="small" quaternary circle :title="t('编辑基础信息')" @click.stop="openEditModal(row)">
+                  <n-button v-if="row.type === 'writing_style' || row.type === 'workflow'" class="icon-only-btn" size="small" quaternary circle :title="t('legacy.edit_basic_info')" @click.stop="openEditModal(row)">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M12 20h9" />
                       <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
                     </svg>
                   </n-button>
-                  <n-button v-if="skillAccessExtension" class="icon-only-btn" size="small" quaternary circle :title="t('使用权限')" @click.stop="openAccess(row)">
+                  <n-button v-if="skillAccessExtension" class="icon-only-btn" size="small" quaternary circle :title="t('legacy.access')" @click.stop="openAccess(row)">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4" /><path d="M5.5 21a6.5 6.5 0 0 1 13 0" /></svg>
                   </n-button>
-                  <n-button class="icon-only-btn delete-btn" size="small" quaternary circle :title="t('删除 Skill')" @click.stop="askDelete(row)">
+                  <n-button class="icon-only-btn delete-btn" size="small" quaternary circle :title="t('legacy.delete_skill')" @click.stop="askDelete(row)">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M3 6h18" />
                       <path d="M8 6V4h8v2" />
@@ -120,11 +120,11 @@
               <span>JSON</span>
               <span>CFG</span>
             </div>
-            <div class="empty-title">{{ t('暂未创建 Skill') }}</div>
-            <div class="empty-desc">{{ t('先创建基础字段，然后点击卡片进入配置页。') }}</div>
+            <div class="empty-title">{{ t('legacy.no_skills_created_yet') }}</div>
+            <div class="empty-desc">{{ t('legacy.fill_in_basic_info_first_then_click_the_card') }}</div>
             <n-space justify="center">
-              <n-button @click="installVisible = true">{{ t('从 ZIP 安装') }}</n-button>
-              <n-button type="primary" @click="openCreateModal">{{ t('创建 Skill') }}</n-button>
+              <n-button @click="installVisible = true">{{ t('legacy.install_from_zip') }}</n-button>
+              <n-button type="primary" @click="openCreateModal">{{ t('legacy.create_skill') }}</n-button>
             </n-space>
           </div>
         </n-spin>
@@ -132,22 +132,22 @@
     </n-card>
   </div>
 
-  <n-modal v-model:show="createVisible" preset="card" :title="t('创建 Skill')" style="width: 640px">
+  <n-modal v-model:show="createVisible" preset="card" :title="t('legacy.create_skill')" style="width: 640px">
     <n-form ref="createFormRef" :model="createForm" :rules="createRules" label-placement="left" label-width="92">
-      <n-form-item :label="t('技能名称')" path="name">
-        <n-input v-model:value="createForm.name" maxlength="120" :placeholder="t('请输入技能名称')" />
+      <n-form-item :label="t('legacy.skill_name')" path="name">
+        <n-input v-model:value="createForm.name" maxlength="120" :placeholder="t('legacy.please_enter_skill_name')" />
       </n-form-item>
-      <n-form-item :label="t('技能描述')" path="description">
-        <n-input v-model:value="createForm.description" type="textarea" :rows="3" :placeholder="t('请输入技能描述')" />
+      <n-form-item :label="t('legacy.skill_description')" path="description">
+        <n-input v-model:value="createForm.description" type="textarea" :rows="3" :placeholder="t('legacy.please_enter_skill_description')" />
       </n-form-item>
-      <n-form-item :label="t('使用场景')" path="scenario">
-        <n-input v-model:value="createForm.scenario" type="textarea" :rows="3" :placeholder="t('例如：市场周报写作、销售复盘总结')" />
+      <n-form-item :label="t('legacy.usage_scenario')" path="scenario">
+        <n-input v-model:value="createForm.scenario" type="textarea" :rows="3" :placeholder="t('legacy.example_weekly_market_report_sales_review_summary')" />
       </n-form-item>
-      <n-form-item :label="t('类型')" path="type">
+      <n-form-item :label="t('legacy.type')" path="type">
         <n-radio-group v-model:value="createForm.type">
           <n-space>
-            <n-radio value="writing_style">{{ t('写作规范') }}</n-radio>
-            <n-radio value="workflow">{{ t('工作流') }}</n-radio>
+            <n-radio value="writing_style">{{ t('legacy.writing_guidelines') }}</n-radio>
+            <n-radio value="workflow">{{ t('legacy.workflow') }}</n-radio>
           </n-space>
         </n-radio-group>
       </n-form-item>
@@ -155,8 +155,8 @@
 
     <template #footer>
       <n-space justify="end">
-        <n-button @click="createVisible = false">{{ t('取消') }}</n-button>
-        <n-button type="primary" :loading="creating" @click="submitCreate">{{ t('创建') }}</n-button>
+        <n-button @click="createVisible = false">{{ t('legacy.cancel') }}</n-button>
+        <n-button type="primary" :loading="creating" @click="submitCreate">{{ t('legacy.create') }}</n-button>
       </n-space>
     </template>
   </n-modal>
@@ -171,30 +171,30 @@
     <OrganizationSkillFeedback v-if="feedbackVisible && feedbackSkill" :key="feedbackSkill.id" :skill-id="feedbackSkill.id" />
   </n-modal>
 
-  <n-modal v-if="skillAccessExtension" v-model:show="accessVisible" preset="card" :title="t('{name} · 使用权限', { name: accessSkill?.name || 'Skill' })" style="width: min(760px, calc(100vw - 32px))">
+  <n-modal v-if="skillAccessExtension" v-model:show="accessVisible" preset="card" :title="t('legacy.access_44b8122', { name: accessSkill?.name || 'Skill' })" style="width: min(760px, calc(100vw - 32px))">
     <ResourceAccessExtensionPanel v-if="accessVisible && accessSkill" :resource-id="accessSkill.id" :extension="skillAccessExtension" />
   </n-modal>
 
-  <n-modal v-model:show="editVisible" preset="card" :title="t('编辑 Skill 基础信息')" style="width: 640px">
+  <n-modal v-model:show="editVisible" preset="card" :title="t('legacy.edit_skill_info')" style="width: 640px">
     <n-form ref="editFormRef" :model="editForm" :rules="editRules" label-placement="left" label-width="92">
-      <n-form-item :label="t('技能名称')" path="name">
-        <n-input v-model:value="editForm.name" maxlength="120" :placeholder="t('请输入技能名称')" />
+      <n-form-item :label="t('legacy.skill_name')" path="name">
+        <n-input v-model:value="editForm.name" maxlength="120" :placeholder="t('legacy.please_enter_skill_name')" />
       </n-form-item>
-      <n-form-item :label="t('技能描述')" path="description">
-        <n-input v-model:value="editForm.description" type="textarea" :rows="3" :placeholder="t('请输入技能描述')" />
+      <n-form-item :label="t('legacy.skill_description')" path="description">
+        <n-input v-model:value="editForm.description" type="textarea" :rows="3" :placeholder="t('legacy.please_enter_skill_description')" />
       </n-form-item>
-      <n-form-item :label="t('使用场景')" path="scenario">
-        <n-input v-model:value="editForm.scenario" type="textarea" :rows="3" :placeholder="t('请输入使用场景')" />
+      <n-form-item :label="t('legacy.usage_scenario')" path="scenario">
+        <n-input v-model:value="editForm.scenario" type="textarea" :rows="3" :placeholder="t('legacy.please_enter_usage_scenario')" />
       </n-form-item>
-      <n-form-item :label="t('类型')">
-        <div class="edit-type-value">{{ typeText(editForm.type) }}（{{ t('创建后不可修改') }}）</div>
+      <n-form-item :label="t('legacy.type')">
+        <div class="edit-type-value">{{ typeText(editForm.type) }}（{{ t('legacy.cannot_be_changed_after_creation') }}）</div>
       </n-form-item>
     </n-form>
 
     <template #footer>
       <n-space justify="end">
-        <n-button @click="editVisible = false">{{ t('取消') }}</n-button>
-        <n-button type="primary" :loading="updating" @click="submitEdit">{{ t('保存') }}</n-button>
+        <n-button @click="editVisible = false">{{ t('legacy.cancel') }}</n-button>
+        <n-button type="primary" :loading="updating" @click="submitEdit">{{ t('legacy.save') }}</n-button>
       </n-space>
     </template>
   </n-modal>
@@ -203,29 +203,29 @@
     v-model:show="deleteConfirmVisible"
     preset="dialog"
     type="warning"
-    :title="t('删除 Skill')"
-    :positive-text="t('删除')"
-    :negative-text="t('取消')"
+    :title="t('legacy.delete_skill')"
+    :positive-text="t('legacy.delete')"
+    :negative-text="t('legacy.cancel')"
     :positive-button-props="{ type: 'error', loading: deleting }"
     @positive-click="confirmDelete"
   >
-    {{ t('确定删除「{name}」吗？删除后不可恢复。', { name: pendingDeleteRow?.name || t('未命名 Skill') }) }}
+    {{ t('legacy.are_you_sure_to_delete_this_cannot_be_undone', { name: pendingDeleteRow?.name || t('legacy.unnamed_skill') }) }}
   </n-modal>
 
   <n-modal
     v-model:show="enabledConfirmVisible"
     preset="dialog"
     type="warning"
-    :title="pendingEnabledValue ? t('启用 Skill') : t('禁用 Skill')"
-    :positive-text="pendingEnabledValue ? t('确认启用') : t('确认禁用')"
-    :negative-text="t('取消')"
+    :title="pendingEnabledValue ? t('legacy.enable_skill') : t('legacy.disable_skill')"
+    :positive-text="pendingEnabledValue ? t('legacy.enable') : t('legacy.disable')"
+    :negative-text="t('legacy.cancel')"
     :positive-button-props="{ type: pendingEnabledValue ? 'primary' : 'warning', loading: enabledConfirming }"
     @positive-click="confirmEnabledChange"
   >
     {{
       pendingEnabledValue
-        ? t('确认启用 Skill「{name}」吗？启用后用户可在可用范围内使用。', { name: pendingEnabledRow?.name || t('未命名 Skill') })
-        : t('确认禁用 Skill「{name}」吗？禁用后用户将无法继续使用。', { name: pendingEnabledRow?.name || t('未命名 Skill') })
+        ? t('legacy.enable_skill_users_will_be_able_to_use_it', { name: pendingEnabledRow?.name || t('legacy.unnamed_skill') })
+        : t('legacy.disable_skill_users_will_no_longer_be_able_to', { name: pendingEnabledRow?.name || t('legacy.unnamed_skill') })
     }}
   </n-modal>
 </template>
@@ -304,23 +304,23 @@ const filters = ref({
 });
 
 const typeOptions = computed(() => [
-  { label: t('写作规范'), value: 'writing_style' },
-  { label: t('工作流'), value: 'workflow' },
-  { label: t('普通 Skill'), value: 'ordinary' },
+  { label: t('legacy.writing_guidelines'), value: 'writing_style' },
+  { label: t('legacy.workflow'), value: 'workflow' },
+  { label: t('additional.standard_skill'), value: 'ordinary' },
   { label: t('skills.type.expert_package'), value: 'expert_package' },
 ]);
 
 const createRules: FormRules = {
   name: [
-    { required: true, message: t('请输入技能名称'), trigger: ['input', 'blur'] },
-    { min: 1, max: 120, message: t('技能名称长度需在 1-120 字符'), trigger: ['input', 'blur'] },
+    { required: true, message: t('legacy.please_enter_skill_name'), trigger: ['input', 'blur'] },
+    { min: 1, max: 120, message: t('legacy.skill_name_length_must_be_between_1_and_120'), trigger: ['input', 'blur'] },
   ],
-  type: [{ required: true, message: t('请选择技能类型'), trigger: 'change' }],
+  type: [{ required: true, message: t('legacy.please_select_skill_type'), trigger: 'change' }],
 };
 const editRules: FormRules = {
   name: [
-    { required: true, message: t('请输入技能名称'), trigger: ['input', 'blur'] },
-    { min: 1, max: 120, message: t('技能名称长度需在 1-120 字符'), trigger: ['input', 'blur'] },
+    { required: true, message: t('legacy.please_enter_skill_name'), trigger: ['input', 'blur'] },
+    { min: 1, max: 120, message: t('legacy.skill_name_length_must_be_between_1_and_120'), trigger: ['input', 'blur'] },
   ],
 };
 
@@ -342,17 +342,17 @@ const metricCards = computed(() => {
   const workflowCount = rows.value.filter((item) => item.type === 'workflow').length;
   const configuredCount = rows.value.filter((item) => Object.keys(item.config || {}).length > 0).length;
   return [
-    { key: 'total', icon: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></svg>', label: t('Skill 总数'), value: total, note: t('当前组织下的全部技能') },
-    { key: 'writing', icon: '<svg viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" /></svg>', label: t('写作规范'), value: writingStyleCount, note: t('类型为写作规范的技能') },
-    { key: 'workflow', icon: '<svg viewBox="0 0 24 24"><circle cx="6" cy="19" r="3" /><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" /><circle cx="18" cy="5" r="3" /></svg>', label: t('工作流'), value: workflowCount, note: t('类型为工作流的技能') },
-    { key: 'config', icon: '<svg viewBox="0 0 24 24"><path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1" /><path d="M16 21h1a2 2 0 0 0 2-2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1" /></svg>', label: t('已配置 JSON'), value: configuredCount, note: t('config 非空的技能数量') },
+    { key: 'total', icon: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></svg>', label: t('legacy.total_skills'), value: total, note: t('legacy.all_skills_under_this_organization') },
+    { key: 'writing', icon: '<svg viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" /></svg>', label: t('legacy.writing_guidelines'), value: writingStyleCount, note: t('legacy.skills_of_writing_guidelines_type') },
+    { key: 'workflow', icon: '<svg viewBox="0 0 24 24"><circle cx="6" cy="19" r="3" /><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" /><circle cx="18" cy="5" r="3" /></svg>', label: t('legacy.workflow'), value: workflowCount, note: t('legacy.skills_of_workflow_type') },
+    { key: 'config', icon: '<svg viewBox="0 0 24 24"><path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1" /><path d="M16 21h1a2 2 0 0 0 2-2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1" /></svg>', label: t('legacy.json_configured'), value: configuredCount, note: t('legacy.number_of_skills_with_config') },
   ];
 });
 
 function typeText(type: SkillType): string {
-  if (type === 'workflow') return t('工作流');
+  if (type === 'workflow') return t('legacy.workflow');
   if (type === 'expert_package') return t('skills.type.expert_package');
-  return type === 'ordinary' ? t('普通 Skill') : t('写作规范');
+  return type === 'ordinary' ? t('additional.standard_skill') : t('legacy.writing_guidelines');
 }
 
 function resetCreateForm() {
@@ -429,7 +429,7 @@ async function loadRows() {
       return a.id.localeCompare(b.id);
     });
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || t('加载 Skill 失败'));
+    message.error(error?.response?.data?.detail || t('legacy.failed_to_load_skills'));
   } finally {
     loading.value = false;
   }
@@ -440,11 +440,11 @@ async function submitCreate() {
   creating.value = true;
   try {
     await createSkill({ ...createForm.value, enabled: false });
-    message.success(t('Skill 创建成功，默认已禁用'));
+    message.success(t('legacy.skill_created_successfully_and_disabled_by_default'));
     createVisible.value = false;
     await loadRows();
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || t('Skill 创建失败'));
+    message.error(error?.response?.data?.detail || t('legacy.failed_to_create_skill'));
   } finally {
     creating.value = false;
   }
@@ -463,11 +463,11 @@ async function submitEdit() {
       config: editForm.value.config || {},
       enabled: editForm.value.enabled,
     });
-    message.success(t('Skill 基础信息已更新'));
+    message.success(t('legacy.skill_info_updated_successfully'));
     editVisible.value = false;
     await loadRows();
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || t('Skill 更新失败'));
+    message.error(error?.response?.data?.detail || t('legacy.failed_to_update_skill'));
   } finally {
     updating.value = false;
   }
@@ -478,12 +478,12 @@ async function confirmDelete() {
   deleting.value = true;
   try {
     await deleteSkill(pendingDeleteRow.value.id);
-    message.success(t('Skill 已删除'));
+    message.success(t('legacy.skill_deleted_successfully'));
     deleteConfirmVisible.value = false;
     pendingDeleteRow.value = null;
     await loadRows();
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || t('删除失败'));
+    message.error(error?.response?.data?.detail || t('legacy.failed_to_delete'));
     return false;
   } finally {
     deleting.value = false;
@@ -499,10 +499,10 @@ async function toggleEnabled(row: SkillItem, enabled: boolean): Promise<boolean>
   try {
     const updated = await setSkillEnabled(row.id, enabled);
     rows.value = rows.value.map((item) => (item.id === row.id ? updated : item));
-    message.success(enabled ? t('Skill 已启用') : t('Skill 已禁用'));
+    message.success(enabled ? t('legacy.skill_enabled') : t('legacy.skill_disabled'));
     return true;
   } catch (error: any) {
-    message.error(error?.response?.data?.detail || t('状态更新失败'));
+    message.error(error?.response?.data?.detail || t('legacy.failed_to_update_status'));
     return false;
   } finally {
     const current = new Set(switchingIds.value);

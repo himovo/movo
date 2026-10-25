@@ -466,6 +466,7 @@ class DshChatService:
                 text=text,
                 temporal_context=temporal_context,
                 turn_context=turn_context,
+                image_owner_user_id=user_id,
                 live_stream=live_stream,
             ),
             name=f"dsh-turn:{message_id}",

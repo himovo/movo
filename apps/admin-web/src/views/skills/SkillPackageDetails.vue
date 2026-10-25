@@ -2,37 +2,37 @@
   <div class="skill-details">
     <section class="summary-card">
       <div class="summary-row">
-        <span class="summary-label">{{ t('名称') }}</span>
-        <strong>{{ skill.name || t('未命名 Skill') }}</strong>
+        <span class="summary-label">{{ t('legacy.name_1be7ae4') }}</span>
+        <strong>{{ skill.name || t('legacy.unnamed_skill') }}</strong>
       </div>
       <div class="summary-row">
-        <span class="summary-label">{{ t('技能描述') }}</span>
-        <p>{{ skill.description || t('未填写技能描述') }}</p>
+        <span class="summary-label">{{ t('legacy.skill_description') }}</span>
+        <p>{{ skill.description || t('legacy.no_description_filled') }}</p>
       </div>
       <div v-if="skill.scenario" class="summary-row">
-        <span class="summary-label">{{ t('使用场景') }}</span>
+        <span class="summary-label">{{ t('legacy.usage_scenario') }}</span>
         <p>{{ skill.scenario }}</p>
       </div>
     </section>
 
     <n-descriptions bordered :column="1" label-placement="left">
-      <n-descriptions-item :label="t('类型')">{{ typeLabel }}</n-descriptions-item>
+      <n-descriptions-item :label="t('legacy.type')">{{ typeLabel }}</n-descriptions-item>
       <template v-if="skill.package">
         <n-descriptions-item label="Slug">{{ skill.package.slug }}</n-descriptions-item>
-        <n-descriptions-item :label="t('版本')">{{ skill.package.version }}</n-descriptions-item>
-        <n-descriptions-item :label="t('文件数量')">{{ skill.package.files.length }}</n-descriptions-item>
+        <n-descriptions-item :label="t('legacy.version')">{{ skill.package.version }}</n-descriptions-item>
+        <n-descriptions-item :label="t('legacy.files')">{{ skill.package.files.length }}</n-descriptions-item>
         <n-descriptions-item label="SHA-256"><span class="digest">{{ skill.package.digest }}</span></n-descriptions-item>
       </template>
     </n-descriptions>
 
     <section v-if="skill.package?.children?.length" class="children-section">
-      <h3>{{ t('内部 Skill（{count}）', { count: skill.package.children.length }) }}</h3>
+      <h3>{{ t('legacy.internal_skills', { count: skill.package.children.length }) }}</h3>
       <article v-for="child in skill.package.children" :key="child.slug" class="child-card">
         <div class="child-head">
           <strong>{{ child.name || child.slug }}</strong>
           <n-tag size="small" :bordered="false">{{ child.version }}</n-tag>
         </div>
-        <p>{{ child.description || t('未填写技能描述') }}</p>
+        <p>{{ child.description || t('legacy.no_description_filled') }}</p>
         <span>{{ child.slug }}</span>
       </article>
     </section>
@@ -58,9 +58,9 @@ const props = defineProps<{ skill: SkillItem }>();
 
 const typeLabel = computed(() => {
   if (props.skill.type === 'expert_package') return t('skills.type.expert_package');
-  if (props.skill.type === 'ordinary') return t('普通 Skill');
-  if (props.skill.type === 'workflow') return t('工作流');
-  return t('写作规范');
+  if (props.skill.type === 'ordinary') return t('additional.standard_skill');
+  if (props.skill.type === 'workflow') return t('legacy.workflow');
+  return t('legacy.writing_guidelines');
 });
 </script>
 

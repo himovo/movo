@@ -37,8 +37,22 @@ export function t(key: string, params?: Record<string, string | number>): string
     return template.replace(/\{(\w+)\}/g, (_, name) => String(params[name] ?? `{${name}}`));
   };
   if (!entry) {
-    return interpolate(key); // 若无对应翻译，优雅地直接返回原 Key (即中文本身)，保证页面不崩且显示原中文
+    return interpolate(key); // Preserve unknown server-provided text without breaking the page.
   }
   const template = entry[_locale.value] || entry[DEFAULT_LOCALE] || key;
   return interpolate(template);
+}
+
+// Server responses can still contain human-readable labels from older releases.
+// Resolve those labels by their translated value; catalog identifiers stay language-neutral.
+const sourceTextKeys = new Map<string, MessageKey>();
+for (const [key, value] of Object.entries(messages)) {
+  const label = (value as LabelMap)['zh-CN'];
+  if (label && !sourceTextKeys.has(label)) sourceTextKeys.set(label, key as MessageKey);
+}
+
+export function translateSourceText(value: string): string {
+  if (!value) return '';
+  const key = sourceTextKeys.get(value);
+  return t(key || value);
 }

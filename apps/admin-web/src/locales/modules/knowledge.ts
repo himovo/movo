@@ -51,7 +51,7 @@ export const knowledgeMessages: Record<string, LabelMap> = {
   'knowledgeSource.movoHelp': { 'zh-CN': '当前使用 MOVO 的文档解析、检索及片段定位。原有配置在下方。', 'en-US': 'MOVO parsing, retrieval and excerpt location remain active. Existing settings appear below.' },
   'knowledgeSource.save': { 'zh-CN': '保存知识来源', 'en-US': 'Save knowledge source' },
   'knowledgeSource.saved': { 'zh-CN': '知识来源已保存', 'en-US': 'Knowledge source saved' },
-  '文件类型': { 'zh-CN': '文件类型', 'en-US': 'File Type' },
-  '失败状态': { 'zh-CN': '失败状态', 'en-US': 'Failed' },
-  '预览': { 'zh-CN': '预览', 'en-US': 'Preview' },
+  'legacy.file_type': { 'zh-CN': '文件类型', 'en-US': 'File Type' },
+  'legacy.failed_10fbe09': { 'zh-CN': '失败状态', 'en-US': 'Failed' },
+  'legacy.preview': { 'zh-CN': '预览', 'en-US': 'Preview' },
 };

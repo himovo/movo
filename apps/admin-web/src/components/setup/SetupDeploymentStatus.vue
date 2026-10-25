@@ -39,11 +39,11 @@ function serviceLabel(service: SetupServiceStatus) {
         <svg v-else viewBox="0 0 24 24"><path d="M12 8v5m0 3h.01M10.3 3.8 2.4 17.5A2 2 0 0 0 4.1 20h15.8a2 2 0 0 0 1.7-2.5L13.7 3.8a2 2 0 0 0-3.4 0Z" /></svg>
       </span>
       <div class="summary-copy">
-        <strong>{{ t('部署状态') }}</strong>
-        <span>{{ t('{ready}/{total} 项服务已就绪', { ready: readyCount, total: services.length }) }}</span>
+        <strong>{{ t('legacy.deployment_status') }}</strong>
+        <span>{{ t('legacy.services_ready', { ready: readyCount, total: services.length }) }}</span>
       </div>
       <n-tag size="small" :type="ready ? 'success' : 'warning'">
-        {{ ready ? t('全部就绪') : t('正在检查') }}
+        {{ ready ? t('legacy.all_ready') : t('legacy.checking') }}
       </n-tag>
       <button
         type="button"
@@ -51,7 +51,7 @@ function serviceLabel(service: SetupServiceStatus) {
         :aria-expanded="expanded"
         @click="expanded = !expanded"
       >
-        {{ expanded ? t('收起详情') : t('查看详情') }}
+        {{ expanded ? t('legacy.hide_details') : t('legacy.view_details') }}
         <svg viewBox="0 0 24 24" :class="{ expanded }" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
       </button>
     </div>
@@ -62,14 +62,14 @@ function serviceLabel(service: SetupServiceStatus) {
           <div v-for="service in services" :key="service.key" class="service-row">
             <span class="status-dot" :class="{ ready: service.ok }" aria-hidden="true"></span>
             <span>{{ serviceLabel(service) }}</span>
-            <span class="service-state">{{ service.ok ? t('正常') : t('未就绪') }}</span>
+            <span class="service-state">{{ service.ok ? t('legacy.healthy_f78d037') : t('legacy.not_ready') }}</span>
           </div>
         </div>
         <n-button class="refresh-button" secondary :loading="loading" @click="$emit('refresh')">
           <template #icon>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5M6.1 9a7 7 0 0 1 11.5-2.6L20 9M4 15l2.4 2.6A7 7 0 0 0 17.9 15" /></svg>
           </template>
-          {{ t('重新检查') }}
+          {{ t('legacy.check_again') }}
         </n-button>
       </div>
     </n-collapse-transition>

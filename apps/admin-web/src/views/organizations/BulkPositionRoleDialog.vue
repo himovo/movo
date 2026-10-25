@@ -17,15 +17,15 @@ function syncPrimary(value: string) {
 }
 
 async function save() {
-  if (!primaryRoleId.value) return message.warning(t('请选择主要岗位角色'));
+  if (!primaryRoleId.value) return message.warning(t('legacy.select_a_primary_position_role'));
   if (!props.userIds.length) return;
   saving.value = true;
   try {
     await bulkAssignUserRoles(props.userIds, primaryRoleId.value, roleIds.value);
-    message.success(t('已更新 {count} 名员工的岗位角色', { count: props.userIds.length }));
+    message.success(t('legacy.updated_position_roles_for_employees', { count: props.userIds.length }));
     emit('update:show', false);
     emit('saved');
-  } catch (error: any) { message.error(error?.response?.data?.detail || error?.message || t('批量分配失败')); }
+  } catch (error: any) { message.error(error?.response?.data?.detail || error?.message || t('legacy.bulk_assignment_failed')); }
   finally { saving.value = false; }
 }
 
@@ -37,12 +37,12 @@ watch(() => props.show, (visible) => {
 </script>
 
 <template>
-  <n-modal :show="show" preset="card" :title="t('批量分配岗位角色')" style="width: 560px" @update:show="(value: boolean) => emit('update:show', value)">
-    <n-alert type="info" :bordered="false">{{ t('将为已选择的 {count} 名员工统一替换岗位角色。', { count: userIds.length }) }}</n-alert>
+  <n-modal :show="show" preset="card" :title="t('legacy.assign_position_roles_in_bulk')" style="width: 560px" @update:show="(value: boolean) => emit('update:show', value)">
+    <n-alert type="info" :bordered="false">{{ t('legacy.replace_position_roles_for_the_selected_employees', { count: userIds.length }) }}</n-alert>
     <n-form label-placement="top" style="margin-top: 18px">
-      <n-form-item :label="t('主要岗位角色')" required><n-select v-model:value="primaryRoleId" :options="options" @update:value="syncPrimary" /></n-form-item>
-      <n-form-item :label="t('其他岗位角色')"><n-select v-model:value="roleIds" multiple max-tag-count="responsive" :options="options" /></n-form-item>
+      <n-form-item :label="t('legacy.primary_position_role')" required><n-select v-model:value="primaryRoleId" :options="options" @update:value="syncPrimary" /></n-form-item>
+      <n-form-item :label="t('legacy.additional_position_roles')"><n-select v-model:value="roleIds" multiple max-tag-count="responsive" :options="options" /></n-form-item>
     </n-form>
-    <template #footer><n-space justify="end"><n-button @click="emit('update:show', false)">{{ t('取消') }}</n-button><n-button type="primary" :loading="saving" @click="save">{{ t('确认分配') }}</n-button></n-space></template>
+    <template #footer><n-space justify="end"><n-button @click="emit('update:show', false)">{{ t('legacy.cancel') }}</n-button><n-button type="primary" :loading="saving" @click="save">{{ t('legacy.assign') }}</n-button></n-space></template>
   </n-modal>
 </template>

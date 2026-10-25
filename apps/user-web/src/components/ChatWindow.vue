@@ -37,7 +37,7 @@ import { resolvePermission } from '../composables/useChatStream'
 import { useDshToolApprovals } from '../composables/useDshToolApprovals'
 import { useUserQuestions } from '../composables/useUserQuestions'
 import { mergeEvidenceBundles } from '../composables/evidenceBundles'
-import { t, useLocale } from '../composables/i18n'
+import { t, translateSourceText, useLocale } from '../composables/i18n'
 import { formatAppTime } from '../composables/appTimezone'
 import { useChatModels } from '../composables/useChatModels'
 import { useBrowserWorkspace } from '../composables/browser/useBrowserWorkspace'
@@ -513,10 +513,7 @@ const visiblePromptGuideCategories = computed(() => effectivePromptGuideCategori
         ...category,
         label: knowledgeSourceSummary.value.displayName,
         requiresConfig: false,
-        items: category.items.map(item => ({
-          ...item,
-          prompt: item.prompt?.replaceAll('内部知识库', knowledgeSourceSummary.value.displayName),
-        })),
+        items: category.items,
       }
       : category)
   .filter((category) => {
@@ -568,8 +565,8 @@ function schedulePromptGuideClose() {
 async function usePromptGuideItem(item: PromptGuideItem) {
   if (!item.available) {
     promptGuideNotice.value = {
-      title: item.configTitle || t('需要先配置'),
-      description: item.configDescription || t('配置完成后才能使用这个能力。'),
+      title: item.configTitle || t('legacy.setup_required_d047e4f'),
+      description: item.configDescription || t('legacy.complete_setup_before_using_this_capability'),
       target: item.configTarget || 'tools',
     }
     return
@@ -599,7 +596,12 @@ async function usePromptGuideItem(item: PromptGuideItem) {
   if (item.categoryKey === 'internal' || activePromptGuideCategory.value?.key === 'internal') {
     composerRef.value?.enableKnowledgeQa()
   }
-  await composerRef.value?.setTextAndFocus(t(item.prompt))
+  let prompt = translateSourceText(item.prompt)
+  if (knowledgeSourceSummary.value.mode === 'external'
+    && (item.categoryKey === 'internal' || activePromptGuideCategory.value?.key === 'internal')) {
+    prompt = prompt.replaceAll(locale.value === 'zh' ? '内部知识库' : 'internal knowledge base', knowledgeSourceSummary.value.displayName)
+  }
+  await composerRef.value?.setTextAndFocus(prompt)
 }
 
 function openPromptGuideConfig(target: PromptGuideConfigTarget) {
@@ -2463,7 +2465,7 @@ function formatErrorMessage(raw: string): string {
           @mouseenter="cancelPromptGuideClose"
           @mouseleave="schedulePromptGuideClose"
         >
-          <div class="prompt-guide-tabs" role="tablist" :aria-label="t('任务引导')">
+          <div class="prompt-guide-tabs" role="tablist" :aria-label="t('legacy.task_guide')">
             <button
               v-for="category in visiblePromptGuideCategories"
               :key="category.key"
@@ -2479,7 +2481,7 @@ function formatErrorMessage(raw: string): string {
               <span class="prompt-guide-tab-icon">
                 <span v-html="category.icon"></span>
               </span>
-              <span>{{ t(category.label) }}</span>
+              <span>{{ translateSourceText(category.label) }}</span>
             </button>
           </div>
           <transition
@@ -2509,10 +2511,10 @@ function formatErrorMessage(raw: string): string {
                   <span class="prompt-guide-item-icon">
                     <span v-html="item.icon"></span>
                   </span>
-                  <span class="prompt-guide-item-label">{{ t(item.label) }}</span>
+                  <span class="prompt-guide-item-label">{{ translateSourceText(item.label) }}</span>
                   <span v-if="!item.available" class="prompt-guide-lock">
                     <span v-html="promptGuideUiIcons.lock"></span>
-                    {{ t('需配置') }}
+                    {{ t('legacy.setup_required') }}
                   </span>
                 </button>
               </div>
@@ -2521,15 +2523,15 @@ function formatErrorMessage(raw: string): string {
                   <span v-html="promptGuideUiIcons.settings"></span>
                 </div>
                 <div class="min-w-0 flex-1">
-                  <div class="prompt-guide-notice-title">{{ t(promptGuideNotice.title) }}</div>
-                  <div class="prompt-guide-notice-desc">{{ t(promptGuideNotice.description) }}</div>
+                  <div class="prompt-guide-notice-title">{{ translateSourceText(promptGuideNotice.title) }}</div>
+                  <div class="prompt-guide-notice-desc">{{ translateSourceText(promptGuideNotice.description) }}</div>
                 </div>
                 <button
                   type="button"
                   class="prompt-guide-config-btn"
                   @click="openPromptGuideConfig(promptGuideNotice.target)"
                 >
-                  {{ t('去配置') }}
+                  {{ t('legacy.configure') }}
                 </button>
               </div>
             </div>

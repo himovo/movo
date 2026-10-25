@@ -1,7 +1,7 @@
 <template>
   <div class="step-content">
     <div class="step-heading">
-      <span class="step-kicker">{{ t('步骤 2 / 4') }}</span>
+      <span class="step-kicker">{{ t('legacy.step_2_of_4') }}</span>
       <div class="section-heading">
         <span class="section-heading-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24">
@@ -9,8 +9,8 @@
           </svg>
         </span>
         <div>
-          <h2>{{ t('组织与初始账号') }}</h2>
-          <p>{{ t('创建企业管理员与首个员工账号。所有密码仅用于当前企业部署。') }}</p>
+          <h2>{{ t('legacy.organization_initial_accounts') }}</h2>
+          <p>{{ t('legacy.create_the_enterprise_administrator_and_first_employee_passwords_apply') }}</p>
         </div>
       </div>
     </div>
@@ -18,37 +18,37 @@
     <n-form label-placement="top">
       <n-grid :cols="2" :x-gap="12">
         <n-grid-item :span="2">
-          <n-form-item :label="t('企业名称')">
-            <n-input v-model:value="model.orgName" :placeholder="t('例如：MOVO 科技有限公司')" />
+          <n-form-item :label="t('legacy.organization_name')">
+            <n-input v-model:value="model.orgName" :placeholder="t('legacy.example_movo_technology_co_ltd')" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('管理员账号')">
+          <n-form-item :label="t('legacy.admin_username')">
             <n-input v-model:value="model.adminUsername" placeholder="admin" autocomplete="username" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('管理员显示名')">
-            <n-input v-model:value="model.adminDisplayName" :placeholder="t('系统管理员')" />
+          <n-form-item :label="t('legacy.admin_display_name')">
+            <n-input v-model:value="model.adminDisplayName" :placeholder="t('legacy.system_administrator')" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item :span="2">
-          <n-form-item :label="t('管理员密码')">
+          <n-form-item :label="t('legacy.admin_password')">
             <n-input v-model:value="model.adminPassword" type="password" show-password-on="click" autocomplete="new-password" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('初始员工账号')">
+          <n-form-item :label="t('legacy.initial_employee_username')">
             <n-input v-model:value="model.employeeUsername" placeholder="user01" autocomplete="off" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('初始员工姓名')">
-            <n-input v-model:value="model.employeeName" :placeholder="t('张三')" />
+          <n-form-item :label="t('legacy.initial_employee_name')">
+            <n-input v-model:value="model.employeeName" :placeholder="t('legacy.john_doe')" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item :span="2">
-          <n-form-item :label="t('初始员工密码')">
+          <n-form-item :label="t('legacy.initial_employee_password')">
             <n-input v-model:value="model.employeePassword" type="password" show-password-on="click" autocomplete="new-password" />
           </n-form-item>
         </n-grid-item>
@@ -62,48 +62,48 @@
             </svg>
         </span>
         <div>
-          <h2>{{ t('Token 配额') }}</h2>
-          <p>{{ t('企业总额度是所有员工共享的周期上限；员工默认额度是每位员工的个人周期上限。初始化后可在管理后台分别调整额度与重置周期。') }}</p>
+          <h2>{{ t('legacy.token_quotas') }}</h2>
+          <p>{{ t('legacy.the_organization_quota_is_the_shared_per_period_limit') }}</p>
         </div>
       </div>
       <n-grid :cols="2" :x-gap="12">
         <n-grid-item>
-          <n-form-item :label="t('企业总 Token')">
-            <n-input-number v-model:value="model.orgTotalTokens" :min="1" :show-button="false" :placeholder="t('例如：10000000')" style="width: 100%" />
+          <n-form-item :label="t('legacy.organization_total_tokens')">
+            <n-input-number v-model:value="model.orgTotalTokens" :min="1" :show-button="false" :placeholder="t('legacy.example_10000000')" style="width: 100%" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('每位员工默认 Token')">
-            <n-input-number v-model:value="model.defaultUserTokens" :min="1" :max="model.orgTotalTokens || undefined" :show-button="false" :placeholder="t('例如：1000000')" style="width: 100%" />
+          <n-form-item :label="t('legacy.default_tokens_per_employee')">
+            <n-input-number v-model:value="model.defaultUserTokens" :min="1" :max="model.orgTotalTokens || undefined" :show-button="false" :placeholder="t('legacy.example_1000000')" style="width: 100%" />
           </n-form-item>
         </n-grid-item>
       </n-grid>
 
       <p class="quota-period-note">
-        {{ t('初始化时企业额度和员工额度均按自然月重置，完成后可在管理后台分别修改。') }}
+        {{ t('legacy.during_setup_both_organization_and_employee_quotas_reset_by') }}
       </p>
 
       <details class="quota-advanced">
         <summary>
-          <span>{{ t('高级设置：企业时区') }}</span>
+          <span>{{ t('legacy.advanced_organization_time_zone') }}</span>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
         </summary>
         <div class="timezone-content">
           <p class="timezone-description">
-            {{ t('时区决定 Token 配额的自然周期边界。系统已根据当前浏览器自动检测，通常无需修改。') }}
+            {{ t('legacy.the_time_zone_defines_calendar_boundaries_for_token_quotas') }}
           </p>
-          <n-form-item :label="t('企业时区')" :show-feedback="false">
+          <n-form-item :label="t('legacy.organization_time_zone')" :show-feedback="false">
             <n-select
               v-model:value="model.quotaTimezone"
               :options="timezoneOptions"
               filterable
-              :placeholder="t('搜索时区')"
+              :placeholder="t('legacy.search_time_zones')"
             />
           </n-form-item>
           <div class="timezone-detected">
-            <span>{{ t('浏览器检测：{timezone}', { timezone: detectedTimezone }) }}</span>
+            <span>{{ t('legacy.browser_detected', { timezone: detectedTimezone }) }}</span>
             <n-button text type="primary" @click="model.quotaTimezone = detectedTimezone">
-              {{ t('使用检测结果') }}
+              {{ t('legacy.use_detected_value') }}
             </n-button>
           </div>
         </div>
@@ -111,7 +111,7 @@
     </n-form>
 
     <n-button block type="primary" size="large" @click="$emit('next')">
-      {{ t('下一步：基础模型') }}
+      {{ t('legacy.next_base_model') }}
     </n-button>
   </div>
 </template>
@@ -138,7 +138,7 @@ const timezoneOptions = computed(() => {
   ]));
   return values.map((timezone) => ({
     label: timezone === detectedTimezone
-      ? `${t('自动检测')} · ${timezone}`
+      ? `${t('legacy.auto_detected')} · ${timezone}`
       : timezone,
     value: timezone,
   }));

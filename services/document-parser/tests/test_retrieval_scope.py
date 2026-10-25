@@ -102,3 +102,16 @@ def test_anonymous_retrieval_never_returns_personal_knowledge(monkeypatch):
     )
 
     assert [item["documentId"] for item in result] == ["org"]
+
+
+def test_same_named_documents_keep_original_extension_in_citations(monkeypatch):
+    monkeypatch.setattr(policy_module, "get_db", lambda: _Db(documents=[
+        {"_id": "pdf", "main_id": "tenant", "name": "李煜最著名的十首词", "original_filename": "李煜最著名的十首词.pdf", "deleted_at": None},
+        {"_id": "docx", "main_id": "tenant", "name": "李煜最著名的十首词", "original_filename": "李煜最著名的十首词.docx", "deleted_at": None},
+    ]))
+    result = OpenSourceKnowledgeRetrievalAccessPolicy().filter_candidates(
+        _items("pdf", "docx"), main_id="tenant", user_id="",
+    )
+    assert [item["metadata"]["document_title"] for item in result] == [
+        "李煜最著名的十首词.pdf", "李煜最著名的十首词.docx",
+    ]

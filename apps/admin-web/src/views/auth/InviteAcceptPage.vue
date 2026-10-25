@@ -2,10 +2,10 @@
   <div class="invite-page">
     <div class="invite-shell">
       <section class="invite-hero">
-        <div class="hero-badge">{{ t('企业邀请') }}</div>
-        <h1 class="hero-title">{{ t('加入 {org} 的 MOVO 工作空间', { org: orgName }) }}</h1>
-        <p class="hero-desc">{{ t('完成账号激活后，即可登录 MOVO 前台系统开始使用。') }}</p>
-        <div class="hero-meta">{{ t('邀请有效期至：{time}', { time: inviteDetail.expiresAt || '--' }) }}</div>
+        <div class="hero-badge">{{ t('legacy.organization_invitation') }}</div>
+        <h1 class="hero-title">{{ t('legacy.join_s_movo_workspace', { org: orgName }) }}</h1>
+        <p class="hero-desc">{{ t('legacy.activate_your_account_to_sign_in_and_start_using') }}</p>
+        <div class="hero-meta">{{ t('legacy.invitation_valid_until', { time: inviteDetail.expiresAt || '--' }) }}</div>
       </section>
 
       <n-card class="invite-card" :bordered="false">
@@ -13,50 +13,50 @@
           <div class="state-wrap"><n-spin size="large" /></div>
         </template>
         <template v-else-if="state === 'error'">
-          <n-result status="error" :title="t('邀请链接不可用')" :description="errorMessage" />
+          <n-result status="error" :title="t('legacy.invitation_link_is_invalid')" :description="errorMessage" />
         </template>
         <template v-else-if="state === 'success'">
-          <n-result status="success" :title="t('加入成功')" :description="successDescription" />
-          <div class="success-tip">{{ t('正在跳转到 MOVO 登录页…') }}</div>
+          <n-result status="success" :title="t('legacy.joined_successfully')" :description="successDescription" />
+          <div class="success-tip">{{ t('legacy.redirecting_to_movo_sign_in_page') }}</div>
         </template>
         <template v-else>
-          <div class="form-title">{{ t('激活企业账号') }}</div>
+          <div class="form-title">{{ t('legacy.activate_organization_account') }}</div>
           <n-form :model="form" label-placement="top">
             <n-grid :cols="2" :x-gap="12">
               <n-grid-item :span="2">
-                <n-form-item :label="t('登录名')">
-                  <n-input v-model:value="form.loginName" :placeholder="t('请输入登录名（登录时使用）')" />
+                <n-form-item :label="t('legacy.login_name')">
+                  <n-input v-model:value="form.loginName" :placeholder="t('legacy.please_enter_login_name_for_sign_in')" />
                 </n-form-item>
               </n-grid-item>
               <n-grid-item>
-                <n-form-item :label="t('姓名')">
-                  <n-input v-model:value="form.name" :placeholder="t('请输入姓名')" />
+                <n-form-item :label="t('legacy.name')">
+                  <n-input v-model:value="form.name" :placeholder="t('legacy.please_enter_your_name')" />
                 </n-form-item>
               </n-grid-item>
               <n-grid-item>
-                <n-form-item :label="t('手机号（可选）')">
-                  <n-input v-model:value="form.mobile" :placeholder="t('用于后续通知')" />
+                <n-form-item :label="t('legacy.mobile_optional')">
+                  <n-input v-model:value="form.mobile" :placeholder="t('legacy.used_for_subsequent_notifications')" />
                 </n-form-item>
               </n-grid-item>
               <n-grid-item :span="2">
-                <n-form-item :label="t('邮箱（可选）')">
-                  <n-input v-model:value="form.email" :placeholder="t('用于后续找回密码（可选）')" />
+                <n-form-item :label="t('legacy.email_optional')">
+                  <n-input v-model:value="form.email" :placeholder="t('legacy.used_for_password_recovery_optional')" />
                 </n-form-item>
               </n-grid-item>
               <n-grid-item>
-                <n-form-item :label="t('设置密码')">
-                  <n-input v-model:value="form.password" type="password" show-password-on="click" :placeholder="t('至少 10 位')" />
+                <n-form-item :label="t('legacy.set_password')">
+                  <n-input v-model:value="form.password" type="password" show-password-on="click" :placeholder="t('legacy.at_least_10_characters')" />
                 </n-form-item>
               </n-grid-item>
               <n-grid-item>
-                <n-form-item :label="t('确认密码')">
-                  <n-input v-model:value="form.confirmPassword" type="password" show-password-on="click" :placeholder="t('请再次输入密码')" />
+                <n-form-item :label="t('legacy.confirm_password')">
+                  <n-input v-model:value="form.confirmPassword" type="password" show-password-on="click" :placeholder="t('legacy.please_enter_password_again')" />
                 </n-form-item>
               </n-grid-item>
             </n-grid>
           </n-form>
           <p v-if="errorMessage" class="error-line">{{ errorMessage }}</p>
-          <n-button type="primary" class="submit-btn" :loading="submitting" @click="submitAccept">{{ t('加入企业并激活') }}</n-button>
+          <n-button type="primary" class="submit-btn" :loading="submitting" @click="submitAccept">{{ t('legacy.join_activate') }}</n-button>
         </template>
       </n-card>
     </div>
@@ -102,14 +102,14 @@ const form = reactive({
 });
 
 const token = computed(() => String(route.query.token || ''));
-const orgName = computed(() => inviteDetail.orgName || t('企业组织'));
-const successDescription = computed(() => t('账号 {username} 已激活，可前往 MOVO 登录。', { username: form.loginName || '' }));
+const orgName = computed(() => inviteDetail.orgName || t('legacy.organization_6ea45e8'));
+const successDescription = computed(() => t('legacy.account_has_been_activated_you_can_now_sign_in', { username: form.loginName || '' }));
 
 function parseError(error: unknown) {
   if (axios.isAxiosError(error)) {
     return (error.response?.data as { detail?: string } | undefined)?.detail || error.message;
   }
-  return t('请求失败');
+  return t('legacy.request_failed');
 }
 
 function redirectToFrontendLogin() {
@@ -125,7 +125,7 @@ function redirectToFrontendLogin() {
 async function loadInviteDetail() {
   if (!token.value) {
     state.value = 'error';
-    errorMessage.value = t('缺少邀请 token');
+    errorMessage.value = t('legacy.missing_invitation_token');
     return;
   }
   state.value = 'loading';
@@ -148,19 +148,19 @@ async function loadInviteDetail() {
 async function submitAccept() {
   errorMessage.value = '';
   if (!form.loginName.trim()) {
-    errorMessage.value = t('请填写登录名');
+    errorMessage.value = t('legacy.please_enter_login_name');
     return;
   }
   if (!form.name.trim()) {
-    errorMessage.value = t('请填写姓名');
+    errorMessage.value = t('legacy.please_enter_name');
     return;
   }
   if (form.password.length < 10) {
-    errorMessage.value = t('密码至少 10 位');
+    errorMessage.value = t('legacy.password_must_be_at_least_10_characters');
     return;
   }
   if (form.password !== form.confirmPassword) {
-    errorMessage.value = t('两次密码不一致');
+    errorMessage.value = t('legacy.passwords_do_not_match');
     return;
   }
   submitting.value = true;

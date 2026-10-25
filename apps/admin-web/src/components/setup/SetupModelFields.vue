@@ -2,22 +2,22 @@
   <n-form label-placement="top">
     <n-grid :cols="2" :x-gap="12">
       <n-grid-item :span="2">
-        <n-form-item :label="t('模型供应商')">
+        <n-form-item :label="t('legacy.model_provider_77d78db')">
           <n-select
             v-model:value="model.providerId"
             :options="providerOptions"
             :loading="providersLoading"
-            :placeholder="t('选择模型供应商')"
+            :placeholder="t('legacy.select_a_model_provider_1fc35e6')"
           />
         </n-form-item>
       </n-grid-item>
       <n-grid-item>
-        <n-form-item :label="t('配置名称')">
-          <n-input v-model:value="model.displayName" :placeholder="t('例如：企业对话模型')" />
+        <n-form-item :label="t('legacy.configuration_name')">
+          <n-input v-model:value="model.displayName" :placeholder="t('legacy.example_organization_chat_model')" />
         </n-form-item>
       </n-grid-item>
       <n-grid-item>
-        <n-form-item :label="isAzure ? t('Deployment 名称') : t('模型 ID')">
+        <n-form-item :label="isAzure ? t('legacy.deployment_name') : t('legacy.model_id')">
           <n-input v-model:value="model.modelName" :placeholder="modelPlaceholder" />
         </n-form-item>
       </n-grid-item>
@@ -57,20 +57,20 @@ const providerOptions = computed(() => props.providers.map((item) => ({ label: p
 const selectedProvider = computed(() => props.providers.find((item) => item.id === model.value.providerId));
 const isAzure = computed(() => selectedProvider.value?.providerType === 'azure_openai');
 const modelPlaceholder = computed(() => {
-  if (isAzure.value) return t('例如：gpt-4o-mini-prod');
-  if (model.value.capability === 'embedding') return t('例如：text-embedding-3-small / text-embedding-v3');
-  if (model.value.capability === 'rerank') return t('例如：qwen3-rerank / bge-reranker-v2-m3');
-  return t('例如：gpt-4.1 / qwen-plus / deepseek-chat');
+  if (isAzure.value) return t('legacy.example_gpt_4o_mini_prod');
+  if (model.value.capability === 'embedding') return t('additional.e_g_text_embedding_3_small_text_embedding_v3');
+  if (model.value.capability === 'rerank') return t('additional.e_g_qwen3_rerank_bge_reranker_v2_m3');
+  return t('legacy.example_gpt_4_1_qwen_plus_deepseek_chat');
 });
 const baseUrlPlaceholder = computed(() => model.value.capability === 'rerank'
-  ? t('填写供应商 Base URL；如为自定义服务可填写完整 rerank 地址')
+  ? t('additional.enter_the_provider_base_url_for_a_custom_service')
   : 'https://api.openai.com/v1');
 const capabilityName = computed(() => ({
-  chat: t('对话模型'),
-  embedding: t('向量模型'),
-  rerank: t('重排模型'),
-  vision: t('视觉模型'),
-  image: t('文生图模型'),
+  chat: t('legacy.chat_model'),
+  embedding: t('legacy.embedding_model'),
+  rerank: t('additional.rerank_model'),
+  vision: t('legacy.vision_model'),
+  image: t('legacy.image_generation_model_5ba964f'),
 }[model.value.capability]));
 
 watch(() => model.value.providerId, (providerId, previousId) => {

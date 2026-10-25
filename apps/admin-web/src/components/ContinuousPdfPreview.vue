@@ -1,28 +1,28 @@
 <template>
   <section class="continuous-pdf">
     <div class="pdf-toolbar">
-      <span>{{ t('页码', { current: currentPage, total: pageCount || '--' }) }}</span>
-      <span class="load-hint">{{ t('滚动自动加载') }}</span>
+      <span>{{ t('legacy.pages', { current: currentPage, total: pageCount || '--' }) }}</span>
+      <span class="load-hint">{{ t('legacy.scroll_to_load_more') }}</span>
       <span class="toolbar-spacer"></span>
-      <button type="button" :disabled="zoom <= .5" :aria-label="t('缩小')" @click="setZoom(zoom - .1)">−</button>
+      <button type="button" :disabled="zoom <= .5" :aria-label="t('legacy.zoom_out')" @click="setZoom(zoom - .1)">−</button>
       <span class="zoom-value">{{ Math.round(zoom * 100) }}%</span>
-      <button type="button" :disabled="zoom >= 1.8" :aria-label="t('放大')" @click="setZoom(zoom + .1)">＋</button>
+      <button type="button" :disabled="zoom >= 1.8" :aria-label="t('legacy.zoom_in')" @click="setZoom(zoom + .1)">＋</button>
     </div>
     <div ref="viewportRef" class="pdf-viewport" @scroll.passive="scheduleCurrentPageUpdate">
       <div v-if="firstLoadedPage > 1" ref="topSentinelRef" class="load-more">
-        {{ loadingMore ? t('加载中') : t('向上滚动加载前页') }}
+        {{ loadingMore ? t('additional.loading') : t('legacy.scroll_up_to_load_earlier_pages') }}
       </div>
       <article v-for="page in loadedPages" :key="page" class="pdf-page" :data-page-number="page">
         <canvas :ref="element => setCanvasRef(page, element)" :aria-label="`${title} 第 ${page} 页`"></canvas>
         <span>{{ page }}</span>
       </article>
       <div v-if="lastLoadedPage < pageCount" ref="bottomSentinelRef" class="load-more">
-        {{ loadingMore ? t('加载中') : t('继续向下滚动') }}
+        {{ loadingMore ? t('additional.loading') : t('legacy.scroll_down_to_continue') }}
       </div>
-      <div v-if="loading" class="viewer-state">{{ t('加载中') }}</div>
+      <div v-if="loading" class="viewer-state">{{ t('additional.loading') }}</div>
       <div v-else-if="errorText" class="viewer-state viewer-error">
         <span>{{ errorText }}</span>
-        <button type="button" @click="loadDocument">{{ t('重新加载') }}</button>
+        <button type="button" @click="loadDocument">{{ t('legacy.reload') }}</button>
       </div>
     </div>
   </section>
@@ -202,9 +202,9 @@ async function openAtPage(page: number) {
 
 function readError(error: any) {
   const status = Number(error?.status || 0);
-  if (status === 403) return t('没有访问权限');
-  if (status === 409) return t('在线预览生成中');
-  return t('PDF 渲染失败');
+  if (status === 403) return t('additional.access_denied');
+  if (status === 409) return t('legacy.generating_online_preview');
+  return t('additional.pdf_rendering_failed');
 }
 
 async function destroyDocument() {

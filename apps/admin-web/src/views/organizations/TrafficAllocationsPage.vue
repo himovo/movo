@@ -17,12 +17,12 @@
       <div class="list-filter-row">
         <div class="filter-toolbar">
           <n-space align="center" :size="10" class="filter-left">
-            <n-input v-model:value="filters.keyword" :placeholder="t('搜索姓名 / 手机号 / 邮箱')" clearable class="keyword-input" />
+            <n-input v-model:value="filters.keyword" :placeholder="t('additional.search_name_phone_number_email')" clearable class="keyword-input" />
           </n-space>
           <n-space :size="10" class="filter-right">
-            <n-button secondary :loading="loading" @click="reload">{{ t('刷新') }}</n-button>
-            <n-button secondary @click="openSettings">{{ t('设置企业额度') }}</n-button>
-            <n-button secondary @click="openLogs">{{ t('分配记录') }}</n-button>
+            <n-button secondary :loading="loading" @click="reload">{{ t('legacy.refresh') }}</n-button>
+            <n-button secondary @click="openSettings">{{ t('legacy.set_enterprise_quota') }}</n-button>
+            <n-button secondary @click="openLogs">{{ t('legacy.allocation_records') }}</n-button>
           </n-space>
         </div>
       </div>
@@ -42,21 +42,21 @@
     </n-card>
   </div>
 
-  <n-modal v-model:show="settingsVisible" preset="card" :title="t('额度设置')" style="width: 760px">
+  <n-modal v-model:show="settingsVisible" preset="card" :title="t('legacy.quota_settings')" style="width: 760px">
     <n-form class="settings-form" label-placement="top">
       <n-grid :cols="2" :x-gap="14" :y-gap="10" responsive="screen">
         <n-grid-item>
-          <n-form-item :label="t('企业本周期总额度')">
+          <n-form-item :label="t('legacy.enterprise_quota_this_period')">
             <n-input-number v-model:value="orgForm.totalTokens" :min="0" :show-button="false" class="wide-input" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('企业重置周期')">
+          <n-form-item :label="t('legacy.enterprise_reset_period')">
             <n-select v-model:value="orgForm.period" :options="periodOptions" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('新成员默认额度')">
+          <n-form-item :label="t('legacy.default_new_member_quota')">
             <n-input-number
               v-model:value="defaultForm.quotaTokens"
               :min="0"
@@ -67,37 +67,37 @@
           </n-form-item>
         </n-grid-item>
         <n-grid-item>
-          <n-form-item :label="t('成员重置周期')">
+          <n-form-item :label="t('legacy.member_reset_period')">
             <n-select v-model:value="defaultForm.period" :options="periodOptions" />
           </n-form-item>
         </n-grid-item>
       </n-grid>
       <div class="period-hint">
-        {{ t('企业重置周期用于企业共享总额度；成员重置周期用于每位成员的个人额度，并同步应用到已有成员。') }}
+        {{ t('legacy.the_organization_reset_period_applies_to_the_shared_organization') }}
         <br />
-        {{ t('周期按企业时区的自然时间计算：自然月为每月 1 日 00:00 至下月 1 日 00:00，自然日为当天 00:00 至次日 00:00，自然小时为整点到下一整点。') }}
+        {{ t('legacy.periods_use_the_enterprise_timezone_calendar_month_runs_from') }}
         <span v-if="overview?.orgPolicy.periodStartAt">
-          {{ t('当前周期') }}：{{ formatDateTime(overview.orgPolicy.periodStartAt) }} - {{ formatDateTime(overview.orgPolicy.resetAt) }}
+          {{ t('legacy.current_period') }}：{{ formatDateTime(overview.orgPolicy.periodStartAt) }} - {{ formatDateTime(overview.orgPolicy.resetAt) }}
         </span>
       </div>
     </n-form>
     <template #footer>
       <n-space justify="end">
-        <n-button @click="settingsVisible = false">{{ t('取消') }}</n-button>
-        <n-button type="primary" :loading="savingPolicy" @click="savePolicies">{{ t('保存设置') }}</n-button>
+        <n-button @click="settingsVisible = false">{{ t('legacy.cancel') }}</n-button>
+        <n-button type="primary" :loading="savingPolicy" @click="savePolicies">{{ t('legacy.save_settings') }}</n-button>
       </n-space>
     </template>
   </n-modal>
 
-  <n-modal v-model:show="editorVisible" preset="card" :title="t('设置用户额度')" style="width: 560px">
+  <n-modal v-model:show="editorVisible" preset="card" :title="t('legacy.set_user_quota')" style="width: 560px">
     <n-form :model="userForm" label-placement="left" label-width="110">
-      <n-form-item :label="t('用户')">
+      <n-form-item :label="t('legacy.user_9ba763e')">
         <div class="user-inline">
           <strong>{{ currentUser?.name || currentUser?.loginName }}</strong>
-          <span>{{ currentUser?.departmentName || t('未分配部门') }}</span>
+          <span>{{ currentUser?.departmentName || t('legacy.no_dept') }}</span>
         </div>
       </n-form-item>
-      <n-form-item :label="t('本周期额度')">
+      <n-form-item :label="t('legacy.quota_this_period')">
         <n-input-number
           v-model:value="userForm.quotaTokens"
           :min="0"
@@ -106,23 +106,23 @@
           class="wide-input"
         />
       </n-form-item>
-      <n-form-item :label="t('重置周期')">
+      <n-form-item :label="t('legacy.reset_period')">
         <n-select v-model:value="userForm.period" :options="periodOptions" />
       </n-form-item>
-      <n-form-item :label="t('备注')">
-        <n-input v-model:value="userForm.reason" type="textarea" :rows="3" :placeholder="t('记录本次调整原因')" />
+      <n-form-item :label="t('legacy.note')">
+        <n-input v-model:value="userForm.reason" type="textarea" :rows="3" :placeholder="t('legacy.record_the_reason_for_this_adjustment')" />
       </n-form-item>
     </n-form>
     <template #footer>
       <n-space justify="end">
-        <n-button @click="editorVisible = false">{{ t('取消') }}</n-button>
-        <n-button type="primary" :loading="savingUser" @click="saveUserPolicy">{{ t('保存') }}</n-button>
+        <n-button @click="editorVisible = false">{{ t('legacy.cancel') }}</n-button>
+        <n-button type="primary" :loading="savingUser" @click="saveUserPolicy">{{ t('legacy.save') }}</n-button>
       </n-space>
     </template>
   </n-modal>
 
   <n-drawer v-model:show="logsVisible" :width="620" placement="right">
-    <n-drawer-content :title="t('分配记录')" closable>
+    <n-drawer-content :title="t('legacy.allocation_records')" closable>
       <n-spin :show="logsLoading">
         <n-timeline>
           <n-timeline-item
@@ -130,14 +130,14 @@
             :key="log.id"
             type="info"
             :title="`${log.userName || log.userId} ${formatDelta(log.deltaTokens)}`"
-            :content="log.reason || t('无备注')"
+            :content="log.reason || t('legacy.no_note')"
             :time="formatDateTime(log.createdAt)"
           />
         </n-timeline>
-        <n-empty v-if="!logs.length" :description="t('暂无分配记录')" />
+        <n-empty v-if="!logs.length" :description="t('legacy.no_allocation_records')" />
       </n-spin>
       <div v-if="logsTotal > logsPageSize" class="logs-pagination">
-        <span>{{ t('共 {count} 条记录', { count: logsTotal }) }}</span>
+        <span>{{ t('legacy.total_records', { count: logsTotal }) }}</span>
         <n-pagination
           v-model:page="logsPage"
           :page-size="logsPageSize"
@@ -194,9 +194,9 @@ const defaultForm = reactive({ quotaTokens: 0, period: 'monthly' as QuotaPeriod,
 const userForm = reactive({ quotaTokens: 0, period: 'monthly' as QuotaPeriod, reason: '' });
 
 const periodOptions = computed(() => [
-  { label: t('自然月重置（每月 1 日 00:00）'), value: 'monthly' },
-  { label: t('自然日重置（每天 00:00）'), value: 'daily' },
-  { label: t('自然小时重置（每小时整点）'), value: 'hourly' },
+  { label: t('legacy.calendar_month_1st_day_00_00'), value: 'monthly' },
+  { label: t('legacy.calendar_day_daily_00_00'), value: 'daily' },
+  { label: t('legacy.clock_hour_top_of_each_hour'), value: 'hourly' },
 ]);
 function formatTokens(value: number) {
   const amount = Number(value || 0);
@@ -206,9 +206,9 @@ function formatTokens(value: number) {
 }
 
 function periodLabel(value: string) {
-  if (value === 'daily') return t('自然日');
-  if (value === 'hourly') return t('自然小时');
-  return t('自然月');
+  if (value === 'daily') return t('legacy.calendar_day');
+  if (value === 'hourly') return t('legacy.clock_hour');
+  return t('legacy.calendar_month');
 }
 
 function formatDateTime(value?: string) {
@@ -222,7 +222,7 @@ function percent(row: UserAllocationItem) {
 
 function formatDelta(value: number) {
   const amount = Number(value || 0);
-  if (amount === 0) return t('额度未变化');
+  if (amount === 0) return t('legacy.quota_unchanged');
   return `${amount > 0 ? '+' : ''}${formatTokens(amount)} Token`;
 }
 
@@ -245,30 +245,30 @@ const metricCards = computed(() => {
   return [
     {
       key: 'pool',
-      label: t('企业总额度'),
+      label: t('legacy.enterprise_quota'),
       value: formatTokens(org?.totalTokens || 0),
-      note: `${periodLabel(org?.period || 'monthly')} · ${t('下次重置')} ${formatDateTime(org?.resetAt)}`,
+      note: `${periodLabel(org?.period || 'monthly')} · ${t('legacy.next_reset')} ${formatDateTime(org?.resetAt)}`,
       icon: '<svg viewBox="0 0 24 24"><path d="M4 19h16M6 17V9m6 8V5m6 12v-6" /></svg>',
     },
     {
       key: 'used',
-      label: t('本周期已用'),
+      label: t('legacy.used_this_period'),
       value: formatTokens(org?.usedTokens || 0),
-      note: `${t('剩余')} ${formatTokens(org?.remainingTokens || 0)} Token`,
+      note: `${t('legacy.remaining')} ${formatTokens(org?.remainingTokens || 0)} Token`,
       icon: '<svg viewBox="0 0 24 24"><path d="M12 3v18M6 8h9a3 3 0 0 1 0 6H9" /></svg>',
     },
     {
       key: 'default',
-      label: t('默认成员额度'),
+      label: t('legacy.default_member_quota'),
       value: formatTokens(def?.quotaTokens || 0),
-      note: `${periodLabel(def?.period || 'monthly')} · ${def?.status === 'active' ? t('启用') : t('禁用')}`,
+      note: `${periodLabel(def?.period || 'monthly')} · ${def?.status === 'active' ? t('legacy.active') : t('legacy.disabled_be70be5')}`,
       icon: '<svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm13 10v-2a4 4 0 0 0-3-3.87" /></svg>',
     },
     {
       key: 'policy',
-      label: t('自定义额度用户'),
+      label: t('legacy.custom_quota_users'),
       value: String(overview.value?.assignedPolicyCount || 0),
-      note: `${t('已分配专属额度')} ${formatTokens(overview.value?.assignedTokens || 0)} Token`,
+      note: `${t('legacy.custom_quota_allocated')} ${formatTokens(overview.value?.assignedTokens || 0)} Token`,
       icon: '<svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>',
     },
   ];
@@ -276,7 +276,7 @@ const metricCards = computed(() => {
 
 const columns: DataTableColumns<UserAllocationItem> = [
   {
-    title: t('用户'),
+    title: t('legacy.user_9ba763e'),
     key: 'name',
     render(row) {
       return h('div', { class: 'user-cell' }, [
@@ -298,18 +298,18 @@ const columns: DataTableColumns<UserAllocationItem> = [
           {
             class: 'user-department',
           },
-          row.departmentName || t('未分配部门'),
+          row.departmentName || t('legacy.no_dept'),
         ),
       ]);
     },
   },
   {
-    title: t('分配额度'),
+    title: t('legacy.allocated_quota'),
     key: 'quotaTokens',
     render: (row) => `${formatTokens(row.quotaTokens)} Token`,
   },
   {
-    title: t('已用 / 剩余'),
+    title: t('legacy.used_remaining'),
     key: 'usage',
     render(row) {
       return h('div', { class: 'usage-cell' }, [
@@ -319,17 +319,17 @@ const columns: DataTableColumns<UserAllocationItem> = [
     },
   },
   {
-    title: t('周期'),
+    title: t('legacy.period'),
     key: 'period',
     render: (row) => periodLabel(row.period),
   },
   {
-    title: t('操作'),
+    title: t('legacy.actions'),
     key: 'actions',
     width: 120,
     render(row) {
       return h(NSpace, { size: 8 }, () => [
-        h(NButton, { size: 'small', tertiary: true, onClick: () => openEditor(row) }, () => t('设置个人额度')),
+        h(NButton, { size: 'small', tertiary: true, onClick: () => openEditor(row) }, () => t('legacy.set_personal_quota')),
       ]);
     },
   },
@@ -368,22 +368,22 @@ function consumeOpenQuotaQuery() {
 
 async function savePolicies() {
   if (isQuotaBlank(orgForm.totalTokens)) {
-    message.warning(t('请填写企业本周期总额度'));
+    message.warning(t('additional.enter_the_organization_s_total_quota_for_this_period'));
     return;
   }
   if (isQuotaBlank(defaultForm.quotaTokens)) {
-    message.warning(t('请填写新成员默认额度'));
+    message.warning(t('additional.enter_the_default_quota_for_new_members'));
     return;
   }
   if (!orgForm.totalTokens && defaultForm.quotaTokens > 0) {
-    message.warning(t('企业总额度为 0，不能为成员分配额度'));
+    message.warning(t('legacy.enterprise_quota_is_0_so_member_quota_cannot_be'));
     return;
   }
   savingPolicy.value = true;
   try {
     await updateOrgQuotaPolicy(orgForm);
     await updateDefaultQuotaPolicy(defaultForm);
-    message.success(t('保存成功'));
+    message.success(t('legacy.saved_successfully'));
     settingsVisible.value = false;
     await reload();
   } finally {
@@ -398,7 +398,7 @@ function openSettings() {
 
 function openEditor(row: UserAllocationItem) {
   if (!overview.value?.orgPolicy.totalTokens) {
-    message.warning(t('企业总额度为 0，不能为用户分配额度'));
+    message.warning(t('legacy.enterprise_quota_is_0_so_user_quota_cannot_be'));
     return;
   }
   currentUser.value = row;
@@ -413,17 +413,17 @@ function openEditor(row: UserAllocationItem) {
 async function saveUserPolicy() {
   if (!currentUser.value) return;
   if (isQuotaBlank(userForm.quotaTokens)) {
-    message.warning(t('请填写本周期额度'));
+    message.warning(t('additional.enter_the_quota_for_this_period'));
     return;
   }
   if (!overview.value?.orgPolicy.totalTokens && userForm.quotaTokens > 0) {
-    message.warning(t('企业总额度为 0，不能为用户分配额度'));
+    message.warning(t('legacy.enterprise_quota_is_0_so_user_quota_cannot_be'));
     return;
   }
   savingUser.value = true;
   try {
     await updateUserQuotaPolicy(currentUser.value.userId, { userId: currentUser.value.userId, ...userForm });
-    message.success(t('保存成功'));
+    message.success(t('legacy.saved_successfully'));
     editorVisible.value = false;
     await reload();
   } finally {
