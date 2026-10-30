@@ -33,6 +33,7 @@ export const additionalMessages = {
   "additional.recommended_basic_search_still_works_without_it_but_ranking": { "zh-CN": "推荐配置：未配置不影响基础检索，但复杂问题的召回排序可能不够准确。", "en-US": "Recommended: basic search still works without it, but ranking may be less accurate for complex questions." },
   "additional.no_displayable_conversation_messages_are_associated_with_this_call": { "zh-CN": "该调用未关联到可展示的对话消息", "en-US": "No displayable conversation messages are associated with this call" },
   "additional.members": { "zh-CN": " / {count} 名成员", "en-US": " / {count} members" },
+  "dashboard.memberCount": { "zh-CN": "名成员", "en-US": "members" },
   "additional.please_upload_again_or_try_later": { "zh-CN": "请重新上传或稍后重试。", "en-US": "Please upload again or try later." },
   "additional.after_parsing_the_segments_saved_in_mongodb_will_appear": { "zh-CN": "解析完成后，这里会自动展示 MongoDB 中保存的分段。", "en-US": "After parsing, the segments saved in MongoDB will appear here automatically." },
   "additional.rows": { "zh-CN": "行", "en-US": "Rows" },

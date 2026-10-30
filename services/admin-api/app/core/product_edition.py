@@ -30,6 +30,11 @@ def billing_enabled(org: dict[str, Any] | None) -> bool:
 def member_limit(org: dict[str, Any] | None) -> int | None:
     if is_community_organization(org):
         return None
+    from app.product.extensions import get_admin_product_extension
+
+    resolver = get_admin_product_extension().member_limit_resolver
+    if resolver is not None:
+        return resolver(org)
     raw_limit = (org or {}).get("user_limit", 5)
     if raw_limit is None:
         return None

@@ -60,6 +60,7 @@
 </template>
 
 <script setup lang="ts">
+import { deploymentErrorMessage } from '@/api/deploymentError';
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMessage } from 'naive-ui';
@@ -96,7 +97,7 @@ async function handleLogin() {
     router.push('/dashboard');
   } catch (error) {
     console.error(error);
-    message.error(t('legacy.login_failed_please_check_username_password_or_if_the'));
+    message.error(deploymentErrorMessage(error, t('legacy.login_failed_please_check_username_password_or_if_the')));
   } finally {
     loading.value = false;
   }
@@ -115,7 +116,7 @@ async function handleTenantSelect(candidate: TenantCandidate) {
     router.push('/dashboard');
   } catch (error) {
     console.error(error);
-    message.error(t('legacy.failed_to_enter_organization_please_sign_in_again'));
+    message.error(deploymentErrorMessage(error, t('legacy.failed_to_enter_organization_please_sign_in_again')));
     resetTenantSelection();
   } finally {
     selectingTenant.value = false;

@@ -28,6 +28,7 @@ class ProductExtension:
     edition: str
     features: Mapping[str, bool]
     organization_defaults: Mapping[str, object] = field(default_factory=dict)
+    member_limit_resolver: Callable[[Mapping[str, Any] | None], int | None] | None = None
     routers: Sequence[APIRouter] = field(default_factory=tuple)
     startup: Sequence[Callable[[], Any]] = field(default_factory=tuple)
     shutdown: Sequence[Callable[[], Any]] = field(default_factory=tuple)

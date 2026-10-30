@@ -252,7 +252,7 @@ const tierLabel = computed(() => {
 });
 const memberCapacityLabel = computed(() => {
   const limit = overview.value?.billing.userLimit;
-  return limit === null || limit === undefined ? t('legacy.members_unlimited') : t('additional.members', { count: limit });
+  return limit === null || limit === undefined ? t('dashboard.memberCount') : t('additional.members', { count: limit });
 });
 const healthLabel = computed(() => {
   if (healthStatus.value === 'critical') return t('legacy.need_action');

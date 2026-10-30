@@ -14,6 +14,7 @@ class AdminProductExtension:
     extension_id: str
     edition: str
     organization_defaults: Mapping[str, object] = field(default_factory=dict)
+    member_limit_resolver: Callable[[Mapping[str, Any] | None], int | None] | None = None
     routers: Sequence[APIRouter] = field(default_factory=tuple)
     startup: Sequence[Callable[[], Any]] = field(default_factory=tuple)
     model_created: Sequence[Callable[[str, str], Any]] = field(default_factory=tuple)
