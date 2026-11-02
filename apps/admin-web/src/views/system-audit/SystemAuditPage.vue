@@ -3,10 +3,14 @@ import { t } from '@/composables/i18n';
 import { computed, h, onMounted, ref, watch } from 'vue';
 import { NButton, NTag, type DataTableColumns } from 'naive-ui';
 import PageIntro from '@/components/PageIntro.vue';
+import { useAuditViewport } from './useAuditViewport';
+import { useAuditExport } from './useAuditExport';
 import AuditDetailDrawer from './AuditDetailDrawer.vue';
-import { fetchSystemAuditLogs, fetchSystemAuditOverview, type AuditCategory, type SystemAuditLog, type SystemAuditOverview } from '@/api/systemAudit';
+import { fetchSystemAuditLogs, fetchSystemAuditOverview, type AuditFilters, type AuditCategory, type SystemAuditLog, type SystemAuditOverview } from '@/api/systemAudit';
 import { formatAdminDateTime } from '@/composables/adminTimezone';
 
+const pageRoot = ref<HTMLElement | null>(null);
+const viewportHeight = useAuditViewport(pageRoot);
 const loading = ref(false);
 const rows = ref<SystemAuditLog[]>([]);
 const total = ref(0);
@@ -65,12 +69,17 @@ const columns: DataTableColumns<SystemAuditLog> = [
   { title: t('legacy.actions'), key: 'detail', width: 80, render: row => h(NButton, { text: true, type: 'primary', onClick: () => openDetail(row) }, { default: () => t('legacy.details') }) },
 ];
 
+function currentFilters(): AuditFilters {
+  return { category: category.value, keyword: keyword.value.trim(), result: result.value || '', module: category.value === 'management' ? module.value || '' : '' };
+}
+const { exporting, exportExcel } = useAuditExport(currentFilters);
+
 async function load() {
   loading.value = true;
   try {
     const [summary, data] = await Promise.all([
       fetchSystemAuditOverview(),
-      fetchSystemAuditLogs({ category: category.value, page: page.value, pageSize, keyword: keyword.value.trim(), result: result.value, module: category.value === 'management' ? module.value : '' }),
+      fetchSystemAuditLogs({ ...currentFilters(), page: page.value, pageSize }),
     ]);
     overview.value = summary;
     rows.value = data.items;
@@ -85,11 +94,11 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="page-stack audit-page">
+  <div ref="pageRoot" class="page-stack audit-page" :style="viewportHeight === undefined ? undefined : { height: `${viewportHeight}px` }">
     <n-card class="audit-card" :bordered="false" size="large">
       <div class="audit-content">
-        <div class="page-head"><PageIntro :title="t('legacy.system_audit')" :description="t('legacy.review_admin_actions_agent_capability_use_and_permission_denials')" :tags="[t('legacy.enterprise_audit_trail'), t('legacy.unified_audit')]" /><n-button type="primary" secondary :loading="loading" @click="load">{{ t('legacy.refresh') }}
-        </n-button></div>
+        <div class="page-head"><PageIntro :title="t('legacy.system_audit')" :description="t('legacy.review_admin_actions_agent_capability_use_and_permission_denials')" :tags="[t('legacy.enterprise_audit_trail'), t('legacy.unified_audit')]" /><div class="head-actions"><n-button type="primary" secondary :loading="loading" @click="load">{{ t('legacy.refresh') }}
+        </n-button></div></div>
         <div class="metric-grid">
           <div v-for="item in metrics" :key="item.label" class="metric-card"><span>{{ item.label }}</span><strong :class="{ danger: item.danger }">{{ item.value }}</strong><small>{{ item.hint }}</small></div>
         </div>
@@ -102,8 +111,9 @@ onMounted(load);
               <n-select v-if="category === 'management'" v-model:value="module" clearable :options="moduleOptions" :placeholder="t('legacy.all_modules')" style="width: 170px" @update:value="applyFilters" />
               <n-button @click="applyFilters">{{ t('legacy.query') }}</n-button>
             </n-space>
+            <n-button class="export-action" :loading="exporting" :title="t('audit.exportHint')" @click="exportExcel">{{ t('audit.exportExcel') }}</n-button>
           </div>
-          <n-data-table :columns="columns" :data="rows" :loading="loading" :bordered="false" :pagination="false" :scroll-x="1120" />
+          <n-data-table class="audit-records" flex-height :columns="columns" :data="rows" :loading="loading" :bordered="false" :pagination="false" :scroll-x="1120" />
           <div class="pager-row"><span>{{ t('legacy.total_items', { count: total }) }}</span><n-pagination v-model:page="page" :page-size="pageSize" :item-count="total" /></div>
         </div>
       </div>
@@ -113,18 +123,21 @@ onMounted(load);
 </template>
 
 <style scoped>
-.audit-page { min-height: calc(100vh - 98px); }
-.audit-card { min-width: 0; border-radius: 8px; }
-.audit-content { display: grid; gap: 18px; min-width: 0; }
+.audit-page { height: calc(100vh - 98px); min-height: 0; overflow: hidden; }
+.audit-card { flex: 1; min-height: 0; min-width: 0; border-radius: 8px; }
+.audit-card :deep(.n-card__content) { display:flex; flex-direction:column; min-height:0; }
+.audit-content { display: grid; grid-template-rows:auto auto minmax(0,1fr); flex:1; gap: 18px; min-width: 0; min-height:0; }
 .page-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.head-actions { display: flex; flex: none; gap: 10px; }
 .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .metric-card { display: grid; gap: 4px; padding: 16px 18px; border: 1px solid #edf0f5; border-radius: 10px; background: #fafbfc; }
 .metric-card span, .metric-card small, .pager-row { color: #667085; }
 .metric-card strong { color: #172033; font-size: 28px; line-height: 1.2; }
 .metric-card strong.danger { color: #d03050; }
-.audit-table-card { overflow: hidden; border: 1px solid #edf0f5; border-radius: 10px; }
-.toolbar, .pager-row { padding: 14px 16px; }
-.toolbar { border-bottom: 1px solid #edf0f5; }
+.audit-table-card { display:flex; flex-direction:column; min-height:0; overflow: hidden; border: 1px solid #edf0f5; border-radius: 10px; }
+.audit-records { flex:1; min-height:0; }
+.toolbar, .pager-row { flex:none; padding: 14px 16px; }
+.toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; border-bottom: 1px solid #edf0f5; }
 .pager-row { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #edf0f5; }
 @media (max-width: 980px) { .metric-grid { grid-template-columns: repeat(2, 1fr); } .page-head { align-items: flex-start; flex-direction: column; } }
 </style>

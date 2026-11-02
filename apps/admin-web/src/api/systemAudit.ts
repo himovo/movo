@@ -44,3 +44,9 @@ export async function fetchSystemAuditLogs(params: {
 }): Promise<SystemAuditPage> {
   return (await apiClient.get('/api/system-audit/logs', { params })).data;
 }
+
+export type AuditFilters = { category: AuditCategory; keyword?: string; result?: '' | AuditResult; module?: string };
+
+export async function exportSystemAuditLogs(params: AuditFilters): Promise<Blob> {
+  return (await apiClient.get('/api/system-audit/export', { params, responseType: 'blob', timeout: 120000 })).data;
+}
