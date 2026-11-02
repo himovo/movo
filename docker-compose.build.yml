@@ -34,6 +34,8 @@ services:
       context: ./services/chat-api
       dockerfile: Dockerfile
       args:
+        MOVO_SOURCE_REVISION: ${MOVO_SOURCE_REVISION:-}
+        MOVO_SOURCE_VERSION: ${MOVO_SOURCE_VERSION:-}
         INSTALL_SYSTEM_DEPS_AT_BUILD: "true"
         INSTALL_PLAYWRIGHT_AT_BUILD: "true"
         PLAYWRIGHT_WITH_DEPS: "true"

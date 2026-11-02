@@ -156,6 +156,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             ${{ matrix.build_args }}
+            MOVO_SOURCE_REVISION=${{ github.sha }}
+            MOVO_SOURCE_VERSION=${{ github.ref_name }}
             MOVO_SECURITY_REFRESH=${{ github.run_id }}-${{ github.run_attempt }}
           cache-from: type=gha,scope=${{ matrix.suffix }}
           cache-to: type=gha,mode=max,scope=${{ matrix.suffix }}

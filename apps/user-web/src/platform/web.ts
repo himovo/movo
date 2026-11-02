@@ -22,6 +22,10 @@ const DEFAULTS: Settings = {
 export async function connectEnterpriseServer(_address: string): Promise<EnterpriseConnectionResult> {
   throw new Error('Enterprise server binding is only available in the desktop app')
 }
+const WEB_COMPATIBILITY_STATE: import('./types').DesktopCompatibilityState = { current: { level: 'unconfigured', desktop_version: '', checked_at: 0 } }
+export async function getDesktopCompatibilityState() { return { ...WEB_COMPATIBILITY_STATE } }
+export async function checkDesktopCompatibility() { return { ...WEB_COMPATIBILITY_STATE } }
+export function onDesktopCompatibilityState(_listener: (state: import('./types').DesktopCompatibilityState) => void) { return () => {} }
 
 export const capabilities: PlatformCapabilities = {
   isDesktop: false,
@@ -80,7 +84,9 @@ export async function listDshWorkspaceBranches(_workspaceId: string, _modelId?: 
 export async function switchDshWorkspaceBranch(_workspaceId: string, _fullRef: string, _modelId?: string): Promise<import('./types').DshGitBranchSnapshot> { throw new Error('local Git branches are only available in the desktop app') }
 export async function createDshWorkspaceBranch(_workspaceId: string, _name: string, _sourceRef = 'HEAD', _modelId?: string): Promise<import('./types').DshGitBranchSnapshot> { throw new Error('local Git branches are only available in the desktop app') }
 export async function createDshCodeSession(_workspaceId: string, _draftId: string, _title: string, _modelId?: string, _useWorktree?: boolean, _sourceRef?: string, _permissionMode?: import('./types').CodePermissionMode): Promise<DshCodeSession> { throw new Error('local Code execution is only available in the desktop app') }
-export async function sendDshCodeTurn(_sessionId: string, _text: string, _permissionMode?: import('./types').CodePermissionMode): Promise<{ accepted: boolean; messageId: string }> { throw new Error('local Code execution is only available in the desktop app') }
+export async function sendDshCodeTurn(_sessionId: string, _text: string, _permissionMode?: import('./types').CodePermissionMode, _selectedSkillId?: string): Promise<{ accepted: boolean; messageId: string }> { throw new Error('local Code execution is only available in the desktop app') }
+export async function openDshPresentedFile(_sessionId: string, _artifactId: string): Promise<{ opened: boolean }> { throw new Error('Local artifacts are only available in the desktop app') }
+export async function saveDshPresentedFile(_sessionId: string, _artifactId: string): Promise<{ saved: boolean }> { throw new Error('Local artifacts are only available in the desktop app') }
 export async function openDshCodePermissionConfig(): Promise<string> { throw new Error('Code permission config is only available in the desktop app') }
 export async function validateDshCodePermissionConfig(): Promise<string> { throw new Error('Code permission config is only available in the desktop app') }
 export async function attachDshCodeConversation(_conversationId: string): Promise<DshCodeSession | null> { return null }

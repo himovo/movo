@@ -12,6 +12,8 @@ export interface DocumentInfo {
   filename?: string
   title?: string
   object_path?: string
+  local_session_id?: string
+  local_artifact_id?: string
   signed_url?: string
   content_type?: string
   size?: number

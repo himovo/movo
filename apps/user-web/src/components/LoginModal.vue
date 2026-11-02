@@ -3,6 +3,7 @@ import PasswordLoginForm from './login/PasswordLoginForm.vue'
 import InvitationRegistrationForm from './login/InvitationRegistrationForm.vue'
 import { ref } from 'vue'
 import DesktopLoginServerSwitch from './desktop/DesktopLoginServerSwitch.vue'
+import DesktopCompatibilityNotice from './desktop/DesktopCompatibilityNotice.vue'
 import { t } from '../composables/i18n'
 import type { UserProfile } from '../api/auth'
 
@@ -60,6 +61,7 @@ function completeRegistration(username: string) {
       />
       <button type="button" class="mt-4 text-sm text-blue-600 hover:underline" @click="registering = !registering">{{ registering ? t('invite.back_login') : t('invite.open_registration') }}</button>
       <DesktopLoginServerSwitch v-if="!registering" />
+      <DesktopCompatibilityNotice v-if="!registering" inline />
     </div>
   </div>
 </template>

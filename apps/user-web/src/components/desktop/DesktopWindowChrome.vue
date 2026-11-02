@@ -5,6 +5,7 @@ import TerminalOutline from '@vicons/ionicons5/es/TerminalOutline'
 import BrowserTestButton from '../browser/BrowserTestButton.vue'
 import DesktopSessionShareAction from './DesktopSessionShareAction.vue'
 import DesktopUpdateIndicator from './DesktopUpdateIndicator.vue'
+import DesktopCompatibilityNotice from './DesktopCompatibilityNotice.vue'
 import WorkspaceContextPicker from '../code/WorkspaceContextPicker.vue'
 import BranchContextPicker from '../code/BranchContextPicker.vue'
 import type { DshWorkspace } from '../../platform/types'
@@ -165,6 +166,7 @@ const emit = defineEmits<{
         <span class="desktop-window-chrome__title" :title="title">{{ title }}</span>
       </div>
       <div class="desktop-window-chrome__actions">
+        <DesktopCompatibilityNotice />
         <DesktopUpdateIndicator />
         <template v-if="chatActions">
           <DesktopSessionShareAction

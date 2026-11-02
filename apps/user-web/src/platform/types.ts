@@ -28,6 +28,18 @@ export interface EnterpriseConnectionResult {
   services_ready: boolean
 }
 
+export interface DesktopCompatibilityAssessment {
+  level: 'aligned' | 'server-older' | 'client-older' | 'unverified' | 'legacy' | 'unavailable' | 'unconfigured'
+  desktop_version: string
+  server_version?: string
+  checked_at: number
+}
+
+export interface DesktopCompatibilityState {
+  current: DesktopCompatibilityAssessment
+  candidate?: DesktopCompatibilityAssessment
+}
+
 export interface PlatformCapabilities {
   /** True inside the Electron desktop shell. */
   isDesktop: boolean

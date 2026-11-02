@@ -9,12 +9,14 @@ import {
   type DesktopUpdateState,
 } from '../../platform'
 import { t } from '../../composables/i18n'
+import DesktopCompatibilityNotice from './DesktopCompatibilityNotice.vue'
 
 const state = ref<DesktopUpdateState>({ phase: 'idle', current_version: '' })
+const expanded = ref(false)
 let stopListening: (() => void) | undefined
 
 const visible = computed(() => ['available', 'downloading', 'downloaded', 'installing', 'error'].includes(state.value.phase))
-const panelVisible = computed(() => ['downloading', 'downloaded', 'installing', 'error'].includes(state.value.phase))
+const panelVisible = computed(() => visible.value && (expanded.value || ['downloading', 'downloaded', 'installing', 'error'].includes(state.value.phase)))
 const progress = computed(() => Math.max(0, Math.min(100, state.value.progress_percent || 0)))
 const progressLabel = computed(() => Math.round(progress.value))
 const statusText = computed(() => t(`settings.update.phase.${state.value.phase}`))
@@ -26,10 +28,11 @@ onMounted(async () => {
 onBeforeUnmount(() => stopListening?.())
 
 async function primaryAction() {
-  if (state.value.phase === 'available') state.value = await downloadDesktopUpdate()
+  if (state.value.phase === 'available') expanded.value = !expanded.value
   else if (state.value.phase === 'downloaded') await installDesktopUpdate()
   else if (state.value.phase === 'error') state.value = await checkDesktopUpdate()
 }
+async function downloadAction() { state.value = await downloadDesktopUpdate() }
 </script>
 
 <template>
@@ -60,6 +63,10 @@ async function primaryAction() {
         </div>
         <span v-if="state.phase === 'downloading'" class="desktop-update-popover__percent">{{ progressLabel }}%</span>
       </div>
+      <DesktopCompatibilityNotice v-if="state.available_version" candidate inline />
+      <button v-if="state.phase === 'available'" type="button" class="desktop-update-popover__action" @click="downloadAction">
+        {{ t('settings.update.download') }}
+      </button>
       <div v-if="state.phase === 'downloading'" class="desktop-update-popover__track" role="progressbar" :aria-valuenow="progressLabel" aria-valuemin="0" aria-valuemax="100">
         <span :style="{ width: `${progress}%` }"></span>
       </div>

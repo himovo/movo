@@ -122,6 +122,7 @@ async def request_logging_middleware(request, call_next):
 from app.api.endpoints import (
     auth,
     dsh_chat,
+    desktop_release,
     user_questions,
     desktop_question_answers,
     dsh_plugins,
@@ -162,6 +163,7 @@ from app.governance.suspensions import suspension_service
 from app.browser import ws_endpoint as browser_ws_endpoint
 
 app.include_router(dsh_chat.router, prefix="/api")
+app.include_router(desktop_release.router, prefix="/api")
 app.include_router(user_questions.router, prefix="/api")
 app.include_router(desktop_question_answers.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")

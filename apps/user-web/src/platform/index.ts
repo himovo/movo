@@ -28,6 +28,9 @@ export const capabilities: PlatformCapabilities = impl.capabilities
 export const getSettings: () => Promise<Settings> = impl.getSettings
 export const updateSettings: (next: Settings) => Promise<Settings> = impl.updateSettings
 export const connectEnterpriseServer: (address: string) => Promise<EnterpriseConnectionResult> = impl.connectEnterpriseServer
+export const getDesktopCompatibilityState: () => Promise<import('./types').DesktopCompatibilityState> = impl.getDesktopCompatibilityState
+export const checkDesktopCompatibility: () => Promise<import('./types').DesktopCompatibilityState> = impl.checkDesktopCompatibility
+export const onDesktopCompatibilityState: (listener: (state: import('./types').DesktopCompatibilityState) => void) => () => void = impl.onDesktopCompatibilityState
 export const getAgentStatus: () => Promise<AgentStatus> = impl.getAgentStatus
 export const startAgent: () => Promise<AgentStatus> = impl.startAgent
 export const stopAgent: () => Promise<AgentStatus> = impl.stopAgent
@@ -45,7 +48,9 @@ export const listDshWorkspaceBranches: (workspaceId: string, modelId?: string) =
 export const switchDshWorkspaceBranch: (workspaceId: string, fullRef: string, modelId?: string) => Promise<DshGitBranchSnapshot> = impl.switchDshWorkspaceBranch
 export const createDshWorkspaceBranch: (workspaceId: string, name: string, sourceRef?: string, modelId?: string) => Promise<DshGitBranchSnapshot> = impl.createDshWorkspaceBranch
 export const createDshCodeSession: (workspaceId: string, draftId: string, title: string, modelId?: string, useWorktree?: boolean, sourceRef?: string, permissionMode?: import('./types').CodePermissionMode) => Promise<DshCodeSession> = impl.createDshCodeSession
-export const sendDshCodeTurn: (sessionId: string, text: string, permissionMode?: import('./types').CodePermissionMode) => Promise<{ accepted: boolean; messageId: string }> = impl.sendDshCodeTurn
+export const sendDshCodeTurn: (sessionId: string, text: string, permissionMode?: import('./types').CodePermissionMode, selectedSkillId?: string) => Promise<{ accepted: boolean; messageId: string }> = impl.sendDshCodeTurn
+export const openDshPresentedFile: (sessionId: string, artifactId: string) => Promise<{ opened: boolean }> = impl.openDshPresentedFile
+export const saveDshPresentedFile: (sessionId: string, artifactId: string) => Promise<{ saved: boolean }> = impl.saveDshPresentedFile
 export const openDshCodePermissionConfig: () => Promise<string> = impl.openDshCodePermissionConfig
 export const validateDshCodePermissionConfig: () => Promise<string> = impl.validateDshCodePermissionConfig
 export const attachDshCodeConversation: (conversationId: string) => Promise<DshCodeSession | null> = impl.attachDshCodeConversation
@@ -95,4 +100,4 @@ export const onEmbeddedBrowserLayoutRequest: (listener: () => void) => () => voi
 export const openResource: (url: string, purpose?: BrowserPurpose | 'external') => Promise<void> = impl.openResource
 export const saveBytes: (filename: string, bytes: Uint8Array) => Promise<SaveResult> = impl.saveBytes
 
-export type { AgentStatus, BrowserBounds, BrowserOwner, BrowserPreviewFrame, BrowserPurpose, DesktopUpdatePhase, DesktopUpdateState, DshCodeSession, DshDirectoryEntry, DshExecutionEvent, DshFileDiff, DshFilePreview, DshGitBranchRef, DshGitBranchSnapshot, DshGitCommitResult, DshGitPushResult, DshPendingApproval, DshTaskChangeSet, DshTaskFileDiff, DshTerminalEvent, DshTurnCancelResult, DshWorkspace, DshWorkspaceInspection, DshWorkspaceSummary, EmbeddedBrowserState, EnterpriseConnectionResult, PlatformCapabilities, SaveResult, Settings } from './types'
+export type { AgentStatus, BrowserBounds, BrowserOwner, BrowserPreviewFrame, BrowserPurpose, DesktopCompatibilityState, DesktopUpdatePhase, DesktopUpdateState, DshCodeSession, DshDirectoryEntry, DshExecutionEvent, DshFileDiff, DshFilePreview, DshGitBranchRef, DshGitBranchSnapshot, DshGitCommitResult, DshGitPushResult, DshPendingApproval, DshTaskChangeSet, DshTaskFileDiff, DshTerminalEvent, DshTurnCancelResult, DshWorkspace, DshWorkspaceInspection, DshWorkspaceSummary, EmbeddedBrowserState, EnterpriseConnectionResult, PlatformCapabilities, SaveResult, Settings } from './types'

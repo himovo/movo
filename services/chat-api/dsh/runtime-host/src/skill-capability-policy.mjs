@@ -1,0 +1,1 @@
+export const SKILL_CAPABILITY_POLICY = `A loaded Skill guides the parts of the request it covers. MOVO's default capability guidance applies to the remaining parts. A Skill may call MOVO tools as steps in its workflow. Do not independently start a second workflow for the same requested deliverable. Do not suppress unrelated capabilities merely because a Skill was loaded.`

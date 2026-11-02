@@ -43,7 +43,7 @@ export function usePaneTurnActions(options: {
         targetKey = derived.key
       }
       try {
-        await options.codeRuntime.send(targetKey, payload.text, payload.modelId)
+        await options.codeRuntime.send(targetKey, payload.text, payload.modelId, payload.selectedSkillId)
       } catch {
         // The runtime owns the visible error; preserve the composer draft.
         payload.onRejected?.()

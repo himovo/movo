@@ -5,6 +5,8 @@ export interface ArtifactItem {
   url?: string
   signed_url?: string
   object_path?: string
+  local_session_id?: string
+  local_artifact_id?: string
   filename?: string
   title?: string
   content_type?: string

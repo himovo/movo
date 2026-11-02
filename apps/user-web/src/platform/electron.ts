@@ -1,6 +1,11 @@
 import type { AgentStatus, BrowserBounds, BrowserOwner, BrowserPreviewFrame, BrowserPurpose, DesktopUpdateState, DshCodeSession, DshDirectoryEntry, DshExecutionEvent, DshFileDiff, DshFilePreview, DshGitBranchSnapshot, DshGitCommitResult, DshGitPushResult, DshPendingApproval, DshTaskChangeSet, DshTaskFileDiff, DshTerminalEvent, DshTurnCancelResult, DshWorkspace, DshWorkspaceInspection, DshWorkspaceSummary, EmbeddedBrowserState, EnterpriseConnectionResult, PlatformCapabilities, SaveResult, Settings } from './types'
 
 interface ElectronApi {
+  compatibility: {
+    state(): Promise<import('./types').DesktopCompatibilityState>
+    check(): Promise<import('./types').DesktopCompatibilityState>
+    onState(listener: (state: import('./types').DesktopCompatibilityState) => void): () => void
+  }
   settings: { get(): Promise<Settings>; update(next: Settings): Promise<Settings> }
   enterprise: { connect(address: string): Promise<EnterpriseConnectionResult> }
   agent: { status(): Promise<AgentStatus>; start(): Promise<AgentStatus>; stop(): Promise<AgentStatus>; restart(): Promise<AgentStatus> }
@@ -22,8 +27,10 @@ interface ElectronApi {
     createCodeSession(workspaceId: string, draftId: string, title: string, modelId?: string, useWorktree?: boolean, sourceRef?: string, permissionMode?: import('./types').CodePermissionMode): Promise<DshCodeSession>
   }
   dshCodeSession: {
+    openPresentedFile(sessionId: string, artifactId: string): Promise<{ opened: boolean }>
+    savePresentedFile(sessionId: string, artifactId: string): Promise<{ saved: boolean }>
     attach(conversationId: string): Promise<DshCodeSession | null>
-    send(sessionId: string, text: string, permissionMode?: import('./types').CodePermissionMode): Promise<{ accepted: boolean; messageId: string }>
+    send(sessionId: string, text: string, permissionMode?: import('./types').CodePermissionMode, selectedSkillId?: string): Promise<{ accepted: boolean; messageId: string }>
     openPermissionConfig(): Promise<string>
     validatePermissionConfig(): Promise<string>
     cancel(sessionId: string): Promise<DshTurnCancelResult>
@@ -103,6 +110,9 @@ export const capabilities: PlatformCapabilities = {
 export const getSettings = () => api().settings.get()
 export const updateSettings = (next: Settings) => api().settings.update(next)
 export const connectEnterpriseServer = (address: string) => api().enterprise.connect(address)
+export const getDesktopCompatibilityState = () => api().compatibility.state()
+export const checkDesktopCompatibility = () => api().compatibility.check()
+export const onDesktopCompatibilityState = (listener: (state: import('./types').DesktopCompatibilityState) => void) => api().compatibility.onState(listener)
 export const getAgentStatus = () => api().agent.status()
 export const startAgent = () => api().agent.start()
 export const stopAgent = () => api().agent.stop()
@@ -122,7 +132,9 @@ export const switchDshWorkspaceBranch = (workspaceId: string, fullRef: string, m
 export const createDshWorkspaceBranch = (workspaceId: string, name: string, sourceRef = 'HEAD', modelId?: string) => api().dshWorkspace.createBranch(workspaceId, name, sourceRef, modelId)
 export const createDshCodeSession = (workspaceId: string, draftId: string, title: string, modelId?: string, useWorktree?: boolean, sourceRef?: string, permissionMode?: import('./types').CodePermissionMode) =>
   api().dshWorkspace.createCodeSession(workspaceId, draftId, title, modelId, useWorktree, sourceRef, permissionMode)
-export const sendDshCodeTurn = (sessionId: string, text: string, permissionMode?: import('./types').CodePermissionMode) => api().dshCodeSession.send(sessionId, text, permissionMode)
+export const sendDshCodeTurn = (sessionId: string, text: string, permissionMode?: import('./types').CodePermissionMode, selectedSkillId?: string) => api().dshCodeSession.send(sessionId, text, permissionMode, selectedSkillId)
+export const openDshPresentedFile = (sessionId: string, artifactId: string) => api().dshCodeSession.openPresentedFile(sessionId, artifactId)
+export const saveDshPresentedFile = (sessionId: string, artifactId: string) => api().dshCodeSession.savePresentedFile(sessionId, artifactId)
 export const openDshCodePermissionConfig = () => api().dshCodeSession.openPermissionConfig()
 export const validateDshCodePermissionConfig = () => api().dshCodeSession.validatePermissionConfig()
 export const attachDshCodeConversation = (conversationId: string) => api().dshCodeSession.attach(conversationId)

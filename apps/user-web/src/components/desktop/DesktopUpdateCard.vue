@@ -10,6 +10,7 @@ import {
   type DesktopUpdateState,
 } from '../../platform'
 import { t } from '../../composables/i18n'
+import DesktopCompatibilityNotice from './DesktopCompatibilityNotice.vue'
 
 const state = ref<DesktopUpdateState>({ phase: 'idle', current_version: '' })
 let stopListening: (() => void) | undefined
@@ -38,6 +39,7 @@ async function install() { await installDesktopUpdate() }
         <span>{{ statusText }}</span>
         <span v-if="state.available_version">· v{{ state.available_version }}</span>
       </div>
+      <DesktopCompatibilityNotice v-if="state.available_version" candidate inline />
 
       <div v-if="state.phase === 'downloading'" class="space-y-2">
         <div class="flex items-center justify-end text-xs font-medium tabular-nums text-slate-600">

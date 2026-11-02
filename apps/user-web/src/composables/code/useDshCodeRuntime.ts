@@ -201,7 +201,7 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
     catch (error) { state.error = codeRuntimeErrorMessage(error, getLocale()) }
   }
 
-  async function send(key: string, text: string, modelId?: string) {
+  async function send(key: string, text: string, modelId?: string, selectedSkillId?: string) {
     const state = stateFor(key)
     const workspace = state.workspace
     if (!workspace) return false
@@ -222,7 +222,7 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
       if (!conversationId) throw new Error('desktop Code Session was not committed to MOVO history')
       await ensureSubscribed(state)
       turns.set(sessionId, chat.beginExternalTurn(key, text, conversationId))
-      const sent = await sendDshCodeTurn(sessionId, text, state.permissionMode)
+      const sent = await sendDshCodeTurn(sessionId, text, state.permissionMode, selectedSkillId)
       turns.get(sessionId)?.bindMessageId(sent.messageId)
       await refreshApprovals(state)
       return true

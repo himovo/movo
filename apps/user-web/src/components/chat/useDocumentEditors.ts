@@ -4,6 +4,7 @@ import { renderDocument, renderPresentationPptx, signDocument, fetchDocxEditSour
 import { authenticatedJsonHeaders } from '../../api/authHeaders'
 import { downloadResourceUrl, openPreviewResource, saveBlobDownload } from '../../utils/desktopResources'
 import { t } from '../../composables/i18n'
+import { openDshPresentedFile, saveDshPresentedFile } from '../../platform'
 import type { ExecutionMessageV3 } from '../../features/execution-v3/stores/messageExecution'
 import { findMarkdownDocument, normalizeDocumentType, toRenderableDocumentFormat, upsertDocumentEverywhere } from './documentArtifacts'
 import type { DocumentInfo } from './types'
@@ -34,6 +35,14 @@ export function useDocumentEditors<T extends DocumentMessage>(options: {
   const editorMessage = useMessage()
 
   async function openDocumentEditor(doc: DocumentInfo, msg: T, _renderIndex: number) {
+    if (doc.local_session_id && doc.local_artifact_id) {
+      try {
+        await openDshPresentedFile(doc.local_session_id, doc.local_artifact_id)
+      } catch (error) {
+        editorMessage.error(String(error))
+      }
+      return
+    }
     if (doc.type === 'presentation_preview_bundle') {
       await openPresentationEditor(doc, msg)
       return
@@ -210,6 +219,14 @@ export function useDocumentEditors<T extends DocumentMessage>(options: {
   }
 
   async function downloadDocument(doc: DocumentInfo) {
+    if (doc.local_session_id && doc.local_artifact_id) {
+      try {
+        await saveDshPresentedFile(doc.local_session_id, doc.local_artifact_id)
+      } catch (error) {
+        editorMessage.error(String(error))
+      }
+      return
+    }
     if (doc.type === 'presentation_preview_bundle' || doc.type === 'html') {
       const targetUrl = await resolveDocumentOpenUrl(doc)
       if (targetUrl) {
