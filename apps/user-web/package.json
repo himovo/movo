@@ -24,6 +24,7 @@
         "test:browser-surface": "esbuild tests/browser-surface-visibility.test.ts --bundle --platform=node --format=esm --outfile=/tmp/movo-browser-surface-test.mjs && node /tmp/movo-browser-surface-test.mjs",
         "test:clipboard": "esbuild tests/copy-text-to-clipboard.test.ts --bundle --platform=node --format=esm --outfile=/tmp/movo-copy-text-test.mjs && node /tmp/movo-copy-text-test.mjs",
         "test:composer-focus": "esbuild tests/composer-focus-policy.test.ts --bundle --platform=node --format=esm --outfile=.tmp-composer-focus-test.mjs && node .tmp-composer-focus-test.mjs && node -e \"require('node:fs').rmSync('.tmp-composer-focus-test.mjs', { force: true })\"",
+        "test:entry-visibility": "esbuild tests/entry-visibility.test.ts --bundle --platform=node --format=esm --alias:@movo-product-extension=./tests/fixtures/entry-visibility-extension.ts --outfile=/tmp/movo-entry-visibility-test.mjs && node /tmp/movo-entry-visibility-test.mjs",
         "test:scheduled-task-time": "TZ=Asia/Shanghai esbuild tests/scheduled-task-time.test.ts --bundle --platform=node --format=esm --outfile=/tmp/movo-scheduled-task-time-test.mjs && TZ=Asia/Shanghai node /tmp/movo-scheduled-task-time-test.mjs",
         "preview": "vite preview"
     },

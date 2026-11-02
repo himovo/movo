@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref } from 'vue'
+import { entryVisible } from '../../composables/useEntryVisibility'
 import { t } from '../../composables/i18n'
 
 const props = defineProps<{ text: string; time?: string; scheduleDisabled?: boolean }>()
@@ -44,6 +45,7 @@ onBeforeUnmount(() => { if (copiedTimer) clearTimeout(copiedTimer) })
     <button
       type="button"
       class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md transition-colors duration-150 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+      v-if="entryVisible('scheduled')"
       :disabled="scheduleDisabled"
       :aria-label="t('legacy.create_scheduled_task')"
       :title="t('legacy.create_scheduled_task')"

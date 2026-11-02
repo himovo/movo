@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { entryVisible } from '../../composables/useEntryVisibility'
 import { computed } from 'vue'
 import { desktopChromeMessages } from '../../locales/desktopChromeMessages'
 
@@ -57,7 +58,7 @@ const items = computed<NavigationItem[]>(() => [
   <nav class="desktop-primary-nav" :aria-label="desktopChromeMessages.primaryNavigation[locale === 'en' ? 'en' : 'zh']">
     <div class="desktop-primary-nav__items">
       <button
-        v-for="item in items.filter(entry => entry.visible)"
+        v-for="item in items.filter(entry => entry.visible && (entry.id === 'home' || entryVisible(entry.id)))"
         :key="item.id"
         type="button"
         class="desktop-primary-nav__item"

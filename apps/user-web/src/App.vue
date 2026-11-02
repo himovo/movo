@@ -19,7 +19,7 @@ import { useSkillManagement } from './composables/useSkillManagement'
 import { useSessionSearch } from './composables/useSessionSearch'
 import { useSessionDirectory } from './composables/useSessionDirectory'
 import { useSessionShareLanding } from './composables/useSessionShareLanding'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import AppChatPanes from './components/AppChatPanes.vue'
 import type { AppChatPaneActions } from './components/chat/appChatPaneActions'
 import { registerProductMessages, t, useLocale } from './composables/i18n'
@@ -66,6 +66,7 @@ const {
   settingsPanelOpen, desktopServerState, personalizationOpen,
   isLoggedIn, availableTenants, getUserId, getMainId, isEnterpriseTenant,
 } = useAppAuthState()
+watch([authToken, () => userProfile.value?.mainId, () => userProfile.value?.userId], () => productUiExtension.refreshEntryVisibility?.(), { flush: 'sync' })
 const {
   token: authTokenKey, account: authAccountKey,
   users: authUsersKey, profile: authUserProfileKey,
@@ -100,7 +101,7 @@ const {
   sessionSearchLoading, sessionSearchHasMore, sessionSearchDidRun,
   trimmedSessionSearchQuery, closeSessionSearch, runSessionSearch,
 } = useSessionSearch({ getUserId, getMainId, authToken })
-const { navigateTo, handlePopState } = useAppNavigation(currentView, closeSessionSearch)
+const { navigateTo, handlePopState } = useAppNavigation(currentView, closeSessionSearch, text => shareToast.info(text))
 const {
   skillFormOpen, skillName, skillSummary,
   skillType, skillScenario, skillChannels, skillForms, skillAudience, skillStyle,

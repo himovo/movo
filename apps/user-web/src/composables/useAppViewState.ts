@@ -1,3 +1,4 @@
+import { entryVisible } from './useEntryVisibility'
 import { computed, type Ref } from 'vue'
 import type { SessionSearchResult, SessionSummary } from '../api/sessions'
 import type { DesktopPrimarySection } from '../components/desktop/DesktopPrimaryNavigation.vue'
@@ -64,7 +65,7 @@ export function useAppViewState(options: Options) {
   )
   const sidebarItems = computed(() => [
     { icon: 'plus', label: t('app.sidebar.new_chat') },
-    ...(capabilities.isDesktop ? [] : [{ icon: 'clock', label: t('app.scheduledTasks') }]),
+    ...(capabilities.isDesktop || !entryVisible('scheduled') ? [] : [{ icon: 'clock', label: t('app.scheduledTasks') }]),
     { icon: 'search', label: t('app.sidebar.search_chats') },
   ])
 

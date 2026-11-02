@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { viewEntryVisible } from '../composables/useEntryVisibility'
 import { defineAsyncComponent } from 'vue'
 import type { SessionSummary } from '../api/sessions'
 import type { AppView } from '../composables/useAppNavigation'
@@ -45,6 +46,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
+  <template v-if="viewEntryVisible(currentView)">
   <div v-if="currentView === 'skills'" class="flex-1 min-w-0 min-h-0 overflow-hidden">
     <SkillsPage
       :userId="userId"
@@ -95,4 +97,5 @@ const emit = defineEmits<{
       @back="emit('usageBack')"
     />
   </div>
+  </template>
 </template>

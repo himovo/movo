@@ -1,4 +1,6 @@
-import type { Ref } from 'vue'
+import { watch, type Ref } from 'vue'
+import { entryVisibilityReady, viewEntryVisible } from './useEntryVisibility'
+import { t } from './i18n'
 
 export type AppView = 'chat' | 'skills' | 'plugins' | 'tools' | 'knowledge'
   | 'skill-config' | 'composite-editor' | 'token-usage' | 'scheduled-tasks'
@@ -24,8 +26,12 @@ function routePathForView(view: AppView): string {
   return '/'
 }
 
-export function useAppNavigation(currentView: Ref<AppView>, closeSessionSearch: () => void) {
+export function useAppNavigation(currentView: Ref<AppView>, closeSessionSearch: () => void, notifyUnavailable?: (message: string) => void) {
   function navigateTo(view: AppView, replace = false): void {
+    if (!viewEntryVisible(view)) {
+      if (entryVisibilityReady()) notifyUnavailable?.(t('app.entryUnavailable'))
+      view = 'chat'
+    }
     currentView.value = view
     if (typeof window === 'undefined') return
     const nextPath = routePathForView(view)
@@ -38,6 +44,10 @@ export function useAppNavigation(currentView: Ref<AppView>, closeSessionSearch: 
     currentView.value = resolveViewFromPath(window.location.pathname)
     if (currentView.value !== 'chat') closeSessionSearch()
   }
+
+  watch(() => [currentView.value, entryVisibilityReady(), viewEntryVisible(currentView.value)], () => {
+    if (entryVisibilityReady() && !viewEntryVisible(currentView.value)) navigateTo(currentView.value, true)
+  }, { immediate: true })
 
   return { navigateTo, handlePopState }
 }

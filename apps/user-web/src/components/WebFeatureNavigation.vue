@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { entryVisible } from '../composables/useEntryVisibility'
 import { t } from '../composables/i18n'
 import type { AppView } from '../composables/useAppNavigation'
 
@@ -9,14 +11,16 @@ const props = defineProps<{
   pendingSkillShareCount: number
   personalKnowledgeUnreadCount: number
 }>()
+const hasVisibleEntries = computed(() => (props.canUseSkills && entryVisible('skills')) || entryVisible('plugins') || (props.canUseTools && (entryVisible('tools') || entryVisible('knowledge'))))
 const emit = defineEmits<{ skills: []; plugins: []; tools: []; knowledge: [] }>()
 </script>
 
 <template>
+  <template v-if="hasVisibleEntries">
   <div class="mt-2 px-5 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em]">{{ t('app.sidebar.skills') }}</div>
   <div class="mb-2 space-y-0.5 px-3">
     <button
-      v-if="props.canUseSkills"
+      v-if="props.canUseSkills && entryVisible('skills')"
       class="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2 text-left text-sm transition-all active:scale-95"
       :class="props.currentView === 'skills'
         ? 'bg-white text-blue-700 shadow-sm border-gray-200 font-semibold'
@@ -35,6 +39,7 @@ const emit = defineEmits<{ skills: []; plugins: []; tools: []; knowledge: [] }>(
       >{{ props.pendingSkillShareCount > 99 ? '99+' : props.pendingSkillShareCount }}</span>
     </button>
     <button
+      v-if="entryVisible('plugins')"
       class="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2 text-left text-sm transition-all active:scale-95"
       :class="props.currentView === 'plugins' ? 'bg-white text-blue-700 shadow-sm border-gray-200 font-semibold' : 'text-gray-700 hover:bg-gray-200/50'"
       @click="emit('plugins')"
@@ -43,7 +48,7 @@ const emit = defineEmits<{ skills: []; plugins: []; tools: []; knowledge: [] }>(
       <span>{{ t('plugins.sidebar') }}</span>
     </button>
     <button
-      v-if="props.canUseTools"
+      v-if="props.canUseTools && entryVisible('tools')"
       class="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2 text-left text-sm transition-all active:scale-95"
       :class="props.currentView === 'tools'
         ? 'bg-white text-blue-700 shadow-sm border-gray-200 font-semibold'
@@ -56,7 +61,7 @@ const emit = defineEmits<{ skills: []; plugins: []; tools: []; knowledge: [] }>(
       <span>{{ t('app.sidebar.tools') }}</span>
     </button>
     <button
-      v-if="props.canUseTools"
+      v-if="props.canUseTools && entryVisible('knowledge')"
       class="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2 text-left text-sm transition-all active:scale-95"
       :class="props.currentView === 'knowledge' ? 'bg-white text-blue-700 shadow-sm border-gray-200 font-semibold' : 'text-gray-700 hover:bg-gray-200/50'"
       @click="emit('knowledge')"
@@ -68,4 +73,5 @@ const emit = defineEmits<{ skills: []; plugins: []; tools: []; knowledge: [] }>(
       <span v-if="props.personalKnowledgeUnreadCount > 0" class="ml-auto inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">{{ props.personalKnowledgeUnreadCount > 99 ? '99+' : props.personalKnowledgeUnreadCount }}</span>
     </button>
   </div>
+  </template>
 </template>

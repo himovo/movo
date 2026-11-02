@@ -9,6 +9,7 @@ export const appShellMessages = {
   'app.timezone.losAngeles': { zh: '美国太平洋时间 - America/Los_Angeles', en: 'US Pacific Time - America/Los_Angeles' },
   'app.timezone.sydney': { zh: '澳大利亚东部时间 - Australia/Sydney', en: 'Australian Eastern Time - Australia/Sydney' },
   'app.project': { zh: '项目', en: 'Project' },
+  'app.entryUnavailable': { zh: '该入口暂未对你开放，已返回聊天首页。', en: 'This entry is unavailable for your account. Returned to chat.' },
   'app.scheduledTasks': { zh: '定时任务', en: 'Scheduled tasks' },
   'app.desktopChecking': { zh: '正在检查桌面登录状态…', en: 'Checking desktop sign-in…' },
   'app.desktopLoginUnavailable': { zh: '桌面登录状态尚未同步，请重新登录后重试。', en: 'Desktop login is not ready. Sign in again and retry.' },
