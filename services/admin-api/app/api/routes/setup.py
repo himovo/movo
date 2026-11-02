@@ -45,7 +45,7 @@ from app.services.setup_model import (
     test_setup_model,
 )
 from app.services.setup_cleanup import cleanup_failed_setup
-from app.services.external_search_provider import ExternalSearchConfigError
+from app.services.external_search_provider import PROVIDERS, ExternalSearchConfigError
 from app.services.setup_external_search import (
     save_setup_search,
     setup_provider_catalog,
@@ -92,7 +92,7 @@ class SetupModelRequest(BaseModel):
 
 
 class SetupExternalSearchRequest(BaseModel):
-    provider: str = Field(pattern=r"^(tavily|serper|serpapi|baidu_qianfan|volc_ark)$")
+    provider: str = Field(pattern="^(" + "|".join(re.escape(key) for key in PROVIDERS) + ")$")
     apiKey: str = Field(min_length=1, max_length=1000)
     endpoint: str = Field(default="", max_length=500)
     baseUrl: str = Field(default="", max_length=500)
