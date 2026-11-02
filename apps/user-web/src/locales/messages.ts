@@ -370,7 +370,6 @@ export const messages = {
   'plugins.reason.invocation_not_verified': { zh: '工具已进入 MOVO 会话；尚未实际调用，不能保证业务效果。', en: 'Tools are visible in a MOVO session. Actual invocation and outcomes remain untested.' },
   'plugins.reason.invocation_verified': { zh: '已在 MOVO 对话中成功调用至少一个插件工具。', en: 'At least one plugin tool completed successfully in a MOVO conversation.' },
   'plugins.reason.tools_missing_from_session': { zh: 'DSH 已发现工具，但 MOVO 会话未开放全部工具。', en: 'DSH found tools, but the MOVO session does not expose all of them.' },
-  'plugins.reason.no_global_tool_detected': { zh: '包已加载，但未发现全局工具。Hooks、界面插件等需要单独适配或人工验证。', en: 'Bundle loaded, but no global tool was detected. Hooks and UI extensions need separate adaptation or manual verification.' },
   'plugins.reason.legacy_not_assessed': { zh: '历史安装记录尚未检查。', en: 'This existing installation has not been assessed.' },
   'plugins.reason.not_assessed': { zh: '尚未完成可用性评估。', en: 'Availability has not been assessed.' },
   'plugins.check.package': { zh: '插件包安装', en: 'Bundle installed' },

@@ -11,6 +11,7 @@ import json
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from html import escape
+from urllib.parse import parse_qs, urlsplit
 
 
 DOCUMENTS = {
@@ -29,6 +30,11 @@ def mock_answer(question: str) -> str:
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
+        parsed = urlsplit(self.path)
+        if parsed.path == "/api/marker":
+            marker = parse_qs(parsed.query).get("marker", [""])[0]
+            self._reply({"marker": marker, "length": len(marker), "source": "local-read-only-fixture"})
+            return
         document = DOCUMENTS.get(self.path.split("?", 1)[0])
         if document is None:
             self.send_error(404)
@@ -63,8 +69,7 @@ class Handler(BaseHTTPRequestHandler):
                 "description": "Search the mock enterprise knowledge base",
                 "inputSchema": {"type": "object", "properties": {
                     "query": {"type": "string", "description": "Search query"},
-                    "question": {"type": "string", "description": "Alternative question input"},
-                }, "anyOf": [{"required": ["query"]}, {"required": ["question"]}]},
+                }, "required": ["query"]},
                 "outputSchema": {"type": "object", "properties": {
                     ANSWER_FIELD: {"type": "string"},
                     "summary": {"type": "string"},
