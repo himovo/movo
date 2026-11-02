@@ -3,6 +3,8 @@ import { apiClient } from './client';
 
 export interface PresentationSettings {
   configured: boolean;
+  enabled: boolean;
+  available: boolean;
   llmModelId: string;
   imageModelId: string;
   visionModelId: string;
@@ -10,6 +12,7 @@ export interface PresentationSettings {
 }
 
 export interface PresentationSettingsPayload {
+  enabled: boolean;
   llmModelId: string;
   imageModelId: string;
   visionModelId: string;

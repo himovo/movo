@@ -11,6 +11,13 @@
     </header>
 
     <n-spin :show="loading">
+      <section class="settings-section">
+        <n-space justify="space-between" align="center">
+          <div class="section-title">{{ t('presentation.enable') }}</div>
+          <n-switch v-model:value="form.enabled" :disabled="!modelsReady && !form.enabled" />
+        </n-space>
+        <div class="section-help">{{ t(modelsReady ? 'presentation.help' : 'presentation.unavailable') }}</div>
+      </section>
       <section class="settings-section model-section" aria-labelledby="presentation-model-title">
         <div id="presentation-model-title" class="section-title">{{ t('legacy.ppt_model_configuration') }}</div>
         <div class="section-help">{{ t('legacy.ppt_generation_requires_content_image_generation_and_vision_models') }}</div>
@@ -19,6 +26,7 @@
           <n-form-item :label="t('legacy.content_layout_model')" required>
             <ModelCapabilitySelect
               v-model="form.llmModelId"
+              @availability="modelAvailability.llm = $event"
               capability="chat"
               :placeholder="t('legacy.select_a_chat_capable_model')"
             />
@@ -28,6 +36,7 @@
           <n-form-item :label="t('legacy.image_generation_model')" required>
             <ModelCapabilitySelect
               v-model="form.imageModelId"
+              @availability="modelAvailability.image = $event"
               capability="image_generation"
               :placeholder="t('legacy.select_an_image_generation_model')"
             />
@@ -37,6 +46,7 @@
           <n-form-item :label="t('legacy.vision_rebuild_model')" required>
             <ModelCapabilitySelect
               v-model="form.visionModelId"
+              @availability="modelAvailability.vision = $event"
               capability="vision"
               :placeholder="t('legacy.select_a_vision_capable_model')"
             />
@@ -45,10 +55,10 @@
         </n-form>
       </section>
 
-      <n-alert v-if="!configured" type="info" :bordered="false" class="status-alert">
+      <n-alert v-if="!modelsReady" type="info" :bordered="false" class="status-alert">
         {{ t('legacy.ppt_model_configuration_is_incomplete_configure_all_three_models') }}
       </n-alert>
-      <n-alert v-else type="success" :bordered="false" class="status-alert">
+      <n-alert v-else-if="form.enabled" type="success" :bordered="false" class="status-alert">
         {{ t('legacy.the_configuration_is_active_if_a_selected_model_is') }}
       </n-alert>
     </n-spin>
@@ -56,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import axios from 'axios';
 import { useMessage } from 'naive-ui';
 import ModelCapabilitySelect from '@/components/models/ModelCapabilitySelect.vue';
@@ -70,15 +80,17 @@ import { localizedServerText } from '@/utils/serverText';
 const message = useMessage();
 const loading = ref(false);
 const saving = ref(false);
-const configured = ref(false);
+const modelAvailability = reactive({ llm: false, image: false, vision: false });
+const modelsReady = computed(() => Object.values(modelAvailability).every(Boolean));
 const form = reactive({
+  enabled: false,
   llmModelId: '',
   imageModelId: '',
   visionModelId: '',
 });
 
 function applySettings(settings: Awaited<ReturnType<typeof fetchPresentationSettings>>) {
-  configured.value = settings.configured;
+  form.enabled = settings.enabled;
   form.llmModelId = settings.llmModelId;
   form.imageModelId = settings.imageModelId;
   form.visionModelId = settings.visionModelId;
@@ -86,6 +98,9 @@ function applySettings(settings: Awaited<ReturnType<typeof fetchPresentationSett
 
 function errorText(error: unknown): string {
   if (axios.isAxiosError(error)) {
+    if (String(error.response?.data?.detail || '').startsWith('Presentation model unavailable:')) {
+      return t('presentation.unavailable');
+    }
     return localizedServerText(error.response?.data?.detail || error.message, t('legacy.failed_to_save_configuration'));
   }
   return error instanceof Error ? error.message : String(error || t('legacy.failed_to_save_configuration'));
@@ -103,11 +118,11 @@ async function load() {
 }
 
 async function save() {
-  if (!form.llmModelId) {
+  if (form.enabled && !form.llmModelId) {
     message.error(t('legacy.select_a_content_and_layout_model'));
     return;
   }
-  if (!form.imageModelId || !form.visionModelId) {
+  if (form.enabled && (!form.imageModelId || !form.visionModelId)) {
     message.error(t('legacy.select_an_image_generation_model_and_a_vision_rebuild'));
     return;
   }

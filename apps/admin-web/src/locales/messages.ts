@@ -1,3 +1,4 @@
+import { presentationAvailabilityMessages } from './modules/presentationAvailability';
 import { auditExportMessages } from './modules/auditExport';
 import { additionalMessages } from './additionalMessages';
 import { uncoveredMessages } from './uncoveredMessages';
@@ -11,6 +12,7 @@ export type MessageKey = keyof typeof messages;
 export type LabelMap = Record<Locale, string>;
 
 export const messages = {
+  ...presentationAvailabilityMessages,
   ...auditExportMessages,
   'provider.openai': { 'zh-CN': 'OpenAI', 'en-US': 'OpenAI' },
   'provider.azureOpenAI': { 'zh-CN': 'Azure OpenAI', 'en-US': 'Azure OpenAI' },

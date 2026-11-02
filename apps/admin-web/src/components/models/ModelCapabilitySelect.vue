@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import type { SelectOption } from 'naive-ui';
 import { fetchModelInstances, type ModelInstanceItem } from '@/api/models';
 import { providerLabel } from '@/components/models/providerLabels';
@@ -26,6 +26,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: string): void;
+  (event: 'availability', value: boolean): void;
 }>();
 
 const loading = ref(false);
@@ -49,6 +50,10 @@ const selectOptions = computed<SelectOption[]>(() => {
   }
   return options;
 });
+
+watch([availableInstances, () => props.modelValue], () => {
+  emit('availability', availableInstances.value.some(item => item.id === props.modelValue));
+}, { immediate: true });
 
 function updateValue(value: string | null) {
   emit('update:modelValue', String(value || ''));

@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from app.services.presentation.availability import presentation_available
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.dsh_runtime.bindings import KernelBindingRepository
@@ -124,7 +125,10 @@ class DshRuntimeApplication:
         publisher = RuntimeProfilePublisher(
             ModelProfileCompiler(
                 MongoModelCatalog(),
-                ToolProfileCompiler(MongoToolCatalog(), internal_catalog, employee_policy, search_available),
+                ToolProfileCompiler(
+                    MongoToolCatalog(), internal_catalog, employee_policy,
+                    search_available, presentation_available,
+                ),
                 SkillProfileCompiler(MongoSkillCatalog()),
                 get_product_extension().model_access_policy,
                 MongoPluginCatalog(),

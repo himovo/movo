@@ -31,6 +31,7 @@ def test_settings_validate_all_three_capabilities(monkeypatch) -> None:
     monkeypatch.setattr(module, "save_presentation_settings", save_settings)
     result = asyncio.run(module.put_settings(
         module.PresentationSettingsPayload(
+            enabled=True,
             llmModelId="llm-a",
             imageModelId="image-a",
             visionModelId="vision-a",
@@ -38,7 +39,7 @@ def test_settings_validate_all_three_capabilities(monkeypatch) -> None:
         {"main_id": "tenant-a", "username": "admin"},
     ))
 
-    assert calls == ["llm-a", "image-a", "vision-a"]
+    assert calls[:3] == ["llm-a", "image-a", "vision-a"]
     assert "generationMode" not in result
     assert result["configured"] is True
 
@@ -61,6 +62,7 @@ def test_settings_accept_legacy_image_capability(monkeypatch) -> None:
 
     result = asyncio.run(module.put_settings(
         module.PresentationSettingsPayload(
+            enabled=True,
             llmModelId="llm-a",
             imageModelId="image-a",
             visionModelId="vision-a",
@@ -84,6 +86,7 @@ def test_settings_reject_model_without_required_capability(monkeypatch) -> None:
     with pytest.raises(HTTPException, match="image_generation"):
         asyncio.run(module.put_settings(
             module.PresentationSettingsPayload(
+            enabled=True,
                 llmModelId="llm-a",
                 imageModelId="image-a",
                 visionModelId="vision-a",
@@ -97,3 +100,16 @@ def test_legacy_partial_settings_are_reported_as_incomplete() -> None:
 
     assert result["configured"] is False
     assert "generationMode" not in result
+
+
+def test_disabled_settings_can_be_saved_without_models(monkeypatch):
+    async def save_settings(**kwargs):
+        return kwargs
+    monkeypatch.setattr(module, "save_presentation_settings", save_settings)
+    result = asyncio.run(module.put_settings(module.PresentationSettingsPayload(), {"main_id": "tenant-a"}))
+    assert result["enabled"] is False
+    assert result["available"] is False
+
+
+def test_missing_switch_defaults_to_disabled():
+    assert module._serialize({"llm_model_id": "a"})["enabled"] is False

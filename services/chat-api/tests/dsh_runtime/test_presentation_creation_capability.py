@@ -94,7 +94,8 @@ def _default_presentation_settings(monkeypatch):
         module,
         "get_presentation_generation_settings",
         lambda *args: _async_value({
-            "llm_model_id": "model-a",
+            "enabled": True,
+        "llm_model_id": "model-a",
             "image_model_id": "image-a",
             "vision_model_id": "vision-a",
         }),
@@ -315,6 +316,7 @@ def test_presentation_rejects_before_pipeline_when_no_vision_model(monkeypatch) 
     pipeline = _Pipeline(slide_count=3)
     capability = PresentationCreationCapability(lambda output_spec: pipeline)
     monkeypatch.setattr(module, "get_presentation_generation_settings", lambda *args: _async_value({
+        "enabled": True,
         "llm_model_id": "model-a",
         "image_model_id": "image-a",
         "vision_model_id": "vision-a",
@@ -340,6 +342,7 @@ def test_presentation_uses_all_models_selected_in_settings(monkeypatch) -> None:
     pipeline = _Pipeline(slide_count=3)
     capability = PresentationCreationCapability(lambda output_spec: pipeline)
     monkeypatch.setattr(module, "get_presentation_generation_settings", lambda *args: _async_value({
+        "enabled": True,
         "llm_model_id": "model-a",
         "image_model_id": "image-a",
         "vision_model_id": "vision-a",
@@ -402,3 +405,14 @@ def test_intermediate_and_internal_artifacts_are_not_projected() -> None:
             "visibility": "internal",
         }
     }) == []
+
+
+def test_disabled_presentation_rejects_before_pipeline(monkeypatch):
+    from app.enterprise_capabilities.presentation import service as module
+    monkeypatch.setattr(module, "get_presentation_generation_settings", lambda *args: _async_value({"enabled": False}))
+    pipeline = _Pipeline(slide_count=3)
+    result = asyncio.run(PresentationCreationCapability(lambda _: pipeline).run(
+        {"request": "Create a deck", "page_count": 3}, _context([])))
+    assert result["success"] is False
+    assert "disabled" in result["message"]
+    assert pipeline.messages is None

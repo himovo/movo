@@ -20,14 +20,16 @@ router = APIRouter()
 
 
 class PresentationSettingsPayload(BaseModel):
-    llmModelId: str = Field(min_length=1, max_length=120)
-    imageModelId: str = Field(min_length=1, max_length=120)
-    visionModelId: str = Field(min_length=1, max_length=120)
+    enabled: bool = False
+    llmModelId: str = Field(default="", max_length=120)
+    imageModelId: str = Field(default="", max_length=120)
+    visionModelId: str = Field(default="", max_length=120)
 
 
 def _serialize(doc: dict[str, Any] | None) -> dict[str, Any]:
     source = doc or {}
     return {
+        "enabled": source.get("enabled") is True,
         "configured": all(str(source.get(key) or "").strip() for key in (
             "llm_model_id",
             "image_model_id",
@@ -44,21 +46,30 @@ async def _require_model(main_id: str, model_id: str, capability: str, label: st
     if not str(model_id or "").strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"请选择{label}",
+            detail=f"Presentation model unavailable: {capability}",
         )
     try:
         instance = await find_instance_by_id(model_id, main_id)
     except InvalidId as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"请选择有效的{label}",
+            detail=f"Presentation model unavailable: {capability}",
         ) from exc
     capabilities = set(normalize_capabilities(instance.get("capabilities") or [])) if instance else set()
     if instance is None or instance.get("status") != "active" or capability not in capabilities:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"{label}不存在、已禁用或不支持 {capability} 能力",
+            detail=f"Presentation model unavailable: {capability}",
         )
+
+
+async def _models_available(main_id: str, settings: dict[str, Any]) -> bool:
+    for key, capability in (("llmModelId", "chat"), ("imageModelId", "image_generation"), ("visionModelId", "vision")):
+        try:
+            await _require_model(main_id, settings[key], capability, capability)
+        except HTTPException:
+            return False
+    return True
 
 
 @router.get("")
@@ -66,7 +77,9 @@ async def get_settings(
     current_user: dict[str, Any] = Depends(get_current_admin_user),
 ) -> dict[str, Any]:
     main_id = str(current_user.get("main_id") or "default")
-    return _serialize(await get_presentation_settings(main_id))
+    result = _serialize(await get_presentation_settings(main_id))
+    result["available"] = await _models_available(main_id, result)
+    return result
 
 
 @router.put("")
@@ -75,17 +88,21 @@ async def put_settings(
     current_user: dict[str, Any] = Depends(get_current_admin_user),
 ) -> dict[str, Any]:
     main_id = str(current_user.get("main_id") or "default")
-    await _require_model(main_id, payload.llmModelId, "chat", "PPT 内容与布局模型")
-    await _require_model(main_id, payload.imageModelId, "image_generation", "PPT 图片生成模型")
-    await _require_model(main_id, payload.visionModelId, "vision", "PPT 视觉重建模型")
+    if payload.enabled:
+        await _require_model(main_id, payload.llmModelId, "chat", "PPT content model")
+        await _require_model(main_id, payload.imageModelId, "image_generation", "PPT image model")
+        await _require_model(main_id, payload.visionModelId, "vision", "PPT vision model")
     saved = await save_presentation_settings(
         main_id=main_id,
+        enabled=payload.enabled,
         llm_model_id=payload.llmModelId,
         image_model_id=payload.imageModelId,
         vision_model_id=payload.visionModelId,
         updated_by=str(current_user.get("username") or ""),
     )
-    return _serialize(saved)
+    result = _serialize(saved)
+    result["available"] = await _models_available(main_id, result)
+    return result
 
 
 __all__ = ["PresentationSettingsPayload", "router"]

@@ -59,6 +59,10 @@ class PresentationCreationCapability:
         if not args["request"]:
             return self._rejected("presentation request is empty", requested=args["page_count"])
         presentation_settings = await get_presentation_generation_settings(context.tenant_id)
+        if not presentation_settings or not presentation_settings.get("enabled"):
+            return self._rejected("Built-in PPT generation is disabled", requested=args["page_count"])
+        if not str(presentation_settings.get("llm_model_id") or "").strip():
+            return self._rejected("PPT content model is unavailable; update it in admin settings", requested=args["page_count"])
         model_config = await self._model_config(context, presentation_settings)
         if model_config is None:
             return self._rejected("PPT content model is unavailable; update it in admin settings", requested=args["page_count"])
