@@ -93,14 +93,16 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.image-preview-backdrop { position: fixed; inset: 0; z-index: 1000; background: rgba(3, 9, 22, .88); padding: 64px 24px 24px; }
-.image-preview-toolbar { position: absolute; top: 16px; right: 20px; display: flex; gap: 8px; }
+.image-preview-backdrop { position: fixed; inset: 0; z-index: 1000; background: rgba(3, 9, 22, .88); display: flex; flex-direction: column; gap: 16px; padding: 16px 24px 24px; box-sizing: border-box; -webkit-app-region: no-drag; }
+.image-preview-toolbar { display: flex; flex: none; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
 .image-preview-toolbar button { border: 1px solid rgba(255,255,255,.28); border-radius: 8px; background: rgba(255,255,255,.12); color: #fff; padding: 7px 14px; cursor: pointer; }
 .image-preview-toolbar button:hover:not(:disabled), .image-preview-toolbar button:focus-visible { background: rgba(255,255,255,.25); }
 .image-preview-toolbar button:disabled { opacity: .6; cursor: not-allowed; }
-.image-preview-viewport { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; overflow: auto; }
+.image-preview-viewport { display: flex; align-items: center; justify-content: center; width: 100%; flex: 1; min-height: 0; overflow: auto; }
 .image-preview-viewport.is-overflowing { display: block; }
 .image-preview-picture { display: block; flex: none; max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
 .is-overflowing .image-preview-picture { max-width: none; max-height: none; margin: auto; }
 .image-preview-error { position: absolute; bottom: 20px; border-radius: 8px; background: #fff; color: #b91c1c; padding: 8px 12px; }
+/* Native caption controls are composited above web content. */
+:global(html.platform-desktop .image-preview-backdrop) { top: max(48px, env(titlebar-area-height, 0px)); }
 </style>
