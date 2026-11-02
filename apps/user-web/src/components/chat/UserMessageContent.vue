@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import KnowledgeReferenceChips from './knowledge/KnowledgeReferenceChips.vue'
+import type { KnowledgeReference } from '../../api/knowledgeReferences'
 import AnsweredQuestionMessage from './AnsweredQuestionMessage.vue'
 import UserMessageActions from './UserMessageActions.vue'
 import UserMessageAuthor from './UserMessageAuthor.vue'
@@ -12,6 +14,7 @@ import { t, type Locale } from '../../composables/i18n'
 import { resolveArtifactPresentation } from '../../registries'
 
 type UserMessage = {
+  knowledge_references?: KnowledgeReference[]
   content: string
   question_answer?: QuestionAnswerEntry
   trigger_source?: string
@@ -63,6 +66,7 @@ function normalizeUserContent(content: string): string {
     </div>
     <AnsweredQuestionMessage v-if="message.question_answer" :entry="message.question_answer" />
     <div v-else class="whitespace-pre-wrap leading-7">{{ normalizeUserContent(message.content) }}</div>
+    <KnowledgeReferenceChips :items="message.knowledge_references || []" />
     <div v-if="message.images?.length" class="mt-3 flex flex-wrap gap-2">
     <img
       v-for="(img, imgIdx) in message.images"

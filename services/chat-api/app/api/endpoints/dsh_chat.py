@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+from app.knowledge_references.models import KnowledgeReference
+
 import os
 from typing import Any, Literal
 
@@ -75,6 +77,7 @@ class Message(BaseModel):
     content: str
     images: list[Attachment] | None = None
     documents: list[Attachment] | None = None
+    knowledge_references: list[KnowledgeReference] = Field(default_factory=list, max_length=20)
 
 
 class ChatRequest(BaseModel):
@@ -247,6 +250,7 @@ async def _start_chat_completions(
             timezone_name=request.timezone,
             images=[item.model_dump(mode="json") for item in list(latest.images or [])],
             documents=[item.model_dump(mode="json") for item in list(latest.documents or [])],
+            knowledge_references=[item.model_dump() for item in latest.knowledge_references],
             knowledge_qa_enabled=request.knowledge_qa_enabled,
             knowledge_base_ids=request.knowledge_base_ids,
             trusted_turn_context=trusted_turn_context,

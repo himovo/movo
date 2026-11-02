@@ -149,6 +149,7 @@ class DshChatService:
         timezone_name: str | None,
         images: list[dict[str, Any]],
         documents: list[dict[str, Any]],
+        knowledge_references: list[dict[str, Any]] | None = None,
         knowledge_qa_enabled: bool = False,
         knowledge_base_ids: list[str] | None = None,
         trusted_turn_context: dict[str, Any] | None = None,
@@ -161,6 +162,8 @@ class DshChatService:
         if self._topic_admission is None:
             raise RuntimeError("topic admission is not configured")
         await self._topic_admission.require(main_id=tenant_id, user_id=user_id, text=text)
+        from app.knowledge_references.admission import admit_references
+        admitted_references = await admit_references(knowledge_references, main_id=tenant_id, user_id=user_id)
         temporal_context = build_temporal_context(timezone_name)
         locale = resolve_turn_locale(text, explicit=language_name)
         turn_context = {
@@ -172,6 +175,7 @@ class DshChatService:
             # when a capability semantically selects prior-turn evidence. The
             # DSH Host allowlist deliberately filters this field.
             "user_request": text,
+            "knowledge_references": admitted_references,
         }
         # Trusted selection references. The Host resolves these opaque IDs
         # only against its immutable Runtime Profile; arbitrary instructions
@@ -423,6 +427,7 @@ class DshChatService:
                 message_id=effective_user_message_id,
                 images=images,
                 documents=documents,
+                knowledge_references=admitted_references,
                 client_supplied_id=user_message_id is not None,
             )
             await self._conversations.append_message(

@@ -314,6 +314,7 @@ class ConversationRepository:
         message_id: str,
         images: list[dict[str, Any]] | None = None,
         documents: list[dict[str, Any]] | None = None,
+        knowledge_references: list[dict[str, Any]] | None = None,
         execution_events: list[dict[str, Any]] | None = None,
         client_supplied_id: bool = False,
     ) -> dict[str, Any]:
@@ -361,6 +362,7 @@ class ConversationRepository:
             "content": content,
             "images": list(images or []),
             "documents": list(documents or []),
+            "knowledge_references": list(knowledge_references or []),
             "message_id": message_id,
             "execution_events": list(execution_events or []),
             "created_at": now,

@@ -1,3 +1,4 @@
+import type { KnowledgeReference } from '../../api/knowledgeReferences'
 import type { ExecutionStoreV3 } from '../../features/execution-v3/stores/executionStore'
 import type { DshTaskChangeSet } from '../../platform/types'
 import type { ChatMessageAuthor } from '../../api/sessions'
@@ -14,6 +15,7 @@ export interface ImageInfo {
 }
 
 export interface ChatMessage {
+  knowledge_references?: KnowledgeReference[]
   role: 'user' | 'assistant'
   content: string
   _id?: string

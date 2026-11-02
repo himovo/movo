@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import KnowledgeMentionPicker from './knowledge/KnowledgeMentionPicker.vue'
+import KnowledgeReferenceChips from './knowledge/KnowledgeReferenceChips.vue'
+import { useKnowledgeMentions } from './knowledge/useKnowledgeMentions'
+import type { KnowledgeReference } from '../../api/knowledgeReferences'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { ChatModelOption } from '../../api/models'
 import { useComposerSkillPicker } from './useComposerSkillPicker'
@@ -34,7 +38,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'send', payload: { text: string; images: File[]; documents: PendingDocument[]; knowledgeQaEnabled: boolean; selectedSkillId?: string; modelId?: string; onRejected?: () => void }): void
+  (e: 'send', payload: { text: string; images: File[]; documents: PendingDocument[]; knowledgeQaEnabled: boolean; knowledgeReferences?: KnowledgeReference[]; selectedSkillId?: string; modelId?: string; onRejected?: () => void }): void
   (e: 'stop'): void
   (e: 'select-model', modelId: string): void
   (e: 'image-preview', payload: { src: string; alt: string }): void
@@ -84,6 +88,15 @@ const {
   pickerElement: () => skillPickerRef.value?.root,
   closeAttachmentMenu, resizeInput: autoResizeComposerInput,
 })
+const mentions = useKnowledgeMentions({
+  input: userInput, element: composerInputRef, userId: () => props.userId, mainId: () => props.mainId,
+  allowed: () => props.allowKnowledge !== false && !props.running && !props.blocked,
+  onOpen: () => { closeSkillPicker(); closeAttachmentMenu() }, resize: autoResizeComposerInput, onLimit: () => message.warning(t('knowledgeMention.limit')),
+})
+function onComposerInput() {
+  handleComposerInput()
+  if (!isComposingText.value) mentions.handleInput()
+}
 const {
   pendingImages, pendingDocuments, imageInputRef, documentInputRef,
   revokePendingImage, removePendingImage, removePendingDocument,
@@ -196,6 +209,7 @@ function onComposerCompositionStart() {
 
 function onComposerCompositionEnd() {
   isComposingText.value = false
+  mentions.handleInput()
 }
 
 function isImeCompositionKey(event: KeyboardEvent) {
@@ -210,6 +224,7 @@ function onComposerKeydown(event: KeyboardEvent) {
   if (isImeCompositionKey(event)) {
     return
   }
+  if (mentions.keydown(event)) return
   if (skillPickerOpen.value) {
     if (event.key === 'ArrowDown') {
       event.preventDefault()
@@ -251,6 +266,9 @@ async function sendMessage() {
   if (!hasText && !hasImages && !hasDocuments && !hasSelectedSkill) return
 
   const text = userInput.value
+  const knowledgeRefs = [...mentions.selected.value]
+  mentions.close()
+  mentions.selected.value = []
   const imageFiles = pendingImages.value.map((item) => item.file)
   const documentFiles = pendingDocuments.value.map((item) => ({ file: item.file, kind: item.kind }))
   const skill = selectedSkill.value
@@ -267,6 +285,7 @@ async function sendMessage() {
   selectedSkill.value = null
   emit('send', {
     text,
+    knowledgeReferences: knowledgeRefs,
     images: imageFiles,
     documents: documentFiles,
     knowledgeQaEnabled: knowledgeQaEnabled.value,
@@ -276,6 +295,7 @@ async function sendMessage() {
       userInput.value = userInput.value ? `${text}\n\n${userInput.value}` : text
       pendingImages.value.push(...imageFiles.map((file) => ({ file, previewUrl: URL.createObjectURL(file) })))
       pendingDocuments.value.push(...documentFiles)
+      mentions.selected.value = [...knowledgeRefs, ...mentions.selected.value]
       if (!selectedSkill.value) selectedSkill.value = skill
       knowledgeQaEnabled.value = knowledgeEnabled
       void nextTick(() => { autoResizeComposerInput(); composerInputRef.value?.focus() })
@@ -315,7 +335,11 @@ watch(() => props.userId, () => {
 })
 
 watch(() => props.allowKnowledge, (allowed) => {
-  if (allowed === false) knowledgeQaEnabled.value = false
+  if (allowed === false) {
+    knowledgeQaEnabled.value = false
+    for (const item of [...mentions.selected.value]) mentions.remove(item)
+    mentions.close()
+  }
 })
 
 
@@ -356,6 +380,7 @@ watch(() => props.allowKnowledge, (allowed) => {
         @remove-image="removePendingImage"
         @remove-document="removePendingDocument"
       />
+      <KnowledgeReferenceChips :items="mentions.selected.value" removable @remove="mentions.remove" />
       <ComposerSelections
         :knowledge-qa-enabled="knowledgeQaEnabled"
         :knowledge-label="knowledgeLabel"
@@ -381,11 +406,14 @@ watch(() => props.allowKnowledge, (allowed) => {
           @scroll="onSkillPickerScroll"
           @load-more="loadSelectableSkills(false)"
         />
+        <div v-if="mentions.open.value" :ref="element => { mentions.root.value = element as HTMLElement | null }" class="knowledge-picker-root">
+          <KnowledgeMentionPicker :items="mentions.items.value" :scope="mentions.scope.value" :loading="mentions.loading.value" :failed="mentions.failed.value" :active="mentions.active.value" :has-more="mentions.cursor.value !== null" :trail="mentions.trail.value" @scope="mentions.setScope" @select="mentions.select" @browse="mentions.browse" @back="mentions.back" @more="mentions.load(true)" @retry="mentions.load()" @close="mentions.close" />
+        </div>
         <textarea
           ref="composerInputRef"
           data-chat-composer-input="true"
           v-model="userInput"
-          @input="handleComposerInput"
+          @input="onComposerInput"
           @keydown="onComposerKeydown"
           @paste="onComposerPaste"
           @compositionstart="onComposerCompositionStart"
@@ -393,7 +421,7 @@ watch(() => props.allowKnowledge, (allowed) => {
           rows="1"
           :placeholder="t('chat.composer.placeholder')"
           :disabled="running || blocked"
-          :aria-expanded="skillPickerOpen"
+          :aria-expanded="skillPickerOpen || mentions.open.value"
           aria-haspopup="listbox"
           :aria-activedescendant="skillPickerOpen && activeSkillIndex >= 0 ? `skill-picker-option-${activeSkillIndex}` : undefined"
           class="w-full max-h-[200px] resize-none border-0 bg-transparent px-1 py-1.5 focus:ring-0 outline-none text-slate-800 placeholder:text-slate-400 leading-6"

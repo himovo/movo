@@ -71,6 +71,7 @@ class MessageIn(BaseModel):
     plan: Optional[dict] = Field(None, description="Optional plan payload")
     progress: Optional[list] = Field(None, description="Optional progress logs")
     documents: Optional[list] = Field(None, description="Optional generated documents")
+    knowledge_references: Optional[list[dict[str, Any]]] = None
     images: Optional[list] = Field(None, description="Optional uploaded image metadata")
     evidence_bundles: Optional[list] = Field(None, validation_alias=AliasChoices("evidence_bundles", "evidenceBundles"), description="Optional persisted evidence bundles")
     message_id: Optional[str] = Field(None, description="Streaming message id from chat completion (X-Message-Id)")
@@ -1132,6 +1133,7 @@ async def get_session(
                 plan=msg.get("plan"),
                 progress=msg.get("progress"),
                 documents=msg.get("documents"),
+                knowledge_references=msg.get("knowledge_references"),
                 images=msg_images,
                 evidence_bundles=msg.get("evidence_bundles"),
                 message_id=msg_id_val or None,

@@ -136,6 +136,8 @@ async def knowledge_search(arguments: dict[str, Any], context: CapabilityExecuti
 
 
 async def knowledge_read_document(arguments: dict[str, Any], context: CapabilityExecutionContext) -> dict[str, Any]:
+    reference = next((item for item in context.turn_context.get('knowledge_references', [])
+        if item.get('kind') == 'document' and item.get('scope') == arguments.get('scope') and item.get('source_id') == arguments.get('source_id')), {})
     result = await read_knowledge_document(
         tenant_id=context.tenant_id,
         user_id=context.user_id,
@@ -144,6 +146,8 @@ async def knowledge_read_document(arguments: dict[str, Any], context: Capability
         offset=int(arguments.get("offset") or 0),
         char_offset=int(arguments.get("char_offset") or 0),
         max_chars=int(arguments.get("max_chars") or 5000),
+        expected_document_id=str(reference.get("document_id") or ""),
+        expected_checksum=str(reference.get("checksum") or ""),
     )
     bundle = build_knowledge_document_evidence(
         result, language=str(context.turn_context.get("language") or "zh"),
@@ -331,6 +335,8 @@ async def compute_metrics(arguments: dict[str, Any], context: CapabilityExecutio
 
 def build_default_registry() -> CapabilityHandlerRegistry:
     registry = CapabilityHandlerRegistry()
+    from app.knowledge_references.tools import knowledge_browse
+    registry.register("knowledge.browse@v1", knowledge_browse)
     registry.register("knowledge.search@v1", knowledge_search)
     registry.register("knowledge.read_document@v1", knowledge_read_document)
     registry.register("skills.install_skillhub@v1", skillhub_install)

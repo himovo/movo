@@ -169,6 +169,8 @@ app.include_router(desktop_question_answers.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
 app.include_router(debug.router, prefix="/api")
 app.include_router(documents.router, prefix="/api")
+from app.api.endpoints import knowledge_references
+app.include_router(knowledge_references.router, prefix="/api")
 app.include_router(knowledge_sources.router, prefix="/api")
 app.include_router(knowledge_source_config.router, prefix="/api")
 app.include_router(external_tools.router, prefix="/api")

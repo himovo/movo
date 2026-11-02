@@ -31,6 +31,7 @@ from app.dsh_runtime.turn_finalization import (
 )
 from app.enterprise_capabilities.evidence import ExecutionEvidenceRepository
 from app.dsh_runtime.image_input import image_content_blocks
+from app.knowledge_references.admission import reference_prompt
 
 
 logger = logging.getLogger(__name__)
@@ -146,7 +147,7 @@ class DshTurnRunner:
                     session_id=str(binding["kernel_session_id"]),
                     request_id=request_id,
                     mode=SendMode.FOLLOWUP,
-                    content=[ContentBlock(type="text", data={"text": text}), *image_blocks],
+                    content=[ContentBlock(type="text", data={"text": text + reference_prompt((turn_context or {}).get("knowledge_references") or [])}), *image_blocks],
                     temporal_context=temporal_context,
                     turn_context=kernel_turn_context(turn_context),
                 )

@@ -1,6 +1,7 @@
 export const internalToolMessages = {
   'internalTool.skillhub_install': { zh: '安装 SkillHub Skill', en: 'Install SkillHub Skill' },
   'internalTool.knowledge_search': { zh: '企业知识检索', en: 'Search enterprise knowledge' },
+  'internalTool.knowledge_browse': { zh: '浏览知识资料', en: 'Browse knowledge materials' },
   'internalTool.knowledge_read_document': { zh: '读取指定知识文档', en: 'Read knowledge document' },
   'internalTool.document_review_source': { zh: '读取原文位置', en: 'Read source locations' },
   'internalTool.document_annotate': { zh: '批注原文副本', en: 'Annotate source document' },

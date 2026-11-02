@@ -1,3 +1,4 @@
+import type { KnowledgeReference } from '../api/knowledgeReferences'
 import type { UserProfile } from '../api/auth'
 import type { PendingRuntimeDocument } from './useChatRuntimeStore'
 import type { useChatRuntimeStore } from './useChatRuntimeStore'
@@ -12,6 +13,7 @@ export type PaneSendPayload = {
   images: File[]
   documents: PendingRuntimeDocument[]
   knowledgeQaEnabled: boolean
+  knowledgeReferences?: KnowledgeReference[]
   selectedSkillId?: string
   modelId?: string
   onRejected?: () => void
@@ -31,6 +33,11 @@ export function usePaneTurnActions(options: {
   async function send(key: string, payload: PaneSendPayload): Promise<void> {
     const codeState = options.codeRuntime.stateFor(key)
     if (options.canUseCode() && (codeState.workspace || codeState.session)) {
+      if (payload.knowledgeReferences?.length) {
+        codeState.error = t('knowledgeMention.codeUnsupported')
+        payload.onRejected?.()
+        return
+      }
       if (payload.images.length || payload.documents.length) {
         codeState.error = t('app.codeAttachmentHint')
         return

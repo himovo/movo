@@ -1,0 +1,18 @@
+export const knowledgeMentionMessages = {
+  'knowledgeMention.title': { zh: '引用知识资料', en: 'Reference knowledge materials' },
+  'knowledgeMention.personal': { zh: '个人知识', en: 'Personal knowledge' },
+  'knowledgeMention.organization': { zh: '企业知识', en: 'Enterprise knowledge' },
+  'knowledgeMention.directory': { zh: '目录', en: 'Folder' },
+  'knowledgeMention.document': { zh: '文档', en: 'Document' },
+  'knowledgeMention.back': { zh: '返回', en: 'Back' },
+  'knowledgeMention.browse': { zh: '浏览', en: 'Browse' },
+  'knowledgeMention.loading': { zh: '正在查找可引用的资料…', en: 'Finding available materials…' },
+  'knowledgeMention.empty': { zh: '未找到可引用的资料，可继续输入目录或文档名称。', en: 'No available materials. Search by folder or document name.' },
+  'knowledgeMention.failed': { zh: '资料加载失败。', en: 'Could not load materials.' },
+  'knowledgeMention.retry': { zh: '重试', en: 'Retry' },
+  'knowledgeMention.more': { zh: '加载更多', en: 'Load more' },
+  'knowledgeMention.hint': { zh: '↑↓ 选择 · Enter 引用 · Esc 关闭；目录引用仅包含有权限的资料。', en: '↑↓ select · Enter reference · Esc close. Folder access includes authorized materials only.' },
+  'knowledgeMention.limit': { zh: '每条消息最多引用 20 项资料。', en: 'Reference up to 20 materials per message.' },
+  'knowledgeMention.codeUnsupported': { zh: '知识资料引用请在普通对话中使用，当前本地代码会话暂不支持。', en: 'Use knowledge references in a regular chat. Local Code sessions do not yet support them.' },
+  'knowledgeMention.remove': { zh: '移除资料引用', en: 'Remove material reference' },
+} as const

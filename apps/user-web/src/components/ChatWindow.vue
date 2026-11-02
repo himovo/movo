@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { KnowledgeReference } from '../api/knowledgeReferences'
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import BrowserWorkspace from './browser/BrowserWorkspace.vue'
 import CodeHistoryReadOnlyNotice from './code/CodeHistoryReadOnlyNotice.vue'
@@ -131,7 +132,7 @@ const emit = defineEmits<{
   (e: 'open-skills'): void
   (e: 'open-tools'): void
   (e: 'open-knowledge'): void
-  (e: 'send', payload: { text: string; images: File[]; documents: PendingDocument[]; knowledgeQaEnabled: boolean; selectedSkillId?: string; modelId?: string; onRejected?: () => void }): void
+  (e: 'send', payload: { text: string; images: File[]; documents: PendingDocument[]; knowledgeQaEnabled: boolean; knowledgeReferences?: KnowledgeReference[]; selectedSkillId?: string; modelId?: string; onRejected?: () => void }): void
   (e: 'stop'): void
   (e: 'refresh-session'): void
   (e: 'clear-intervention'): void

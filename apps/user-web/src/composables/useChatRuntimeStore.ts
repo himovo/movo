@@ -1,3 +1,4 @@
+import type { KnowledgeReference } from '../api/knowledgeReferences'
 import { computed, markRaw, reactive, ref } from 'vue'
 import { fetchOrgBilling } from '../api/auth'
 import { chatRuntimeMessages } from '../locales/chatRuntimeMessages'
@@ -64,6 +65,7 @@ export type RuntimeImageInfo = {
 }
 
 export type RuntimeMessage = {
+  knowledge_references?: KnowledgeReference[]
   role: 'user' | 'assistant'
   content: string
   plan?: any
@@ -184,6 +186,7 @@ type SendInput = {
   images: File[]
   documents: PendingRuntimeDocument[]
   knowledgeQaEnabled: boolean
+  knowledgeReferences?: KnowledgeReference[]
   selectedSkillId?: string
   modelId?: string
   onRejected?: () => void
@@ -778,6 +781,7 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
     author: viewerAuthor,
     images: uploadedImages as RuntimeImageInfo[],
     documents: uploadedDocuments,
+    knowledge_references: input.knowledgeReferences,
     created_at: new Date().toISOString(),
   }
   pane.messages.push(userMessage)
@@ -862,6 +866,7 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
           content: m.content,
           images: m.images || [],
           documents: m.documents || [],
+          knowledge_references: m.knowledge_references || [],
         })),
         output_spec: {
           user_id: input.userId || undefined,
@@ -921,6 +926,7 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
           content: m.content,
           images: m.images || [],
           documents: m.documents || [],
+          knowledge_references: m.knowledge_references || [],
         })),
         setWaitController: (controller) => { pane.authResumeController = controller },
         setRunning: (running) => setPaneRunning(pane, running),

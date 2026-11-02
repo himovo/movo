@@ -5,6 +5,7 @@ import json
 from typing import Any
 
 from .contracts import CapabilityDefinition
+from app.knowledge_references.capability import browse_definition
 from app.execution_isolation.script_approval_policy import script_requires_approval
 from app.enterprise_capabilities.spreadsheets import workbook_input_schema
 from app.enterprise_capabilities.content import (
@@ -161,14 +162,15 @@ class InternalCapabilityCatalog:
                     "rerank": {"type": "boolean"},
                 }, ("query",)),
             ),
+            browse_definition(_definition, _object),
             _definition(
                 capability_ref="knowledge.read_document@v1", tool_name="knowledge_read_document", domain="knowledge",
                 display_name="读取指定知识文档",
                 description=(
                     "Read an explicitly selected, authorized MOVO knowledge document in source order. "
-                    "Use the scope and source_id specified by the active Skill. Read every page by passing "
+                    "Use the scope and source_id supplied in user materials, directory listings, or the active Skill. Read every page by passing "
                     "next_cursor.offset and next_cursor.char_offset until has_more is false. "
-                    "This reads the parsed document, not similarity-search snippets."
+                    "This reads ordered text rather than similarity-search snippets. If parsing failed or text is unavailable, it parses the authorized original on demand; learning status does not prevent reading."
                 ),
                 input_schema=_object({
                     "scope": {"type": "string", "enum": ["personal", "organization"]},
