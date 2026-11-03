@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from app.services.presentation.availability import presentation_available
+from app.enterprise_capabilities.availability import InternalToolAvailability, capability_available
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.dsh_runtime.bindings import KernelBindingRepository
@@ -21,7 +21,6 @@ from app.dsh_runtime.tool_gateway.token import ToolGatewayTokenService
 from app.dsh_runtime.profile.catalog import MongoModelCatalog
 from app.dsh_runtime.profile.compiler import ModelProfileCompiler
 from app.dsh_runtime.profile.tools import MongoToolCatalog, ToolProfileCompiler
-from app.dsh_runtime.profile.search_availability import search_available
 from app.dsh_runtime.profile.skills import MongoSkillCatalog, SkillProfileCompiler
 from app.dsh_runtime.profile.plugins import MongoPluginCatalog
 from app.dsh_runtime.plugin_management.repository import PluginInstallationRepository
@@ -100,7 +99,7 @@ class DshRuntimeApplication:
         presentation_jobs = PresentationJobRepository()
         internal_catalog = InternalCapabilityCatalog()
         employee_policy = MongoEmployeePolicyResolver()
-        internal_capabilities = InternalCapabilityService(build_default_registry())
+        internal_capabilities = InternalCapabilityService(build_default_registry(), availability=capability_available)
         await store.ensure_indexes()
         await PluginInstallationRepository().ensure_indexes()
         await conversations.ensure_indexes()
@@ -127,7 +126,7 @@ class DshRuntimeApplication:
                 MongoModelCatalog(),
                 ToolProfileCompiler(
                     MongoToolCatalog(), internal_catalog, employee_policy,
-                    search_available, presentation_available,
+                    internal_availability=InternalToolAvailability(),
                 ),
                 SkillProfileCompiler(MongoSkillCatalog()),
                 get_product_extension().model_access_policy,

@@ -694,3 +694,9 @@ async def generate_image(
         output_spec=output_spec,
         log_hook=log_hook,
     )
+
+
+async def resolve_image_generation_model(main_id: str, user_id: str) -> dict[str, Any] | None:
+    """Share the execution model selection and audience policy with tool admission."""
+    config, _ = await _service._resolve_image_model_config(output_spec={"main_id": main_id}, user_id=user_id)
+    return config

@@ -83,12 +83,14 @@ class ToolProfileCompiler:
         policy_resolver: EmployeePolicyResolver | None = None,
         search_availability: Callable[[str], Awaitable[bool]] | None = None,
         presentation_availability: Callable[[str], Awaitable[bool]] | None = None,
+        internal_availability: Any = None,
     ) -> None:
         self._catalog = catalog
         self._internal_catalog = internal_catalog
         self._policy_resolver = policy_resolver
         self._search_availability = search_availability
         self._presentation_availability = presentation_availability
+        self._internal_availability = internal_availability
 
     async def compile(self, *, tenant_id: str, user_id: str) -> tuple[ToolProfileDefinition, ...]:
         rows = await self._catalog.list_enabled(tenant_id, user_id)
@@ -110,7 +112,13 @@ class ToolProfileCompiler:
             public_search_available = (
                 await self._search_availability(tenant_id) if self._search_availability else True
             )
-            for capability in await self._internal_catalog.list_enabled(tenant_id, user_id):
+            capabilities = await self._internal_catalog.list_enabled(tenant_id, user_id)
+            unavailable = await self._internal_availability.unavailable(
+                [item.capability_ref for item in capabilities], tenant_id, user_id,
+            ) if self._internal_availability else set()
+            for capability in capabilities:
+                if capability.capability_ref in unavailable:
+                    continue
                 if capability.capability_ref == "presentation.create@v1" and self._presentation_availability:
                     if not await self._presentation_availability(tenant_id):
                         continue

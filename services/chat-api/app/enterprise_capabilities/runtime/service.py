@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Awaitable, Callable
 
 from app.llm.configured_models import get_model_config
 from app.infrastructure.request_context import reset_request_context, set_request_context
@@ -10,8 +10,10 @@ from .registry import CapabilityHandlerRegistry
 
 
 class InternalCapabilityService:
-    def __init__(self, registry: CapabilityHandlerRegistry) -> None:
+    def __init__(self, registry: CapabilityHandlerRegistry, *,
+                 availability: Callable[[str, str, str], Awaitable[bool]] | None = None) -> None:
         self._registry = registry
+        self._availability = availability
 
     async def execute(
         self,
@@ -20,6 +22,8 @@ class InternalCapabilityService:
         context: CapabilityExecutionContext,
     ) -> dict[str, Any]:
         handler = self._registry.require(capability_ref)
+        if self._availability and not await self._availability(capability_ref, context.tenant_id, context.user_id):
+            raise RuntimeError("Tool dependency is currently unavailable")
         configured_model = None
         if context.model_instance_id:
             configured_model = await get_model_config(context.model_instance_id, context.tenant_id)

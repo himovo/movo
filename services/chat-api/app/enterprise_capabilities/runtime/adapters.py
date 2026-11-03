@@ -28,7 +28,6 @@ from app.enterprise_capabilities.research.progressive.agent import ProgressiveRe
 from app.infrastructure.request_context import reset_request_context, set_request_context
 from app.llm.configured_models import (
     get_default_model_config,
-    get_default_model_config_by_capability,
     get_model_config,
     reset_configured_model_context,
     set_configured_model_context,
@@ -197,7 +196,8 @@ async def document_extract_resources(arguments: dict[str, Any], context: Capabil
 
 
 async def image_extract_facts(arguments: dict[str, Any], context: CapabilityExecutionContext) -> dict[str, Any]:
-    vision_model = await get_default_model_config_by_capability(context.tenant_id, capability="vision")
+    from app.enterprise_capabilities.availability.checks import vision_model as resolve_vision_model
+    vision_model = await resolve_vision_model(context.tenant_id, context.user_id)
     if vision_model is None:
         return {
             "success": False,

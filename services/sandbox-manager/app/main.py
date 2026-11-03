@@ -84,6 +84,13 @@ def health(authorization: str | None = Header(default=None)) -> dict:
     return {"ok": True, **jobs().status(), **plugins().status()}
 
 
+@app.get("/v1/readiness")
+def readiness(authorization: str | None = Header(default=None)) -> dict:
+    _authorize(authorization)
+    from .readiness import script_readiness
+    return script_readiness()
+
+
 @app.post("/v1/script-jobs")
 def run_script(payload: ExecuteScriptRequest, authorization: str | None = Header(default=None)) -> dict:
     _authorize(authorization)

@@ -71,7 +71,7 @@ def test_document_resource_can_flow_directly_into_image_facts(monkeypatch) -> No
         fake_extract_image_facts,
     )
     monkeypatch.setattr(
-        "app.enterprise_capabilities.runtime.adapters.get_default_model_config_by_capability",
+        "app.enterprise_capabilities.availability.checks.vision_model",
         fake_vision_model,
     )
     monkeypatch.setattr(
