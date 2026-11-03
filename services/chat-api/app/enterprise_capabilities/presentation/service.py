@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Any, Callable
 
 from app.enterprise_capabilities.runtime.contracts import CapabilityExecutionContext
@@ -18,6 +19,7 @@ from app.llm.configured_image_models import get_image_model_config
 from app.infrastructure.request_context import reset_request_context, set_request_context
 from app.services.presentation.image_native.pipeline import ImageNativePresentationPipeline
 from app.services.presentation.settings import get_presentation_generation_settings
+from app.services.presentation.execution.failures import PresentationStepError
 from app.services.conversation_evidence_service import (
     ConversationEvidenceUnavailable,
     conversation_evidence_service,
@@ -27,6 +29,8 @@ from .contracts import normalize_presentation_arguments
 from .evidence import presentation_tool_observations
 from .progress import PresentationTimelineProjector
 from .job_coordinator import PresentationJobCoordinator
+
+logger = logging.getLogger(__name__)
 
 
 def build_presentation_pipeline(_: dict[str, Any] | None = None) -> ImageNativePresentationPipeline:
@@ -158,9 +162,19 @@ class PresentationCreationCapability:
                 )
             raise
         except Exception as exc:
+            failure = exc if isinstance(exc, PresentationStepError) else PresentationStepError(exc, stage="pipeline")
+            logger.exception("presentation_generation_failed action_id=%s %s", context.action_id, failure)
             if execution_session is not None and self._job_coordinator is not None:
-                await self._job_coordinator.fail(execution_session, str(exc))
-            raise
+                await self._job_coordinator.fail(execution_session, str(failure))
+            rejected = self._rejected(str(failure), requested=args["page_count"])
+            rejected["acceptance"]["retry_allowed"] = False
+            rejected["message"] += (
+                " Stop automatic retries for this turn. Do not change the requested slide count,"
+                " shorten the brief, or create a probe deck to diagnose this error."
+                " Do not infer a content problem from a provider failure."
+                " Completed pages remain saved under the same job; report the failure instead of restarting."
+            )
+            return rejected
         bundle = self._dict(result.get("preview_bundle"))
         document = self._dict(result.get("document_payload"))
         slide_count = int(bundle.get("slide_count") or 0)

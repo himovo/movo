@@ -12,7 +12,11 @@ def presentation_create_input_schema() -> dict[str, Any]:
             "request": {
                 "type": "string",
                 "minLength": 1,
-                "description": "Complete presentation brief in the user's language.",
+                "description": (
+                    "Complete presentation brief in the user's language. Preserve the user's scope. "
+                    "The tool handles transient retries and saves completed pages. Do not create "
+                    "smaller probe decks or change the brief to diagnose a service error."
+                ),
             },
             "page_count": {
                 "type": "integer",

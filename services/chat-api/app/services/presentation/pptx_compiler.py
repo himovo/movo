@@ -17,7 +17,7 @@ from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.oxml.ns import qn
 from lxml import etree
-from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE
+from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE, MSO_SHAPE_TYPE
 from pptx.enum.text import MSO_AUTO_SIZE, PP_ALIGN
 from pptx.util import Emu, Pt
 
@@ -112,9 +112,10 @@ _PP_ALIGN_MAP = {
 class PptxCompiler:
     """Render a FreeformDeckBlueprint into a .pptx file."""
 
-    def compile(self, blueprint: FreeformDeckBlueprint) -> bytes:
+    def compile(self, blueprint: FreeformDeckBlueprint, *, user_id: str = "") -> bytes:
         """Return raw .pptx bytes."""
         blueprint = PresentationStyleContract().canonicalize(blueprint)
+        self._export_user_id = user_id
         prs = Presentation()
         prs.slide_width = Emu(SLIDE_W_EMU)
         prs.slide_height = Emu(SLIDE_H_EMU)
@@ -123,6 +124,10 @@ class PptxCompiler:
         for page in list(blueprint.pages or []):
             slide = prs.slides.add_slide(blank_layout)
             self._render_page(slide, page, blueprint)
+            if page.layout_type == "image_native_full_slide" and not any(
+                shape.shape_type == MSO_SHAPE_TYPE.PICTURE for shape in slide.shapes
+            ):
+                raise ValueError(f"PPTX slide has no embedded visual: page={page.page_id}")
 
         buf = BytesIO()
         prs.save(buf)
@@ -136,7 +141,7 @@ class PptxCompiler:
         filename: str = "",
     ) -> Dict[str, Any]:
         """Compile blueprint → .pptx → upload to OSS → return metadata."""
-        pptx_bytes = self.compile(blueprint)
+        pptx_bytes = self.compile(blueprint, user_id=user_id)
         safe_name = filename.strip() or f"{self._safe_filename(blueprint.deck_goal or blueprint.deck_id)}.pptx"
         if not safe_name.endswith(".pptx"):
             safe_name += ".pptx"
@@ -488,9 +493,12 @@ class PptxCompiler:
         style = dict(block.style or {})
         content = str(block.content or "").strip()
 
-        # Try to download and embed a real image URL
-        if content and (content.startswith("http://") or content.startswith("https://")):
-            image_bytes = self._download_image(content)
+        from app.services.presentation.image_resources import is_image_reference, read_stored_image
+
+        if is_image_reference(content):
+            image_bytes = read_stored_image(content, user_id=getattr(self, "_export_user_id", ""))
+            if image_bytes is None:
+                image_bytes = self._download_image(content)
             if image_bytes:
                 if str(style.get("fit") or style.get("object_fit") or "cover").strip().lower() == "cover":
                     image_bytes = crop_image_bytes_to_aspect(
@@ -500,6 +508,10 @@ class PptxCompiler:
                     )
                 slide.shapes.add_picture(BytesIO(image_bytes), left, top, width, height)
                 return
+            raise ValueError(f"Slide image could not be loaded: block={block.id}")
+
+        if block.role == "full_slide_visual":
+            raise ValueError(f"Finished slide image is missing: block={block.id}")
 
         # Placeholder
         prompt_text = str(block.image_prompt or content or "Image").strip()

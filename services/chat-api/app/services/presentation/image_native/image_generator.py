@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 from PIL import Image
 
 from app.services.image_generation import generate_image
+from app.services.presentation.execution.failures import run_generation_step
 from app.utils.oss_uploader import AliyunOSSUploader
 
 logger = logging.getLogger(__name__)
@@ -24,11 +25,11 @@ class FullSlideImageGenerator:
         page_id: str,
         log_context: Dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
-        result = await generate_image(
+        result = await run_generation_step(lambda: generate_image(
             prompt=prompt,
             user_id=user_id,
             log_hook=lambda event, payload: self._log_image_event(event, payload, log_context or {}),
-        )
+        ), stage="slide_image_generation", page_id=page_id)
         image_bytes = self._normalize_png(result.image_bytes)
         uploader = AliyunOSSUploader()
         _public, object_path = uploader.upload_bytes_with_path(

@@ -6,7 +6,7 @@ result to OSS and writing the signed URL back into ``block.content``.
 
 Design goals:
   * Only fill blocks that still hold a placeholder (``content`` is empty or
-    not a valid http URL) and carry a non-empty ``image_prompt``.
+    not an image resource reference) and carry a non-empty ``image_prompt``.
   * Skip entirely when the feature flag is off, when no image blocks exist,
     or when the generation service fails — callers must never block.
   * Cache per-deck by (prompt, size) so the same prompt is generated once.
@@ -26,6 +26,7 @@ from app.services.presentation.contracts import (
     FreeformDeckBlueprint,
     FreeformPageBlueprint,
 )
+from app.services.presentation.image_resources import is_image_reference
 from app.tools.infographic import generate_infographic_asset
 
 logger = logging.getLogger(__name__)
@@ -37,11 +38,6 @@ _DEFAULT_CONCURRENCY = 4
 _DEFAULT_MAX_IMAGES_PER_DECK = 20
 # Per-image generation timeout. Matches the infographic service default.
 _DEFAULT_IMAGE_TIMEOUT_SECONDS = 90.0
-
-
-def _is_http_url(value: str) -> bool:
-    s = str(value or "").strip().lower()
-    return s.startswith("http://") or s.startswith("https://")
 
 
 def _iter_image_blocks(blocks: Iterable[FreeformBlock]) -> List[FreeformBlock]:
@@ -81,7 +77,7 @@ def _resolve_prompt(block: FreeformBlock) -> str:
     """Pick the best available text prompt for this image block."""
     candidates = [
         str(block.image_prompt or "").strip(),
-        str(block.content or "").strip() if not _is_http_url(block.content or "") else "",
+        str(block.content or "").strip() if not is_image_reference(block.content or "") else "",
     ]
     for text in candidates:
         if text:
@@ -126,7 +122,7 @@ class ImageFiller:
         for page in list(blueprint.pages or []):
             for block in _iter_image_blocks(list(page.blocks or [])):
                 # Skip blocks already pointing at a real URL.
-                if _is_http_url(getattr(block, "content", "")):
+                if is_image_reference(getattr(block, "content", "")):
                     continue
                 prompt = _resolve_prompt(block)
                 if not prompt:

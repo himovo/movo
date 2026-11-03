@@ -7,7 +7,6 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 from app.services.presentation.debug_dumper import dump_collision_only_report
 from app.services.presentation.geometry_collision_detector import detect_deck_collisions
 from app.services.presentation.html_renderer import HtmlRenderer
-from app.services.presentation.image_filler import ImageFiller
 from app.services.presentation.image_native.page_planner import ImageNativePagePlanner
 from app.services.presentation.image_native.progress_narration import (
     presentation_ready_summary,
@@ -32,7 +31,6 @@ class ImageNativePresentationPipeline:
         self._page_planner = ImageNativePagePlanner()
         self._html_renderer = HtmlRenderer()
         self._bundle_builder = PreviewBundleBuilder()
-        self._image_filler = ImageFiller()
 
     async def _emit_progress(
         self,
@@ -106,13 +104,8 @@ class ImageNativePresentationPipeline:
         )
         blueprint = sanitize_deck(blueprint)
 
-        # Full-slide image pages already contain their final image URL. Keep
-        # ImageFiller as a compatibility safety net, but do not expose its
-        # usual no-op as a user-facing generation stage.
-        blueprint = await self._image_filler.fill(
-            blueprint,
-            user_id=str(enriched_output_spec.get("user_id") or "anonymous"),
-        )
+        # Every page already contains its finished visual. Never send a
+        # stored image reference back to the image generation model.
 
         await self._emit_progress(
             progress_callback,

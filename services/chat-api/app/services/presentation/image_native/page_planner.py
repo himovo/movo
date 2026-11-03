@@ -256,7 +256,15 @@ class ImageNativePagePlanner:
                     idx + 1,
                 )
 
-            await asyncio.gather(*[_run_page(idx, page_brief) for idx, page_brief in enumerate(page_briefs)])
+            tasks = [asyncio.create_task(_run_page(idx, brief)) for idx, brief in enumerate(page_briefs)]
+            try:
+                await asyncio.gather(*tasks)
+            except BaseException:
+                for task in tasks:
+                    if not task.done():
+                        task.cancel()
+                await asyncio.gather(*tasks, return_exceptions=True)
+                raise
 
             for item in ordered_results:
                 if item is None:

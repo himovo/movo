@@ -82,6 +82,22 @@ class _Pipeline:
         }
 
 
+def test_empty_timeout_returns_actionable_failure_without_probe_retry(monkeypatch):
+    class FailingPipeline:
+        async def build(self, **kwargs):
+            raise TimeoutError()
+
+    capability = PresentationCreationCapability(lambda _: FailingPipeline())
+    result = asyncio.run(capability.run({"request": "Create two slides", "page_count": 2}, _context([])))
+    assert result["success"] is False
+    assert result["accepted"] is False
+    assert result["acceptance"]["requested_slide_count"] == 2
+    assert result["acceptance"]["retry_allowed"] is False
+    assert "provider_timeout" in result["message"]
+    assert "probe deck" in result["message"]
+    assert "artifact" not in result
+
+
 async def _async_value(value):
     return value
 

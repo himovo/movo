@@ -5,6 +5,7 @@ from typing import Any
 from app.llm.factory import get_llm_client
 from app.llm.configured_multimodal import parse_json_object
 from app.llm.types import Message, Role
+from app.services.presentation.execution.failures import run_generation_step
 
 
 class PagePlanClient:
@@ -15,5 +16,9 @@ class PagePlanClient:
             streaming=False, stage=stage, intent=intent,
             output_spec={"user_id": user_id, "session_id": session_id, **(request_payload_extra or {})},
         )
-        result = await client.ainvoke([Message(role=Role.USER, content=prompt)])
+        result = await run_generation_step(
+            lambda: client.ainvoke([Message(role=Role.USER, content=prompt)]),
+            stage="slide_content_planning",
+            page_id=str((request_payload_extra or {}).get("page_id") or ""),
+        )
         return parse_json_object(str(result.content or ""))
