@@ -1,4 +1,5 @@
 import { apiClient } from '@/api/client';
+import { appendUrlQueryParameter } from '@/utils/urlQuery';
 
 export function resolveAdminAssetUrl(value?: string | null): string {
   const raw = String(value || '').trim();
@@ -22,6 +23,5 @@ export function resolveAdminAssetUrlWithVersion(value?: string | null, version?:
   const url = resolveAdminAssetUrl(value);
   const actualVersion = String(version || value || '').trim();
   if (!url || !actualVersion) return url;
-  const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}v=${encodeURIComponent(actualVersion)}`;
+  return appendUrlQueryParameter(url, 'v', actualVersion);
 }
