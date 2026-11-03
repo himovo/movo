@@ -11,7 +11,7 @@ export const knowledgeMentionMessages = {
   'knowledgeMention.failed': { zh: '资料加载失败。', en: 'Could not load materials.' },
   'knowledgeMention.retry': { zh: '重试', en: 'Retry' },
   'knowledgeMention.more': { zh: '加载更多', en: 'Load more' },
-  'knowledgeMention.hint': { zh: '↑↓ 选择 · Enter 引用 · Esc 关闭；目录引用仅包含有权限的资料。', en: '↑↓ select · Enter reference · Esc close. Folder access includes authorized materials only.' },
+  'knowledgeMention.hint': { zh: '←→ 切换知识 · ↑↓ 选择 · Enter 引用 · Esc 关闭；目录引用仅包含有权限的资料。', en: '←→ switch knowledge · ↑↓ select · Enter reference · Esc close. Folder access includes authorized materials only.' },
   'knowledgeMention.limit': { zh: '每条消息最多引用 20 项资料。', en: 'Reference up to 20 materials per message.' },
   'knowledgeMention.codeUnsupported': { zh: '知识资料引用请在普通对话中使用，当前本地代码会话暂不支持。', en: 'Use knowledge references in a regular chat. Local Code sessions do not yet support them.' },
   'knowledgeMention.remove': { zh: '移除资料引用', en: 'Remove material reference' },

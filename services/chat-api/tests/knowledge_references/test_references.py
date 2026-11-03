@@ -65,7 +65,7 @@ def test_search_and_directory_browse_never_disclose_denied_documents(monkeypatch
     _, permitted = install_database(monkeypatch)
     async def run():
         result = await search.search_references(main_id='tenant', user_id='user', scope='organization')
-        assert {item['source_id'] for item in result['items']} == {'folder', 'allowed'}
+        assert {item['source_id'] for item in result['items']} == {'folder'}
         folder = await search.search_documents(main_id='tenant', user_id='user', scope='organization', directory_id='folder')
         assert [item['source_id'] for item in folder['items']] == ['allowed']
         permitted.clear()
@@ -82,6 +82,26 @@ def test_personal_search_includes_only_own_and_active_shared_documents(monkeypat
     monkeypatch.setattr(search,'get_db',lambda:db); monkeypatch.setattr(access,'get_db',lambda:db)
     result=asyncio.run(search.search_documents(main_id='tenant',user_id='user',scope='personal'))
     assert {row['source_id'] for row in result['items']} == {'own','shared'}
+
+
+def test_directory_browsing_shows_one_level_and_search_finds_descendants(monkeypatch):
+    rows, permitted = install_database(monkeypatch)
+    rows['knowledge_directories'].append({'_id': 'child', 'main_id': 'tenant', 'name': 'Manuals', 'parent_id': 'folder', 'deleted_at': None})
+    rows['knowledge_documents'].append({'_id': 'manual', 'main_id': 'tenant', 'name': 'Handbook', 'knowledge_base_id': 'child', 'scope': 'organization', 'deleted_at': None})
+    rows['knowledge_documents'].append({'_id': 'welcome', 'main_id': 'tenant', 'name': 'Welcome', 'knowledge_base_id': '', 'scope': 'organization', 'deleted_at': None})
+    permitted.update({'manual', 'welcome'})
+
+    async def run():
+        root = await search.search_references(main_id='tenant', user_id='user', scope='organization')
+        assert {item['source_id'] for item in root['items']} == {'folder', 'welcome'}
+        folder = await search.search_references(main_id='tenant', user_id='user', scope='organization', directory_id='folder')
+        assert {item['source_id'] for item in folder['items']} == {'child', 'allowed'}
+        child = await search.search_references(main_id='tenant', user_id='user', scope='organization', directory_id='child')
+        assert [item['source_id'] for item in child['items']] == ['manual']
+        found = await search.search_references(main_id='tenant', user_id='user', scope='organization', keyword='Handbook')
+        assert [item['source_id'] for item in found['items']] == ['manual']
+
+    asyncio.run(run())
 
 
 def test_admission_ignores_forged_names_and_versions(monkeypatch):
@@ -115,7 +135,7 @@ def test_directory_discovery_continues_past_a_fully_denied_page(monkeypatch):
     template = rows['knowledge_documents'][0]
     rows['knowledge_documents'] = [dict(template, _id=f'denied-{index}') for index in range(65)] + [template]
     async def run():
-        first = await search.search_documents(main_id='tenant', user_id='user', scope='organization')
+        first = await search.search_documents(main_id='tenant', user_id='user', scope='organization', directory_id='folder')
         assert first['items'] == [] and first['next_cursor'] == 60
         result = await search.search_references(main_id='tenant', user_id='user', scope='organization', keyword='Reports')
         assert [item['source_id'] for item in result['items']] == ['folder']
@@ -137,6 +157,6 @@ def test_failed_learning_and_unparsed_documents_remain_selectable(monkeypatch):
     async def run():
         organization = await search.search_documents(main_id='tenant', user_id='user', scope='organization')
         personal = await search.search_documents(main_id='tenant', user_id='user', scope='personal')
-        assert [row['source_id'] for row in organization['items']] == ['allowed']
+        assert organization['items'] == []
         assert [row['source_id'] for row in personal['items']] == ['resource']
     asyncio.run(run())

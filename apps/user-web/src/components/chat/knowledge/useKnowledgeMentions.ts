@@ -54,6 +54,12 @@ export function useKnowledgeMentions(options: { input: Ref<string>; element: Ref
   function keydown(event: KeyboardEvent) {
     if (!open.value) return false
     if (event.key === 'Escape') { event.preventDefault(); close(); return true }
+    if (!event.altKey && !event.ctrlKey && !event.metaKey && ['ArrowLeft', 'ArrowRight'].includes(event.key)) {
+      event.preventDefault()
+      const nextScope = event.key === 'ArrowLeft' ? 'personal' : 'organization'
+      if (scope.value !== nextScope) setScope(nextScope)
+      return true
+    }
     if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); active.value = Math.max(0, Math.min(items.value.length - 1, active.value + (event.key === 'ArrowDown' ? 1 : -1))); void nextTick(() => root.value?.querySelectorAll('[role="option"]')[active.value]?.scrollIntoView({ block: 'nearest' })); return true }
     if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); if (items.value[active.value]) void select(items.value[active.value]); return true }
     return false
