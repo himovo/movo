@@ -333,10 +333,10 @@ import {
   fetchKnowledgeDocumentChunk,
   fetchKnowledgeDocumentChunks,
   knowledgeDocumentPreviewUrl,
-  retryKnowledgeDocumentParse,
   type KnowledgeDocumentChunkItem,
   type KnowledgeDocumentItem,
 } from '@/api/knowledge-documents';
+import { retryKnowledgeDocument } from '@/utils/knowledgeDocumentRetry';
 import { t } from '@/composables/i18n';
 import { localizedServerText } from '@/utils/serverText';
 import { formatAdminDateTime } from '@/composables/adminTimezone';
@@ -775,7 +775,7 @@ async function retryParse() {
     return;
   }
   try {
-    document.value = await retryKnowledgeDocumentParse(document.value.id);
+    document.value = await retryKnowledgeDocument(document.value);
     activePanel.value = 'detail';
     chunks.value = [];
     chunkPagination.page = 1;

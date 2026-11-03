@@ -20,11 +20,11 @@ import {
   deleteKnowledgeDocument,
   fetchKnowledgeDocuments,
   fetchKnowledgeDocumentStats,
-  retryKnowledgeDocumentParse,
   uploadKnowledgeDocument,
   type KnowledgeDocumentItem,
   type KnowledgeDocumentStats,
 } from '@/api/knowledge-documents';
+import { retryKnowledgeDocument } from '@/utils/knowledgeDocumentRetry';
 import {
   fetchDirectoryTree,
   createDirectory,
@@ -634,7 +634,7 @@ async function submitBatchDeleteDocuments() {
 
 async function retryParse(row: KnowledgeDocumentItem) {
   try {
-    await retryKnowledgeDocumentParse(row.id);
+    await retryKnowledgeDocument(row);
     message.success(t('additional.learning_task_resubmitted'));
     await reload({ silent: true });
     syncProcessingPoll();

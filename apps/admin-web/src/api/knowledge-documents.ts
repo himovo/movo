@@ -186,6 +186,11 @@ export async function retryKnowledgeDocumentParse(id: string) {
   return data;
 }
 
+export async function retryKnowledgeDocumentIndex(id: string) {
+  const { data } = await apiClient.post<KnowledgeDocumentItem>(`/api/knowledge/documents/${id}/retry-index`);
+  return data;
+}
+
 export function knowledgeDocumentContentUrl(id: string) {
   const baseURL = import.meta.env.VITE_ADMIN_API_BASE_URL || '/admin-api';
   return `${baseURL}/api/knowledge/documents/${id}/content`;

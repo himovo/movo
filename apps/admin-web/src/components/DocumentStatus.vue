@@ -26,6 +26,7 @@ import { computed } from 'vue';
 import { t } from '@/composables/i18n';
 import { useTheme } from '@/composables/theme';
 import type { KnowledgeDocumentItem } from '@/api/knowledge-documents';
+import { knowledgeDocumentRetryStage } from '@/utils/knowledgeDocumentRetry';
 
 const props = defineProps<{
   row: KnowledgeDocumentItem;
@@ -54,7 +55,7 @@ const state = computed(() => {
     return {
       label: t('legacy.learning_failed'),
       color: '#D32F2F',
-      retryable: row.parseStatus === 'failed' || row.chunkStatus === 'failed',
+      retryable: knowledgeDocumentRetryStage(row) !== null,
       icon: `<svg class="status-svg" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="8" cy="8" r="7" fill="#FFF1F0" stroke="#D32F2F" stroke-width="1.2"/>
         <path d="M8 4.5V9M8 11.5V11" stroke="#D32F2F" stroke-width="1.6" stroke-linecap="round"/>
