@@ -72,20 +72,12 @@ class PresentationCreationCapability:
                 "PPT image generation model is unavailable; update it in admin settings",
                 requested=args["page_count"],
             )
-        vision_model_config = await self._vision_model_config(context, presentation_settings)
-        if vision_model_config is None:
-            return self._rejected(
-                "PPT vision rebuild model is unavailable; update it in admin settings",
-                requested=args["page_count"],
-            )
-
         request_context = {
             "main_id": context.tenant_id,
             "user_id": context.user_id,
             "configured_model": model_config,
             "model_instance_id": context.model_instance_id,
         }
-        request_context["vision_model_config"] = vision_model_config
         request_context["image_model_id"] = str(image_model_config.get("id") or "")
         previous_request = set_request_context(request_context)
         previous_model = set_configured_model_context(model_config)
@@ -387,22 +379,6 @@ class PresentationCreationCapability:
         except ModelConfigError:
             return None
 
-    @staticmethod
-    async def _vision_model_config(
-        context: CapabilityExecutionContext,
-        settings: dict[str, Any] | None,
-    ) -> dict[str, Any] | None:
-        model_id = str((settings or {}).get("vision_model_id") or "").strip()
-        if not model_id:
-            return None
-        try:
-            return await get_model_config_by_capability(
-                model_id,
-                context.tenant_id,
-                capability="vision",
-            )
-        except ModelConfigError:
-            return None
 
 
 _capability = PresentationCreationCapability()

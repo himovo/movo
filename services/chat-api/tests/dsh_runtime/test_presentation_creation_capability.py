@@ -310,7 +310,7 @@ def test_presentation_does_not_read_history_without_semantic_opt_in(monkeypatch)
     assert pipeline.output_spec["tool_observations"] == []
 
 
-def test_presentation_rejects_before_pipeline_when_no_vision_model(monkeypatch) -> None:
+def test_presentation_runs_without_vision_model(monkeypatch) -> None:
     from app.enterprise_capabilities.presentation import service as module
 
     pipeline = _Pipeline(slide_count=3)
@@ -319,7 +319,6 @@ def test_presentation_rejects_before_pipeline_when_no_vision_model(monkeypatch) 
         "enabled": True,
         "llm_model_id": "model-a",
         "image_model_id": "image-a",
-        "vision_model_id": "vision-a",
     }))
     monkeypatch.setattr(module, "get_model_config_by_capability", lambda model_id, *args, **kwargs: _async_value(
         {"id": "model-a", "capabilities": ["chat"]} if model_id == "model-a" else None
@@ -331,9 +330,8 @@ def test_presentation_rejects_before_pipeline_when_no_vision_model(monkeypatch) 
         _context([]),
     ))
 
-    assert result["success"] is False
-    assert "vision rebuild model is unavailable" in result["message"]
-    assert pipeline.messages is None
+    assert result["success"] is True
+    assert pipeline.messages is not None
 
 
 def test_presentation_uses_all_models_selected_in_settings(monkeypatch) -> None:

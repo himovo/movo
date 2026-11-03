@@ -7,7 +7,6 @@ export interface PresentationSettings {
   available: boolean;
   llmModelId: string;
   imageModelId: string;
-  visionModelId: string;
   updatedAt: string;
 }
 
@@ -15,7 +14,6 @@ export interface PresentationSettingsPayload {
   enabled: boolean;
   llmModelId: string;
   imageModelId: string;
-  visionModelId: string;
 }
 
 export async function fetchPresentationSettings() {

@@ -9,7 +9,7 @@ async def _configured_presentation_available(tenant_id: str) -> bool:
     settings = await get_presentation_generation_settings(tenant_id)
     if not settings or not settings.get("enabled"):
         return False
-    for key, capability in (("llm_model_id", "chat"), ("image_model_id", "image_generation"), ("vision_model_id", "vision")):
+    for key, capability in (("llm_model_id", "chat"), ("image_model_id", "image_generation")):
         model_id = settings.get(key)
         if not model_id:
             return False

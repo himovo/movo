@@ -7,7 +7,7 @@ import logging
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from app.core.config import get_settings
-from app.llm.configured_multimodal import ConfiguredMultimodalClient
+from app.services.presentation.image_native.page_plan_client import PagePlanClient
 from app.services.presentation.brief_compiler import BriefCompiler
 from app.services.presentation.contracts import (
     ConstraintBundle,
@@ -54,7 +54,7 @@ class ImageNativePagePlanner:
     def __init__(self) -> None:
         self._deck_planner = DeckBriefPlanner()
         self._brief_compiler = BriefCompiler()
-        self._responses = ConfiguredMultimodalClient()
+        self._responses = PagePlanClient()
         self._slide_generator = FullSlideImageGenerator()
         self._image_builder = ImagePageBuilder()
 

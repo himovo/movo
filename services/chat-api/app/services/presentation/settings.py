@@ -16,7 +16,6 @@ async def get_presentation_generation_settings(main_id: str) -> dict[str, Any] |
         "enabled": doc.get("enabled") is True,
         "llm_model_id": str(doc.get("llm_model_id") or "").strip(),
         "image_model_id": str(doc.get("image_model_id") or "").strip(),
-        "vision_model_id": str(doc.get("vision_model_id") or "").strip(),
     }
 
 

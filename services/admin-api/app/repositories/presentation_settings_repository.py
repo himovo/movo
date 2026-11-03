@@ -23,7 +23,6 @@ async def save_presentation_settings(
     enabled: bool,
     llm_model_id: str,
     image_model_id: str,
-    vision_model_id: str,
     updated_by: str,
 ) -> dict[str, Any]:
     now = utcnow()
@@ -34,7 +33,6 @@ async def save_presentation_settings(
                 "enabled": enabled,
                 "llm_model_id": llm_model_id,
                 "image_model_id": image_model_id,
-                "vision_model_id": vision_model_id,
                 "updated_by": updated_by,
                 "updated_at": now,
             },

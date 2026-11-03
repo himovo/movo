@@ -18,10 +18,10 @@ def test_unconfigured_or_disabled_does_not_resolve_models(monkeypatch, settings)
     resolver.assert_not_awaited()
 
 
-@pytest.mark.parametrize('missing', [None, 'chat', 'image_generation', 'vision'])
+@pytest.mark.parametrize('missing', [None, 'chat', 'image_generation'])
 def test_all_selected_models_must_remain_available(monkeypatch, missing):
     monkeypatch.setattr(module, 'get_presentation_generation_settings', AsyncMock(return_value={
-        'enabled': True, 'llm_model_id': 'content', 'image_model_id': 'image', 'vision_model_id': 'vision',
+        'enabled': True, 'llm_model_id': 'content', 'image_model_id': 'image',
     }))
     async def resolve(model_id, tenant_id, *, capability):
         assert tenant_id == 'tenant-a'

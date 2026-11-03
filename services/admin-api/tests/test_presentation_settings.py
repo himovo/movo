@@ -12,11 +12,10 @@ def _instance(*capabilities: str) -> dict:
     return {"status": "active", "capabilities": list(capabilities)}
 
 
-def test_settings_validate_all_three_capabilities(monkeypatch) -> None:
+def test_settings_validate_both_required_capabilities(monkeypatch) -> None:
     capabilities = {
         "llm-a": _instance("chat"),
         "image-a": _instance("image_generation"),
-        "vision-a": _instance("vision"),
     }
     calls: list[str] = []
 
@@ -34,21 +33,20 @@ def test_settings_validate_all_three_capabilities(monkeypatch) -> None:
             enabled=True,
             llmModelId="llm-a",
             imageModelId="image-a",
-            visionModelId="vision-a",
         ),
         {"main_id": "tenant-a", "username": "admin"},
     ))
 
-    assert calls[:3] == ["llm-a", "image-a", "vision-a"]
+    assert calls[:2] == ["llm-a", "image-a"]
     assert "generationMode" not in result
     assert result["configured"] is True
+    assert "visionModelId" not in result
 
 
 def test_settings_accept_legacy_image_capability(monkeypatch) -> None:
     capabilities = {
         "llm-a": _instance("chat"),
         "image-a": _instance("image"),
-        "vision-a": _instance("vision"),
     }
 
     async def find_model(model_id: str, main_id: str):
@@ -65,12 +63,12 @@ def test_settings_accept_legacy_image_capability(monkeypatch) -> None:
             enabled=True,
             llmModelId="llm-a",
             imageModelId="image-a",
-            visionModelId="vision-a",
         ),
         {"main_id": "tenant-a", "username": "admin"},
     ))
 
     assert result["configured"] is True
+    assert "visionModelId" not in result
 
 
 def test_settings_reject_model_without_required_capability(monkeypatch) -> None:
@@ -89,8 +87,7 @@ def test_settings_reject_model_without_required_capability(monkeypatch) -> None:
             enabled=True,
                 llmModelId="llm-a",
                 imageModelId="image-a",
-                visionModelId="vision-a",
-            ),
+                ),
             {"main_id": "tenant-a", "username": "admin"},
         ))
 
@@ -113,3 +110,12 @@ def test_disabled_settings_can_be_saved_without_models(monkeypatch):
 
 def test_missing_switch_defaults_to_disabled():
     assert module._serialize({"llm_model_id": "a"})["enabled"] is False
+
+
+def test_legacy_vision_setting_does_not_block_two_model_configuration():
+    result = module._serialize({
+        "enabled": True, "llm_model_id": "content", "image_model_id": "image",
+        "vision_model_id": "deleted-legacy-model",
+    })
+    assert result["configured"] is True
+    assert "visionModelId" not in result

@@ -291,7 +291,7 @@ class InternalCapabilityCatalog:
             _definition(
                 capability_ref="presentation.create@v1", tool_name="presentation_create", domain="presentation",
                 display_name="生成PPT",
-                description="Create one complete, editable presentation through MOVO's governed PresentationPipeline. Pass only the business brief, exact slide count when explicitly requested, audience and design intent; never construct, guess, export, or trial internal Blueprint JSON yourself. The Tool owns story planning, page composition, visuals, quality checks, HTML preview and editable Blueprint persistence. When accepted=true, use the single returned presentation artifact and do not call artifact_export to create another deck.",
+                description="Create one complete presentation through MOVO's governed PresentationPipeline. Each slide is a full-page generated image; text inside it is not an individually editable text box. Pass only the business brief, exact slide count when explicitly requested, audience and design intent; never construct, guess, export, or trial internal Blueprint JSON yourself. The Tool owns story planning, page composition, visuals, quality checks, HTML preview and slide-image Blueprint persistence. When accepted=true, use the single returned presentation artifact and do not call artifact_export to create another deck.",
                 input_schema=presentation_create_input_schema(),
                 output_schema=presentation_create_output_schema(),
                 timeout_ms=PRESENTATION_CREATION_TOTAL_TIMEOUT_MS,

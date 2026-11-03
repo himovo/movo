@@ -3,7 +3,7 @@
     <header class="panel-header">
       <div>
         <div class="panel-title">{{ t('legacy.ppt_generation_settings') }}</div>
-        <div class="panel-subtitle">{{ t('legacy.configure_the_models_used_for_content_planning_full_slide') }}</div>
+        <div class="panel-subtitle">{{ t('presentation.description') }}</div>
       </div>
       <n-button type="primary" :loading="saving" :disabled="loading" @click="save">
         {{ t('legacy.save_817af18') }}
@@ -20,47 +20,34 @@
       </section>
       <section class="settings-section model-section" aria-labelledby="presentation-model-title">
         <div id="presentation-model-title" class="section-title">{{ t('legacy.ppt_model_configuration') }}</div>
-        <div class="section-help">{{ t('legacy.ppt_generation_requires_content_image_generation_and_vision_models') }}</div>
+        <n-alert type="info" :bordered="false" class="section-help">{{ t('presentation.modelHelp') }}</n-alert>
 
         <n-form label-placement="top" :show-feedback="false">
           <n-form-item :label="t('legacy.content_layout_model')" required>
-            <ModelCapabilitySelect
-              v-model="form.llmModelId"
-              @availability="modelAvailability.llm = $event"
-              capability="chat"
-              :placeholder="t('legacy.select_a_chat_capable_model')"
-            />
-            <div class="field-help">{{ t('legacy.creates_the_storyline_slide_content_and_editable_layout_plan') }}</div>
+            <div class="model-field">
+              <ModelCapabilitySelect
+                v-model="form.llmModelId"
+                @availability="modelAvailability.llm = $event"
+                capability="chat"
+                :placeholder="t('legacy.select_a_chat_capable_model')"
+              />
+              <div class="field-help">{{ t('presentation.contentHelp') }}</div>
+            </div>
           </n-form-item>
 
           <n-form-item :label="t('legacy.image_generation_model')" required>
-            <ModelCapabilitySelect
-              v-model="form.imageModelId"
-              @availability="modelAvailability.image = $event"
-              capability="image_generation"
-              :placeholder="t('legacy.select_an_image_generation_model')"
-            />
-            <div class="field-help">{{ t('legacy.generates_complete_slide_visuals_and_required_image_assets') }}</div>
-          </n-form-item>
-
-          <n-form-item :label="t('legacy.vision_rebuild_model')" required>
-            <ModelCapabilitySelect
-              v-model="form.visionModelId"
-              @availability="modelAvailability.vision = $event"
-              capability="vision"
-              :placeholder="t('legacy.select_a_vision_capable_model')"
-            />
-            <div class="field-help">{{ t('legacy.understands_slide_visuals_and_rebuilds_editable_text_shapes_and') }}</div>
+            <div class="model-field">
+              <ModelCapabilitySelect
+                v-model="form.imageModelId"
+                @availability="modelAvailability.image = $event"
+                capability="image_generation"
+                :placeholder="t('legacy.select_an_image_generation_model')"
+              />
+              <div class="field-help">{{ t('presentation.imageHelp') }}</div>
+            </div>
           </n-form-item>
         </n-form>
       </section>
-
-      <n-alert v-if="!modelsReady" type="info" :bordered="false" class="status-alert">
-        {{ t('legacy.ppt_model_configuration_is_incomplete_configure_all_three_models') }}
-      </n-alert>
-      <n-alert v-else-if="form.enabled" type="success" :bordered="false" class="status-alert">
-        {{ t('legacy.the_configuration_is_active_if_a_selected_model_is') }}
-      </n-alert>
     </n-spin>
   </div>
 </template>
@@ -80,20 +67,18 @@ import { localizedServerText } from '@/utils/serverText';
 const message = useMessage();
 const loading = ref(false);
 const saving = ref(false);
-const modelAvailability = reactive({ llm: false, image: false, vision: false });
+const modelAvailability = reactive({ llm: false, image: false });
 const modelsReady = computed(() => Object.values(modelAvailability).every(Boolean));
 const form = reactive({
   enabled: false,
   llmModelId: '',
   imageModelId: '',
-  visionModelId: '',
 });
 
 function applySettings(settings: Awaited<ReturnType<typeof fetchPresentationSettings>>) {
   form.enabled = settings.enabled;
   form.llmModelId = settings.llmModelId;
   form.imageModelId = settings.imageModelId;
-  form.visionModelId = settings.visionModelId;
 }
 
 function errorText(error: unknown): string {
@@ -122,8 +107,8 @@ async function save() {
     message.error(t('legacy.select_a_content_and_layout_model'));
     return;
   }
-  if (form.enabled && (!form.imageModelId || !form.visionModelId)) {
-    message.error(t('legacy.select_an_image_generation_model_and_a_vision_rebuild'));
+  if (form.enabled && !form.imageModelId) {
+    message.error(t('presentation.selectImage'));
     return;
   }
   saving.value = true;
@@ -142,7 +127,8 @@ onMounted(load);
 
 <style scoped>
 .presentation-settings {
-  max-width: 820px;
+  width: 100%;
+  min-width: 0;
 }
 
 .panel-header {
@@ -188,15 +174,13 @@ onMounted(load);
 }
 
 .model-section :deep(.n-form) {
-  max-width: 640px;
+  max-width: 760px;
 }
+
+.model-field { width:100%; min-width:0; }
 
 .field-help {
   margin-top: 6px;
-}
-
-.status-alert {
-  margin-top: 20px;
 }
 
 :global(html.dark) .panel-title,
