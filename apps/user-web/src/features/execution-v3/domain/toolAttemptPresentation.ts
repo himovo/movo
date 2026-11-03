@@ -22,6 +22,8 @@ export function scriptAttemptReasonKey(name: unknown, error: unknown): string {
   const detail = String(error || '')
   if (/SyntaxError|IndentationError|TabError/.test(detail)) return 'execution.v3.script_syntax'
   if (/ModuleNotFoundError|ImportError|No module named/.test(detail)) return 'execution.v3.script_dependency'
+  if (/OSError:.*(?:\[Errno 30\]|Read-only file system)/i.test(detail)) return 'execution.v3.script_output_path'
+  if (/PermissionError:.*(?:\[Errno 13\]|Permission denied|\[WinError 5\]|Access is denied)/i.test(detail)) return 'execution.v3.script_file_access'
   if (/FileNotFoundError|IndexError|KeyError/.test(detail)) return 'execution.v3.script_input'
   if (/NameError|TypeError|ValueError|AttributeError|ZeroDivisionError|AssertionError/.test(detail)) return 'execution.v3.script_logic'
   return ''

@@ -21,3 +21,13 @@ test('generated Python issues are explained without calling them application fai
   assert.equal(scriptAttemptReasonKey('run_script', 'Sandbox manager connection refused'), '')
   assert.equal(scriptAttemptReasonKey('browser_task', 'IndexError'), '')
 })
+
+
+test('sandbox file restrictions explain how the code attempt needs adjustment', async () => {
+  const { scriptAttemptReasonKey } = await import('../src/features/execution-v3/domain/toolAttemptPresentation')
+  assert.equal(scriptAttemptReasonKey('run_script', "OSError: [Errno 30] Read-only file system: '/app/outputs'"), 'execution.v3.script_output_path')
+  assert.equal(scriptAttemptReasonKey('run_script', "PermissionError: [Errno 13] Permission denied: '/data/output'"), 'execution.v3.script_file_access')
+  assert.equal(scriptAttemptReasonKey('run_script', 'PermissionError: [WinError 5] Access is denied'), 'execution.v3.script_file_access')
+  assert.equal(scriptAttemptReasonKey('run_script', 'Docker socket connection refused'), '')
+  assert.equal(scriptAttemptReasonKey('web_collect', 'OSError: [Errno 30] Read-only file system'), '')
+})
