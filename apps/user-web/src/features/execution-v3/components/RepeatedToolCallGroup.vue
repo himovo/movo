@@ -4,7 +4,7 @@ import type { ExecutionItemV3 } from '../domain/model'
 import { toolCallSummary, toolName } from '../domain/repeatedToolCalls'
 import { t } from '../../../composables/i18n'
 import { localizedInternalToolLabel } from '../domain/internalToolLabels'
-import { toolAttemptStateKey, toolGroupFailureKey } from '../domain/toolAttemptPresentation'
+import { scriptAttemptReasonKey, toolAttemptStateKey, toolGroupFailureKey } from '../domain/toolAttemptPresentation'
 import type { ExecutionStateV3 } from '../domain/model'
 import ActivityIcon from './ActivityIcon.vue'
 
@@ -38,6 +38,7 @@ function syncExpanded(event: Event) {
         <span class="tool-call-name">{{ localizedToolName(item) }}</span>
         <span class="tool-call-summary">{{ toolCallSummary(item) || t(item.status === 'running' ? 'execution.v3.processing' : 'execution.v3.tool_call_completed') }}</span>
         <span v-if="item.status === 'failed'" class="repeated-tool-error">
+          <span v-if="scriptAttemptReasonKey(item.payload?.name, item.payload?.error)">{{ t(scriptAttemptReasonKey(item.payload?.name, item.payload?.error)) }} · </span>
           {{ t(toolAttemptStateKey(runStatus)) }}
           <details v-if="item.payload?.error" class="repeated-tool-error-details">
             <summary>{{ t('execution.v3.tool_attempt_details') }}</summary>

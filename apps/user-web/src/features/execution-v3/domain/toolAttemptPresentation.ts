@@ -14,3 +14,15 @@ export function toolGroupFailureKey(runStatus: RunStatus): string {
   if (runStatus === 'running') return 'execution.v3.tool_group_adjusting'
   return 'execution.v3.repeated_failed'
 }
+
+
+/** Only classify generated-code errors; infrastructure failures retain their own details. */
+export function scriptAttemptReasonKey(name: unknown, error: unknown): string {
+  if (String(name || '') !== 'run_script') return ''
+  const detail = String(error || '')
+  if (/SyntaxError|IndentationError|TabError/.test(detail)) return 'execution.v3.script_syntax'
+  if (/ModuleNotFoundError|ImportError|No module named/.test(detail)) return 'execution.v3.script_dependency'
+  if (/FileNotFoundError|IndexError|KeyError/.test(detail)) return 'execution.v3.script_input'
+  if (/NameError|TypeError|ValueError|AttributeError|ZeroDivisionError|AssertionError/.test(detail)) return 'execution.v3.script_logic'
+  return ''
+}

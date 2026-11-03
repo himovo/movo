@@ -1,3 +1,4 @@
+import { scriptAttemptMessages } from './scriptAttemptMessages'
 import { knowledgeMentionMessages } from './knowledgeMentionMessages'
 import { additionalMessages } from './additionalMessages';
 import { uncoveredMessages } from './uncoveredMessages'
@@ -25,6 +26,7 @@ export type Locale = 'zh' | 'en'
 export type MessageValue = string | Record<Locale, string>
 
 export const messages = {
+  ...scriptAttemptMessages,
   ...knowledgeMentionMessages,
   ...projectDialogMessages,
   ...scheduledTaskErrorMessages,
