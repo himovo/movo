@@ -19,6 +19,7 @@ export const deploymentStatusMessages = {
   'deployment.unknown': { 'zh-CN': '暂无记录', 'en-US': 'No record' },
   'deployment.unknownState': { 'zh-CN': '状态未知', 'en-US': 'Unknown' },
   'deployment.services': { 'zh-CN': '服务与镜像', 'en-US': 'Services and images' },
+  'deployment.images': { 'zh-CN': '镜像列表', 'en-US': 'Images' },
   'deployment.runtimeImage': { 'zh-CN': 'Skill 运行环境镜像', 'en-US': 'Skill runtime image' },
   'deployment.runningCount': { 'zh-CN': '运行中', 'en-US': 'Running' },
   'deployment.issueCount': { 'zh-CN': '异常', 'en-US': 'Issues' },
@@ -51,5 +52,4 @@ export const deploymentStatusMessages = {
   'deployment.infrastructure': { 'zh-CN': '基础服务', 'en-US': 'Infrastructure' },
   'deployment.core': { 'zh-CN': '应用服务', 'en-US': 'Application services' },
   'deployment.noHealthcheck': { 'zh-CN': '未配置', 'en-US': 'Not configured' },
-  'deployment.versionNote': { 'zh-CN': '镜像标签可能是 latest，请以实际镜像 ID 定位版本。', 'en-US': 'Image tags may be latest. Use the actual image ID to identify a release.' },
 } as const

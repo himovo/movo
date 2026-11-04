@@ -13,8 +13,7 @@
     <template v-if="status">
       <section class="summary-card">
         <div class="summary-main">
-          <div class="summary-state"><span class="state-dot" :class="counts.issues ? 'warning' : 'good'"></span>{{ counts.issues ? t('deployment.unhealthy') : t('deployment.healthy') }}</div>
-          <div class="summary-subtitle">{{ t('deployment.checkedAt') }} · {{ displayTime(status.checkedAt) }}</div>
+          <div class="summary-state"><span class="state-dot" :class="counts.issues ? 'warning' : 'good'"></span>{{ counts.issues ? t('deployment.unhealthy') : t('deployment.healthy') }}<span class="checked-at">{{ t('deployment.checkedAt') }} · {{ displayTime(status.checkedAt) }}</span></div>
         </div>
         <div class="summary-metrics">
           <div><span>{{ t('deployment.upgradedAt') }}</span><strong>{{ displayTime(status.deployment.upgradedAt) }}</strong></div>
@@ -27,10 +26,11 @@
       </section>
 
       <section class="inventory-card">
-        <div class="section-heading">
-          <div><h2>{{ t('deployment.services') }}</h2><p>{{ t('deployment.versionNote') }}</p></div>
+        <div class="inventory-tabs" role="tablist" :aria-label="t('deployment.images')">
+          <button type="button" role="tab" :aria-selected="activeTab === 'services'" :class="{ active: activeTab === 'services' }" @click="activeTab = 'services'">{{ t('deployment.services') }}</button>
+          <button type="button" role="tab" :aria-selected="activeTab === 'runtime'" :class="{ active: activeTab === 'runtime' }" @click="activeTab = 'runtime'">{{ t('deployment.runtimeImage') }}</button>
         </div>
-        <div class="table-scroll">
+        <div v-if="activeTab === 'services'" class="table-scroll" role="tabpanel">
           <table>
             <thead><tr>
               <th>{{ t('deployment.name') }}</th><th>{{ t('deployment.state') }}</th><th>{{ t('deployment.health') }}</th>
@@ -52,18 +52,16 @@
             </tbody>
           </table>
         </div>
-      </section>
-
-      <section class="runtime-card">
-        <div><h2>{{ t('deployment.runtimeImage') }}</h2><p class="mono">{{ status.scriptImage.image || '—' }}</p></div>
-        <div class="runtime-id"><span>{{ t('deployment.imageId') }}</span><strong class="mono" :title="status.scriptImage.imageId">{{ shortId(status.scriptImage.imageId) }}</strong></div>
-        <span class="status-pill" :class="status.scriptImage.available ? 'good' : 'muted'">{{ status.scriptImage.available ? t('deployment.available') : t('deployment.notAvailable') }}</span>
+        <div v-else class="runtime-panel" role="tabpanel">
+          <div><span>{{ t('deployment.image') }}</span><strong class="mono">{{ status.scriptImage.image || '—' }}</strong></div>
+          <div><span>{{ t('deployment.imageId') }}</span><strong class="mono" :title="status.scriptImage.imageId">{{ status.scriptImage.imageId || '—' }}</strong></div>
+          <div><span>{{ t('deployment.state') }}</span><strong><span class="status-pill" :class="status.scriptImage.available ? 'good' : 'muted'">{{ status.scriptImage.available ? t('deployment.available') : t('deployment.notAvailable') }}</span></strong></div>
+        </div>
       </section>
     </template>
     <template v-else-if="loadError">
       <section class="summary-card">
-        <div class="summary-state"><span class="state-dot neutral"></span>{{ t('deployment.unknownState') }}</div>
-        <div class="summary-subtitle">{{ t('deployment.checkedAt') }} · —</div>
+        <div class="summary-state"><span class="state-dot neutral"></span>{{ t('deployment.unknownState') }}<span class="checked-at">{{ t('deployment.checkedAt') }} · —</span></div>
         <div class="summary-metrics">
           <div><span>{{ t('deployment.upgradedAt') }}</span><strong>—</strong></div>
           <div><span>{{ t('deployment.version') }}</span><strong>—</strong></div>
@@ -74,13 +72,12 @@
         </div>
       </section>
       <section class="inventory-card">
-        <div class="section-heading"><div><h2>{{ t('deployment.services') }}</h2><p>{{ t('deployment.versionNote') }}</p></div></div>
-        <div class="inventory-empty"><div class="empty-glyph">◇</div><strong>{{ t('deployment.emptyTitle') }}</strong><p>{{ t('deployment.emptyDescription') }}</p></div>
-      </section>
-      <section class="runtime-card">
-        <div><h2>{{ t('deployment.runtimeImage') }}</h2><p>—</p></div>
-        <div class="runtime-id"><span>{{ t('deployment.imageId') }}</span><strong>—</strong></div>
-        <span class="status-pill muted">{{ t('deployment.unknownState') }}</span>
+        <div class="inventory-tabs" role="tablist" :aria-label="t('deployment.images')">
+          <button type="button" role="tab" :aria-selected="activeTab === 'services'" :class="{ active: activeTab === 'services' }" @click="activeTab = 'services'">{{ t('deployment.services') }}</button>
+          <button type="button" role="tab" :aria-selected="activeTab === 'runtime'" :class="{ active: activeTab === 'runtime' }" @click="activeTab = 'runtime'">{{ t('deployment.runtimeImage') }}</button>
+        </div>
+        <div v-if="activeTab === 'services'" class="inventory-empty" role="tabpanel"><div class="empty-glyph">◇</div><strong>{{ t('deployment.emptyTitle') }}</strong><p>{{ t('deployment.emptyDescription') }}</p></div>
+        <div v-else class="runtime-panel" role="tabpanel"><div><span>{{ t('deployment.image') }}</span><strong>—</strong></div><div><span>{{ t('deployment.imageId') }}</span><strong>—</strong></div><div><span>{{ t('deployment.state') }}</span><strong>{{ t('deployment.unknownState') }}</strong></div></div>
       </section>
     </template>
 
@@ -113,6 +110,7 @@ const selected = ref<DeploymentService | null>(null)
 const loading = ref(false)
 const loadError = ref(false)
 const headerActionsReady = ref(false)
+const activeTab = ref<'services' | 'runtime'>('services')
 const displayVersion = computed(() => {
   if (!status.value) return t('deployment.unknown')
   const deployment = status.value.deployment
