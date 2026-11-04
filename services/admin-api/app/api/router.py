@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.routes import analytics, auth, dashboard, directory, directory_scope, dsh_plugins, external_search, invite_history, invite_members, knowledge_directories, knowledge_documents, knowledge_settings, knowledge_source_settings, models, organizations, page_collection, personal_knowledge_internal, position_roles, presentation_settings, sandbox_settings, setup, shortcut_settings, skill_lifecycle, skills, system, system_audit, tools, traffic_allocations, topic_admission
+from app.api.routes import analytics, auth, dashboard, directory, directory_scope, dsh_plugins, external_search, invite_history, invite_members, knowledge_directories, knowledge_documents, knowledge_settings, knowledge_source_settings, models, organizations, page_collection, personal_knowledge_internal, position_roles, presentation_settings, sandbox_settings, setup, shortcut_settings, skill_lifecycle, skill_preparation_records, skills, system, system_audit, tools, traffic_allocations, topic_admission
 
 api_router = APIRouter()
 api_router.include_router(system.router, tags=["system"])
@@ -23,6 +23,7 @@ api_router.include_router(personal_knowledge_internal.router, prefix="/internal/
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 api_router.include_router(traffic_allocations.router, prefix="/traffic-allocations", tags=["traffic-allocations"])
 api_router.include_router(skills.router, prefix="/skills", tags=["skills"])
+api_router.include_router(skill_preparation_records.router, prefix="/skills", tags=["skills"])
 api_router.include_router(dsh_plugins.router, prefix="/dsh-plugins", tags=["dsh-plugins"])
 api_router.include_router(skill_lifecycle.router, prefix="/skills", tags=["skills"])
 api_router.include_router(tools.router, prefix="/tools", tags=["tools"])

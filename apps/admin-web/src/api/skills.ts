@@ -40,6 +40,28 @@ export async function retrySkillDependency(id: string): Promise<{ status: string
   return dataOf<{ status: string }>(data);
 }
 
+export interface SkillPreparationRecord {
+  id: string;
+  digest: string;
+  baseImageId: string;
+  status: 'preparing' | 'ready' | 'failed' | 'interrupted';
+  startedAt: string;
+  finishedAt: string;
+  attempts: Array<{ source: string; exitCode: number }>;
+  truncated: boolean;
+  log?: string;
+}
+
+export async function fetchSkillPreparationRecords(id: string): Promise<SkillPreparationRecord[]> {
+  const { data } = await apiClient.get(`/api/skills/${encodeURIComponent(id)}/dependency-records`);
+  return data.items || [];
+}
+
+export async function fetchSkillPreparationRecord(id: string, recordId: string): Promise<SkillPreparationRecord> {
+  const { data } = await apiClient.get(`/api/skills/${encodeURIComponent(id)}/dependency-records/${encodeURIComponent(recordId)}`);
+  return data;
+}
+
 export interface SkillItem {
   id: string;
   mainId: string;

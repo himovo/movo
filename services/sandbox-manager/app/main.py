@@ -5,6 +5,7 @@ from __future__ import annotations
 import hmac
 import os
 import threading
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
@@ -12,10 +13,17 @@ from .docker_engine import DockerEngine
 from .jobs import ScriptJobs
 from .plugin_runtimes import PluginRuntimes
 from .skill_environments import DependencyPreparationError
+from .skill_build_records import SkillBuildRecords
 from .task_containers import TaskContainers
 
 
-app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    SkillBuildRecords().recover_interrupted()
+    yield
+
+
+app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
 _jobs: ScriptJobs | None = None
 _plugins: PluginRuntimes | None = None
 _tasks: TaskContainers | None = None
@@ -40,9 +48,10 @@ def plugins() -> PluginRuntimes:
 
 def tasks() -> TaskContainers:
     global _tasks
+    environments = jobs().environments
     with _jobs_lock:
         if _tasks is None:
-            _tasks = TaskContainers(DockerEngine())
+            _tasks = TaskContainers(DockerEngine(), environments=environments)
     return _tasks
 
 
@@ -153,6 +162,27 @@ def skill_environment_status(digest: str, authorization: str | None = Header(def
         return {"status": jobs().environments.status(digest)}
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/v1/skill-environments/{digest}/records")
+def skill_environment_records(digest: str, authorization: str | None = Header(default=None)) -> dict:
+    _authorize(authorization)
+    try:
+        return {"items": jobs().environments.records.list(digest)}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/v1/skill-environments/{digest}/records/{record_id}")
+def skill_environment_record(digest: str, record_id: str, authorization: str | None = Header(default=None)) -> dict:
+    _authorize(authorization)
+    try:
+        record = jobs().environments.records.get(digest, record_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if record is None:
+        raise HTTPException(status_code=404, detail="Preparation record not found")
+    return record
 
 
 @app.put("/v1/settings")

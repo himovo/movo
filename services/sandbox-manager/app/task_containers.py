@@ -30,13 +30,13 @@ class TaskLease:
 
 
 class TaskContainers:
-    def __init__(self, engine: DockerEngine) -> None:
+    def __init__(self, engine: DockerEngine, environments: SkillEnvironments | None = None) -> None:
         self.engine = engine
         self.root = Path(os.environ.get("MOVO_SANDBOX_WORKSPACE_ROOT", "/workspaces"))
         self.volume = os.environ["MOVO_SANDBOX_WORKSPACE_VOLUME"]
         self.image = os.environ["MOVO_SANDBOX_SCRIPT_IMAGE"]
         self.project = os.environ.get("MOVO_SANDBOX_COMPOSE_PROJECT", "movo")
-        self.environments = SkillEnvironments(engine)
+        self.environments = environments or SkillEnvironments(engine)
         self.capacity = int(os.environ.get("MOVO_SANDBOX_MAX_TASKS", "10"))
         self.slots = threading.BoundedSemaphore(int(os.environ.get("MOVO_SANDBOX_MAX_CONCURRENT", "2")))
         self._leases: dict[str, TaskLease] = {}

@@ -173,7 +173,8 @@ def test_build_error_is_reported_without_exposing_install_logs(tmp_path: Path, m
             return 1
 
         def logs(self, container):
-            return bytes([2, 0, 0, 0, 0, 0, 0, 11]) + b"secret-token"
+            output = b"secret-token"
+            return bytes([2, 0, 0, 0]) + len(output).to_bytes(4, "big") + output
 
     engine = FailingEngine()
     environments = SkillEnvironments(engine)
@@ -188,6 +189,10 @@ def test_build_error_is_reported_without_exposing_install_logs(tmp_path: Path, m
     with pytest.raises(DependencyPreparationError):
         environments.ready_image(digest)
     assert engine.creates == 2
+    records = environments.records.list(digest)
+    assert len(records) == 2
+    assert all(record["status"] == "failed" for record in records)
+    assert all("secret-token" in environments.records.get(digest, item["id"])["log"] for item in records)
 
 
 def test_network_failure_retries_in_fresh_container(tmp_path: Path, monkeypatch):

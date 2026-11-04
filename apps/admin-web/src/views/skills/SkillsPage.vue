@@ -71,7 +71,7 @@
                 </div>
                 <span class="card-time">{{ formatAdminDateTime(row.updatedAt || row.createdAt, t('legacy.just_created')) }}</span>
               </div>
-              <SkillEnvironmentBadge class="card-environment" :status="row.environmentStatus" :busy="retryingIds.has(row.id)" @retry="retryEnvironment(row)" />
+              <SkillEnvironmentBadge class="card-environment" :status="row.environmentStatus" :busy="retryingIds.has(row.id)" @retry="retryEnvironment(row)" @records="openPreparationRecords(row)" />
 
               <div class="card-title">{{ row.name }}</div>
               <div class="card-desc">{{ row.description || t('legacy.no_description_filled') }}</div>
@@ -164,6 +164,7 @@
   </n-modal>
 
   <SkillZipInstaller ref="zipInstallerRef" v-model:show="installVisible" @installed="loadRows" />
+  <SkillPreparationDrawer v-model:show="preparationRecordsVisible" :skill-id="preparationSkillId" :skill-name="preparationSkillName" />
 
   <n-modal v-model:show="detailsVisible" preset="card" :title="selectedPackage?.name || 'Skill'" style="width: 620px">
     <SkillPackageDetails v-if="selectedPackage" :skill="selectedPackage" />
@@ -241,6 +242,7 @@ import { formatAdminDateTime, parseAdminDate } from '@/composables/adminTimezone
 import { createSkill, deleteSkill, fetchSkills, retrySkillDependency, setSkillEnabled, updateSkill, type SkillItem, type SkillPayload, type SkillType } from '@/api/skills';
 import SkillEnvironmentBadge from './SkillEnvironmentBadge.vue';
 import SkillZipInstaller from './SkillZipInstaller.vue';
+import SkillPreparationDrawer from './SkillPreparationDrawer.vue';
 import SkillPackageDetails from './SkillPackageDetails.vue';
 import OrganizationSkillFeedback from './OrganizationSkillFeedback.vue';
 import ResourceAccessExtensionPanel from '@/components/resources/ResourceAccessExtensionPanel.vue';
@@ -256,6 +258,14 @@ const deleting = ref(false);
 const rows = ref<SkillItem[]>([]);
 const switchingIds = ref<Set<string>>(new Set());
 const installVisible = ref(false);
+const preparationRecordsVisible = ref(false);
+const preparationSkillId = ref('');
+const preparationSkillName = ref('');
+function openPreparationRecords(row: SkillItem) {
+  preparationSkillId.value = row.id;
+  preparationSkillName.value = row.name;
+  preparationRecordsVisible.value = true;
+}
 const detailsVisible = ref(false);
 const selectedPackage = ref<SkillItem | null>(null);
 const feedbackVisible = ref(false);

@@ -25,6 +25,22 @@ def split_docker_logs(raw: bytes) -> tuple[bytes, bytes]:
     return bytes(stdout), bytes(stderr)
 
 
+def merged_docker_logs(raw: bytes) -> bytes:
+    """Preserve Docker's interleaved stdout/stderr frame order."""
+    output = bytearray()
+    offset = 0
+    while offset + 8 <= len(raw):
+        size = int.from_bytes(raw[offset + 4:offset + 8], "big")
+        offset += 8
+        if size > len(raw) - offset:
+            raise ValueError("Docker returned a truncated log frame")
+        output.extend(raw[offset:offset + size])
+        offset += size
+    if offset != len(raw):
+        raise ValueError("Docker returned an invalid log frame")
+    return bytes(output)
+
+
 class DockerEngine:
     def __init__(self, socket_path: str = "/var/run/docker.sock") -> None:
         self.client = httpx.Client(

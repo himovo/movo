@@ -53,15 +53,18 @@ def main() -> None:
     if apt_file.is_file():
         packages = apt_packages(apt_file)
         if packages:
+            print("=== Installing system packages (apt) ===", flush=True)
             configure_apt_mirror()
             run("apt-get", "update")
             run("apt-get", "install", "-y", "--no-install-recommends", *packages)
             shutil.rmtree("/var/lib/apt/lists", ignore_errors=True)
     requirements = BUILD / "requirements.txt"
     if requirements.is_file():
+        print("=== Installing Python dependencies (pip) ===", flush=True)
         run("python", "-m", "pip", "install", "--no-cache-dir", "--timeout", "60", "--retries", "2", "-r", str(requirements), cwd=BUILD)
     package_json = BUILD / "package.json"
     if package_json.is_file():
+        print("=== Installing Node dependencies (npm) ===", flush=True)
         if not (BUILD / "package-lock.json").is_file():
             raise ValueError("A Skill with package.json must include package-lock.json")
         run("npm", "ci", "--omit=dev", "--fetch-retries=1", "--fetch-timeout=30000", "--prefix", str(BUILD))
