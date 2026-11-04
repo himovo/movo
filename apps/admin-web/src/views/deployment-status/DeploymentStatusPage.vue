@@ -52,10 +52,19 @@
             </tbody>
           </table>
         </div>
-        <div v-else class="runtime-panel" role="tabpanel">
-          <div><span>{{ t('deployment.image') }}</span><strong class="mono">{{ status.scriptImage.image || '—' }}</strong></div>
-          <div><span>{{ t('deployment.imageId') }}</span><strong class="mono" :title="status.scriptImage.imageId">{{ status.scriptImage.imageId || '—' }}</strong></div>
-          <div><span>{{ t('deployment.state') }}</span><strong><span class="status-pill" :class="status.scriptImage.available ? 'good' : 'muted'">{{ status.scriptImage.available ? t('deployment.available') : t('deployment.notAvailable') }}</span></strong></div>
+        <div v-else class="table-scroll" role="tabpanel">
+          <table class="sandbox-images-table">
+            <thead><tr><th>{{ t('deployment.image') }}</th><th>{{ t('deployment.imageType') }}</th><th>{{ t('deployment.appliesTo') }}</th><th>{{ t('deployment.imageState') }}</th><th>{{ t('deployment.containerState') }}</th><th>{{ t('deployment.imageId') }}</th><th>{{ t('deployment.createdAt') }}</th></tr></thead>
+            <tbody><tr v-for="image in status.sandboxImages || []" :key="`${image.kind}:${image.image}:${image.digest}`">
+              <td class="image-cell mono" :title="image.image">{{ image.image || '—' }}</td>
+              <td>{{ t(image.kind === 'skill' ? 'deployment.skillImage' : image.kind === 'plugin' ? 'deployment.pluginImage' : 'deployment.generalImage') }}</td>
+              <td class="owners-cell" :title="ownerTitle(image)">{{ ownerLabel(image) }}</td>
+              <td><span class="status-pill" :class="!image.available ? 'warning' : image.current === false ? 'muted' : 'good'">{{ t(!image.available ? 'deployment.imageMissing' : image.current === false ? 'deployment.staleImage' : 'deployment.imagePresent') }}</span></td>
+              <td>{{ image.running === null ? t('deployment.notApplicable') : t(image.running ? 'deployment.running' : 'deployment.notAvailable') }}</td>
+              <td class="mono" :title="image.imageId">{{ shortId(image.imageId) }}</td>
+              <td>{{ displayTime(image.createdAt) }}</td>
+            </tr></tbody>
+          </table>
         </div>
       </section>
     </template>
@@ -77,7 +86,7 @@
           <button type="button" role="tab" :aria-selected="activeTab === 'runtime'" :class="{ active: activeTab === 'runtime' }" @click="activeTab = 'runtime'">{{ t('deployment.runtimeImage') }}</button>
         </div>
         <div v-if="activeTab === 'services'" class="inventory-empty" role="tabpanel"><div class="empty-glyph">◇</div><strong>{{ t('deployment.emptyTitle') }}</strong><p>{{ t('deployment.emptyDescription') }}</p></div>
-        <div v-else class="runtime-panel" role="tabpanel"><div><span>{{ t('deployment.image') }}</span><strong>—</strong></div><div><span>{{ t('deployment.imageId') }}</span><strong>—</strong></div><div><span>{{ t('deployment.state') }}</span><strong>{{ t('deployment.unknownState') }}</strong></div></div>
+        <div v-else class="table-scroll" role="tabpanel"></div>
       </section>
     </template>
 
@@ -107,7 +116,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useMessage } from 'naive-ui'
-import { fetchDeploymentStatus, type DeploymentService, type DeploymentStatus } from '@/api/deployment-status'
+import { fetchDeploymentStatus, type DeploymentService, type DeploymentStatus, type SandboxImage } from '@/api/deployment-status'
 import { t } from '@/composables/i18n'
 import { formatAdminShortDateTime } from '@/composables/adminTimezone'
 import { diagnostics, INFRASTRUCTURE, serviceCounts, serviceTone, shortId } from './deploymentStatusView'
@@ -137,6 +146,17 @@ const groups = computed(() => status.value ? [
   { key: 'deployment.core', services: status.value.services.filter(service => !INFRASTRUCTURE.has(service.name)) },
   { key: 'deployment.infrastructure', services: status.value.services.filter(service => INFRASTRUCTURE.has(service.name)) },
 ] : [])
+
+function ownerTitle(image: SandboxImage) {
+  if (image.kind === 'general') return t('deployment.allTasks')
+  if (!image.owners?.length) return t('deployment.noOwner')
+  return image.owners.map(owner => `${owner.name} (${owner.id})`).join(', ')
+}
+
+function ownerLabel(image: SandboxImage) {
+  const value = ownerTitle(image)
+  return image.owners?.length === 1 ? value : image.owners?.length ? `${image.owners.length} · ${value}` : value
+}
 
 function displayTime(value?: string | null) {
   return value && !value.startsWith('0001-') ? formatAdminShortDateTime(value) : '—'

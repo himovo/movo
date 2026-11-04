@@ -230,10 +230,13 @@ services:
     environment:
       MOVO_SANDBOX_COMPOSE_PROJECT: ${COMPOSE_PROJECT_NAME:-movo}
       MOVO_SANDBOX_SCRIPT_IMAGE: ${MOVO_SANDBOX_SCRIPT_IMAGE:-${MOVO_IMAGE_PREFIX:-ghcr.io/himovo/movo}-sandbox-script:${MOVO_VERSION:-latest}}
+      MOVO_SANDBOX_RUNTIME_IMAGE: ${MOVO_IMAGE_PREFIX:-ghcr.io/himovo/movo}-dsh-runtime-host:${MOVO_VERSION:-latest}
+      MOVO_SANDBOX_WORKSPACE_ROOT: /workspaces
     volumes:
       - deployment-secrets:/run/askai-secrets:ro
       - /var/run/docker.sock:/var/run/docker.sock
       - ./.movo-runtime:/deployment:ro
+      - sandbox-workspaces:/workspaces:ro
     depends_on:
       bootstrap:
         condition: service_completed_successfully

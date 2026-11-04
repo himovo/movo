@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
+import hashlib
 
 import pytest
 from fastapi import HTTPException
 
 from app import deployment_status_app
 from app.deployment_status import inventory
+from app.sandbox_image_inventory import inventory as sandbox_images
 
 
 class Response:
@@ -56,6 +58,7 @@ def test_inventory_reports_actual_image_and_optional_services(tmp_path, monkeypa
     assert sandbox["status"] == "disabled"
     assert result["deployment"]["version"] == "latest"
     assert result["scriptImage"]["available"] is False
+    assert [image["kind"] for image in result["sandboxImages"]] == ["general", "plugin"]
 
 
 def test_observer_requires_shared_token(monkeypatch):
@@ -63,3 +66,30 @@ def test_observer_requires_shared_token(monkeypatch):
     with pytest.raises(HTTPException) as error:
         deployment_status_app.status("Bearer wrong-token")
     assert error.value.status_code == 401
+
+
+def test_sandbox_images_include_a_prepared_skill_image(tmp_path, monkeypatch):
+    digest = "a" * 64
+    root = tmp_path / "skill-cache" / digest
+    root.mkdir(parents=True)
+    (root / "SKILL.md").write_text("name: sample")
+    (root / "requirements.txt").write_text("example==1")
+    monkeypatch.setenv("MOVO_SANDBOX_WORKSPACE_ROOT", str(tmp_path))
+    monkeypatch.setenv("MOVO_SANDBOX_SCRIPT_IMAGE", "base:latest")
+    monkeypatch.setenv("MOVO_SANDBOX_RUNTIME_IMAGE", "runtime:latest")
+    tag = hashlib.sha256(f"sha256:base:{digest}".encode()).hexdigest()[:40]
+
+    class Images:
+        def request(self, _method, path):
+            names = {
+                "/images/base:latest/json": "sha256:base",
+                "/images/runtime:latest/json": "sha256:runtime",
+                f"/images/movo-skill-deps:{tag}/json": "sha256:prepared",
+            }
+            return Response({"Id": names[path]})
+
+    rows = sandbox_images(Images(), [{"name": "dsh-runtime-host", "status": "running"}])
+    assert [row["kind"] for row in rows] == ["general", "plugin", "skill"]
+    assert rows[1]["running"] is True
+    assert rows[2]["imageId"] == "sha256:prepared"
+    assert rows[2]["digest"] == digest

@@ -11,6 +11,7 @@ import urllib.request
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.deps import get_current_admin_user
+from app.services.sandbox_image_associations import attach
 
 
 router = APIRouter()
@@ -28,8 +29,9 @@ def _read_status() -> dict:
 
 
 @router.get("/status")
-async def status(_admin=Depends(get_current_admin_user)) -> dict:
+async def status(admin=Depends(get_current_admin_user)) -> dict:
     try:
-        return await asyncio.to_thread(_read_status)
+        data = await asyncio.to_thread(_read_status)
+        return await attach(data, str(admin.get("main_id") or "default"))
     except (RuntimeError, OSError, urllib.error.URLError, ValueError) as exc:
         raise HTTPException(status_code=503, detail="deployment_status_unavailable") from exc

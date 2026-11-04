@@ -32,6 +32,8 @@
 .service-name { color: #263f70; font-weight: 700; }
 .mismatch-mark { display: inline-grid; width: 16px; height: 16px; margin-left: 7px; place-items: center; border-radius: 50%; color: #a55a1a; background: #fff0d9; font-size: 10px; }
 .image-cell { max-width: 230px; overflow: hidden; text-overflow: ellipsis; }
+.sandbox-images-table { min-width: 1080px; }
+.sandbox-images-table .owners-cell { max-width: 320px; overflow: hidden; text-overflow: ellipsis; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .status-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 9px; font-size: 11px; font-weight: 700; }
 .status-pill.good { color: #0a8053; background: #e8f8ef; }

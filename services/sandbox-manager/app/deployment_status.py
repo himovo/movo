@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .docker_engine import DockerEngine
+from .sandbox_image_inventory import inventory as sandbox_images
 
 
 SERVICES = (
@@ -97,4 +98,5 @@ def inventory(engine: DockerEngine) -> dict:
         "deployment": record,
         "services": services,
         "scriptImage": script_image,
+        "sandboxImages": sandbox_images(engine, services),
     }
