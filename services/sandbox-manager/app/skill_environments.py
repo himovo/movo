@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import os
 import threading
@@ -13,7 +14,7 @@ from uuid import uuid4
 
 from .docker_engine import DockerEngine, merged_docker_logs, split_docker_logs
 from .dependency_sources import build_attempts, retryable_failure
-from .skill_build_records import SkillBuildRecords
+from .skill_build_records import SkillBuildRecords, _safe_log, MAX_LOG_CHARS
 
 
 LOG = logging.getLogger(__name__)
@@ -101,6 +102,16 @@ class SkillEnvironments:
             # survives. Resume preparation when the installer polls again.
             return self.start(digest)
         return "failed" if future.done() and future.exception() else "preparing"
+
+    def live_output(self, digest: str) -> str:
+        response = self.engine.request("GET", "/containers/json", params={
+            "filters": json.dumps({"label": ["movo.role=skill-dependency-build", f"movo.skill_digest={digest}"]}),
+        })
+        containers = response.json()
+        if not containers:
+            return ""
+        raw = self.engine.recent_logs(containers[0]["Id"])
+        return _safe_log(merged_docker_logs(raw).decode(errors="replace"))[-MAX_LOG_CHARS:]
 
     def _build(self, digest: str, image: str) -> str:
         lease = uuid4().hex

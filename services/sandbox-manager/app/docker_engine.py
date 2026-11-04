@@ -69,6 +69,9 @@ class DockerEngine:
     def logs(self, container_id: str) -> bytes:
         return self.request("GET", f"/containers/{container_id}/logs", params={"stdout": 1, "stderr": 1}).content
 
+    def recent_logs(self, container_id: str, lines: int = 200) -> bytes:
+        return self.request("GET", f"/containers/{container_id}/logs", params={"stdout": 1, "stderr": 1, "tail": lines}).content
+
     def execute(self, container_id: str, command: list[str], timeout: float) -> tuple[int, bytes, bytes]:
         created = self.request("POST", f"/containers/{container_id}/exec", json={
             "AttachStdout": True, "AttachStderr": True, "Cmd": command,

@@ -13,7 +13,7 @@ from .docker_engine import DockerEngine
 from .jobs import ScriptJobs
 from .plugin_runtimes import PluginRuntimes
 from .skill_environments import DependencyPreparationError
-from .skill_build_records import SkillBuildRecords
+from .skill_build_records import MAX_LOG_CHARS, SkillBuildRecords
 from .task_containers import TaskContainers
 
 
@@ -182,6 +182,14 @@ def skill_environment_record(digest: str, record_id: str, authorization: str | N
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     if record is None:
         raise HTTPException(status_code=404, detail="Preparation record not found")
+    if record["status"] == "preparing":
+        try:
+            live = jobs().environments.live_output(digest)
+            combined = record["log"] + live
+            record["truncated"] = record["truncated"] or len(combined) > MAX_LOG_CHARS
+            record["log"] = combined[-MAX_LOG_CHARS:]
+        except Exception:
+            pass
     return record
 
 

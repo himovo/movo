@@ -4,6 +4,7 @@ import time
 
 from app.skill_build_records import MAX_LOG_CHARS, SkillBuildRecords
 from app.docker_engine import merged_docker_logs
+from app.skill_environments import SkillEnvironments
 
 
 def test_records_keep_retry_history_and_survive_reopen(tmp_path: Path):
@@ -63,3 +64,22 @@ def test_docker_output_keeps_stdout_and_stderr_order():
         return bytes([stream, 0, 0, 0]) + len(payload).to_bytes(4, "big") + payload
 
     assert merged_docker_logs(frame(1, b"first\n") + frame(2, b"second\n")) == b"first\nsecond\n"
+
+
+def test_live_build_output_is_available_before_attempt_finishes():
+    class Engine:
+        def request(self, method, path, **kwargs):
+            assert (method, path) == ("GET", "/containers/json")
+            assert "movo.role=skill-dependency-build" in kwargs["params"]["filters"]
+            return type("Response", (), {"json": lambda self: [{"Id": "active-build"}]})()
+
+        def recent_logs(self, container_id):
+            assert container_id == "active-build"
+            payload = b"Authorization: Bearer private123\nInstalling dependencies\n"
+            return bytes([1, 0, 0, 0]) + len(payload).to_bytes(4, "big") + payload
+
+    environments = SkillEnvironments.__new__(SkillEnvironments)
+    environments.engine = Engine()
+    output = environments.live_output("a" * 64)
+    assert "Installing dependencies" in output
+    assert "private123" not in output

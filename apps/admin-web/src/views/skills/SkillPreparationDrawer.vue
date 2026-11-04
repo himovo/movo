@@ -67,7 +67,7 @@ async function refresh(force = false): Promise<void> {
     const next = selectedId.value && records.value.some(item => item.id === selectedId.value) ? selectedId.value : records.value[0]?.id || ''
     const current = records.value.find(item => item.id === next)
     if (next) {
-      if (force || !selected.value || next !== selectedId.value || previous?.status !== current?.status || previous?.attempts.length !== current?.attempts.length) await select(next)
+      if (force || !selected.value || next !== selectedId.value || current?.status === 'preparing' || previous?.status !== current?.status || previous?.attempts.length !== current?.attempts.length) await select(next)
     } else { selectedId.value = ''; selected.value = null }
   } catch { loadError.value = t('skillDeps.records.loadFailed') }
 }
