@@ -74,6 +74,7 @@
             <div class="deployment-facts">
               <span><strong>{{ overview?.billing.currentMembersCount ?? 0 }}</strong> {{ memberCapacityLabel }}</span>
               <span><strong>{{ overview?.billing.isOwnModel ? t('legacy.enabled_d78cde0') : t('legacy.disabled_b9004e6') }}</strong> {{ t('legacy.own_models') }}</span>
+              <n-button class="deployment-link" text type="primary" @click="go('/system/status')">{{ t('deployment.open') }} →</n-button>
             </div>
             <component
               :is="ProductDashboardBillingActions"
@@ -539,6 +540,8 @@ onMounted(loadOverview);
 .deployment-facts strong {
   color: #17366f;
 }
+
+.deployment-link { margin-left: auto; font-size: 12px; font-weight: 700; }
 
 .health-dot {
   flex: 0 0 auto;

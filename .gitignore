@@ -278,6 +278,7 @@ logs
 .idea
 .DS_Store
 .movo-dev/
+.movo-runtime/
 *.suo
 *.ntvs*
 *.njsproj

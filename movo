@@ -45,6 +45,8 @@ source "${ROOT_DIR}/deploy/cli/backup.sh"
 source "${ROOT_DIR}/deploy/cli/sequence-fix.sh"
 # shellcheck source=deploy/cli/sandbox.sh
 source "${ROOT_DIR}/deploy/cli/sandbox.sh"
+# shellcheck source=deploy/cli/deployment-status.sh
+source "${ROOT_DIR}/deploy/cli/deployment-status.sh"
 movo_sandbox_defaults
 
 print_logo() {
@@ -164,6 +166,7 @@ command_up() {
   movo_sandbox_preflight
   movo_configure_dependency_sources
   deployment_urls
+  movo_prepare_deployment_record
   if movo_has_build_flag "$@"; then
     if [[ "${MOVO_MIRROR:-global}" == cn ]]; then
       printf 'Source builds cannot use --mirror cn; run ./movo up --build without the mirror flag.\n' >&2
@@ -204,6 +207,7 @@ command_up() {
   fi
   refresh_gateway_resolution
   wait_until_ready
+  movo_record_deployment
   movo_print_running_dsh_version
   show_ready_message
 }
@@ -232,6 +236,7 @@ command_update() {
   movo_sandbox_preflight
   movo_configure_dependency_sources
   deployment_urls
+  movo_prepare_deployment_record
   movo_configure_images false
   if [[ "${MOVO_USING_LOCAL_IMAGES:-false}" == "true" ]]; then
     movo_msg update_local_only >&2
@@ -254,6 +259,7 @@ command_update() {
   movo_compose up -d --pull never
   refresh_gateway_resolution
   wait_until_ready
+  movo_record_deployment
   movo_print_running_dsh_version
   show_ready_message
 }

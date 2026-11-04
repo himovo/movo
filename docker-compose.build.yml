@@ -16,6 +16,14 @@ services:
       args:
         MOVO_PIP_INDEX_URL: ${MOVO_PIP_INDEX_URL:-}
 
+  deployment-observer:
+    pull_policy: build
+    build:
+      context: ./services/sandbox-manager
+      dockerfile: Dockerfile
+      args:
+        MOVO_PIP_INDEX_URL: ${MOVO_PIP_INDEX_URL:-}
+
   sandbox-egress:
     pull_policy: build
     build:

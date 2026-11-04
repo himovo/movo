@@ -220,6 +220,34 @@ services:
     profiles: ["sandbox-image"]
     entrypoint: ["true"]
 
+  deployment-observer:
+    image: ${MOVO_IMAGE_PREFIX:-ghcr.io/himovo/movo}-sandbox-manager:${MOVO_VERSION:-latest}
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    command: ["uvicorn", "app.deployment_status_app:app", "--host", "0.0.0.0", "--port", "8400"]
+    environment:
+      MOVO_SANDBOX_COMPOSE_PROJECT: ${COMPOSE_PROJECT_NAME:-movo}
+      MOVO_SANDBOX_SCRIPT_IMAGE: ${MOVO_SANDBOX_SCRIPT_IMAGE:-${MOVO_IMAGE_PREFIX:-ghcr.io/himovo/movo}-sandbox-script:${MOVO_VERSION:-latest}}
+    volumes:
+      - deployment-secrets:/run/askai-secrets:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./.movo-runtime:/deployment:ro
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+    networks:
+      - backend
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          python -c "import os,urllib.request; urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8400/health',headers={'Authorization':'Bearer '+os.environ['MOVO_SANDBOX_MANAGER_TOKEN']}),timeout=3).read()"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   sandbox-manager:
     image: ${MOVO_IMAGE_PREFIX:-ghcr.io/himovo/movo}-sandbox-manager:${MOVO_VERSION:-latest}
     profiles: ["sandbox"]
@@ -273,6 +301,7 @@ services:
     pull_policy: ${MOVO_PULL_POLICY:-missing}
     restart: unless-stopped
     environment:
+      MOVO_DEPLOYMENT_STATUS_URL: http://deployment-observer:8400
       MOVO_SANDBOX_MANAGER_URL: ${MOVO_SANDBOX_MANAGER_URL:-}
       MOVO_SANDBOX_PLUGIN_IDLE_SECONDS: ${MOVO_SANDBOX_PLUGIN_IDLE_SECONDS:-900}
       ASKAI_ADMIN_APP_ENV: production

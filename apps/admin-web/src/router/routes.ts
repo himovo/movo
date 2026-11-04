@@ -61,6 +61,12 @@ export const appRoutes: RouteRecordRaw[] = [
         meta: { title: 'legacy.dashboard', icon: DashboardBarsIcon },
       },
       {
+        path: '/system/status',
+        name: 'DeploymentStatus',
+        component: () => import('@/views/deployment-status/DeploymentStatusPage.vue'),
+        meta: { title: 'deployment.title', hideInMenu: true },
+      },
+      {
         path: '/profile',
         name: 'Profile',
         component: () => import('@/views/profile/ProfilePage.vue'),
