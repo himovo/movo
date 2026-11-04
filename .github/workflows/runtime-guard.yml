@@ -96,5 +96,7 @@ jobs:
         run: bash scripts/test_serial_image_pull.sh
       - name: Validate CLI module loading
         run: bash scripts/test_cli_module_loading.sh
+      - name: Validate Compose command detection
+        run: bash scripts/test_compose_detection.sh
       - name: Validate source-build Compose
         run: docker compose -f docker-compose.yml -f docker-compose.build.yml config --quiet
