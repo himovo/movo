@@ -45,6 +45,10 @@
 .detail-list dt { color: #718099; }
 .detail-list dd { margin: 0; overflow-wrap: anywhere; }
 .copy-inline { margin-left: 8px; }
+.manual-copy-card { width: min(700px, 92vw); }
+.manual-copy-card p { margin: 0 0 12px; color: #66758e; font-size: 13px; }
+.manual-copy-card textarea { width: 100%; height: min(50vh, 400px); padding: 12px; border: 1px solid #dfe7f3; border-radius: 8px; background: #f7f9fd; color: #18253d; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; resize: vertical; }
+.manual-copy-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
 .load-error { margin-top: 4px; }
 .loading-panel { display: flex; align-items: center; justify-content: center; gap: 14px; min-height: 260px; border: 1px solid #dfe7f3; border-radius: 16px; background: #fff; color: #718099; }
 @media (max-width: 900px) { .deployment-page { padding: 12px; } .summary-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .summary-state { flex-wrap: wrap; } .checked-at { margin-left: 0; } }

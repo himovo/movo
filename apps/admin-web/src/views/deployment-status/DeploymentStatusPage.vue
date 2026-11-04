@@ -93,16 +93,25 @@
         </template>
       </n-drawer-content>
     </n-drawer>
+
+    <n-modal v-model:show="showManualCopy">
+      <n-card class="manual-copy-card" :title="t('deployment.manualCopyTitle')" closable @close="showManualCopy = false">
+        <p>{{ t('deployment.manualCopyHint') }}</p>
+        <textarea ref="manualCopyField" readonly :value="manualCopyValue" @focus="selectManualCopy" @click="selectManualCopy"></textarea>
+        <div class="manual-copy-actions"><n-button @click="selectManualCopy">{{ t('deployment.selectAll') }}</n-button></div>
+      </n-card>
+    </n-modal>
   </main>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useMessage } from 'naive-ui'
 import { fetchDeploymentStatus, type DeploymentService, type DeploymentStatus } from '@/api/deployment-status'
 import { t } from '@/composables/i18n'
 import { formatAdminShortDateTime } from '@/composables/adminTimezone'
 import { diagnostics, INFRASTRUCTURE, serviceCounts, serviceTone, shortId } from './deploymentStatusView'
+import { copyText } from './copyText'
 
 const message = useMessage()
 const status = ref<DeploymentStatus | null>(null)
@@ -111,6 +120,9 @@ const loading = ref(false)
 const loadError = ref(false)
 const headerActionsReady = ref(false)
 const activeTab = ref<'services' | 'runtime'>('services')
+const showManualCopy = ref(false)
+const manualCopyValue = ref('')
+const manualCopyField = ref<HTMLTextAreaElement | null>(null)
 const displayVersion = computed(() => {
   if (!status.value) return t('deployment.unknown')
   const deployment = status.value.deployment
@@ -167,17 +179,31 @@ async function load() {
 
 async function copyDiagnostics() {
   if (!status.value) return
-  try {
-    await navigator.clipboard.writeText(diagnostics(status.value))
+  const value = diagnostics(status.value)
+  if (await copyText(value)) {
     message.success(t('deployment.copied'))
-  } catch { message.error(t('deployment.copyFailed')) }
+  } else {
+    await openManualCopy(value)
+  }
 }
 
 async function copyValue(value: string) {
-  try {
-    await navigator.clipboard.writeText(value)
+  if (await copyText(value)) {
     message.success(t('deployment.copiedValue'))
-  } catch { message.error(t('deployment.copyFailed')) }
+  } else {
+    await openManualCopy(value)
+  }
+}
+
+async function openManualCopy(value: string) {
+  manualCopyValue.value = value
+  showManualCopy.value = true
+  await nextTick()
+  manualCopyField.value?.select()
+}
+
+function selectManualCopy() {
+  manualCopyField.value?.select()
 }
 
 onMounted(() => {
