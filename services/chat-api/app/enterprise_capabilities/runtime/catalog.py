@@ -302,7 +302,7 @@ class InternalCapabilityCatalog:
             ),
             _definition(
                 capability_ref="artifact.export@v1", tool_name="artifact_export", domain="artifact",
-                display_name="导出交付物", description="Export an already-authored deliverable: render final Markdown to DOCX, PDF or Markdown; render a structured workbook to XLSX; or compile an existing MOVO presentation Blueprint to PPTX. Never use this Tool to create a presentation, invent a Blueprint, probe Blueprint schemas, or generate intermediate files; use presentation_create for every user request to create a deck.",
+                display_name="导出交付物", description="Export an already-authored deliverable: render final Markdown to DOCX, PDF or Markdown; render a structured workbook to XLSX; or compile an existing MOVO presentation Blueprint to PPTX. If an earlier tool already returned a user-facing downloadable artifact, deliver that artifact without exporting it again. A file written only to a DSH workspace is not a downloadable artifact; use its supported delivery flow instead of passing a workspace or temporary path as blueprint_object_path. For PPTX export, blueprint_object_path must come from an existing MOVO presentation Blueprint owned by the current user. Never use this Tool to create a presentation, invent a Blueprint, probe Blueprint schemas, or generate intermediate files; use presentation_create for every user request to create a deck.",
                 input_schema=_object({
                     "format": {"type": "string", "enum": ["docx", "pdf", "md", "pptx", "xlsx"]},
                     "markdown": {"type": "string"}, "blueprint_object_path": {"type": "string"},
