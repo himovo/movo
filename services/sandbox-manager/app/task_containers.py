@@ -164,8 +164,8 @@ class TaskContainers:
                     "HOME=/job/work", "TMPDIR=/job/work/tmp", "LANG=C.UTF-8", "PYTHONUNBUFFERED=1",
                     "HTTP_PROXY=http://sandbox-egress:3128", "HTTPS_PROXY=http://sandbox-egress:3128",
                     "http_proxy=http://sandbox-egress:3128", "https_proxy=http://sandbox-egress:3128",
-                    "NO_PROXY=", "no_proxy=", "NODE_PATH=/opt/movo-skill-node-modules",
-                    "PATH=/opt/movo-skill-node-modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                    "NO_PROXY=", "no_proxy=", "NODE_PATH=/job/work/.dependencies/node/node_modules:/opt/movo-skill-node-modules",
+                    "PATH=/job/work/.dependencies/bin:/job/work/.dependencies/node/node_modules/.bin:/opt/movo-skill-node-modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
                 ],
                 "HostConfig": {
                     "NetworkMode": network_id, "ReadonlyRootfs": True, "CapDrop": ["ALL"],

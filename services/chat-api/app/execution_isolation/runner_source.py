@@ -26,6 +26,9 @@ if not context.get("allow_network"):
 # an optional read-only Skill mount. Filesystem isolation belongs to Docker;
 # Python-level open hooks also block legitimate package and tool reads.
 os.chdir(context.get("work_dir") or "/job/work")
+dependency_dir = os.path.join(context.get("work_dir") or "/job/work", ".dependencies", "python")
+if os.path.isdir(dependency_dir):
+    sys.path.insert(0, dependency_dir)
 spec = importlib.util.spec_from_file_location("movo_task_plugin", plugin_path)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)

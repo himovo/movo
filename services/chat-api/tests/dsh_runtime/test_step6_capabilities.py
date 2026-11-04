@@ -69,6 +69,9 @@ def test_internal_catalog_compiles_to_dsh_tools_and_excludes_retired_legacy_tool
     assert "entry_url_required" in by_name["browser_task"].description
     assert "new named-site mission" in by_name["browser_task"].input_schema["properties"]["target_url"]["description"]
     assert by_name["run_script"].idempotent is False
+    assert "curl" in by_name["run_script"].description
+    assert "ssh" in by_name["run_script"].description
+    assert "pip install --target" in by_name["run_script"].description
     metric_schema = by_name["compute_metrics"].input_schema
     assert set(metric_schema["properties"]["per_item_calculations"]["items"]["properties"]["type"]["enum"]) == {
         "subtract", "ratio", "rank",

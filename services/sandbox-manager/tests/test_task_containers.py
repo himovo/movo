@@ -25,6 +25,8 @@ class EngineFake:
         self.created += 1
         assert payload["HostConfig"]["ReadonlyRootfs"] is True
         assert payload["HostConfig"]["Mounts"][0]["VolumeOptions"]["Subpath"] == "a" * 32 + "/work"
+        assert "NODE_PATH=/job/work/.dependencies/node/node_modules:/opt/movo-skill-node-modules" in payload["Env"]
+        assert any(value.startswith("PATH=/job/work/.dependencies/bin:") for value in payload["Env"])
         return "container"
 
     def start(self, container):

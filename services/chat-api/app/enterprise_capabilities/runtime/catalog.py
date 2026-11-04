@@ -7,6 +7,7 @@ from typing import Any
 from .contracts import CapabilityDefinition
 from app.knowledge_references.capability import browse_definition
 from app.execution_isolation.script_approval_policy import script_requires_approval
+from app.enterprise_capabilities.data.script_environment_help import SCRIPT_ENVIRONMENT_HELP
 from app.enterprise_capabilities.spreadsheets import workbook_input_schema
 from app.enterprise_capabilities.content import (
     content_production_input_schema,
@@ -363,7 +364,7 @@ class InternalCapabilityCatalog:
             ),
             _definition(
                 capability_ref="data.run_script@v1", tool_name="run_script", domain="data",
-                display_name="Code execution", description="Run ordinary Python or a run(inputs, context) plugin in MOVO's governed execution environment. When the task sandbox is enabled, all calls in the current turn share one writable work_dir; create intermediate files there and use output_dir for files to deliver. Current-turn attachments are available on every invocation. A manually selected packaged Skill is available in read-only skill_dir. In ordinary Python use input_files[0]['local_path'] (or input_dir) instead of searching the filesystem. UTF-8 stdout is supported directly; do not Base64-wrap text. Network access follows deployment policy; CPU, memory, files and artifact upload are governed. Set delivery_scope=final only when the user explicitly requested the generated file; use intermediate when the file only carries data into later workflow steps.",
+                display_name="Code execution", description="Run ordinary Python or a run(inputs, context) plugin in MOVO's governed execution environment. When the task sandbox is enabled, all calls in the current turn share one writable work_dir; create intermediate files there and use output_dir for files to deliver. Current-turn attachments are available on every invocation. A manually selected packaged Skill is available in read-only skill_dir. In ordinary Python use input_files[0]['local_path'] (or input_dir) instead of searching the filesystem. UTF-8 stdout is supported directly; do not Base64-wrap text. Network access follows deployment policy; CPU, memory, files and artifact upload are governed. " + SCRIPT_ENVIRONMENT_HELP + " Set delivery_scope=final only when the user explicitly requested the generated file; use intermediate when the file only carries data into later workflow steps.",
                 input_schema=_object({
                     "code": {"type": "string", "minLength": 1, "description": "Ordinary Python is accepted directly. Use input_files for attachments, skill_dir for a selected packaged Skill, inputs for supplied data, and output_dir for generated files. UTF-8 print output is returned directly."},
                     "data": {"type": "object"},
