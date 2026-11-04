@@ -32,7 +32,7 @@ movo_compose() {
   if [[ "${MOVO_COMPOSE_BUILD}" == "true" ]]; then
     compose_args+=(-f "${ROOT_DIR}/docker-compose.build.yml")
   fi
-  "${DOCKER_BIN}" compose "${compose_args[@]}" "$@"
+  movo_compose_command "${compose_args[@]}" "$@"
 }
 
 movo_export_shared_document_image() {

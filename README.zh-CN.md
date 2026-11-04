@@ -152,7 +152,7 @@ flowchart LR
 ### 环境要求与平台说明
 
 - Git
-- Docker Desktop，或 Docker Engine 与 Docker Compose v2
+- Docker Desktop，或 Docker Engine 与 Docker Compose v2 及更新版本（支持 `docker compose` 和独立的 `docker-compose`）
 - 至少 8 GB 可用内存
 - 至少 20 GB 可用磁盘空间，用于镜像和应用数据
 - 首次拉取时可以访问所选镜像源（默认 GHCR/Docker Hub，或 `--mirror cn` 对应的 ACR）

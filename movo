@@ -26,6 +26,8 @@ source "${ROOT_DIR}/deploy/cli/env.sh"
 # shellcheck source=deploy/cli/i18n.sh
 source "${ROOT_DIR}/deploy/cli/i18n.sh"
 movo_detect_locale
+# shellcheck source=deploy/cli/compose.sh
+source "${ROOT_DIR}/deploy/cli/compose.sh"
 # shellcheck source=deploy/cli/dsh-version.sh
 source "${ROOT_DIR}/deploy/cli/dsh-version.sh"
 # shellcheck source=deploy/cli/images.sh
@@ -73,8 +75,7 @@ require_docker() {
     movo_msg docker_missing >&2
     exit 1
   fi
-  if ! "${DOCKER_BIN}" compose version >/dev/null 2>&1; then
-    movo_msg compose_missing >&2
+  if ! movo_detect_compose; then
     exit 1
   fi
   if ! "${DOCKER_BIN}" info >/dev/null 2>&1; then
@@ -88,10 +89,10 @@ retire_legacy_compose_project() {
     return 0
   fi
   local legacy_containers=""
-  legacy_containers="$("${DOCKER_BIN}" compose -p askai ps -q 2>/dev/null || true)"
+  legacy_containers="$(movo_compose_command -p askai ps -q 2>/dev/null || true)"
   if [[ -n "${legacy_containers}" ]]; then
     movo_msg migrating_project
-    "${DOCKER_BIN}" compose -p askai down --remove-orphans
+    movo_compose_command -p askai down --remove-orphans
   fi
 }
 

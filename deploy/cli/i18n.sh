@@ -51,8 +51,8 @@ movo_msg() {
   case "${MOVO_LOCALE}:${key}" in
     zh:docker_missing) printf '错误：未找到 Docker，请先安装 Docker Engine 或 Docker Desktop。\n' ;;
     en:docker_missing) printf 'Error: Docker was not found. Install Docker Engine or Docker Desktop first.\n' ;;
-    zh:compose_missing) printf '错误：未找到 Docker Compose v2。\n' ;;
-    en:compose_missing) printf 'Error: Docker Compose v2 was not found.\n' ;;
+    zh:compose_missing) printf '错误：未找到可用的 Docker Compose v2 或更新版本；已检查 docker compose 和 docker-compose。\n' ;;
+    en:compose_missing) printf 'Error: Docker Compose v2 or newer was not found; checked docker compose and docker-compose.\n' ;;
     zh:docker_stopped) printf '错误：Docker 尚未运行，请先启动 Docker。\n' ;;
     en:docker_stopped) printf 'Error: Docker is not running. Start Docker first.\n' ;;
     zh:sandbox_config_mismatch) printf '错误：沙箱模式需要同时设置 COMPOSE_PROFILES=sandbox 和 MOVO_SANDBOX_MANAGER_URL=http://sandbox-manager:8300。\n' ;;

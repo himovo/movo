@@ -27,11 +27,11 @@ movo_print_dsh_build_target() {
 
 movo_print_running_dsh_version() {
   local container_id version
-  container_id="$("${DOCKER_BIN}" compose ps -q dsh-runtime-host 2>/dev/null || true)"
+  container_id="$(movo_compose ps -q dsh-runtime-host 2>/dev/null || true)"
   if [[ -z "${container_id}" ]]; then
     return 0
   fi
-  version="$("${DOCKER_BIN}" compose exec -T dsh-runtime-host \
+  version="$(movo_compose exec -T dsh-runtime-host \
     node -p "require('@deepseek-ai/dsh/package.json').version" 2>/dev/null || true)"
   if [[ -n "${version}" ]]; then
     movo_msg dsh_running_version "${version}"

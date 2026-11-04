@@ -150,7 +150,7 @@ The default Docker Compose deployment starts 12 services: the gateway, two Web a
 ### Requirements and platform notes
 
 - Git
-- Docker Desktop, or Docker Engine with Docker Compose v2
+- Docker Desktop, or Docker Engine with Docker Compose v2 or newer (`docker compose` or standalone `docker-compose`)
 - at least 8 GB of available memory
 - at least 20 GB of available disk space for images and application data
 - network access to the selected image registries during the initial image pull (GHCR/Docker Hub by default, or ACR with `--mirror cn`)
