@@ -100,8 +100,14 @@ class DockerEngine:
                 raise
 
     def create_internal_network(self, name: str) -> str:
+        return self._create_network(name, internal=True)
+
+    def create_outbound_network(self, name: str) -> str:
+        return self._create_network(name, internal=False)
+
+    def _create_network(self, name: str, *, internal: bool) -> str:
         payload = {
-            "Name": name, "Driver": "bridge", "Internal": True,
+            "Name": name, "Driver": "bridge", "Internal": internal,
             "CheckDuplicate": True,
             "Labels": {"movo.role": "sandbox-job-network"},
         }

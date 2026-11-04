@@ -145,7 +145,7 @@ class TaskContainers:
     def _create(self, task_id: str, digest: str) -> TaskLease:
         image = self.environments.ready_image(digest) if digest else self.image
         proxy_id = self.engine.find_compose_service(self.project, "sandbox-egress")
-        network_id = self.engine.create_internal_network(f"movo-task-{task_id}")
+        network_id = self.engine.create_outbound_network(f"movo-task-{task_id}")
         container_id = None
         try:
             self.engine.connect_network(network_id, proxy_id, ["sandbox-egress"])

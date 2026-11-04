@@ -1,7 +1,7 @@
-"""HTTP CONNECT proxy that only dials globally routable addresses.
+"""HTTP CONNECT proxy for public and private destinations.
 
-Job containers have an internal-only Docker network and reach this proxy by
-name. The proxy is the sole network egress point for those containers.
+Dependency builds use an internal-only Docker network and reach this proxy by
+name. Script runtimes may also use the proxy for HTTP and SSH connections.
 """
 
 from __future__ import annotations
@@ -17,15 +17,23 @@ MAX_CONNECTIONS = 256
 _slots = asyncio.Semaphore(MAX_CONNECTIONS)
 
 
-async def _public_destination(host: str, port: int) -> tuple[str, int]:
+def _allowed_destination(ip: ipaddress.IPv4Address | ipaddress.IPv6Address, port: int) -> bool:
+    if ip.is_global:
+        return True
+    if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_unspecified:
+        return False
+    return ip.is_private
+
+
+async def _resolved_destination(host: str, port: int) -> tuple[str, int]:
     if not host or not 1 <= port <= 65535:
         raise ValueError("Invalid destination")
     records = await asyncio.get_running_loop().getaddrinfo(host, port, type=socket.SOCK_STREAM)
     for _, _, _, _, address in records:
         ip = ipaddress.ip_address(address[0])
-        if ip.is_global:
+        if _allowed_destination(ip, port):
             return str(ip), port
-    raise PermissionError("Destination is not public")
+    raise PermissionError("Destination is not allowed")
 
 
 async def _pipe(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
@@ -55,7 +63,7 @@ async def _handle(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) ->
                 host, separator, port_text = target.rpartition(":")
                 if not separator or not port_text.isdigit():
                     raise ValueError("Invalid CONNECT target")
-                address = await _public_destination(host.strip("[]"), int(port_text))
+                address = await _resolved_destination(host.strip("[]"), int(port_text))
                 upstream_reader, upstream_writer = await asyncio.wait_for(asyncio.open_connection(*address), timeout=15)
                 upstream = upstream_writer
                 writer.write(b"HTTP/1.1 200 Connection Established\r\n\r\n")
@@ -63,7 +71,7 @@ async def _handle(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) ->
                 url = urlsplit(target)
                 if url.scheme != "http" or not url.hostname or url.username or url.password:
                     raise ValueError("Only plain HTTP absolute URLs are accepted")
-                address = await _public_destination(url.hostname, url.port or 80)
+                address = await _resolved_destination(url.hostname, url.port or 80)
                 upstream_reader, upstream_writer = await asyncio.wait_for(asyncio.open_connection(*address), timeout=15)
                 upstream = upstream_writer
                 path = (url.path or "/") + (f"?{url.query}" if url.query else "")

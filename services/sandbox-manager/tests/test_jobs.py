@@ -16,7 +16,7 @@ class EngineFake:
     def find_compose_service(self, project, service):
         return "proxy-id"
 
-    def create_internal_network(self, name):
+    def create_outbound_network(self, name):
         return "network-id"
 
     def connect_network(self, network_id, container_id, aliases):

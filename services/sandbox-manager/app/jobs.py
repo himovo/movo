@@ -77,7 +77,7 @@ class ScriptJobs:
         proxy_id = None
         try:
             proxy_id = self.engine.find_compose_service(self.project, "sandbox-egress")
-            network_id = self.engine.create_internal_network(f"movo-sandbox-{job_id}")
+            network_id = self.engine.create_outbound_network(f"movo-sandbox-{job_id}")
             self.engine.connect_network(network_id, proxy_id, ["sandbox-egress"])
             payload = {
                 "Image": image,

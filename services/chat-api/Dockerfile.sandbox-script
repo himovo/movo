@@ -14,6 +14,13 @@ RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
       sed -i "s|http://deb.debian.org/debian-security|${MOVO_APT_MIRROR%/}/debian-security|g; s|http://deb.debian.org/debian|${MOVO_APT_MIRROR%/}/debian|g" /etc/apt/sources.list.d/debian.sources; \
     fi
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+      ca-certificates curl dnsutils file git iproute2 jq netcat-openbsd \
+      openssh-client rsync unzip wget zip \
+    && rm -rf /var/lib/apt/lists/* \
+    && printf 'Host *\n    ProxyCommand nc -X connect -x sandbox-egress:3128 %%h %%p\n' > /etc/ssh/ssh_config.d/movo-sandbox.conf
+
 COPY requirements.txt /tmp/requirements.txt
 RUN if [ -n "${MOVO_PIP_INDEX_URL}" ]; then \
       python -m pip install --no-cache-dir --index-url "${MOVO_PIP_INDEX_URL}" -r /tmp/requirements.txt; \
