@@ -47,6 +47,7 @@ def inventory(engine: DockerEngine) -> dict:
     record = deployment_record()
     sandbox_enabled = "sandbox-manager" in rows or "sandbox-egress" in rows
     services = []
+    image_revisions: dict[str, str] = {}
     for name in SERVICES:
         row = rows.get(name)
         if row is None:
@@ -60,6 +61,12 @@ def inventory(engine: DockerEngine) -> dict:
         health = (state.get("Health") or {}).get("Status") or "unknown"
         image_id = str(details.get("Image") or row.get("ImageID") or "")
         image_name = str((details.get("Config") or {}).get("Image") or row.get("Image") or "")
+        if image_id and image_id not in image_revisions:
+            try:
+                image_details = engine.request("GET", f"/images/{image_id}/json").json()
+                image_revisions[image_id] = str((image_details.get("Config") or {}).get("Labels", {}).get("org.opencontainers.image.revision") or "")
+            except Exception:
+                image_revisions[image_id] = ""
         version_mismatch = bool(expected_images.get(name) and expected_images[name] != image_id)
         services.append({
             "name": name,
@@ -67,12 +74,16 @@ def inventory(engine: DockerEngine) -> dict:
             "health": health,
             "image": image_name,
             "imageId": image_id,
+            "revision": image_revisions.get(image_id, ""),
             "versionMismatch": version_mismatch,
             "containerId": str(details.get("Id") or row["Id"]),
             "createdAt": details.get("Created"),
             "startedAt": state.get("StartedAt"),
             "restarts": int(details.get("RestartCount") or 0),
         })
+    revisions = sorted({service["revision"] for service in services if service.get("revision") and service["name"] not in {"mongo", "redis", "weaviate"}})
+    record["revisions"] = revisions
+    record["commit"] = revisions[0] if len(revisions) == 1 else ""
     image_name = os.environ.get("MOVO_SANDBOX_SCRIPT_IMAGE", "").strip()
     script_image = {"image": image_name, "imageId": "", "available": False}
     if image_name:

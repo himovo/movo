@@ -27,8 +27,8 @@ export function diagnostics(status: DeploymentStatus) {
   return JSON.stringify({
     checkedAt: status.checkedAt,
     deployment: status.deployment,
-    services: status.services.map(({ name, status: state, health, image, imageId, versionMismatch, containerId, createdAt, startedAt, restarts }) => ({
-      name, status: state, health, image, imageId, versionMismatch, containerId, createdAt, startedAt, restarts,
+    services: status.services.map(({ name, status: state, health, image, imageId, revision, versionMismatch, containerId, createdAt, startedAt, restarts }) => ({
+      name, status: state, health, image, imageId, revision, versionMismatch, containerId, createdAt, startedAt, restarts,
     })),
     scriptImage: status.scriptImage,
   }, null, 2)

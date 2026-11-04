@@ -1,11 +1,11 @@
 <template>
   <main class="deployment-page">
-    <div class="page-toolbar">
+    <Teleport v-if="headerActionsReady" to="#header-actions-teleport-target">
       <div class="page-actions">
         <n-button secondary :loading="loading" @click="load">{{ t('deployment.refresh') }}</n-button>
         <n-button type="primary" :disabled="!status" @click="copyDiagnostics">{{ t('deployment.copy') }}</n-button>
       </div>
-    </div>
+    </Teleport>
 
     <n-alert v-if="loadError" type="info" :bordered="false" class="load-error">{{ t('deployment.loadFailed') }}</n-alert>
     <div v-if="loading && !status" class="loading-panel"><n-spin size="medium" /><span>{{ t('deployment.loading') }}</span></div>
@@ -18,7 +18,7 @@
         </div>
         <div class="summary-metrics">
           <div><span>{{ t('deployment.upgradedAt') }}</span><strong>{{ displayTime(status.deployment.upgradedAt) }}</strong></div>
-          <div><span>{{ t('deployment.version') }}</span><strong>{{ status.deployment.version || t('deployment.unknown') }}</strong></div>
+          <div><span>{{ t('deployment.version') }}</span><strong class="mono" :title="status.deployment.commit || ''">{{ displayVersion }}</strong></div>
           <div><span>{{ t('deployment.runningCount') }}</span><strong>{{ counts.running }}</strong></div>
           <div><span>{{ t('deployment.issueCount') }}</span><strong :class="{ danger: counts.issues }">{{ counts.issues }}</strong></div>
           <div><span>{{ t('deployment.disabledCount') }}</span><strong>{{ counts.disabled }}</strong></div>
@@ -112,6 +112,16 @@ const status = ref<DeploymentStatus | null>(null)
 const selected = ref<DeploymentService | null>(null)
 const loading = ref(false)
 const loadError = ref(false)
+const headerActionsReady = ref(false)
+const displayVersion = computed(() => {
+  if (!status.value) return t('deployment.unknown')
+  const deployment = status.value.deployment
+  if ((deployment.revisions?.length ?? 0) > 1) return t('deployment.mixedRevisions')
+  if (deployment.commit) return deployment.commit.slice(0, 12)
+  if (deployment.version && deployment.version !== 'latest') return deployment.version
+  const imageId = status.value.services.find(service => service.name === 'admin-api')?.imageId
+  return imageId ? shortId(imageId) : t('deployment.unknown')
+})
 const counts = computed(() => status.value ? serviceCounts(status.value) : { running: 0, issues: 0, disabled: 0, mismatches: 0 })
 const groups = computed(() => status.value ? [
   { key: 'deployment.core', services: status.value.services.filter(service => !INFRASTRUCTURE.has(service.name)) },
@@ -141,6 +151,7 @@ const detailRows = computed(() => selected.value ? [
   { label: t('deployment.health'), value: healthLabel(selected.value.health) },
   { label: t('deployment.image'), value: selected.value.image || '—', mono: true },
   { label: t('deployment.imageId'), value: selected.value.imageId || '—', mono: true, copy: true },
+  { label: t('deployment.revision'), value: selected.value.revision || '—', mono: true, copy: true },
   { label: t('deployment.mismatchCount'), value: selected.value.versionMismatch ? t('deployment.mismatch') : '—' },
   { label: t('deployment.containerId'), value: selected.value.containerId || '—', mono: true, copy: true },
   { label: t('deployment.createdAt'), value: displayTime(selected.value.createdAt) },
@@ -171,7 +182,10 @@ async function copyValue(value: string) {
   } catch { message.error(t('deployment.copyFailed')) }
 }
 
-onMounted(load)
+onMounted(() => {
+  headerActionsReady.value = !!document.querySelector('#header-actions-teleport-target')
+  load()
+})
 </script>
 
 <style scoped src="./deploymentStatusPage.css"></style>

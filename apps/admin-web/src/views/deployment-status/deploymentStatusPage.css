@@ -1,8 +1,7 @@
-.deployment-page { display: grid; gap: 16px; box-sizing: border-box; min-width: 0; padding: 18px 18px 36px; color: #18253d; }
-.page-toolbar { display: flex; justify-content: flex-end; }
+.deployment-page { display: grid; align-content: start; gap: 16px; box-sizing: border-box; height: calc(100dvh - 70px); min-height: 0; min-width: 0; overflow-y: auto; padding: 18px 18px 36px; color: #18253d; }
 .section-heading, .runtime-card { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .section-heading p { margin: 0; color: #66758e; font-size: 13px; }
-.page-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.page-actions { display: flex; align-items: center; gap: 10px; }
 .summary-card, .inventory-card, .runtime-card { border: 1px solid #dfe7f3; border-radius: 16px; background: #fff; box-shadow: 0 8px 26px rgba(25, 47, 84, .045); }
 .summary-card { padding: 24px; background: linear-gradient(130deg, #f6f9ff 0%, #fff 58%); }
 .summary-state { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; }

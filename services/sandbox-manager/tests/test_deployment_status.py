@@ -25,6 +25,8 @@ class EngineFake:
                 "Id": "container-id", "Image": "movo-chat-api:latest", "ImageID": "sha256:image",
                 "Labels": {"com.docker.compose.service": "chat-api"},
             }])
+        if path == "/images/sha256:image/json":
+            return Response({"Config": {"Labels": {"org.opencontainers.image.revision": "d4ccf30a6bc26737ee6a9a6092067b5f0345d288"}}})
         raise RuntimeError("Image unavailable")
 
     def inspect(self, container_id):
@@ -49,6 +51,8 @@ def test_inventory_reports_actual_image_and_optional_services(tmp_path, monkeypa
     sandbox = next(item for item in result["services"] if item["name"] == "sandbox-manager")
     assert (chat["image"], chat["imageId"], chat["restarts"]) == ("movo-chat-api:latest", "sha256:image", 2)
     assert chat["versionMismatch"] is True
+    assert chat["revision"] == "d4ccf30a6bc26737ee6a9a6092067b5f0345d288"
+    assert result["deployment"]["commit"] == chat["revision"]
     assert sandbox["status"] == "disabled"
     assert result["deployment"]["version"] == "latest"
     assert result["scriptImage"]["available"] is False

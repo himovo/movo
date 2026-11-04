@@ -6,6 +6,7 @@ export interface DeploymentService {
   health?: string
   image?: string
   imageId?: string
+  revision?: string
   versionMismatch?: boolean
   containerId?: string
   createdAt?: string | null
@@ -15,7 +16,7 @@ export interface DeploymentService {
 
 export interface DeploymentStatus {
   checkedAt: string
-  deployment: { upgradedAt?: string; version?: string; commit?: string }
+  deployment: { upgradedAt?: string; version?: string; commit?: string; revisions?: string[] }
   services: DeploymentService[]
   scriptImage: { image: string; imageId: string; available: boolean }
 }
