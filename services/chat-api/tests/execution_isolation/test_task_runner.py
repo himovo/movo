@@ -9,6 +9,7 @@ from threading import Thread
 from zipfile import ZipFile
 
 from app.execution_isolation.runner_source import runner_source
+from app.enterprise_capabilities.data.script_contract import compile_script_plugin
 
 
 def _run(work: Path, code: str, call: str, *, skill_dir: str = "", allow_network: bool = False) -> subprocess.CompletedProcess[str]:
@@ -17,7 +18,7 @@ def _run(work: Path, code: str, call: str, *, skill_dir: str = "", allow_network
     (folder / "runner.py").write_text(runner_source(container_isolated=True))
     (folder / "plugin.py").write_text(code)
     (folder / "stdin.json").write_text(json.dumps({
-        "inputs": {}, "context": {"work_dir": str(work), "skill_dir": skill_dir, "allow_network": allow_network},
+        "inputs": {}, "context": {"work_dir": str(work), "output_dir": str(folder / "out"), "skill_dir": skill_dir, "allow_network": allow_network},
     }))
     return subprocess.run([sys.executable, "-I", str(folder / "runner.py"),
                            str(folder / "plugin.py"), str(folder / "stdin.json")],
@@ -30,6 +31,26 @@ def test_isolated_runner_reuses_workspace_and_accepts_one_argument(tmp_path: Pat
     assert first.returncode == 0
     assert second.returncode == 0
     assert json.loads(second.stdout)["value"] == "kept"
+
+
+def test_ordinary_python_reuses_download_across_call_output_directories(tmp_path: Path) -> None:
+    first = _run(tmp_path, compile_script_plugin(
+        "import os\nfrom pathlib import Path\n"
+        "Path(work_dir, 'sample.xlsx').write_bytes(b'workbook')\n"
+        "print(work_dir, output_dir)"
+    ), "download")
+    second = _run(tmp_path, compile_script_plugin(
+        "from pathlib import Path\n"
+        "print(Path(work_dir, 'sample.xlsx').read_bytes().decode())\n"
+        "print(work_dir, output_dir)"
+    ), "analyze")
+    assert first.returncode == 0, first.stderr
+    assert second.returncode == 0, second.stderr
+    first_lines = json.loads(first.stdout)["data"]["stdout"]
+    second_lines = json.loads(second.stdout)["data"]["stdout"]
+    assert second_lines[0] == "workbook"
+    assert first_lines[0].split()[0] == second_lines[1].split()[0]
+    assert first_lines[0].split()[1] != second_lines[1].split()[1]
 
 
 def test_isolated_runner_loads_task_local_dependency_on_later_call(tmp_path: Path) -> None:

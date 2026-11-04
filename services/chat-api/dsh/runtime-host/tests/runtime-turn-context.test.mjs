@@ -59,6 +59,8 @@ test('runtime persona keeps simple and progressive search execution mutually exc
 test('runtime persona keeps short writing in DSH and uses semantic long-form routing', async () => {
   const { ASKAI_RUNTIME_PERSONA } = await import('../src/runtime-persona.mjs')
   assert.match(ASKAI_RUNTIME_PERSONA, /Write ordinary short content directly/)
+  assert.match(ASKAI_RUNTIME_PERSONA, /prefer run_script for steps that require execution/)
+  assert.match(ASKAI_RUNTIME_PERSONA, /follow that node's tool binding/)
   assert.match(ASKAI_RUNTIME_PERSONA, /Make this choice semantically/)
   assert.match(ASKAI_RUNTIME_PERSONA, /MOVO carries the accepted evidence forward automatically/)
   assert.match(ASKAI_RUNTIME_PERSONA, /For requested images not directed by a loaded Skill/)

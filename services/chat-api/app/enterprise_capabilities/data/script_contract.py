@@ -27,6 +27,7 @@ def compile_script_plugin(code: str) -> str:
         "    from builtins import print as _builtin_print\n"
         "    input_files = list(inputs.get('files') or [])\n"
         "    input_dir = context.get('input_dir') or 'inputs'\n"
+        "    work_dir = context.get('work_dir') or '.'\n"
         "    _askai_output_dir = context.get('output_dir') or 'out'\n"
         "    _os.makedirs(_askai_output_dir, exist_ok=True)\n"
         "    _os.chdir(_askai_output_dir)\n"

@@ -3,11 +3,11 @@ import { computed } from 'vue'
 import type { ExecutionItemV3 } from '../domain/model'
 import { t } from '../../../composables/i18n'
 import ActivityIcon from './ActivityIcon.vue'
+import ToolErrorDetails from './ToolErrorDetails.vue'
 import { activityOutcome, activityStateMessageKey } from '../domain/activityPresentation'
 import { toolActionLabelKey, toolCallSummary, toolDisplayName } from '../domain/repeatedToolCalls'
 import { failureMessageKey } from '../domain/failureMessage'
 import { localizedInternalToolLabel } from '../domain/internalToolLabels'
-import { scriptAttemptReasonKey, toolAttemptStateKey } from '../domain/toolAttemptPresentation'
 import type { ExecutionStateV3 } from '../domain/model'
 
 const props = withDefaults(defineProps<{ item: ExecutionItemV3; active?: boolean; runStatus?: ExecutionStateV3['runStatus'] }>(), {
@@ -24,12 +24,8 @@ const category = computed(() => {
 })
 const outcome = computed(() => activityOutcome(props.item.payload))
 const activelyRunning = computed(() => props.item.status === 'running' && props.active)
-const scriptReasonKey = computed(() => scriptAttemptReasonKey(props.item.payload?.name, props.item.payload?.error))
 const stateText = computed(() => {
-  if (props.item.kind === 'tool' && props.item.status === 'failed') {
-    const context = t(toolAttemptStateKey(props.runStatus))
-    return scriptReasonKey.value ? `${t(scriptReasonKey.value)} · ${context}` : context
-  }
+  if (props.item.kind === 'tool' && props.item.status === 'failed') return ''
   const key = activityStateMessageKey(props.item.status, outcome.value, props.item.payload)
   return key ? t(key) : ''
 })
@@ -70,15 +66,12 @@ const detail = computed(() => props.item.kind === 'tool' ? toolCallSummary(props
 </script>
 
 <template>
-  <div v-if="text" class="activity-row" :class="[`category-${category}`, `status-${item.status}`, `outcome-${outcome || 'none'}`, { 'actively-running': activelyRunning, 'tool-activity-row': item.kind === 'tool' }]">
+  <div v-if="text" class="activity-row" :class="[`category-${category}`, `status-${item.kind === 'tool' && item.status === 'failed' ? 'completed' : item.status}`, `outcome-${item.kind === 'tool' && item.status === 'failed' ? 'none' : outcome || 'none'}`, { 'actively-running': activelyRunning, 'tool-activity-row': item.kind === 'tool' }]">
     <ActivityIcon :category="category" :kind="item.kind" />
     <span class="activity-copy">{{ text }}</span>
     <span v-if="detail" class="activity-detail">{{ detail }}</span>
     <span v-if="stateText" class="activity-state">{{ stateText }}</span>
-    <details v-if="item.kind === 'tool' && item.status === 'failed' && item.payload?.error" class="attempt-details">
-      <summary>{{ t('execution.v3.tool_attempt_details') }}</summary>
-      <pre>{{ String(item.payload.error) }}</pre>
-    </details>
+    <ToolErrorDetails v-if="item.kind === 'tool' && item.status === 'failed' && item.payload?.error" :error="String(item.payload.error)" />
     <span v-if="item.kind === 'approval' && item.status === 'running' && !['dsh', 'dsh-local', 'askai-approval'].includes(String(item.payload?.source || ''))" class="activity-actions">
       <button type="button" @click="emit('resolve-permission', String(item.payload.request_id || item.id), 'deny')">{{ t('ui.deny') }}</button>
       <button type="button" class="primary" @click="emit('resolve-permission', String(item.payload.request_id || item.id), 'allow')">{{ t('ui.allow') }}</button>
@@ -150,8 +143,6 @@ const detail = computed(() => props.item.kind === 'tool' ? toolCallSummary(props
 @media (prefers-reduced-motion: reduce) {
   .status-running.actively-running .activity-copy { color:#2563eb; background:none; animation:none; }
 }
-.attempt-details { font-size:12px; color:#64748b; }
-.tool-activity-row:has(.attempt-details[open]) { flex-wrap:wrap; }
-.attempt-details[open] { flex-basis:100%; }
-.attempt-details pre { max-height:160px; max-width:600px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; }
+.tool-activity-row:has(.tool-error-details[open]) { flex-wrap: wrap; }
+.tool-activity-row :deep(.tool-error-details[open]) { flex-basis: 100%; }
 </style>
