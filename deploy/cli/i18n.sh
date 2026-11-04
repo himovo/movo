@@ -111,6 +111,12 @@ movo_msg() {
     en:fix_complete) printf 'Repair verified. Chat remains stopped; run ./movo up now to complete the upgrade.\n' ;;
     zh:fix_complete_build) printf '修复和验证成功。聊天服务保持停止，请立即执行 ./movo up --build 完成升级。\n' ;;
     en:fix_complete_build) printf 'Repair verified. Chat remains stopped; run ./movo up --build now to complete the upgrade.\n' ;;
+    zh:local_images_ready) printf '本地镜像已齐全，直接使用本地镜像启动；如需检查更新，请执行 ./movo update。\n' ;;
+    en:local_images_ready) printf 'All images are available locally. Starting with local images; run ./movo update to check for updates.\n' ;;
+    zh:pulling_missing_image) printf '正在拉取本地缺失的镜像：%s\n' "$1" ;;
+    en:pulling_missing_image) printf 'Pulling missing local image: %s\n' "$1" ;;
+    zh:missing_image_unavailable) printf '无法获取缺失镜像：%s。内网环境请先导入对应镜像，再重新启动。\n' "$1" ;;
+    en:missing_image_unavailable) printf 'Cannot obtain missing image: %s. For offline deployments, import the matching image and start again.\n' "$1" ;;
     zh:pulling_images) printf '正在串行拉取镜像（第 %s 次）...\n' "$1" ;;
     en:pulling_images) printf 'Pulling images sequentially (attempt %s)...\n' "$1" ;;
     zh:pull_retry) printf '第 %s 次拉取失败，%s 秒后继续重试；按 Ctrl+C 可停止。\n' "$1" "$2" ;;
