@@ -22,7 +22,7 @@
                 <div><span>{{ t('skillDeps.records.digest') }}</span><code :title="selected.digest">{{ selected.digest.slice(0, 16) }}</code></div>
                 <div><span>{{ t('skillDeps.records.baseImage') }}</span><code :title="selected.baseImageId">{{ selected.baseImageId.slice(0, 20) || '—' }}</code></div>
               </div>
-              <div class="log-head"><strong>{{ t('skillDeps.records.log') }}</strong><n-button size="small" secondary @click="refresh(true)">{{ t('skillDeps.records.refresh') }}</n-button></div>
+              <div class="log-head"><strong>{{ t('skillDeps.records.log') }}</strong><div class="log-actions"><n-button size="small" secondary @click="refresh(true)">{{ t('skillDeps.records.refresh') }}</n-button><n-button size="small" secondary :loading="downloading" @click="downloadSelected">{{ t('skillDeps.records.download') }}</n-button></div></div>
               <p v-if="selected.truncated" class="log-note">{{ t('skillDeps.records.truncated') }}</p>
               <pre class="log-view" role="log"><code>{{ selected.log || t('skillDeps.records.logPending') }}</code></pre>
             </template>
@@ -35,22 +35,43 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue'
-import { NButton, NDrawer, NDrawerContent, NEmpty, NSpin, NTag } from 'naive-ui'
+import { NButton, NDrawer, NDrawerContent, NEmpty, NSpin, NTag, useMessage } from 'naive-ui'
 import { fetchSkillPreparationRecord, fetchSkillPreparationRecords, type SkillPreparationRecord } from '@/api/skills'
 import { t } from '@/composables/i18n'
+import { downloadPreparationLog } from './downloadPreparationLog'
 
 const props = defineProps<{ show: boolean; skillId: string; skillName: string }>()
 const emit = defineEmits<{ 'update:show': [value: boolean] }>()
+const message = useMessage()
 const records = ref<SkillPreparationRecord[]>([])
 const selected = ref<SkillPreparationRecord | null>(null)
 const selectedId = ref('')
 const loading = ref(false)
 const loadError = ref('')
+const downloading = ref(false)
 let timer: ReturnType<typeof setInterval> | null = null
 
 function formatTime(value: string): string { return value ? new Date(value).toLocaleString() : '—' }
 function statusText(value: SkillPreparationRecord['status']): string { return t(`skillDeps.records.status.${value}`) }
 function statusType(value: SkillPreparationRecord['status']): 'success' | 'error' | 'warning' { return value === 'ready' ? 'success' : value === 'failed' ? 'error' : 'warning' }
+async function downloadSelected(): Promise<void> {
+  const recordId = selectedId.value
+  if (!recordId || downloading.value) return
+  downloading.value = true
+  try {
+    const record = await fetchSkillPreparationRecord(props.skillId, recordId)
+    if (!record.log) {
+      message.warning(t('skillDeps.records.noLog'))
+      return
+    }
+    if (selectedId.value === recordId) selected.value = record
+    downloadPreparationLog(record, props.skillName)
+  } catch {
+    message.error(t('skillDeps.records.downloadFailed'))
+  } finally {
+    downloading.value = false
+  }
+}
 async function select(recordId: string): Promise<void> {
   selectedId.value = recordId
   try {
@@ -96,6 +117,7 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer) })
 .record-meta span { color:#64748b;font-size:12px; }
 .record-meta strong,.record-meta code { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px; }
 .log-head { display:flex;align-items:center;justify-content:space-between;margin:18px 0 8px; }
+.log-actions { display:flex;gap:8px; }
 .log-note,.load-error { color:#a23b32; }
 .log-view { margin:0;padding:16px;min-height:340px;max-height:calc(100vh - 380px);overflow:auto;border-radius:10px;background:#111827;color:#d1e7da;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere; }
 @media(max-width:700px){.records-layout{grid-template-columns:1fr}.records-list{max-height:180px}.record-meta{grid-template-columns:1fr}}
