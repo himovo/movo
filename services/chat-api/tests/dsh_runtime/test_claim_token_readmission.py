@@ -90,7 +90,7 @@ def readmit_env(real_mongo_db, monkeypatch):
     release = asyncio.Event()
     chat._turn_runner.run = _hold_runner(chat, release)
 
-    async def passthrough(binding, *, tenant_id, user_id, model_instance_id=None):
+    async def passthrough(binding, **_kwargs):
         return SimpleNamespace(binding=binding)
 
     chat._profile_sync.synchronize = passthrough

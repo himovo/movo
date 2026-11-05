@@ -517,7 +517,7 @@ def admission_env(real_mongo_db, monkeypatch):
     runner = _GatedRunner()
     chat._turn_runner.run = runner
 
-    async def passthrough(binding, *, tenant_id, user_id, model_instance_id=None):
+    async def passthrough(binding, **_kwargs):
         return SimpleNamespace(binding=binding)
 
     chat._profile_sync.synchronize = passthrough
