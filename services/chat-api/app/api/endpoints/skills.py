@@ -669,6 +669,8 @@ async def list_selectable_skills(
         resource_ids=organization_ids,
     )
 
+    from app.dsh_runtime.profile.skills.execution_access import skill_execution_is_allowed
+
     items: List[Dict[str, Any]] = []
     await attach_environment_status(list(user_skills or []) + list(org_skills or []))
     seen: set[str] = set()
@@ -690,7 +692,14 @@ async def list_selectable_skills(
         if not _matches_skill_keyword(skill, keyword):
             continue
         seen.add(skill_id)
-        items.append(_selectable_skill_item(skill))
+        available = await skill_execution_is_allowed(
+            row=skill, tenant_id=resolved_main_id, user_id=user_id,
+        )
+        items.append({
+            **_selectable_skill_item(skill),
+            "available": available,
+            "unavailableReason": "execution_access" if not available else "",
+        })
 
     offset = _cursor_offset(cursor)
     page = items[offset:offset + limit]

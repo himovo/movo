@@ -135,6 +135,8 @@ export interface SelectableSkillItem {
   type: SkillType
   sourceScope: 'user' | 'organization'
   enabled: boolean
+  available?: boolean
+  unavailableReason?: string
   updatedAt?: string
 }
 

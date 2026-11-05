@@ -14,6 +14,7 @@ from app.dsh_runtime.events.turn_channel import TurnEventRegistry
 from app.services.external_tools import external_tool_service
 from app.governance.position_policy import EmployeePolicyResolver
 from app.product.resource_access import resource_is_allowed
+from app.product.execution_access import execution_is_allowed
 from app.services.presentation.execution import PresentationJobRepository
 
 from app.enterprise_capabilities.runtime import CapabilityExecutionContext, InternalCapabilityService
@@ -498,6 +499,16 @@ class EnterpriseToolService:
         tool = next((item for item in profile.tools if item.name == tool_name), None)
         if tool is None or not set(tool.required_scopes).issubset(claims.scopes):
             raise ToolPolicyDenied("required tool scope is missing")
+        if not await execution_is_allowed(
+            main_id=claims.tenant_id, user_id=claims.user_id,
+            capability=str(tool.capability_ref or "") if tool.source_type == "internal" else "external.tool",
+        ):
+            await self._repository.audit(
+                tenant_id=claims.tenant_id, user_id=claims.user_id,
+                action_id="policy-denied", event="capability.denied",
+                details={"tool_name": tool.name, "reason": "execution_access"},
+            )
+            raise ToolPolicyDenied("Execution is disabled by organization policy")
         if self._employee_policy is not None:
             current_policy = await self._employee_policy.resolve(claims.tenant_id, claims.user_id)
             allowed = (

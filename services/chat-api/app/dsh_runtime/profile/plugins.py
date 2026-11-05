@@ -8,11 +8,16 @@ from typing import Any
 from app.core.db import get_db
 from app.execution_isolation import ExecutionTarget, route_plugin
 from app.product.resource_access import filter_allowed_resource_ids
+from app.product.execution_access import execution_is_allowed
 from app.dsh_runtime.plugin_management.tool_requirements import tool_requirements
 
 
 class MongoPluginCatalog:
     async def list_enabled(self, tenant_id: str, user_id: str) -> tuple[dict[str, Any], ...]:
+        if not await execution_is_allowed(
+            main_id=tenant_id, user_id=user_id, capability="plugin.runtime",
+        ):
+            return ()
         rows = await get_db().dsh_plugin_installations.find({
             "main_id": tenant_id,
             "$or": [{"enabled": True}, {"owner_user_id": ""}],

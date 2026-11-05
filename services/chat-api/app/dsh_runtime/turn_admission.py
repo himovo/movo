@@ -8,6 +8,7 @@ from app.dsh_runtime.profile.skills import MongoSkillCatalog
 from app.dsh_runtime.profile.skills.resolver import require_selected_skill
 from app.governance.audit import record_position_policy_event
 from app.product.resource_access import resource_is_allowed
+from app.dsh_runtime.profile.skills.execution_access import skill_execution_is_allowed
 
 
 @dataclass(frozen=True)
@@ -35,12 +36,16 @@ async def admit_skill_selection(
             details={"skill_id": selected},
         )
         raise PermissionError("该 Skill 未向当前用户开放")
-    kind, _row = await require_selected_skill(
+    kind, row = await require_selected_skill(
         MongoSkillCatalog(),
         skill_id=selected,
         tenant_id=tenant_id,
         user_id=user_id,
     )
+    if kind == "skill" and not await skill_execution_is_allowed(
+        row=row, tenant_id=tenant_id, user_id=user_id,
+    ):
+        raise PermissionError("Selected Skill requires an execution capability unavailable to this user")
     await record_position_policy_event(
         tenant_id=tenant_id,
         user_id=user_id,

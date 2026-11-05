@@ -15,6 +15,7 @@ from app.enterprise_capabilities.runtime.timeouts import MAX_CAPABILITY_EXECUTIO
 from app.services.external_tools import external_tool_registry
 from app.governance.position_policy import EmployeePolicyResolver
 from app.product.resource_access import filter_allowed_resource_ids
+from app.product.execution_access import execution_is_allowed
 
 from .mcp_schema import McpSchemaCompatibilityError, normalize_mcp_schema
 
@@ -117,6 +118,10 @@ class ToolProfileCompiler:
                 [item.capability_ref for item in capabilities], tenant_id, user_id,
             ) if self._internal_availability else set()
             for capability in capabilities:
+                if not await execution_is_allowed(
+                    main_id=tenant_id, user_id=user_id, capability=capability.capability_ref,
+                ):
+                    continue
                 if capability.capability_ref in unavailable:
                     continue
                 if capability.capability_ref == "presentation.create@v1" and self._presentation_availability:

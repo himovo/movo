@@ -42,6 +42,7 @@ export interface AdminProductUiExtension {
   knowledgeDirectoryPermissions?: Component
   knowledgeDocumentPermissions?: Component
   shortcutSettingsExtension?: Component
+  runtimeSettingsExtension?: Component
   topicRuleAudience?: TopicRuleAudienceUiExtension
   topicRuleAudienceBadge?: Component
   modelAccess?: ModelAccessUiExtension

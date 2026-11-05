@@ -125,6 +125,13 @@ class SkillPackageInstaller:
         }
         has_environment = any(item.get("path") in DEPENDENCY_FILES for item in package.files)
         common["package_requires_environment"] = has_environment
+        from .execution_requirements import package_uses_execution
+        common["package_requires_execution"] = package_uses_execution(
+            files=package.files,
+            tools=(*package.declared_tools, *package.referenced_tools),
+            requires_environment=has_environment,
+            declared_requirement=str(package.metadata.get("requires-execution") or "").lower() in {"true", "yes", "1"},
+        )
         if current:
             pending = current.get("pending_package") or {}
             if pending.get("digest") == package.archive_digest:

@@ -36,6 +36,7 @@ class ProductExtension:
     shortcut_scheme_resolver: Any | None = None
     model_access_policy: Any | None = None
     resource_access_policy: Any | None = None
+    execution_access_policy: Any | None = None
     topic_rule_audience_policy: Any | None = None
 
     def capability_payload(self) -> dict[str, object]:

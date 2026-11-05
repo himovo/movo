@@ -166,6 +166,7 @@
 
     <main v-else-if="activeSection === 'sandbox'" class="settings-main">
       <SandboxStatusPanel />
+      <component :is="adminProductUiExtension.runtimeSettingsExtension" v-if="adminProductUiExtension.runtimeSettingsExtension" />
     </main>
 
     <main v-else-if="activeSection === 'external-search'" class="settings-main">

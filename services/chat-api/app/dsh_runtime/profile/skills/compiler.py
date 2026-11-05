@@ -14,6 +14,7 @@ from app.enterprise_capabilities.content.styles import is_writing_style
 from .catalog import SkillCatalog
 from .models import CompiledSkillProfile, DshSkillDefinition, WritingStyleDefinition
 from .workflow import compile_workflow_body, workflow_nodes
+from .execution_access import skill_execution_is_allowed
 
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,10 @@ class SkillProfileCompiler:
         skills: list[DshSkillDefinition] = []
         for row in rows:
             if is_writing_style(row):
+                continue
+            if not await skill_execution_is_allowed(
+                row=row, tenant_id=tenant_id, user_id=user_id,
+            ):
                 continue
             try:
                 skills.append(self._compile_skill(row, tools=tools, style_refs=style_refs))

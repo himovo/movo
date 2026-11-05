@@ -17,9 +17,14 @@ from app.execution_isolation.skill_bundle import selected_skill_bundle
 from app.execution_isolation.call_audit import record_rejected_code
 from app.execution_isolation.script_backend import container_backend_enabled
 from app.execution_isolation.personal_space import bind_script_task
+from app.product.execution_access import execution_is_allowed
 
 
 async def run_script(arguments: dict[str, Any], context: CapabilityExecutionContext) -> dict[str, Any]:
+    if not await execution_is_allowed(
+        main_id=context.tenant_id, user_id=context.user_id, capability="data.run_script@v1",
+    ):
+        raise PermissionError("Execution is disabled by organization policy")
     if route_capability("data.run_script@v1") is not ExecutionTarget.TASK_CONTAINER:
         raise RuntimeError("Governed script execution route is unavailable")
     input_data = dict(arguments.get("data") or {})

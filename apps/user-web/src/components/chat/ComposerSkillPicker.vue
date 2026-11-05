@@ -74,9 +74,11 @@ function skillSourceLabel(source: SelectableSkillItem['sourceScope']) {
         type="button"
         role="option"
         :aria-selected="activeIndex === index"
+        :aria-disabled="skill.available === false"
+        :disabled="skill.available === false"
         class="flex w-full gap-3 px-3 py-2.5 text-left transition"
-        :class="activeIndex === index ? 'bg-blue-50/80' : 'hover:bg-slate-50'"
-        @mouseenter="emit('active-index', index)"
+        :class="skill.available === false ? 'cursor-not-allowed opacity-65' : activeIndex === index ? 'bg-blue-50/80' : 'hover:bg-slate-50'"
+        @mouseenter="skill.available !== false && emit('active-index', index)"
         @click="emit('select', skill)"
       >
         <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
@@ -101,6 +103,7 @@ function skillSourceLabel(source: SelectableSkillItem['sourceScope']) {
             <span class="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-500">{{ skillTypeLabel(skill.type) }}</span>
           </span>
           <span class="mt-0.5 block truncate text-xs text-slate-500">{{ skill.description || skill.scenario || (t('composer.noDescription')) }}</span>
+          <span v-if="skill.available === false" class="mt-1 block text-xs font-medium text-amber-700">{{ t('composer.skill.executionAccessDenied') }}</span>
         </span>
       </button>
       <div v-if="items.length === 0" class="px-4 py-8 text-center text-sm text-slate-400">

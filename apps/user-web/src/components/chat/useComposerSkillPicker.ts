@@ -73,8 +73,8 @@ export function useComposerSkillPicker(options: Options) {
       items.value = reset ? page.items : [...items.value, ...page.items]
       cursor.value = page.nextCursor
       hasMore.value = page.hasMore
-      if (reset) activeIndex.value = page.items.length > 0 ? 0 : -1
-      else if (activeIndex.value >= items.value.length) activeIndex.value = items.value.length - 1
+      if (reset) activeIndex.value = page.items.findIndex(item => item.available !== false)
+      else if (activeIndex.value >= items.value.length) activeIndex.value = items.value.findIndex(item => item.available !== false)
     } catch {
       if (requestId !== requestSequence) return
       if (reset) items.value = []
@@ -112,6 +112,7 @@ export function useComposerSkillPicker(options: Options) {
     void load(true)
   }
   function select(skill: SelectableSkillItem) {
+    if (skill.available === false) return
     selectedSkill.value = skill
     const range = triggerRange.value
     if (range) options.input.value = `${options.input.value.slice(0, range.start)}${options.input.value.slice(range.end)}`
@@ -123,20 +124,22 @@ export function useComposerSkillPicker(options: Options) {
     })
   }
   function moveActive(delta: number) {
-    const total = items.value.length
-    if (total <= 0) {
+    const selectable = items.value.map((item, index) => item.available !== false ? index : -1).filter(index => index >= 0)
+    if (!selectable.length) {
       activeIndex.value = -1
       return
     }
-    const current = activeIndex.value < 0 ? (delta > 0 ? -1 : 0) : activeIndex.value
-    activeIndex.value = (current + delta + total) % total
+    const current = selectable.indexOf(activeIndex.value)
+    activeIndex.value = current < 0
+      ? selectable[delta > 0 ? 0 : selectable.length - 1]
+      : selectable[(current + delta + selectable.length) % selectable.length]
     nextTick(() => {
       options.pickerElement()?.querySelector<HTMLElement>(`[data-skill-index="${activeIndex.value}"]`)
         ?.scrollIntoView({ block: 'nearest' })
     })
   }
   function selectActive() {
-    const skill = items.value[activeIndex.value] || items.value[0]
+    const skill = items.value[activeIndex.value] || items.value.find(item => item.available !== false)
     if (skill) select(skill)
   }
   function onScroll(event: Event) {
@@ -152,7 +155,7 @@ export function useComposerSkillPicker(options: Options) {
     })
     const normalize = (value: string) => value.startsWith('org_skill:') ? value.slice('org_skill:'.length) : value
     const skill = page.items.find(item => normalize(item.id) === normalize(skillId))
-    if (!skill) return false
+    if (!skill || skill.available === false) return false
     select(skill)
     return true
   }

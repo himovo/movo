@@ -7,6 +7,7 @@ export const chatComposerMessages = {
   'composer.skill.ordinary': { zh: '普通 Skill', en: 'Standard Skill' },
   'composer.skill.expert': { zh: '专家包', en: 'Expert Package' },
   'composer.skill.writing': { zh: '写作规范', en: 'Writing' },
+  'composer.skill.executionAccessDenied': { zh: '缺少此 Skill 所需的执行权限', en: 'Required execution access is unavailable' },
   'composer.selected': { zh: '已选择', en: 'Selected' },
   'composer.selectSkill': { zh: '选择 Skill', en: 'Select Skill' },
   'composer.skillList': { zh: 'Skill 列表', en: 'Skill list' },

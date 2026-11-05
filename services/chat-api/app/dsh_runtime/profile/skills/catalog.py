@@ -9,6 +9,7 @@ from app.services.skills import user_skill_service
 from app.core.db import get_db
 from app.product.resource_access import filter_allowed_resource_ids
 from app.services.skill_packages.readiness import attach_environment_status
+from app.services.skill_packages.execution_requirements import EXECUTABLE_PATH_PATTERN, package_uses_execution
 
 
 class SkillCatalog(Protocol):
@@ -55,6 +56,24 @@ class MongoSkillCatalog:
             rows.append(runtime_skill)
         package_ids = [str(item.get("package_id") or "") for item in rows if item.get("package_id")]
         if package_ids:
+            legacy_ids = [
+                str(item["package_id"]) for item in rows
+                if item.get("package_id") and "package_requires_execution" not in item
+            ]
+            executable_ids = set()
+            if legacy_ids:
+                executable = await get_db().skill_packages.find({
+                    "_id": {"$in": legacy_ids}, "main_id": tenant_id,
+                    "files.path": {"$regex": EXECUTABLE_PATH_PATTERN},
+                }, {"_id": 1}).to_list(length=len(legacy_ids))
+                executable_ids = {str(item["_id"]) for item in executable}
+            for row in rows:
+                if row.get("package_id") and "package_requires_execution" not in row:
+                    row["package_requires_execution"] = str(row["package_id"]) in executable_ids or package_uses_execution(
+                        files=(),
+                        tools=(*(row.get("package_declared_tools") or []), *(row.get("package_referenced_tools") or [])),
+                        requires_environment=bool(row.get("package_requires_environment")),
+                    )
             packages = await get_db().skill_packages.find({
                 "_id": {"$in": package_ids}, "main_id": tenant_id,
             }, {
