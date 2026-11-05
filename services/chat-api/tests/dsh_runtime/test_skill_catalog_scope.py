@@ -43,21 +43,34 @@ class AsyncCursor:
 
 
 class PackageCollection:
+    def __init__(self, package, *, requires_execution=False):
+        self.package = package
+        self.requires_execution = requires_execution
+        self.queries = []
+
     def find(self, query, projection):
-        assert query == {"_id": {"$in": ["package-1"]}, "main_id": "tenant-a"}
+        self.queries.append((query, projection))
+        expected_scope = {"_id": {"$in": ["package-1"]}, "main_id": "tenant-a"}
+        if projection == {"_id": 1}:
+            assert query == {
+                **expected_scope,
+                "files.path": {"$regex": catalog_module.EXECUTABLE_PATH_PATTERN},
+            }
+            return AsyncCursor([{"_id": "package-1"}] if self.requires_execution else [])
+        assert query == expected_scope
         assert projection["files"] == {"$slice": 3}
-        return AsyncCursor([{
-            "_id": "package-1", "archive_base64": "YXJjaGl2ZQ==", "root_prefix": "foshan/",
-            "files": [
-                {"path": "SKILL.md", "size": 10},
-                {"path": "_meta.json", "size": 10},
-                {"path": "assets/contacts.json", "size": 20},
-            ],
-        }])
+        return AsyncCursor([self.package])
 
 
 class FakeDatabase:
-    skill_packages = PackageCollection()
+    skill_packages = PackageCollection({
+        "_id": "package-1", "archive_base64": "YXJjaGl2ZQ==", "root_prefix": "foshan/",
+        "files": [
+            {"path": "SKILL.md", "size": 10},
+            {"path": "_meta.json", "size": 10},
+            {"path": "assets/contacts.json", "size": 20},
+        ],
+    })
 
 
 def test_personal_skill_is_not_filtered_by_organization_resource_policy(monkeypatch):
@@ -101,19 +114,15 @@ def test_package_resources_are_attached_to_the_runtime_catalog(monkeypatch):
     rows = asyncio.run(catalog_module.MongoSkillCatalog().list_enabled("tenant-a", "user-a"))
     assert rows[0]["runtime_bundle_base64"] == "YXJjaGl2ZQ=="
     assert rows[0]["runtime_bundle_root"] == "foshan/"
+    assert rows[0]["package_requires_execution"] is False
 
 
 def test_gridfs_package_is_referenced_without_embedding_archive(monkeypatch):
-    class GridPackageCollection:
-        def find(self, query, projection):
-            assert projection["files"] == {"$slice": 3}
-            return AsyncCursor([{
-                "_id": "package-1", "archive_gridfs_id": "a" * 32, "root_prefix": "foshan/",
-                "files": [{"path": "references/info.txt", "size": 21 * 1024 * 1024}],
-            }])
-
     class GridDatabase:
-        skill_packages = GridPackageCollection()
+        skill_packages = PackageCollection({
+            "_id": "package-1", "archive_gridfs_id": "a" * 32, "root_prefix": "foshan/",
+            "files": [{"path": "references/info.txt", "size": 21 * 1024 * 1024}],
+        })
 
     monkeypatch.setattr(catalog_module, "user_skill_service", PackagePersonalService())
     monkeypatch.setattr(catalog_module, "organization_skill_adapter", EmptyOrganizationService())
@@ -121,3 +130,17 @@ def test_gridfs_package_is_referenced_without_embedding_archive(monkeypatch):
     rows = asyncio.run(catalog_module.MongoSkillCatalog().list_enabled("tenant-a", "user-a"))
     assert rows[0]["runtime_bundle_archive_id"] == "a" * 32
     assert not rows[0]["runtime_bundle_base64"]
+
+
+def test_legacy_executable_package_is_marked_for_execution(monkeypatch):
+    class ExecutableDatabase:
+        skill_packages = PackageCollection({
+            "_id": "package-1", "archive_base64": "YXJjaGl2ZQ==", "root_prefix": "tool/",
+            "files": [{"path": "scripts/run.py", "size": 20}],
+        }, requires_execution=True)
+
+    monkeypatch.setattr(catalog_module, "user_skill_service", PackagePersonalService())
+    monkeypatch.setattr(catalog_module, "organization_skill_adapter", EmptyOrganizationService())
+    monkeypatch.setattr(catalog_module, "get_db", lambda: ExecutableDatabase())
+    rows = asyncio.run(catalog_module.MongoSkillCatalog().list_enabled("tenant-a", "user-a"))
+    assert rows[0]["package_requires_execution"] is True
