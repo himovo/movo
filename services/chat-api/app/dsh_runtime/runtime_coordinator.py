@@ -7,6 +7,7 @@ from typing import Any
 from app.dsh_runtime.bindings import KernelBindingRepository
 from app.dsh_runtime.contracts import CreateRuntimeRequest, CreateSessionRequest, SessionSpec
 from app.dsh_runtime.errors import DshRuntimeError
+from app.dsh_runtime.events.repository import KernelEventRepository
 from app.dsh_runtime.gateway import DshAgentKernelGateway
 from app.dsh_runtime.profile.attachment_transfer import SeedAttachmentTransfer
 
@@ -15,10 +16,12 @@ class RuntimeCoordinator:
     def __init__(
         self, gateway: DshAgentKernelGateway, bindings: KernelBindingRepository,
         attachment_transfer: SeedAttachmentTransfer | None = None,
+        events: KernelEventRepository | None = None,
     ) -> None:
         self._gateway = gateway
         self._bindings = bindings
         self._attachment_transfer = attachment_transfer
+        self._events = events
 
     @staticmethod
     def isolation_key(tenant_id: str, profile_version: str) -> str:
@@ -179,6 +182,9 @@ class RuntimeCoordinator:
         profile_version = str(binding["profile_version"])
         runtime = await self._runtime(tenant_id=tenant_id, profile_version=profile_version)
         session_id = str(binding["kernel_session_id"])
+        cursor_floor = int(binding.get("event_cursor") or 0)
+        if self._events is not None:
+            cursor_floor = max(cursor_floor, await self._events.latest_native_cursor(session_id))
         self._gateway.attach_session(
             runtime_id=runtime.runtime_id,
             session_id=session_id,
@@ -187,6 +193,7 @@ class RuntimeCoordinator:
             model_instance_id=str(binding["model_instance_id"]),
             preset_id=str(binding.get("preset_id") or "askai-enterprise"),
             workspace_id=str(binding.get("dsh_workspace_id") or "") or None,
+            cursor_floor=cursor_floor,
         )
         await self._gateway.resume_session(session_id)
         if str(binding.get("runtime_id")) != runtime.runtime_id:

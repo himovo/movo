@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 
+from unittest.mock import AsyncMock
+
 from app.dsh_runtime.profile.skills import catalog as catalog_module
 
 
@@ -64,6 +66,30 @@ def test_personal_skill_is_not_filtered_by_organization_resource_policy(monkeypa
     async def deny_organization(*args, **kwargs):
         return set()
     monkeypatch.setattr(catalog_module, "filter_allowed_resource_ids", deny_organization)
+    rows = asyncio.run(catalog_module.MongoSkillCatalog().list_enabled("tenant-a", "user-a"))
+    assert [row["id"] for row in rows] == ["personal-1"]
+
+
+def test_manager_outage_does_not_remove_an_installed_skill_from_profile(monkeypatch):
+    monkeypatch.setattr(catalog_module, "user_skill_service", PersonalService())
+    monkeypatch.setattr(catalog_module, "organization_skill_adapter", EmptyOrganizationService())
+
+    readiness = AsyncMock(side_effect=RuntimeError("manager unavailable"))
+    monkeypatch.setattr(catalog_module, "attach_environment_status", readiness)
+    rows = asyncio.run(catalog_module.MongoSkillCatalog().list_enabled("tenant-a", "user-a"))
+    assert [row["id"] for row in rows] == ["personal-1"]
+    readiness.assert_not_awaited()
+
+
+def test_preparing_environment_keeps_installed_skill_in_profile(monkeypatch):
+    monkeypatch.setattr(catalog_module, "user_skill_service", PersonalService())
+    monkeypatch.setattr(catalog_module, "organization_skill_adapter", EmptyOrganizationService())
+
+    class PreparingPersonalService:
+        async def list_skills(self, user_id, main_id, *, include_package_files=True):
+            return [{"id": "personal-1", "enabled": True, "environment_status": "preparing"}]
+
+    monkeypatch.setattr(catalog_module, "user_skill_service", PreparingPersonalService())
     rows = asyncio.run(catalog_module.MongoSkillCatalog().list_enabled("tenant-a", "user-a"))
     assert [row["id"] for row in rows] == ["personal-1"]
 

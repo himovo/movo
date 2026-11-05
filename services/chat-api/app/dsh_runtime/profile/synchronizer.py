@@ -8,7 +8,9 @@ from typing import Any
 
 from app.dsh_runtime.profile.service import RuntimeProfilePublisher
 from app.dsh_runtime.runtime_coordinator import RuntimeCoordinator
-from app.dsh_runtime.errors import DshSessionMissingError
+from app.dsh_runtime.errors import DshSessionMissingError, DshTransportError
+
+from .continuity import can_defer_profile_change
 
 
 logger = logging.getLogger("app.dsh_runtime.profile_sync")
@@ -42,6 +44,7 @@ class ConversationProfileSynchronizer:
         tenant_id: str,
         user_id: str,
         model_instance_id: str | None = None,
+        selected_skill_id: str | None = None,
     ) -> ProfileSyncResult:
         missing_session = False
         try:
@@ -70,21 +73,49 @@ class ConversationProfileSynchronizer:
                 model_instance_id=previous_model_id,
             )
 
+        logger.info(
+            "conversation_profile_rotation_requested tenant_id=%s user_id=%s conversation_id=%s old=%s new=%s old_model=%s new_model=%s missing_host_session=%s",
+            tenant_id, user_id, restored.get("conversation_id"), previous_version,
+            desired.profile_version, previous_model_id, desired.model_instance_id, missing_session,
+        )
         await self._profiles.publish_snapshot(desired, actor_id=user_id, activate=False)
-        if missing_session:
-            successor = await self._coordinator.replace_missing_binding(
-                restored,
-                profile_version=desired.profile_version,
-                model_instance_id=desired.model_instance_id,
+        try:
+            if missing_session:
+                successor = await self._coordinator.replace_missing_binding(
+                    restored,
+                    profile_version=desired.profile_version,
+                    model_instance_id=desired.model_instance_id,
+                )
+                disposed = False
+            else:
+                successor = await self._coordinator.rotate_binding(
+                    restored,
+                    profile_version=desired.profile_version,
+                    model_instance_id=desired.model_instance_id,
+                )
+                disposed = await self._coordinator.dispose_restored_session(restored)
+        except (DshTransportError, FileNotFoundError, OSError):
+            if missing_session:
+                raise
+            previous = await self._profiles.get(previous_version)
+            if not can_defer_profile_change(previous, desired, selected_skill_id=selected_skill_id):
+                raise
+            # Verify that the predecessor still exists before admitting the
+            # turn. An unavailable Host must not be reported as a success.
+            verified = await self._coordinator.restore(restored)
+            logger.warning(
+                "conversation_profile_rotation_deferred tenant_id=%s conversation_id=%s old=%s desired=%s",
+                tenant_id, restored.get("conversation_id"), previous_version, desired.profile_version,
+                exc_info=True,
             )
-            disposed = False
-        else:
-            successor = await self._coordinator.rotate_binding(
-                restored,
-                profile_version=desired.profile_version,
-                model_instance_id=desired.model_instance_id,
+            return ProfileSyncResult(
+                binding=verified,
+                changed=False,
+                previous_profile_version=previous_version,
+                profile_version=previous_version,
+                previous_model_instance_id=previous_model_id,
+                model_instance_id=previous_model_id,
             )
-            disposed = await self._coordinator.dispose_restored_session(restored)
         logger.info(
             "conversation_profile_rotated tenant_id=%s user_id=%s conversation_id=%s old=%s new=%s old_model=%s new_model=%s predecessor_disposed=%s missing_host_session=%s",
             tenant_id,

@@ -27,7 +27,15 @@ class MongoSkillCatalog:
         )
         rows: list[dict[str, Any]] = []
         seen: set[str] = set()
-        await attach_environment_status([*personal, *organization])
+        # Only a staged upgrade needs a readiness lookup to promote its new
+        # package. The installed version is durable even during an outage or
+        # base-image rebuild.
+        pending = [
+            item for item in [*personal, *organization]
+            if isinstance(item, dict) and item.get("pending_package")
+        ]
+        if pending:
+            await attach_environment_status(pending)
         for item in [*personal, *organization]:
             if not isinstance(item, dict):
                 continue
@@ -36,8 +44,8 @@ class MongoSkillCatalog:
                 continue
             if item.get("enabled", item.get("is_active", True)) is False:
                 continue
-            if item.get("environment_status") not in {None, "ready"} and not item.get("pending_package"):
-                continue
+            # Preparation is execution readiness, not an installed Skill
+            # change. Keep the durable Skill definition in the profile.
             is_organization = str(item.get("visibility") or "").lower() == "organization" or str(item.get("source") or "") == "org_db"
             if is_organization and source_id not in allowed_organization_ids:
                 continue

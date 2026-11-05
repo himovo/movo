@@ -324,6 +324,7 @@ class DshChatService:
                     tenant_id=tenant_id,
                     user_id=user_id,
                     model_instance_id=sync_model_id,
+                    selected_skill_id=selected_skill_id,
                 )).binding
             except BindingReplacementConflict as exc:
                 raise ConversationBusyError(

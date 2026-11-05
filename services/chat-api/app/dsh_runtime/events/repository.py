@@ -73,6 +73,15 @@ class KernelEventRepository:
             name="durable_projection_message_stream",
         )
 
+    async def latest_native_cursor(self, session_id: str) -> int:
+        """Exclude synthetic failures when restoring a Runtime Host cursor."""
+        row = await self._inbox.find_one(
+            {"kernel_session_id": session_id, "kernel_event.type": {"$ne": "runtime.failed"}},
+            {"cursor": 1},
+            sort=[("cursor", -1)],
+        )
+        return int(row["cursor"]) if row is not None else 0
+
     async def ingest(
         self,
         event: KernelEventEnvelope,

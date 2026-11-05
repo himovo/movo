@@ -19,6 +19,14 @@ DEPENDENCIES: dict[str, str] = {
     "data.run_script@v1": "scripts",
 }
 
+PROFILE_CHECKS = {
+    "browser": "profile_browser",
+    "scripts": "profile_scripts",
+    "knowledge": "profile_knowledge",
+    "search": "profile_search",
+    "presentation": "profile_presentation",
+}
+
 # These have bundled implementations or input-dependent local fallbacks. They
 # require no separately configured provider. Argument admission remains in each handler.
 LOCAL_CAPABILITIES = frozenset({
@@ -49,6 +57,21 @@ class InternalToolAvailability:
         async def resolve(name):
             ref = next(ref for ref in refs if DEPENDENCIES.get(ref) == name)
             return name, await self.available(ref, tenant_id, user_id)
+        results = dict(await asyncio.gather(*(resolve(name) for name in dependencies)))
+        return {ref for ref in refs if (
+            ref not in LOCAL_CAPABILITIES and ref not in DEPENDENCIES
+        ) or (ref in DEPENDENCIES and not results[DEPENDENCIES[ref]])}
+
+    async def unavailable_for_profile(self, refs: list[str], tenant_id: str, user_id: str) -> set[str]:
+        """Use configured capabilities, never transient runtime connectivity."""
+        dependencies = {DEPENDENCIES[ref] for ref in refs if ref in DEPENDENCIES}
+
+        async def resolve(name: str) -> tuple[str, bool]:
+            check = getattr(checks, PROFILE_CHECKS.get(name, name))
+            # A failed configuration lookup must abort compilation, not publish
+            # a smaller immutable profile and rotate existing conversations.
+            return name, bool(await asyncio.wait_for(check(tenant_id, user_id), timeout=CHECK_TIMEOUT_SECONDS))
+
         results = dict(await asyncio.gather(*(resolve(name) for name in dependencies)))
         return {ref for ref in refs if (
             ref not in LOCAL_CAPABILITIES and ref not in DEPENDENCIES

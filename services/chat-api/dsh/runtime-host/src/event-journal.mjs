@@ -1,10 +1,11 @@
 export class EventJournal {
   #events = new Map()
   #subscribers = new Map()
+  #cursorFloors = new Map()
 
   append(sessionId, nativeType, data, nativeSeq = undefined) {
     const events = this.#events.get(sessionId) ?? []
-    const cursor = events.length === 0 ? 1 : events.at(-1).cursor + 1
+    const cursor = Math.max(events.at(-1)?.cursor ?? 0, this.#cursorFloors.get(sessionId) ?? 0) + 1
     const event = Object.freeze({
       cursor,
       nativeType,
@@ -24,7 +25,12 @@ export class EventJournal {
 
   head(sessionId) {
     const events = this.#events.get(sessionId) ?? []
-    return events.length === 0 ? 0 : events.at(-1).cursor
+    return Math.max(events.at(-1)?.cursor ?? 0, this.#cursorFloors.get(sessionId) ?? 0)
+  }
+
+  ensureCursorFloor(sessionId, floor) {
+    if (!Number.isSafeInteger(floor) || floor < 0) throw new TypeError('cursor floor must be a nonnegative safe integer')
+    this.#cursorFloors.set(sessionId, Math.max(this.#cursorFloors.get(sessionId) ?? 0, floor))
   }
 
   subscribe(sessionId, afterCursor, subscriber) {
@@ -43,6 +49,7 @@ export class EventJournal {
 
   resetFromEvents(sessionId, persistedEvents) {
     this.#events.set(sessionId, [])
+    this.#cursorFloors.delete(sessionId)
     for (const event of persistedEvents) {
       this.append(sessionId, event.type, event.data, event.seq)
     }
@@ -51,5 +58,6 @@ export class EventJournal {
   remove(sessionId) {
     this.#events.delete(sessionId)
     this.#subscribers.delete(sessionId)
+    this.#cursorFloors.delete(sessionId)
   }
 }

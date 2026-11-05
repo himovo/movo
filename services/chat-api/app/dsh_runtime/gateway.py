@@ -36,6 +36,7 @@ class _SessionBinding:
     model_instance_id: str | None
     preset_id: str
     workspace_id: str | None
+    cursor_floor: int = 0
 
 
 @dataclass(frozen=True)
@@ -160,6 +161,7 @@ class DshAgentKernelGateway(AgentKernelContract):
         model_instance_id: str | None,
         preset_id: str = "askai-enterprise",
         workspace_id: str | None = None,
+        cursor_floor: int = 0,
     ) -> None:
         runtime = self._runtime_binding(runtime_id)
         if runtime.profile_version != profile_version or runtime.model_instance_id != model_instance_id:
@@ -171,6 +173,7 @@ class DshAgentKernelGateway(AgentKernelContract):
             model_instance_id=model_instance_id,
             preset_id=preset_id,
             workspace_id=workspace_id,
+            cursor_floor=max(0, int(cursor_floor)),
         )
 
     async def describe_session(self, session_id: str) -> SessionHandle:
@@ -220,6 +223,7 @@ class DshAgentKernelGateway(AgentKernelContract):
         response = await self._transport.request(
             "POST",
             f"/v1/runtimes/{binding.runtime_id}/sessions/{session_id}/resume",
+            json={"cursorFloor": binding.cursor_floor},
         )
         return self._session_handle(session_id, response)
 

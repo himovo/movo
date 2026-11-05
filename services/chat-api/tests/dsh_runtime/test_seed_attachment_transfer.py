@@ -49,6 +49,48 @@ def test_missing_object_blocks_successor_creation(tmp_path: Path):
         SeedAttachmentTransfer(tmp_path).transfer(source_key=source, target_key=target, session_id="original")
 
 
+def test_isolated_runtime_journal_and_attachment_are_migrated(tmp_path: Path):
+    primary, workspaces = tmp_path / "runtime", tmp_path / "workspaces"
+    source, target = "tenant:t:profile:isolated-a", "tenant:t:profile:isolated-b"
+    source_hash = hashlib.sha256(source.encode()).hexdigest()
+    target_hash = hashlib.sha256(target.encode()).hexdigest()
+    source_domain = workspaces / "plugin-runtimes" / source_hash / source_hash
+    target_domain = workspaces / "plugin-runtimes" / target_hash / target_hash
+    payload = b"isolated image"
+    digest = hashlib.sha256(payload).hexdigest()
+    attachment = source_domain / "dsh-home/attachments/v1/objects" / digest[:2] / digest
+    attachment.parent.mkdir(parents=True)
+    attachment.write_bytes(payload)
+    journal = source_domain / "_no-cwd/original/session.v4.jsonl"
+    journal.parent.mkdir(parents=True)
+    journal.write_text(json.dumps({"data": {"content": [
+        {"type": "image", "attachment": {"attachmentId": f"sha256:{digest}"}},
+    ]}}) + "\n")
+
+    SeedAttachmentTransfer(primary, workspaces).transfer(
+        source_key=source, target_key=target, session_id="original",
+    )
+    copied = target_domain / "dsh-home/attachments/v1/objects" / digest[:2] / digest
+    assert copied.read_bytes() == payload
+
+
+def test_legacy_isolated_runtime_uses_runtime_volume(tmp_path: Path):
+    primary, workspaces = tmp_path / "runtime", tmp_path / "workspaces"
+    source, target = "tenant:t:profile:legacy-a", "tenant:t:profile:legacy-b"
+    source_hash = hashlib.sha256(source.encode()).hexdigest()
+    target_hash = hashlib.sha256(target.encode()).hexdigest()
+    source_domain = primary / "sandbox-runtimes" / source_hash / source_hash
+    target_domain = primary / "sandbox-runtimes" / target_hash / target_hash
+    target_domain.mkdir(parents=True)
+    journal = source_domain / "_no-cwd/original/session.v4.jsonl"
+    journal.parent.mkdir(parents=True)
+    journal.write_text(json.dumps({"data": {"content": []}}) + "\n")
+    SeedAttachmentTransfer(primary, workspaces).transfer(
+        source_key=source, target_key=target, session_id="original",
+    )
+    assert not (workspaces / "plugin-runtimes" / target_hash).exists()
+
+
 def test_business_conversation_stays_the_same_while_internal_session_rotates(tmp_path: Path):
     source = "tenant:t:profile:old"
     digest = hashlib.sha256(b"image").hexdigest()

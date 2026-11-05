@@ -44,7 +44,7 @@ class TurnTerminalRecovery:
         self._profiles = profiles
         self._authoritative_deliveries = authoritative_deliveries
         self._finalizer = TurnStateFinalizer(bindings, conversations)
-        self._coordinator = RuntimeCoordinator(gateway, bindings)
+        self._coordinator = RuntimeCoordinator(gateway, bindings, events=events)
 
     async def ingest_once(self, *, binding: dict[str, Any], message_id: str) -> None:
         native_events = await self._gateway.events_once(

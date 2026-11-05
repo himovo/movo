@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import os
 from typing import Any
 
 from app.enterprise_capabilities.availability import InternalToolAvailability, capability_available
@@ -142,10 +143,13 @@ class DshRuntimeApplication:
             gateway=gateway,
             coordinator=RuntimeCoordinator(
                 gateway, bindings,
+                events=events,
                 attachment_transfer=SeedAttachmentTransfer(
                     Path(settings.DSH_RUNTIME_STORAGE_ROOT)
                     if settings.DSH_RUNTIME_STORAGE_ROOT
-                    else Path(__file__).resolve().parents[2] / "dsh" / "storage"
+                    else Path(__file__).resolve().parents[2] / "dsh" / "storage",
+                    workspace_root=Path(os.environ.get("MOVO_SANDBOX_WORKSPACE_ROOT", "/workspaces"))
+                    if os.environ.get("MOVO_SANDBOX_MANAGER_URL", "").strip() else None,
                 ),
             ),
             conversations=conversations,

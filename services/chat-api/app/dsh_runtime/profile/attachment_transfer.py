@@ -7,7 +7,6 @@ referenced by the predecessor session before asking DSH to create its seed.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
@@ -15,18 +14,15 @@ import shutil
 import uuid
 from pathlib import Path
 
+from .runtime_storage import RuntimeStorageLocator
+
 
 _DIGEST = re.compile(r"^sha256:([a-f0-9]{64})$")
 
 
 class SeedAttachmentTransfer:
-    def __init__(self, storage_root: Path) -> None:
-        self.storage_root = storage_root
-
-    @staticmethod
-    def _root(storage_root: Path, isolation_key: str) -> Path:
-        domain = hashlib.sha256(isolation_key.encode()).hexdigest()
-        return storage_root / domain / "dsh-home" / "attachments" / "v1"
+    def __init__(self, storage_root: Path, workspace_root: Path | None = None) -> None:
+        self.storage = RuntimeStorageLocator(storage_root, workspace_root)
 
     @staticmethod
     def _references(value: object):
@@ -63,16 +59,13 @@ class SeedAttachmentTransfer:
     def transfer(self, *, source_key: str, target_key: str, session_id: str) -> None:
         if source_key == target_key:
             return
-        source_domain = self.storage_root / hashlib.sha256(source_key.encode()).hexdigest()
-        journals = list(source_domain.rglob(f"{session_id}/session.v4.jsonl"))
-        if len(journals) != 1:
-            raise FileNotFoundError(f"Expected one DSH predecessor journal for {session_id}; found {len(journals)}")
+        source_domain, journal_path = self.storage.predecessor(source_key, session_id)
         references: set[tuple[str, str, str | None]] = set()
-        with journals[0].open(encoding="utf-8") as journal:
+        with journal_path.open(encoding="utf-8") as journal:
             for line in journal:
                 references.update(self._references(json.loads(line)))
-        source = self._root(self.storage_root, source_key)
-        target = self._root(self.storage_root, target_key)
+        source = source_domain / "dsh-home" / "attachments" / "v1"
+        target = self.storage.successor(target_key) / "dsh-home" / "attachments" / "v1"
         for kind, digest, name in references:
             directory = "file-objects" if kind == "file" else "objects"
             relative = Path(directory) / digest[:2] / digest

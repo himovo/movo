@@ -113,7 +113,7 @@ class ToolProfileCompiler:
                 await self._search_availability(tenant_id) if self._search_availability else True
             )
             capabilities = await self._internal_catalog.list_enabled(tenant_id, user_id)
-            unavailable = await self._internal_availability.unavailable(
+            unavailable = await self._internal_availability.unavailable_for_profile(
                 [item.capability_ref for item in capabilities], tenant_id, user_id,
             ) if self._internal_availability else set()
             for capability in capabilities:

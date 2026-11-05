@@ -255,7 +255,9 @@ class ProviderRouter:
     def __init__(self, providers: list[SearchProvider] | None = None) -> None:
         self._providers = providers
 
-    async def available_providers(self, *, main_id: str | None = None) -> list[SearchProvider]:
+    async def available_providers(
+        self, *, main_id: str | None = None, strict_config_lookup: bool = False,
+    ) -> list[SearchProvider]:
         if self._providers is not None:
             logger.info(
                 "progressive_research_providers_injected providers=%s",
@@ -276,6 +278,8 @@ class ProviderRouter:
         try:
             configured = await resolve_default_external_search_provider(main_id)
         except Exception as exc:
+            if strict_config_lookup:
+                raise
             logger.warning("progressive_research_provider_config_unavailable error=%s", exc)
 
         provider = str((configured or {}).get("provider") or "").strip()

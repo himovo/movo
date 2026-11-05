@@ -210,10 +210,14 @@ export class KernelRuntime {
     return structuredClone(liveSessionEvents(agent.session))
   }
 
-  async resumeSession(sessionId) {
+  async resumeSession(sessionId, cursorFloor = 0) {
     this.#assertStarted()
+    if (!Number.isSafeInteger(cursorFloor) || cursorFloor < 0) throw new TypeError('invalid cursor floor')
     const live = this.#handles.get(sessionId)
-    if (live !== undefined) return await this.describeSession(live.agent)
+    if (live !== undefined) {
+      this.#journal.ensureCursorFloor(sessionId, cursorFloor)
+      return await this.describeSession(live.agent)
+    }
     const persisted = await this.#sessionComposer.persistedIdentity(sessionId)
     const composition = await this.#sessionComposer.prepare(persisted.presetId, {
       hasWorkspace: Boolean(persisted.cwd),
@@ -228,6 +232,7 @@ export class KernelRuntime {
       sessionId,
       persisted.events.flatMap(event => compatibleSessionEvents(event)),
     )
+    this.#journal.ensureCursorFloor(sessionId, cursorFloor)
     this.#journal.append(sessionId, 'agent/status', { status: handle.agent.status })
     return await this.describeSession(handle.agent)
   }

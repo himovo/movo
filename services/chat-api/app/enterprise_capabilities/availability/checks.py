@@ -15,6 +15,12 @@ async def browser(tenant_id: str, user_id: str) -> bool:
     return agent_registry.get(user_id) is not None
 
 
+async def profile_browser(tenant_id: str, user_id: str) -> bool:
+    # A desktop socket is transient. Its absence must not rotate a durable
+    # conversation profile; execution still checks the live connection.
+    return True
+
+
 async def images(tenant_id: str, user_id: str) -> bool:
     from app.services.image_generation import resolve_image_generation_model
     return bool(await resolve_image_generation_model(tenant_id, user_id))
@@ -40,8 +46,18 @@ async def search(tenant_id: str, user_id: str) -> bool:
     return await search_available(tenant_id)
 
 
+async def profile_search(tenant_id: str, user_id: str) -> bool:
+    from app.enterprise_capabilities.research.progressive.provider_router import ProviderRouter
+    return bool(await ProviderRouter().available_providers(main_id=tenant_id, strict_config_lookup=True))
+
+
 async def presentation(tenant_id: str, user_id: str) -> bool:
     return await presentation_available(tenant_id)
+
+
+async def profile_presentation(tenant_id: str, user_id: str) -> bool:
+    from app.services.presentation.availability import configured_presentation_available
+    return await configured_presentation_available(tenant_id)
 
 
 async def scripts(tenant_id: str, user_id: str) -> bool:
@@ -57,11 +73,29 @@ async def scripts(tenant_id: str, user_id: str) -> bool:
         return response.is_success and response.json().get("scripts") is True
 
 
+async def profile_scripts(tenant_id: str, user_id: str) -> bool:
+    endpoint = os.environ.get("MOVO_SANDBOX_MANAGER_URL", "").strip()
+    return not endpoint or len(os.environ.get("MOVO_SANDBOX_MANAGER_TOKEN", "")) >= 32
+
+
 async def skillhub(tenant_id: str, user_id: str) -> bool:
     return str(get_settings().SKILLHUB_API_BASE_URL or "").startswith(("https://", "http://"))
 
 
 async def knowledge(tenant_id: str, user_id: str) -> bool:
+    if not await profile_knowledge(tenant_id, user_id):
+        return False
+    from app.enterprise_capabilities.knowledge_source.config import get_knowledge_source
+    source = await get_knowledge_source(tenant_id)
+    if source.get("mode") == "external":
+        return True
+    endpoint = str(get_settings().DOCUMENT_PROCESSING_BASE_URL or "").strip().rstrip("/")
+    async with httpx.AsyncClient(timeout=0.7) as client:
+        response = await client.get(endpoint + "/health")
+        return response.is_success
+
+
+async def profile_knowledge(tenant_id: str, user_id: str) -> bool:
     from app.enterprise_capabilities.knowledge_source.config import get_knowledge_source
     from app.product.resource_access import resource_is_allowed
     from app.services.external_tools import external_tool_service
@@ -78,6 +112,4 @@ async def knowledge(tenant_id: str, user_id: str) -> bool:
     endpoint = str(settings.DOCUMENT_PROCESSING_BASE_URL or "").strip().rstrip("/")
     if not endpoint or not settings.DOCUMENT_PROCESSING_SERVICE_TOKEN:
         return False
-    async with httpx.AsyncClient(timeout=0.7) as client:
-        response = await client.get(endpoint + "/health")
-        return response.is_success
+    return True

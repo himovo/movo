@@ -25,6 +25,15 @@ test('reset restores native persisted events without cross-session leakage', () 
   assert.equal(journal.replay('session-b', 0).length, 1)
 })
 
+test('restored session continues after the durable cursor floor', () => {
+  const journal = new EventJournal()
+  journal.resetFromEvents('session-a', [{ type: 'user/message', seq: 1, data: {} }])
+  journal.ensureCursorFloor('session-a', 1217)
+  assert.equal(journal.head('session-a'), 1217)
+  assert.equal(journal.append('session-a', 'turn/start', {}, 2).cursor, 1218)
+  assert.deepEqual(journal.replay('session-a', 1217).map(event => event.cursor), [1218])
+})
+
 test('subscriber receives replay and future events without polling', () => {
   const journal = new EventJournal()
   journal.append('session-a', 'turn/start', {}, 0)

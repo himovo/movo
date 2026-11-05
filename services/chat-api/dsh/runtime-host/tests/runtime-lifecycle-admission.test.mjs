@@ -47,8 +47,10 @@ test('runtime creates, stops, resumes execution, and survives a Host-level reope
     )))
 
     await first.disposeSession('lifecycle')
-    const resumed = await first.resumeSession('lifecycle')
+    const resumed = await first.resumeSession('lifecycle', 5000)
     assert.equal(resumed.status, 'idle')
+    assert.ok(first.events('lifecycle', 5000).length > 0)
+    assert.ok(first.events('lifecycle', 5000).every(event => event.cursor > 5000))
     sendText(first, 'lifecycle', 'run after reopen')
     await waitFor(() => turnEnds(first, 'lifecycle') >= 3, 'reopened Session did not execute')
   } finally {

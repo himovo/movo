@@ -183,7 +183,10 @@ export class RuntimeHttpServer {
     if (parts[3] === 'sessions' && parts[4] !== undefined) {
       const sessionId = decodeURIComponent(parts[4])
       if (request.method === 'GET' && parts.length === 5) return sendJson(response, 200, await runtime.describeLiveSession(sessionId))
-      if (request.method === 'POST' && parts[5] === 'resume') return sendJson(response, 200, await runtime.resumeSession(sessionId))
+      if (request.method === 'POST' && parts[5] === 'resume') {
+        const body = await readJson(request)
+        return sendJson(response, 200, await runtime.resumeSession(sessionId, body.cursorFloor ?? 0))
+      }
       if (request.method === 'POST' && parts[5] === 'send') {
         return sendJson(response, 202, await runtime.send({ sessionId, ...await readJson(request) }))
       }

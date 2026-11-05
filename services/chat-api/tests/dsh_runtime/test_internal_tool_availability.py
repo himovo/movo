@@ -18,6 +18,8 @@ def test_every_builtin_has_an_explicit_policy():
 def test_unavailable_dependency_does_not_hide_independent_tools(monkeypatch):
     for name in set(DEPENDENCIES.values()):
         monkeypatch.setattr(checks, name, AsyncMock(return_value=False))
+    for name in ('profile_browser', 'profile_scripts', 'profile_knowledge', 'profile_search', 'profile_presentation'):
+        monkeypatch.setattr(checks, name, AsyncMock(return_value=False))
     class EmptyCatalog:
         async def list_enabled(self, *args):
             return []
@@ -26,7 +28,48 @@ def test_unavailable_dependency_does_not_hide_independent_tools(monkeypatch):
     ).compile(tenant_id='tenant-a', user_id='user-a'))
     refs = {tool.capability_ref for tool in tools}
     assert refs == {item.capability_ref for item in InternalCapabilityCatalog().definitions()} & LOCAL_CAPABILITIES
-    checks.search.assert_awaited_once_with('tenant-a', 'user-a')
+    checks.profile_search.assert_awaited_once_with('tenant-a', 'user-a')
+
+
+def test_profile_keeps_browser_when_desktop_disconnects(monkeypatch):
+    monkeypatch.setattr(checks.agent_registry, 'get', lambda user_id: None)
+    policy = InternalToolAvailability()
+    refs = ['browser.task@v1']
+    assert asyncio.run(policy.unavailable_for_profile(refs, 'tenant-a', 'user-a')) == set()
+    assert asyncio.run(policy.unavailable(refs, 'tenant-a', 'user-a')) == set(refs)
+
+
+def test_profile_does_not_depend_on_sandbox_readiness(monkeypatch):
+    monkeypatch.setenv('MOVO_SANDBOX_MANAGER_URL', 'http://manager:8300')
+    monkeypatch.setenv('MOVO_SANDBOX_MANAGER_TOKEN', 'x' * 32)
+    monkeypatch.setattr(checks, 'scripts', AsyncMock(return_value=False))
+    policy = InternalToolAvailability()
+    assert asyncio.run(policy.unavailable_for_profile(['data.run_script@v1'], 't', 'u')) == set()
+    assert asyncio.run(policy.unavailable(['data.run_script@v1'], 't', 'u')) == {'data.run_script@v1'}
+
+
+def test_profile_lookup_error_does_not_publish_a_smaller_snapshot(monkeypatch):
+    monkeypatch.setattr(checks, 'images', AsyncMock(side_effect=TimeoutError('database unavailable')))
+    with pytest.raises(TimeoutError):
+        asyncio.run(InternalToolAvailability().unavailable_for_profile(['image.generate@v1'], 't', 'u'))
+
+
+def test_profile_search_config_error_does_not_remove_search(monkeypatch):
+    from app.enterprise_capabilities.research.progressive import provider_router
+    async def unavailable(_tenant_id):
+        raise TimeoutError('configuration unavailable')
+    monkeypatch.setattr(provider_router, 'resolve_default_external_search_provider', unavailable)
+    with pytest.raises(TimeoutError):
+        asyncio.run(InternalToolAvailability().unavailable_for_profile(['research.search_web@v1'], 't', 'u'))
+
+
+def test_profile_presentation_config_error_does_not_remove_presentation(monkeypatch):
+    from app.services.presentation import availability
+    async def unavailable(_tenant_id):
+        raise TimeoutError('configuration unavailable')
+    monkeypatch.setattr(availability, 'get_presentation_generation_settings', unavailable)
+    with pytest.raises(TimeoutError):
+        asyncio.run(InternalToolAvailability().unavailable_for_profile(['presentation.create@v1'], 't', 'u'))
 
 
 def test_checks_are_concurrent_and_never_cached_across_users(monkeypatch):

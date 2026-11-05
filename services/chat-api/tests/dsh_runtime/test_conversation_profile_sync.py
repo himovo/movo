@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 from copy import deepcopy
 
+import pytest
+
 from app.dsh_runtime.profile.compiler import ModelProfileCompiler
 from app.dsh_runtime.profile.models import RuntimeProfileSnapshot
 from app.dsh_runtime.profile.synchronizer import ConversationProfileSynchronizer
@@ -44,6 +46,10 @@ class _Profiles:
     async def publish_snapshot(self, snapshot, **scope):
         assert scope == {"actor_id": "user-a", "activate": False}
         self.published.append(snapshot.profile_version)
+
+    async def get(self, profile_version):
+        assert profile_version == "rp-old"
+        return _profile("rp-old")
 
 
 class _Coordinator:
@@ -158,6 +164,63 @@ def test_unavailable_host_does_not_replace_binding() -> None:
         else:
             assert False, "host outage must not reset conversation context"
         assert coordinator.rotations == []
+
+    asyncio.run(run())
+
+
+def test_additive_profile_change_can_wait_when_rotation_temporarily_fails() -> None:
+    class FailingCoordinator(_Coordinator):
+        async def rotate_binding(self, binding, *, profile_version, model_instance_id):
+            self.rotations.append((profile_version, model_instance_id))
+            raise DshTransportError("new Runtime is temporarily unavailable")
+
+    async def run() -> None:
+        profiles = _Profiles(_profile("rp-new"))
+        coordinator = FailingCoordinator()
+        result = await ConversationProfileSynchronizer(profiles, coordinator).synchronize(
+            _binding(), tenant_id="tenant-a", user_id="user-a",
+        )
+        assert result.changed is False
+        assert result.binding["kernel_session_id"] == "session-old"
+        assert result.binding["restored"] is True
+        assert coordinator.rotations == [("rp-new", "model-a")]
+        assert coordinator.disposed == []
+
+    asyncio.run(run())
+
+
+def test_model_change_cannot_silently_reuse_previous_session() -> None:
+    class FailingCoordinator(_Coordinator):
+        async def rotate_binding(self, binding, *, profile_version, model_instance_id):
+            raise DshTransportError("new Runtime is temporarily unavailable")
+
+    class Profiles(_Profiles):
+        async def compile_model_profile(self, **scope):
+            return self.desired
+
+    async def run() -> None:
+        profiles = Profiles(_profile("rp-new", model="model-b"))
+        with pytest.raises(DshTransportError):
+            await ConversationProfileSynchronizer(profiles, FailingCoordinator()).synchronize(
+                _binding(), tenant_id="tenant-a", user_id="user-a", model_instance_id="model-b",
+            )
+
+    asyncio.run(run())
+
+
+def test_selected_new_skill_cannot_silently_use_old_profile() -> None:
+    class FailingCoordinator(_Coordinator):
+        async def rotate_binding(self, binding, *, profile_version, model_instance_id):
+            raise FileNotFoundError("predecessor seed is unavailable")
+
+    async def run() -> None:
+        with pytest.raises(FileNotFoundError):
+            await ConversationProfileSynchronizer(
+                _Profiles(_profile("rp-new")), FailingCoordinator(),
+            ).synchronize(
+                _binding(), tenant_id="tenant-a", user_id="user-a",
+                selected_skill_id="new-skill",
+            )
 
     asyncio.run(run())
 
