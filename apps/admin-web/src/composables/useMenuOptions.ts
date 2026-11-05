@@ -5,6 +5,7 @@ import { computed, h, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { OrganizationUsersIcon } from '@/icons/OrganizationUsersIcon';
 import { SystemAuditIcon } from '@/icons/SystemAuditIcon';
+import { ServerOutline } from '@vicons/ionicons5';
 import { appRoutes } from '@/router/routes';
 import { useLocale, translateSourceText } from '@/composables/i18n';
 import adminProductUiExtension from '@movo-admin-product-extension';
@@ -17,7 +18,7 @@ const builtInGroups = [{
 }, {
   key: 'operations',
   label: 'operations.title',
-  icon: SystemAuditIcon,
+  icon: ServerOutline,
 }];
 
 function renderMenuIcon(icon: unknown) {

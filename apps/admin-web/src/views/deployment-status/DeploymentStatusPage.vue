@@ -2,8 +2,8 @@
   <main class="deployment-page">
     <Teleport v-if="headerActionsReady" to="#header-actions-teleport-target">
       <div class="page-actions">
-        <n-button secondary :loading="loading" @click="load">{{ t('deployment.refresh') }}</n-button>
-        <n-button type="primary" :disabled="!status" @click="copyDiagnostics">{{ t('deployment.copy') }}</n-button>
+        <n-button secondary :loading="loading" @click="load"><template #icon><n-icon><RefreshOutline /></n-icon></template>{{ t('deployment.refresh') }}</n-button>
+        <n-button type="primary" :disabled="!status" @click="copyDiagnostics"><template #icon><n-icon><CopyOutline /></n-icon></template>{{ t('deployment.copy') }}</n-button>
       </div>
     </Teleport>
 
@@ -13,7 +13,7 @@
     <template v-if="status">
       <section class="summary-card">
         <div class="summary-main">
-          <div class="summary-state"><span class="state-dot" :class="counts.issues ? 'warning' : 'good'"></span>{{ counts.issues ? t('deployment.unhealthy') : t('deployment.healthy') }}<span class="checked-at">{{ t('deployment.checkedAt') }} · {{ displayTime(status.checkedAt) }}</span></div>
+          <div class="summary-state"><span class="summary-icon" :class="counts.issues ? 'warning' : 'good'"><PulseOutline aria-hidden="true" /></span>{{ counts.issues ? t('deployment.unhealthy') : t('deployment.healthy') }}<span class="checked-at">{{ t('deployment.checkedAt') }} · {{ displayTime(status.checkedAt) }}</span></div>
         </div>
         <div class="summary-metrics">
           <div><span>{{ t('deployment.upgradedAt') }}</span><strong>{{ displayTime(status.deployment.upgradedAt) }}</strong></div>
@@ -27,10 +27,10 @@
 
       <section class="inventory-card">
         <div class="inventory-tabs" role="tablist" :aria-label="t('deployment.images')">
-          <button type="button" role="tab" :aria-selected="activeTab === 'services'" :class="{ active: activeTab === 'services' }" @click="activeTab = 'services'">{{ t('deployment.services') }}</button>
-          <button type="button" role="tab" :aria-selected="activeTab === 'runtime'" :class="{ active: activeTab === 'runtime' }" @click="activeTab = 'runtime'">{{ t('deployment.runtimeImage') }}</button>
+          <button type="button" role="tab" :aria-selected="activeTab === 'services'" :class="{ active: activeTab === 'services' }" @click="activeTab = 'services'"><ServerOutline aria-hidden="true" />{{ t('deployment.services') }}</button>
+          <button type="button" role="tab" :aria-selected="activeTab === 'runtime'" :class="{ active: activeTab === 'runtime' }" @click="activeTab = 'runtime'"><CubeOutline aria-hidden="true" />{{ t('deployment.runtimeImage') }}</button>
           <div v-if="activeTab === 'runtime' && canTransferImages" class="inventory-actions">
-            <n-button size="small" :loading="imageTransfer" @click="imageInput?.click()">{{ t('deployment.importImage') }}</n-button>
+            <n-button size="small" :loading="imageTransfer" @click="imageInput?.click()"><template #icon><n-icon><CloudUploadOutline /></n-icon></template>{{ t('deployment.importImage') }}</n-button>
             <input ref="imageInput" type="file" accept=".zip,application/zip" hidden @change="uploadImage" />
           </div>
         </div>
@@ -67,7 +67,7 @@
               <td>{{ image.running === null ? t('deployment.notApplicable') : t(image.running ? 'deployment.running' : 'deployment.notAvailable') }}</td>
               <td class="mono" :title="image.imageId">{{ shortId(image.imageId) }}</td>
               <td>{{ displayTime(image.createdAt) }}</td>
-              <td><n-button v-if="canTransferImages" text type="primary" :disabled="!image.available || imageTransfer" @click="downloadImage(image.image)">{{ t('deployment.exportImage') }}</n-button></td>
+              <td><n-button v-if="canTransferImages" text type="primary" :disabled="!image.available || imageTransfer" @click="downloadImage(image.image)"><template #icon><n-icon><CloudDownloadOutline /></n-icon></template>{{ t('deployment.exportImage') }}</n-button></td>
             </tr></tbody>
           </table>
         </div>
@@ -87,8 +87,8 @@
       </section>
       <section class="inventory-card">
         <div class="inventory-tabs" role="tablist" :aria-label="t('deployment.images')">
-          <button type="button" role="tab" :aria-selected="activeTab === 'services'" :class="{ active: activeTab === 'services' }" @click="activeTab = 'services'">{{ t('deployment.services') }}</button>
-          <button type="button" role="tab" :aria-selected="activeTab === 'runtime'" :class="{ active: activeTab === 'runtime' }" @click="activeTab = 'runtime'">{{ t('deployment.runtimeImage') }}</button>
+          <button type="button" role="tab" :aria-selected="activeTab === 'services'" :class="{ active: activeTab === 'services' }" @click="activeTab = 'services'"><ServerOutline aria-hidden="true" />{{ t('deployment.services') }}</button>
+          <button type="button" role="tab" :aria-selected="activeTab === 'runtime'" :class="{ active: activeTab === 'runtime' }" @click="activeTab = 'runtime'"><CubeOutline aria-hidden="true" />{{ t('deployment.runtimeImage') }}</button>
         </div>
         <div v-if="activeTab === 'services'" class="inventory-empty" role="tabpanel"><div class="empty-glyph">◇</div><strong>{{ t('deployment.emptyTitle') }}</strong><p>{{ t('deployment.emptyDescription') }}</p></div>
         <div v-else class="table-scroll" role="tabpanel"></div>
@@ -120,7 +120,8 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
-import { useMessage } from 'naive-ui'
+import { NIcon, useMessage } from 'naive-ui'
+import { CloudDownloadOutline, CloudUploadOutline, CopyOutline, CubeOutline, PulseOutline, RefreshOutline, ServerOutline } from '@vicons/ionicons5'
 import { fetchDeploymentStatus, type DeploymentService, type DeploymentStatus, type SandboxImage } from '@/api/deployment-status'
 import { t } from '@/composables/i18n'
 import { formatAdminShortDateTime } from '@/composables/adminTimezone'

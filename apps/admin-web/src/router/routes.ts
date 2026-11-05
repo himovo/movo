@@ -12,6 +12,7 @@ import { DshPluginsIcon } from '@/icons/DshPluginsIcon';
 import { SettingsIcon } from '@/icons/SettingsIcon';
 import { PositionRolesIcon } from '@/icons/PositionRolesIcon';
 import { SystemAuditIcon } from '@/icons/SystemAuditIcon';
+import { ArchiveOutline, PulseOutline } from '@vicons/ionicons5';
 import adminProductUiExtension from '@movo-admin-product-extension';
 
 const productRoutes = adminProductUiExtension.routes ?? [];
@@ -59,18 +60,6 @@ export const appRoutes: RouteRecordRaw[] = [
         name: 'Dashboard',
         component: () => import('@/views/dashboard/DashboardPage.vue'),
         meta: { title: 'legacy.dashboard', icon: DashboardBarsIcon },
-      },
-      {
-        path: '/system/status',
-        name: 'DeploymentStatus',
-        component: () => import('@/views/deployment-status/DeploymentStatusPage.vue'),
-        meta: { title: 'deployment.title', menuGroup: 'operations' },
-      },
-      {
-        path: '/system/offline-packages',
-        name: 'OfflinePackages',
-        component: () => import('@/views/offline-packages/OfflinePackagesPage.vue'),
-        meta: { title: 'offline.title', menuGroup: 'operations', systemOperatorOnly: true },
       },
       {
         path: '/profile',
@@ -178,6 +167,18 @@ export const appRoutes: RouteRecordRaw[] = [
         name: 'SystemAudit',
         component: () => import('@/views/system-audit/SystemAuditPage.vue'),
         meta: { title: 'legacy.system_audit', icon: SystemAuditIcon },
+      },
+      {
+        path: '/system/status',
+        name: 'DeploymentStatus',
+        component: () => import('@/views/deployment-status/DeploymentStatusPage.vue'),
+        meta: { title: 'deployment.title', icon: PulseOutline, menuGroup: 'operations' },
+      },
+      {
+        path: '/system/offline-packages',
+        name: 'OfflinePackages',
+        component: () => import('@/views/offline-packages/OfflinePackagesPage.vue'),
+        meta: { title: 'offline.title', icon: ArchiveOutline, menuGroup: 'operations', systemOperatorOnly: true },
       },
       {
         path: '/settings',
