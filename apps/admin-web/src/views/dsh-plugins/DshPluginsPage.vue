@@ -35,6 +35,7 @@ function errorText(error: unknown): string {
   const detail = (error as any)?.response?.data?.detail
   const messages: Record<string, string> = {
     plugin_package_not_found: 'dshPlugins.installError.notFound',
+    plugin_offline_package_missing: 'dshPlugins.installError.offlineMissing',
     plugin_registry_unavailable: 'dshPlugins.installError.registryUnavailable',
     'not-a-bundle': 'dshPlugins.installError.notBundle',
   }

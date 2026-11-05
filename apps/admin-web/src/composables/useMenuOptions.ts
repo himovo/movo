@@ -4,14 +4,20 @@ import type { RouteRecordRaw } from 'vue-router';
 import { computed, h, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { OrganizationUsersIcon } from '@/icons/OrganizationUsersIcon';
+import { SystemAuditIcon } from '@/icons/SystemAuditIcon';
 import { appRoutes } from '@/router/routes';
 import { useLocale, translateSourceText } from '@/composables/i18n';
 import adminProductUiExtension from '@movo-admin-product-extension';
+import { useAuthStore } from '@/stores/auth';
 
 const builtInGroups = [{
   key: 'organizations',
   label: 'legacy.organizations_users',
   icon: OrganizationUsersIcon,
+}, {
+  key: 'operations',
+  label: 'operations.title',
+  icon: SystemAuditIcon,
 }];
 
 function renderMenuIcon(icon: unknown) {
@@ -42,9 +48,10 @@ function renderMenuIcon(icon: unknown) {
 }
 
 function buildOptions() {
+  const canOperate = useAuthStore().profile?.groupCode === 'system_admin';
   const root = appRoutes.find((route) => route.path === '/');
   const children = (root?.children ?? []) as RouteRecordRaw[];
-  const visibleRoutes = children.filter((route: RouteRecordRaw) => !route.meta?.hideInMenu && route.path);
+  const visibleRoutes = children.filter((route: RouteRecordRaw) => !route.meta?.hideInMenu && route.path && (!route.meta?.systemOperatorOnly || canOperate));
   const options: MenuOption[] = [];
   const groups = [...builtInGroups, ...(adminProductUiExtension.menuGroups ?? [])];
   const groupOptions = new Map<string, MenuOption>();

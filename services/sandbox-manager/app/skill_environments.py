@@ -15,9 +15,12 @@ from uuid import uuid4
 from .docker_engine import DockerEngine, merged_docker_logs, split_docker_logs
 from .dependency_sources import build_attempts, retryable_failure
 from .skill_build_records import SkillBuildRecords, _safe_log, MAX_LOG_CHARS
+from .offline_package_store import OfflinePackageStore
+from .offline_collections import record as record_collection
 
 
 LOG = logging.getLogger(__name__)
+SKILL_PACKAGE_KINDS = ("pip", "npm", "apt-archives", "apt-lists")
 
 
 class DependencyPreparationError(RuntimeError):
@@ -35,6 +38,7 @@ class SkillEnvironments:
         self.lock = threading.Lock()
         self.pending: dict[str, Future[str]] = {}
         self.records = SkillBuildRecords()
+        self.packages = OfflinePackageStore()
 
     def _skill_root(self, digest: str) -> Path:
         if len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest):
@@ -119,9 +123,12 @@ class SkillEnvironments:
         deadline = time.monotonic() + self._build_timeout()
         record_id = self.records.create(digest, self.engine.image_id(self.base_image) or "")
         try:
-            proxy_id = self.engine.find_compose_service(self.project, "sandbox-egress")
+            offline_only = self.packages.offline
+            if not offline_only:
+                proxy_id = self.engine.find_compose_service(self.project, "sandbox-egress")
             network_id = self.engine.create_internal_network(f"movo-deps-{lease}")
-            self.engine.connect_network(network_id, proxy_id, ["sandbox-egress"])
+            if proxy_id:
+                self.engine.connect_network(network_id, proxy_id, ["sandbox-egress"])
             environment = [
                 "HOME=/tmp",
                 "HTTP_PROXY=http://sandbox-egress:3128",
@@ -131,6 +138,8 @@ class SkillEnvironments:
                 "PIP_DISABLE_PIP_VERSION_CHECK=1",
                 f"MOVO_SKILL_DEPENDENCY_STEP_TIMEOUT={self._step_timeout()}",
             ]
+            if offline_only:
+                environment.append("MOVO_OFFLINE_ONLY=1")
             payload = {
                 "Image": self.base_image,
                 "User": "0:0",
@@ -150,11 +159,14 @@ class SkillEnvironments:
                         "Type": "volume", "Source": self.volume, "Target": "/skill",
                         "ReadOnly": True,
                         "VolumeOptions": {"Subpath": str(self._skill_root(digest).relative_to(self.root.parent)), "NoCopy": True},
-                    }],
+                    }, *[{
+                        "Type": "volume", "Source": os.environ.get("MOVO_OFFLINE_PACKAGE_VOLUME", self.volume), "Target": f"/offline/{kind}",
+                        "VolumeOptions": {"Subpath": kind if os.environ.get("MOVO_OFFLINE_PACKAGE_VOLUME") else f".manager-state/offline-packages/{kind}", "NoCopy": True},
+                    } for kind in SKILL_PACKAGE_KINDS]],
                 },
                 "Labels": {"movo.role": "skill-dependency-build", "movo.skill_digest": digest},
             }
-            sources = build_attempts()
+            sources = build_attempts() if not offline_only else [build_attempts()[0]]
             for index, source in enumerate(sources):
                 container_id = None
                 output_captured = False
@@ -174,6 +186,12 @@ class SkillEnvironments:
                     output_captured = True
                     if exit_code == 0:
                         self.engine.commit(container_id, "movo-skill-deps", image.rsplit(":", 1)[1])
+                        try:
+                            record_collection(self.packages.root, digest=digest, record_id=record_id,
+                                              source=source.name, base_image_id=self.engine.image_id(self.base_image) or "",
+                                              skill_root=self._skill_root(digest))
+                        except (OSError, ValueError):
+                            LOG.exception("Offline package collection metadata unavailable for %s", digest)
                         self.records.finish(digest, record_id, "ready", "Image prepared")
                         return image
                     detail = (stderr or stdout)[-4000:].decode(errors="replace")

@@ -52,6 +52,7 @@ export const dshPluginMessages: Record<string, LabelMap> = {
   'dshPlugins.confirmRemove': { 'zh-CN': '删除这个插件安装记录？新会话将不再加载它。', 'en-US': 'Remove this plugin installation? New conversations will no longer load it.' },
   'dshPlugins.error': { 'zh-CN': '插件操作失败', 'en-US': 'Plugin operation failed' },
   'dshPlugins.installError.notFound': { 'zh-CN': '未在已配置的 npm 源或 npm 官方源找到该包及版本。请核对包名和版本号，或稍后重试。', 'en-US': 'The package and version were not found in the configured npm registry or the official registry. Check the name and version, or try again later.' },
+  'dshPlugins.installError.offlineMissing': { 'zh-CN': '本地离线包源缺少该插件版本。请先导入包含此插件的离线包。', 'en-US': 'The local offline package source does not contain this plugin version. Import a package archive containing it first.' },
   'dshPlugins.installError.registryUnavailable': { 'zh-CN': '当前 npm 镜像未找到该版本，且服务器无法连接 npm 官方源。请检查服务器网络，或使用本地上传。', 'en-US': 'The configured npm mirror does not have this version, and the server cannot reach the official npm registry. Check server connectivity or upload a local package.' },
   'dshPlugins.installError.notBundle': { 'zh-CN': '这个包没有声明 DSH 插件 bundle，无法作为插件安装。', 'en-US': 'This package does not declare a DSH plugin bundle and cannot be installed as a plugin.' },
   'dshPlugins.installed': { 'zh-CN': '插件的对话工具已通过检查；启用后在新会话中生效，插件 UI 不会显示。', 'en-US': 'Conversation tools passed checks. Enable them for new conversations; plugin UI will not appear.' },

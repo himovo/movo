@@ -13,6 +13,7 @@ export interface AdminProfile {
   avatarUpdatedAt?: string;
   lastLoginAt?: string;
   mainId?: string;
+  groupCode?: string;
 }
 
 interface AuthState {
@@ -108,6 +109,7 @@ export const useAuthStore = defineStore('auth', {
           avatarUpdatedAt: profile.avatarUpdatedAt,
           lastLoginAt: profile.lastLoginAt,
           mainId: profile.mainId,
+          groupCode: profile.groupCode,
         });
       } catch (error) {
         // Only clear local auth on real auth failures.

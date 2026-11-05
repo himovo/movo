@@ -129,9 +129,14 @@ services:
     environment:
       MOVO_SANDBOX_MANAGER_URL: ${MOVO_SANDBOX_MANAGER_URL:-}
       MOVO_SANDBOX_PLUGIN_IDLE_SECONDS: ${MOVO_SANDBOX_PLUGIN_IDLE_SECONDS:-900}
+      npm_config_cache: /offline-packages/npm
+      npm_config_store_dir: /offline-packages/pnpm
+      npm_config_prefer_offline: "true"
+      npm_config_userconfig: /offline-packages/.npmrc
     volumes:
       - deployment-secrets:/run/askai-secrets:ro
       - dsh-runtime-data:/data/dsh-runtime
+      - offline-packages:/offline-packages
     depends_on:
       bootstrap:
         condition: service_completed_successfully
@@ -178,6 +183,7 @@ services:
       DSH_MODEL_GATEWAY_URL: http://chat-api:8000/internal/dsh/model/generate
       MOVO_SANDBOX_MANAGER_URL: ${MOVO_SANDBOX_MANAGER_URL:-}
       MOVO_SANDBOX_WORKSPACE_ROOT: /workspaces
+      MOVO_OFFLINE_PACKAGE_ROOT: /offline-packages
       MOVO_PERSONAL_SPACE_MAX_BYTES: ${MOVO_PERSONAL_SPACE_MAX_BYTES:-2147483648}
     volumes:
       - deployment-secrets:/run/askai-secrets:ro
@@ -185,6 +191,7 @@ services:
       - knowledge-storage:/data/knowledge-documents
       - dsh-runtime-data:/data/dsh-runtime
       - sandbox-workspaces:/workspaces
+      - offline-packages:/offline-packages:ro
     depends_on:
       bootstrap:
         condition: service_completed_successfully
@@ -265,6 +272,8 @@ services:
     environment:
       MOVO_SANDBOX_WORKSPACE_ROOT: /workspaces
       MOVO_SANDBOX_WORKSPACE_VOLUME: ${MOVO_VOLUME_PREFIX:-movo}_sandbox-workspaces
+      MOVO_OFFLINE_PACKAGE_ROOT: /offline-packages
+      MOVO_OFFLINE_PACKAGE_VOLUME: ${MOVO_VOLUME_PREFIX:-movo}_offline-packages
       MOVO_SANDBOX_SCRIPT_IMAGE: ${MOVO_SANDBOX_SCRIPT_IMAGE:-${MOVO_IMAGE_PREFIX:-ghcr.io/himovo/movo}-sandbox-script:${MOVO_VERSION:-latest}}
       MOVO_SANDBOX_COMPOSE_PROJECT: ${COMPOSE_PROJECT_NAME:-movo}
       MOVO_SANDBOX_MAX_CONCURRENT: ${MOVO_SANDBOX_MAX_CONCURRENT:-2}
@@ -282,6 +291,7 @@ services:
     volumes:
       - deployment-secrets:/run/askai-secrets:ro
       - sandbox-workspaces:/workspaces
+      - offline-packages:/offline-packages
       - dsh-runtime-data:/runtime-data
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
@@ -472,6 +482,8 @@ volumes:
     name: ${MOVO_VOLUME_PREFIX:-movo}_dsh-runtime-data
   sandbox-workspaces:
     name: ${MOVO_VOLUME_PREFIX:-movo}_sandbox-workspaces
+  offline-packages:
+    name: ${MOVO_VOLUME_PREFIX:-movo}_offline-packages
   askai-storage:
     name: ${MOVO_VOLUME_PREFIX:-movo}_askai-storage
   knowledge-storage:

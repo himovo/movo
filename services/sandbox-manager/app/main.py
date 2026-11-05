@@ -15,6 +15,8 @@ from .plugin_runtimes import PluginRuntimes
 from .skill_environments import DependencyPreparationError
 from .skill_build_records import MAX_LOG_CHARS, SkillBuildRecords
 from .task_containers import TaskContainers
+from .offline_routes import router as offline_router
+from .image_archive_routes import router as image_archive_router
 
 
 @asynccontextmanager
@@ -24,6 +26,8 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
+app.include_router(offline_router)
+app.include_router(image_archive_router)
 _jobs: ScriptJobs | None = None
 _plugins: PluginRuntimes | None = None
 _tasks: TaskContainers | None = None

@@ -83,6 +83,9 @@ class PluginRuntimes:
                 "Type": "volume", "Source": storage_volume, "Target": "/data/dsh-runtime",
                 "VolumeOptions": {"Subpath": relative_storage, "NoCopy": True},
             }]
+            offline_volume = os.environ.get("MOVO_OFFLINE_PACKAGE_VOLUME")
+            if offline_volume:
+                mounts.append({"Type": "volume", "Source": offline_volume, "Target": "/offline-packages"})
             if personal_space_key:
                 personal_root = self.volume_root / "personal" / personal_space_key
                 personal_root.mkdir(parents=True, exist_ok=True)
@@ -115,6 +118,9 @@ class PluginRuntimes:
                     *(["MOVO_PERSONAL_SPACE_ROOT=/job/home"] if personal_space_key else []),
                     "HTTP_PROXY=http://sandbox-egress:3128", "HTTPS_PROXY=http://sandbox-egress:3128",
                     "NO_PROXY=sandbox-gateway,localhost,127.0.0.1",
+                    *(["npm_config_userconfig=/offline-packages/.npmrc",
+                       "npm_config_store_dir=/offline-packages/pnpm",
+                       "npm_config_prefer_offline=true"] if offline_volume else []),
                 ],
                 "HostConfig": {
                     "NetworkMode": network_id, "ReadonlyRootfs": True,

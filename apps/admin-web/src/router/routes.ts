@@ -64,7 +64,13 @@ export const appRoutes: RouteRecordRaw[] = [
         path: '/system/status',
         name: 'DeploymentStatus',
         component: () => import('@/views/deployment-status/DeploymentStatusPage.vue'),
-        meta: { title: 'deployment.title', hideInMenu: true },
+        meta: { title: 'deployment.title', menuGroup: 'operations' },
+      },
+      {
+        path: '/system/offline-packages',
+        name: 'OfflinePackages',
+        component: () => import('@/views/offline-packages/OfflinePackagesPage.vue'),
+        meta: { title: 'offline.title', menuGroup: 'operations', systemOperatorOnly: true },
       },
       {
         path: '/profile',

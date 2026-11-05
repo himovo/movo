@@ -47,27 +47,53 @@ def configure_apt_mirror() -> None:
     sources.write_text(content, encoding="utf-8")
 
 
+def disable_apt_cleanup() -> None:
+    Path("/etc/apt/apt.conf.d/docker-clean").unlink(missing_ok=True)
+
+
 def main() -> None:
     shutil.copytree(SOURCE, BUILD)
+    offline = os.environ.get("MOVO_OFFLINE_ONLY") == "1"
     apt_file = BUILD / "apt-packages.txt"
     if apt_file.is_file():
         packages = apt_packages(apt_file)
         if packages:
             print("=== Installing system packages (apt) ===", flush=True)
-            configure_apt_mirror()
-            run("apt-get", "update")
-            run("apt-get", "install", "-y", "--no-install-recommends", *packages)
-            shutil.rmtree("/var/lib/apt/lists", ignore_errors=True)
+            disable_apt_cleanup()
+            apt = ("apt-get", "-o", "Dir::Cache::archives=/offline/apt-archives",
+                   "-o", "Dir::State::lists=/offline/apt-lists",
+                   "-o", "Binary::apt::APT::Keep-Downloaded-Packages=true")
+            cached = subprocess.run(
+                (*apt, "install", "-y", "--no-install-recommends", "--no-download", *packages),
+                timeout=step_timeout(),
+            ).returncode == 0
+            if not cached and not offline:
+                configure_apt_mirror()
+                run(*apt, "update")
+                run(*apt, "install", "-y", "--no-install-recommends", *packages)
+            elif not cached:
+                raise RuntimeError("Offline system dependencies are missing; inspect the apt output above")
     requirements = BUILD / "requirements.txt"
     if requirements.is_file():
         print("=== Installing Python dependencies (pip) ===", flush=True)
-        run("python", "-m", "pip", "install", "--no-cache-dir", "--timeout", "60", "--retries", "2", "-r", str(requirements), cwd=BUILD)
+        wheelhouse = Path("/offline/pip")
+        install = ("python", "-m", "pip", "install", "--no-index", "--find-links",
+                   str(wheelhouse), "-r", str(requirements))
+        installed = subprocess.run(install, cwd=BUILD, timeout=step_timeout()).returncode == 0
+        if not installed and not offline:
+            run("python", "-m", "pip", "wheel", "--wheel-dir", str(wheelhouse),
+                "--timeout", "60", "--retries", "2", "-r", str(requirements), cwd=BUILD)
+            run(*install, cwd=BUILD)
+        elif not installed:
+            raise RuntimeError("Offline Python dependencies are missing; inspect the pip output above")
     package_json = BUILD / "package.json"
     if package_json.is_file():
         print("=== Installing Node dependencies (npm) ===", flush=True)
         if not (BUILD / "package-lock.json").is_file():
             raise ValueError("A Skill with package.json must include package-lock.json")
-        run("npm", "ci", "--omit=dev", "--fetch-retries=1", "--fetch-timeout=30000", "--prefix", str(BUILD))
+        run("npm", "ci", "--omit=dev", "--fetch-retries=1", "--fetch-timeout=30000",
+            "--cache", "/offline/npm", "--offline" if offline else "--prefer-offline",
+            "--prefix", str(BUILD))
         target = Path("/opt/movo-skill-node-modules")
         if (BUILD / "node_modules").is_dir():
             shutil.move(str(BUILD / "node_modules"), target)

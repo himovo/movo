@@ -94,6 +94,28 @@ def test_dependency_image_is_keyed_by_bundle_and_base_image(tmp_path: Path, monk
     assert 1790 <= engine.wait_timeout <= 1800
 
 
+def test_offline_build_does_not_attach_egress_proxy(tmp_path: Path, monkeypatch):
+    digest = "f" * 64
+    root = tmp_path / "skill-cache" / digest
+    root.mkdir(parents=True)
+    (root / "SKILL.md").write_text("sample")
+    (root / "requirements.txt").write_text("humanize==4.13.0")
+    monkeypatch.setenv("MOVO_SANDBOX_WORKSPACE_ROOT", str(tmp_path))
+    monkeypatch.setenv("MOVO_SANDBOX_WORKSPACE_VOLUME", "test-workspaces")
+    monkeypatch.setenv("MOVO_SANDBOX_SCRIPT_IMAGE", "base:latest")
+
+    class OfflineEngine(ImageEngine):
+        def find_compose_service(self, project, service):
+            raise AssertionError("Offline build must not access the proxy")
+
+    engine = OfflineEngine()
+    environments = SkillEnvironments(engine)
+    environments.packages.set_offline(True)
+    assert environments.ready_image(digest).startswith("movo-skill-deps:")
+    assert "MOVO_OFFLINE_ONLY=1" in engine.created["Env"]
+    assert all(mount["Target"] != "/offline/collections" for mount in engine.created["HostConfig"]["Mounts"])
+
+
 def test_dependency_build_timeouts_are_configurable_and_bounded(monkeypatch):
     monkeypatch.setenv("MOVO_SKILL_DEPENDENCY_STEP_TIMEOUT", "720")
     monkeypatch.setenv("MOVO_SKILL_DEPENDENCY_BUILD_TIMEOUT", "2400")

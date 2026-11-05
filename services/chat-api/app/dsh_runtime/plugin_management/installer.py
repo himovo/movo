@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import os
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
@@ -13,6 +15,7 @@ from app.dsh_runtime.plugin_management.source_policy import is_fixed_npm_source
 from app.dsh_runtime.plugin_management.install_failure import install_error_text, is_missing_registry_dependency
 from app.dsh_runtime.plugin_management.compatibility import classify_conversation_tools
 from app.dsh_runtime.plugin_management.tool_requirements import tool_requirements
+from app.dsh_runtime.plugin_management.offline_package_capture import initialize_package_source, imported_archive, record_plugin
 
 logger = logging.getLogger(__name__)
 NPM_REGISTRY = "https://registry.npmjs.org/"
@@ -28,6 +31,10 @@ class DshPluginInstaller:
         if not spec or len(spec) > 500 or any(ord(ch) < 32 for ch in spec):
             raise PluginInstallError("Invalid DSH plugin spec")
         settings = get_settings()
+        await initialize_package_source()
+        offline_only = (Path(os.environ.get("MOVO_OFFLINE_PACKAGE_ROOT", "/offline-packages")) / "offline-only").is_file()
+        if offline_only and not archive_id and is_fixed_npm_source(spec):
+            spec = imported_archive(spec) or spec
         transport = HttpKernelHostTransport(
             settings.DSH_RUNTIME_HOST_URL,
             timeout_seconds=300,
@@ -54,7 +61,7 @@ class DshPluginInstaller:
             original_inventory = await transport.request("GET", path)
             inspected = await transport.request("POST", f"{path}/inspect", json={"spec": spec})
             install_registry = ""
-            if inspected.get("problem") == "not-found" and is_fixed_npm_source(spec):
+            if inspected.get("problem") == "not-found" and is_fixed_npm_source(spec) and not offline_only:
                 # A configured mirror can lag behind npm. Retry the exact
                 # version at the canonical registry before declaring it absent.
                 inspected = await transport.request(
@@ -86,14 +93,15 @@ class DshPluginInstaller:
             if package is None and inspected.get("status") != "accepted":
                 problem = str(inspected.get("problem") or "not-a-bundle")
                 raise PluginInstallError(
-                    "plugin_package_not_found" if problem == "not-found" and is_fixed_npm_source(spec) else problem
+                    "plugin_offline_package_missing" if offline_only and problem in ("not-found", "network") and is_fixed_npm_source(spec)
+                    else "plugin_package_not_found" if problem == "not-found" and is_fixed_npm_source(spec) else problem
                 )
             if package is None:
                 installed = await transport.request("POST", f"{path}/install", json={
                     "spec": spec, **({"registry": install_registry} if install_registry else {}),
                 })
                 if ((installed.get("application") == "failed" or installed.get("error"))
-                        and not install_registry and is_fixed_npm_source(spec)
+                        and not install_registry and is_fixed_npm_source(spec) and not offline_only
                         and is_missing_registry_dependency(installed)):
                     official = await transport.request(
                         "POST", f"{path}/inspect", json={"spec": spec, "registry": NPM_REGISTRY},
@@ -147,6 +155,7 @@ class DshPluginInstaller:
                     package["spec"] = f"archive:{archive_digest}"
                     package["archive_id"] = archive_id
                     package["archive_digest"] = archive_digest
+                await record_plugin(package["name"], package["version"], archive_digest)
                 return package
             runtime_ids.append(str(validation["runtimeId"]))
             activated_inventory = await transport.request(
@@ -210,6 +219,7 @@ class DshPluginInstaller:
                         package["spec"] = f"archive:{archive_digest}"
                         package["archive_id"] = archive_id
                         package["archive_digest"] = archive_digest
+                    await record_plugin(package["name"], package["version"], archive_digest)
                     return package
             status, reason = classify_conversation_tools(set(discovered), exposed)
             package["availability"] = {
@@ -224,6 +234,7 @@ class DshPluginInstaller:
                 package["spec"] = f"archive:{archive_digest}"
                 package["archive_id"] = archive_id
                 package["archive_digest"] = archive_digest
+            await record_plugin(package["name"], package["version"], archive_digest)
             return package
         except DshTransportError as exc:
             raise PluginInstallError(str(exc)) from exc

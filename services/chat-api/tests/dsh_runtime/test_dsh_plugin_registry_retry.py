@@ -125,3 +125,38 @@ def test_missing_dependency_on_mirror_retries_whole_install_from_official_regist
 def test_install_failure_preserves_package_manager_diagnostic():
     failure = {"error": {"code": "operation-error", "diagnostic": "No matching version found for sqlite@0.2.1"}}
     assert install_error_text(failure) == "operation-error: No matching version found for sqlite@0.2.1"
+
+
+def test_offline_mode_never_tries_official_registry(monkeypatch, tmp_path):
+    (tmp_path / "offline-only").touch()
+    monkeypatch.setenv("MOVO_OFFLINE_PACKAGE_ROOT", str(tmp_path))
+    calls = []
+
+    class Transport:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        async def request(self, method, path, **kwargs):
+            calls.append((method, path, kwargs.get("json")))
+            if method == "POST" and path == "/v1/runtimes":
+                return {"runtimeId": "validation"}
+            if method == "GET":
+                return {"bundles": [], "globalTools": []}
+            if path.endswith("/inspect"):
+                return {"status": "refused", "problem": "not-found"}
+            return {}
+
+        async def close(self):
+            pass
+
+    monkeypatch.setattr(installer, "HttpKernelHostTransport", Transport)
+    monkeypatch.setattr(installer, "get_settings", lambda: SimpleNamespace(
+        DSH_RUNTIME_HOST_URL="http://localhost", DSH_RUNTIME_HOST_TOKEN="test",
+    ))
+
+    with pytest.raises(installer.PluginInstallError, match="plugin_offline_package_missing"):
+        asyncio.run(installer.DshPluginInstaller().inspect_and_install("missing-plugin@1.0.0"))
+
+    assert [body for _, path, body in calls if path.endswith("/inspect")] == [
+        {"spec": "missing-plugin@1.0.0"},
+    ]

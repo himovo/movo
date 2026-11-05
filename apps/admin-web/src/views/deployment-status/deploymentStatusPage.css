@@ -18,6 +18,7 @@
 .inventory-empty p { max-width: 440px; margin: 0; color: #718099; font-size: 13px; }
 .empty-glyph { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 14px; background: #eef3fb; color: #6886b5; font-size: 25px; }
 .inventory-tabs { display: flex; flex: none; gap: 24px; padding: 0 24px; border-bottom: 1px solid #e5ebf4; }
+.inventory-actions { display: flex; align-items: center; margin-left: auto; }
 .inventory-tabs button { position: relative; border: 0; padding: 16px 2px; background: none; color: #66758e; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
 .inventory-tabs button.active { color: #2654bd; }
 .inventory-tabs button.active::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: #366aff; content: ''; }

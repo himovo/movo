@@ -29,6 +29,10 @@
         <div class="inventory-tabs" role="tablist" :aria-label="t('deployment.images')">
           <button type="button" role="tab" :aria-selected="activeTab === 'services'" :class="{ active: activeTab === 'services' }" @click="activeTab = 'services'">{{ t('deployment.services') }}</button>
           <button type="button" role="tab" :aria-selected="activeTab === 'runtime'" :class="{ active: activeTab === 'runtime' }" @click="activeTab = 'runtime'">{{ t('deployment.runtimeImage') }}</button>
+          <div v-if="activeTab === 'runtime' && canTransferImages" class="inventory-actions">
+            <n-button size="small" :loading="imageTransfer" @click="imageInput?.click()">{{ t('deployment.importImage') }}</n-button>
+            <input ref="imageInput" type="file" accept=".zip,application/zip" hidden @change="uploadImage" />
+          </div>
         </div>
         <div v-if="activeTab === 'services'" class="table-scroll" role="tabpanel">
           <table>
@@ -54,7 +58,7 @@
         </div>
         <div v-else class="table-scroll" role="tabpanel">
           <table class="sandbox-images-table">
-            <thead><tr><th>{{ t('deployment.image') }}</th><th>{{ t('deployment.imageType') }}</th><th>{{ t('deployment.appliesTo') }}</th><th>{{ t('deployment.imageState') }}</th><th>{{ t('deployment.containerState') }}</th><th>{{ t('deployment.imageId') }}</th><th>{{ t('deployment.createdAt') }}</th></tr></thead>
+            <thead><tr><th>{{ t('deployment.image') }}</th><th>{{ t('deployment.imageType') }}</th><th>{{ t('deployment.appliesTo') }}</th><th>{{ t('deployment.imageState') }}</th><th>{{ t('deployment.containerState') }}</th><th>{{ t('deployment.imageId') }}</th><th>{{ t('deployment.createdAt') }}</th><th>{{ t('deployment.exportImage') }}</th></tr></thead>
             <tbody><tr v-for="image in status.sandboxImages || []" :key="`${image.kind}:${image.image}:${image.digest}`">
               <td class="image-cell mono" :title="image.image">{{ image.image || '—' }}</td>
               <td>{{ t(image.kind === 'skill' ? 'deployment.skillImage' : image.kind === 'plugin' ? 'deployment.pluginImage' : 'deployment.generalImage') }}</td>
@@ -63,6 +67,7 @@
               <td>{{ image.running === null ? t('deployment.notApplicable') : t(image.running ? 'deployment.running' : 'deployment.notAvailable') }}</td>
               <td class="mono" :title="image.imageId">{{ shortId(image.imageId) }}</td>
               <td>{{ displayTime(image.createdAt) }}</td>
+              <td><n-button v-if="canTransferImages" text type="primary" :disabled="!image.available || imageTransfer" @click="downloadImage(image.image)">{{ t('deployment.exportImage') }}</n-button></td>
             </tr></tbody>
           </table>
         </div>
@@ -121,9 +126,14 @@ import { t } from '@/composables/i18n'
 import { formatAdminShortDateTime } from '@/composables/adminTimezone'
 import { diagnostics, INFRASTRUCTURE, serviceCounts, serviceTone, shortId } from './deploymentStatusView'
 import { copyText } from './copyText'
+import { exportSandboxImage, importSandboxImage } from '@/api/sandbox-images'
+import { useAuthStore } from '@/stores/auth'
 
 const message = useMessage()
 const status = ref<DeploymentStatus | null>(null)
+const canTransferImages = computed(() => useAuthStore().profile?.groupCode === 'system_admin')
+const imageInput = ref<HTMLInputElement | null>(null)
+const imageTransfer = ref(false)
 const selected = ref<DeploymentService | null>(null)
 const loading = ref(false)
 const loadError = ref(false)
@@ -132,6 +142,26 @@ const activeTab = ref<'services' | 'runtime'>('services')
 const showManualCopy = ref(false)
 const manualCopyValue = ref('')
 const manualCopyField = ref<HTMLTextAreaElement | null>(null)
+
+async function downloadImage(name: string) {
+  imageTransfer.value = true
+  try { await exportSandboxImage(name) }
+  catch { message.error(t('deployment.imageExportFailed')) }
+  finally { imageTransfer.value = false }
+}
+
+async function uploadImage(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  imageTransfer.value = true
+  try {
+    await importSandboxImage(file)
+    await load()
+    message.success(t('deployment.imageImported'))
+  } catch { message.error(t('deployment.imageImportFailed')) }
+  finally { imageTransfer.value = false; input.value = '' }
+}
 const displayVersion = computed(() => {
   if (!status.value) return t('deployment.unknown')
   const deployment = status.value.deployment

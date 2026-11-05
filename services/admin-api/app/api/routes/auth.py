@@ -133,6 +133,7 @@ def _profile_from_user(user: dict[str, Any], main_id: str) -> dict[str, object]:
         "avatarUpdatedAt": utc_iso(user.get("avatar_updated_at")),
         "lastLoginAt": utc_iso(user.get("last_login_at")),
         "mainId": main_id,
+        "groupCode": user.get("group_code") or "",
     }
 
 
