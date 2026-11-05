@@ -78,6 +78,23 @@ def test_recreate_after_manager_restart_reclaims_old_lease(tmp_path: Path, monke
     assert engine.cleaned == ["killed", "removed", "dsh-runtime-host", "sandbox-egress", "network"]
 
 
+def test_plugin_runtime_mounts_only_its_user_space(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("MOVO_SANDBOX_RUNTIME_ROOT", str(tmp_path / "runtime"))
+    monkeypatch.setenv("MOVO_SANDBOX_WORKSPACE_ROOT", str(tmp_path / "workspaces"))
+    monkeypatch.setenv("MOVO_SANDBOX_RUNTIME_IMAGE", "dsh-test:1")
+    monkeypatch.setenv("MOVO_SANDBOX_RUNTIME_VOLUME", "runtime-volume")
+    monkeypatch.setenv("MOVO_SANDBOX_WORKSPACE_VOLUME", "workspace-volume")
+    engine = EngineFake()
+    key = "a" * 64
+    PluginRuntimes(engine).create("tenant:t:profile:p", key)
+    mounts = engine.payload["HostConfig"]["Mounts"]
+    personal = next(mount for mount in mounts if mount["Target"] == "/job/home")
+    assert personal["VolumeOptions"]["Subpath"] == f"personal/{key}"
+    assert "MOVO_PERSONAL_SPACE_ROOT=/job/home" in engine.payload["Env"]
+    assert "TMPDIR=/job/home/tmp" in engine.payload["Env"]
+    assert (tmp_path / "workspaces" / "personal" / key / "tmp").is_dir()
+
+
 def test_existing_plugin_runtime_storage_remains_on_legacy_volume(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("MOVO_SANDBOX_RUNTIME_ROOT", str(tmp_path / "runtime"))
     monkeypatch.setenv("MOVO_SANDBOX_WORKSPACE_ROOT", str(tmp_path / "workspaces"))

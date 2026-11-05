@@ -12,6 +12,7 @@ from app.dsh_runtime.errors import DshTransportError
 from app.dsh_runtime.plugin_management.source_policy import is_fixed_npm_source
 from app.dsh_runtime.plugin_management.install_failure import install_error_text, is_missing_registry_dependency
 from app.dsh_runtime.plugin_management.compatibility import classify_conversation_tools
+from app.dsh_runtime.plugin_management.tool_requirements import tool_requirements
 
 logger = logging.getLogger(__name__)
 NPM_REGISTRY = "https://registry.npmjs.org/"
@@ -157,6 +158,10 @@ class DshPluginInstaller:
                 if name not in base_tools
             )
             discovered = package["tool_names"]
+            requirements = tool_requirements(package["name"], package["version"], discovered)
+            workspace_tools = sorted(
+                name for name, needed in requirements.items() if "workspace" in needed
+            )
             exposed: set[str] = set()
             if discovered:
                 try:
@@ -172,13 +177,27 @@ class DshPluginInstaller:
                             "modelName": "plugin-install-validation",
                             "gatewayUrl": "http://127.0.0.1/validation-only",
                             "accessToken": "plugin-install-validation",
-                            "plugins": [{**package, "source_scope": "personal"}],
+                            "plugins": [{
+                                **package, "source_scope": "personal",
+                                "tool_requirements": requirements,
+                            }],
                         },
                     })
                     runtime_ids.append(str(session_validation["runtimeId"]))
+                    workspace_id = None
+                    if workspace_tools:
+                        workspace = await transport.request(
+                            "POST",
+                            f"/v1/runtimes/{session_validation['runtimeId']}/workspaces",
+                            json={"path": "/tmp", "title": "Plugin validation"},
+                        )
+                        workspace_id = str(workspace["workspaceId"])
                     session = await transport.request(
                         "POST", f"/v1/runtimes/{session_validation['runtimeId']}/sessions",
-                        json={"sessionId": f"plugin-validation-{uuid4()}"},
+                        json={
+                            "sessionId": f"plugin-validation-{uuid4()}",
+                            **({"workspaceId": workspace_id} if workspace_id else {}),
+                        },
                     )
                     exposed = set(session.get("capabilityTools") or [])
                 except DshTransportError as exc:
@@ -199,6 +218,7 @@ class DshPluginInstaller:
                 "checks": {"package": True, "runtime": True, "session": status == "session_exposed", "invocation": False},
                 "discovered_tools": discovered,
                 "session_tools": sorted(exposed.intersection(discovered)),
+                "workspace_required_tools": workspace_tools,
             }
             if archive_id:
                 package["spec"] = f"archive:{archive_digest}"

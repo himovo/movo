@@ -33,14 +33,24 @@ export function enterpriseToolNames(modelProfile) {
   return [...new Set(names)].sort()
 }
 
+export function eligibleEnterpriseTools(enterpriseTools, plugins, { hasWorkspace }) {
+  if (hasWorkspace) return [...enterpriseTools]
+  const workspaceRequired = new Set((plugins ?? []).flatMap(plugin =>
+    Object.entries(plugin.tool_requirements ?? {})
+      .filter(([, requirements]) => requirements.includes('workspace'))
+      .map(([name]) => name)))
+  return enterpriseTools.filter(name => !workspaceRequired.has(name))
+}
+
 export class OfficialSessionComposer {
-  constructor(ctx, { agentOptions, enterpriseTools }) {
+  constructor(ctx, { agentOptions, enterpriseTools, plugins = [] }) {
     this.ctx = ctx
     this.agentOptions = Object.freeze({ ...agentOptions })
     this.enterpriseTools = Object.freeze([...enterpriseTools])
+    this.plugins = Object.freeze([...plugins])
   }
 
-  async prepare(requestedPreset) {
+  async prepare(requestedPreset, { hasWorkspace = false } = {}) {
     const presets = this.ctx.get('agentPresets')
     if (presets === undefined) throw new Error('official DSH agent preset registry is unavailable')
     const preset = await resolveNativePreset(presets, requestedPreset)
@@ -58,7 +68,7 @@ export class OfficialSessionComposer {
         })
         await presets.mount(agentCtx, preset.id)
         if (preset.id === ASKAI_ENTERPRISE_PRESET_ID) {
-          this.#restrictEnterpriseSession(agentCtx)
+          this.#restrictEnterpriseSession(agentCtx, hasWorkspace)
         }
       },
     }
@@ -75,11 +85,12 @@ export class OfficialSessionComposer {
     }
   }
 
-  #restrictEnterpriseSession(agentCtx) {
+  #restrictEnterpriseSession(agentCtx, hasWorkspace) {
     // Preset tools are scoped to the agent and therefore are intentionally not
     // visible from the Host/root catalog. Restrict against the declared Runtime
     // Profile names directly; pre-filtering through the root catalog silently
     // removed scoped tools such as DSH's native web_search.
-    agentCtx.tools.restrict({ allow: this.enterpriseTools })
+    const allow = eligibleEnterpriseTools(this.enterpriseTools, this.plugins, { hasWorkspace })
+    agentCtx.tools.restrict({ allow })
   }
 }

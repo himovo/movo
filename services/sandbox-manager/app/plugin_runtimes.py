@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import secrets
 import threading
 from pathlib import Path
@@ -31,20 +32,22 @@ class PluginRuntimes:
         with self._lock:
             return {"plugin_runtimes": len(self._leases)}
 
-    def create(self, isolation_key: str) -> dict:
+    def create(self, isolation_key: str, personal_space_key: str | None = None) -> dict:
         if not isolation_key or len(isolation_key) > 512:
             raise ValueError("Invalid Runtime isolation key")
+        if personal_space_key is not None and not re.fullmatch(r"[0-9a-f]{64}", personal_space_key):
+            raise ValueError("Invalid personal space key")
         with self._lock:
             if isolation_key in self._creating:
                 raise ValueError("Runtime creation is already in progress")
             self._creating.add(isolation_key)
         try:
-            return self._create(isolation_key)
+            return self._create(isolation_key, personal_space_key)
         finally:
             with self._lock:
                 self._creating.discard(isolation_key)
 
-    def _create(self, isolation_key: str) -> dict:
+    def _create(self, isolation_key: str, personal_space_key: str | None = None) -> dict:
         with self._lock:
             previous = next((item["lease_id"] for item in self._leases.values()
                              if item.get("isolation_key") == isolation_key), None)
@@ -80,6 +83,18 @@ class PluginRuntimes:
                 "Type": "volume", "Source": storage_volume, "Target": "/data/dsh-runtime",
                 "VolumeOptions": {"Subpath": relative_storage, "NoCopy": True},
             }]
+            if personal_space_key:
+                personal_root = self.volume_root / "personal" / personal_space_key
+                personal_root.mkdir(parents=True, exist_ok=True)
+                personal_root.chmod(0o777)
+                personal_tmp = personal_root / "tmp"
+                personal_tmp.mkdir(exist_ok=True)
+                personal_tmp.chmod(0o777)
+                mounts.append({
+                    "Type": "volume", "Source": self.volume,
+                    "Target": "/job/home",
+                    "VolumeOptions": {"Subpath": f"personal/{personal_space_key}", "NoCopy": True},
+                })
             if (self.legacy_root / "plugin-archives").is_dir():
                 mounts.append({
                     "Type": "volume", "Source": os.environ["MOVO_SANDBOX_RUNTIME_VOLUME"],
@@ -94,7 +109,10 @@ class PluginRuntimes:
                 "WorkingDir": "/app",
                 "Env": [
                     f"DSH_RUNTIME_HOST_TOKEN={token}", "MOVO_DSH_PLUGIN_CHILD=1",
-                    "HOME=/data/dsh-runtime", "TMPDIR=/tmp", "NODE_USE_ENV_PROXY=1",
+                    "HOME=/data/dsh-runtime",
+                    f"TMPDIR={'/job/home/tmp' if personal_space_key else '/tmp'}",
+                    "NODE_USE_ENV_PROXY=1",
+                    *(["MOVO_PERSONAL_SPACE_ROOT=/job/home"] if personal_space_key else []),
                     "HTTP_PROXY=http://sandbox-egress:3128", "HTTPS_PROXY=http://sandbox-egress:3128",
                     "NO_PROXY=sandbox-gateway,localhost,127.0.0.1",
                 ],

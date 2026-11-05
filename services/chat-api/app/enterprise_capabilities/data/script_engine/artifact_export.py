@@ -7,11 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from app.utils.oss_uploader import AliyunOSSUploader
-
-
-DOCUMENT_OUTPUT_EXTS = {".docx", ".pdf", ".xlsx", ".pptx", ".txt", ".md", ".json", ".csv"}
-IMAGE_OUTPUT_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tif", ".tiff"}
-ALLOWED_OUTPUT_EXTS = DOCUMENT_OUTPUT_EXTS | IMAGE_OUTPUT_EXTS
+from app.execution_isolation.file_types import ALLOWED_OUTPUT_EXTS, DOCUMENT_OUTPUT_EXTS, IMAGE_OUTPUT_EXTS
 
 
 def _safe_filename(value: str, *, fallback: str) -> str:

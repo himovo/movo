@@ -66,6 +66,7 @@ class ExecuteTaskCallRequest(BaseModel):
 
 class CreatePluginRuntimeRequest(BaseModel):
     isolation_key: str = Field(min_length=1, max_length=512)
+    personal_space_key: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
 
 class UpdateSettingsRequest(BaseModel):
@@ -202,7 +203,7 @@ def update_settings(payload: UpdateSettingsRequest, authorization: str | None = 
 @app.post("/v1/plugin-runtimes")
 def create_plugin_runtime(payload: CreatePluginRuntimeRequest, authorization: str | None = Header(default=None)) -> dict:
     _authorize(authorization)
-    return plugins().create(payload.isolation_key)
+    return plugins().create(payload.isolation_key, payload.personal_space_key)
 
 
 @app.delete("/v1/plugin-runtimes/{lease_id}")

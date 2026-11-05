@@ -16,6 +16,7 @@ from .storage_paths import manager_state_root
 
 IDENTIFIER = re.compile(r"^[0-9a-f]{32}$")
 SKILL_DIGEST = re.compile(r"^[0-9a-f]{64}$")
+PERSONAL_KEY = re.compile(r"^[0-9a-f]{64}$")
 
 
 @dataclass
@@ -55,12 +56,16 @@ class TaskContainers:
         digest = marker.read_text(encoding="ascii").strip() if marker.is_file() else ""
         if digest and (not SKILL_DIGEST.fullmatch(digest) or not (self.root / "skill-cache" / digest).is_dir()):
             raise ValueError("Selected Skill package is unavailable")
+        personal_marker = task_root / "personal-space-key"
+        personal_key = personal_marker.read_text(encoding="ascii").strip() if personal_marker.is_file() else ""
+        if personal_key and not PERSONAL_KEY.fullmatch(personal_key):
+            raise ValueError("Invalid personal space key")
         with self._lock:
             lease = self._leases.get(task_id)
             if lease is None:
                 if len(self._leases) >= self.capacity:
                     raise RuntimeError("Sandbox task capacity is full")
-                lease = self._create(task_id, digest)
+                lease = self._create(task_id, digest, personal_key)
                 self._leases[task_id] = lease
                 self._save()
             elif lease.skill_digest != digest:
@@ -142,8 +147,9 @@ class TaskContainers:
             "frozen": lease.frozen,
         } for task_id, lease in self._leases.items()})
 
-    def _create(self, task_id: str, digest: str) -> TaskLease:
+    def _create(self, task_id: str, digest: str, personal_key: str = "") -> TaskLease:
         image = self.environments.ready_image(digest) if digest else self.image
+        dependency_root = "/job/home/work" if personal_key else "/job/work"
         proxy_id = self.engine.find_compose_service(self.project, "sandbox-egress")
         network_id = self.engine.create_outbound_network(f"movo-task-{task_id}")
         container_id = None
@@ -153,6 +159,14 @@ class TaskContainers:
                 "Type": "volume", "Source": self.volume, "Target": "/job/work",
                 "VolumeOptions": {"Subpath": f"{task_id}/work", "NoCopy": True},
             }]
+            if personal_key:
+                personal_root = self.root / "personal" / personal_key
+                personal_root.mkdir(parents=True, exist_ok=True)
+                personal_root.chmod(0o777)
+                mounts.append({
+                    "Type": "volume", "Source": self.volume, "Target": "/job/home",
+                    "VolumeOptions": {"Subpath": f"personal/{personal_key}", "NoCopy": True},
+                })
             if digest:
                 mounts.append({
                     "Type": "volume", "Source": self.volume, "Target": "/job/skills", "ReadOnly": True,
@@ -161,11 +175,12 @@ class TaskContainers:
             container_id = self.engine.create(f"movo-task-{task_id}", {
                 "Image": image, "User": "65534:65534", "Entrypoint": ["sleep"], "Cmd": ["infinity"],
                 "WorkingDir": "/job/work", "Env": [
-                    "HOME=/job/work", "TMPDIR=/job/work/tmp", "LANG=C.UTF-8", "PYTHONUNBUFFERED=1",
+                    f"HOME={dependency_root}", f"TMPDIR={dependency_root}/tmp", "LANG=C.UTF-8", "PYTHONUNBUFFERED=1",
                     "HTTP_PROXY=http://sandbox-egress:3128", "HTTPS_PROXY=http://sandbox-egress:3128",
                     "http_proxy=http://sandbox-egress:3128", "https_proxy=http://sandbox-egress:3128",
-                    "NO_PROXY=", "no_proxy=", "NODE_PATH=/job/work/.dependencies/node/node_modules:/opt/movo-skill-node-modules",
-                    "PATH=/job/work/.dependencies/bin:/job/work/.dependencies/node/node_modules/.bin:/opt/movo-skill-node-modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                    "NO_PROXY=", "no_proxy=",
+                    f"NODE_PATH={dependency_root}/.dependencies/node/node_modules:/opt/movo-skill-node-modules",
+                    f"PATH={dependency_root}/.dependencies/bin:{dependency_root}/.dependencies/node/node_modules/.bin:/opt/movo-skill-node-modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
                 ],
                 "HostConfig": {
                     "NetworkMode": network_id, "ReadonlyRootfs": True, "CapDrop": ["ALL"],

@@ -9,6 +9,7 @@
         <p>{{ reason }}</p>
         <p v-if="status === 'failed'" class="next-step">{{ t('dshPlugins.failureNextStep') }}</p>
         <p v-if="['session_exposed', 'verified'].includes(status)" class="next-step">{{ t('dshPlugins.uiLimit') }}</p>
+        <p v-if="availability?.workspace_required_tools?.length" class="next-step">{{ t('dshPlugins.workspaceRequiredTools', { names: availability.workspace_required_tools.join(', ') }) }}</p>
         <div v-for="check in checks" :key="check" class="check">
           <span>{{ availability?.checks?.[check] ? '✓' : '○' }}</span> {{ t(`dshPlugins.check.${check}`) }}
         </div>

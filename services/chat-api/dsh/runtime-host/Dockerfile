@@ -49,8 +49,8 @@ COPY src ./src
 COPY config ./config
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh \
-    && mkdir -p /data/dsh-runtime \
-    && chown -R node:node /data/dsh-runtime
+    && mkdir -p /data/dsh-runtime /job/home \
+    && chown -R node:node /data/dsh-runtime /job/home
 
 EXPOSE 8101
 

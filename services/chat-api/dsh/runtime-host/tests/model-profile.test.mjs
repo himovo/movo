@@ -50,3 +50,19 @@ test('model profile rejects malformed or ambiguous Skill definitions', () => {
     /invalid writing standard/,
   )
 })
+
+test('plugin tool prerequisites must name declared tools and supported capabilities', () => {
+  const plugin = {
+    name: 'office-example', version: '1.0.0', spec: 'office-example@1.0.0',
+    source_scope: 'organization', tool_names: ['word_create'],
+    tool_requirements: { word_create: ['workspace'] },
+  }
+  assert.equal(normalizeModelProfile({ ...valid, plugins: [plugin] }, 'profile-a')
+    .plugins[0].tool_requirements.word_create[0], 'workspace')
+  assert.throws(() => normalizeModelProfile({ ...valid, plugins: [{
+    ...plugin, tool_requirements: { other_tool: ['workspace'] },
+  }] }, 'profile-a'), /invalid DSH plugin declaration/)
+  assert.throws(() => normalizeModelProfile({ ...valid, plugins: [{
+    ...plugin, tool_requirements: { word_create: ['unknown'] },
+  }] }, 'profile-a'), /invalid DSH plugin declaration/)
+})

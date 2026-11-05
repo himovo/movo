@@ -1,11 +1,15 @@
 import { resolveSessionSeed } from './session-seed.mjs'
 import { codePermissionPolicy } from './code-permission-policy.mjs'
+import { validConversationSpaceKey } from './personal-space.mjs'
 
 // The parent Host resolves predecessor identities before sending a trusted
 // seed to a plugin-isolated child. Raw seeds remain forbidden at the public API.
 export async function admitSessionBody(input, seedSource, { trusted = false } = {}) {
   let body = input
   if (Object.hasOwn(body, 'cwd')) throw new Error('raw cwd is forbidden over the Runtime Host API; use workspaceId')
+  if (body.personalConversationKey !== undefined && !validConversationSpaceKey(body.personalConversationKey)) {
+    throw new Error('invalid personal conversation key')
+  }
   if (trusted) {
     if (process.env.MOVO_DSH_PLUGIN_CHILD !== '1' ||
         Object.hasOwn(body, 'seedRuntimeId') || Object.hasOwn(body, 'seedSessionId') ||

@@ -1,0 +1,12 @@
+{
+  "dsh-office-tools": {
+    "excel_create": ["workspace"],
+    "excel_read": ["workspace"],
+    "excel_update": ["workspace"],
+    "ppt_create": ["workspace"],
+    "ppt_read": ["workspace"],
+    "word_create": ["workspace"],
+    "word_read": ["workspace"],
+    "word_update": ["workspace"]
+  }
+}

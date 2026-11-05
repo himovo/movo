@@ -8,6 +8,10 @@ function attachments(value) {
     for (const key of ['object_path', 'filename', 'content_type', 'size']) {
       if (item[key] !== undefined && item[key] !== null && item[key] !== '') clean[key] = item[key]
     }
+    if (typeof item.local_path === 'string' &&
+        /^\/job\/home\/conversations\/[0-9a-f]{64}\/inputs\/[0-9a-f]{32}\/[0-9]+-[^/]+$/.test(item.local_path)) {
+      clean.local_path = item.local_path
+    }
     return typeof clean.object_path === 'string' && clean.object_path ? Object.freeze(clean) : undefined
   }).filter(Boolean)
 }
@@ -57,12 +61,12 @@ export function renderTurnContext(value, visionEnabled = false) {
     sections.push('MOVO retrieval mode is automatic. Choose knowledge_search for enterprise-internal facts, policies, documents, or follow-ups grounded in prior internal knowledge; choose web_search for one bounded public or current lookup; choose progressive_research for multi-source research, comparisons, coverage analysis, or evidence-sufficiency checks; combine internal and public evidence only when the user needs a comparison; and answer directly when retrieval is unnecessary. Internal citation locators are private MOVO metadata and must never appear in the answer. MOVO renders source evidence separately.')
   }
   if (value.documents.length > 0) {
-    sections.push(`MOVO document references for this turn:\n${JSON.stringify(value.documents)}\nUse document_parse or document_extract_resources when their contents are needed. Do not invent file contents.`)
+    sections.push(`MOVO document references for this turn:\n${JSON.stringify(value.documents)}\nDocuments with local_path are staged in this server conversation's workspace and can be read by available workspace tools. Use document_parse or document_extract_resources when their contents are needed. Do not invent file contents.`)
   }
   if (value.images.length > 0) {
     sections.push(visionEnabled
-      ? 'MOVO supplied this turn\'s images directly to the selected vision-capable model. Use the actual image content when answering; do not invent unseen details.'
-      : `MOVO image references for this turn:\n${JSON.stringify(value.images)}\nUse image_extract_facts when image facts are needed. Do not invent unseen image details.`)
+      ? `MOVO supplied this turn's images directly to the selected vision-capable model. Image references: ${JSON.stringify(value.images)}. Images with local_path are also staged in this server conversation's workspace for workspace tools. Use the actual image content when answering; do not invent unseen details.`
+      : `MOVO image references for this turn:\n${JSON.stringify(value.images)}\nImages with local_path are staged in this server conversation's workspace and can be read by available workspace tools. Use image_extract_facts when image facts are needed. Do not invent unseen image details.`)
   }
   if (value.browserResume) {
     sections.push(`A server-authorized browser checkpoint is ready to resume. Call browser_task exactly once with these mission arguments: ${JSON.stringify(value.browserResume)}. Do not start a different browser mission.`)

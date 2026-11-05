@@ -25,6 +25,7 @@ from .event_mapper import DshEventMapper
 from .transport import KernelHostTransport
 from .temporal_context import build_temporal_context
 from .profile.plugin_runtime_recovery import profile_without_unavailable_plugins
+from app.execution_isolation.personal_space import conversation_space_key
 
 
 @dataclass(frozen=True)
@@ -192,6 +193,8 @@ class DshAgentKernelGateway(AgentKernelContract):
             json={
                 "sessionId": session_id,
                 "presetId": spec.preset_id,
+                **({"personalConversationKey": conversation_space_key(spec.conversation_id)}
+                   if spec.execution_location == "server" and spec.user_id else {}),
                 **({"workspaceId": spec.workspace_id} if spec.workspace_id else {}),
                 **({
                     "seedRuntimeId": spec.seed_runtime_id,

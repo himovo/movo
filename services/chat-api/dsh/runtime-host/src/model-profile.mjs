@@ -1,5 +1,6 @@
 const ALLOWED_FIELDS = new Set([
   'profileVersion',
+  'subjectUserId',
   'modelInstanceId',
   'modelName',
   'displayName',
@@ -63,6 +64,9 @@ export function normalizeModelProfile(modelProfile, profileVersion) {
     }
   }
   if (modelProfile.profileVersion !== profileVersion) throw new Error('modelProfile version mismatch')
+  if (modelProfile.subjectUserId !== undefined && typeof modelProfile.subjectUserId !== 'string') {
+    throw new Error('subjectUserId must be a string')
+  }
   if (modelProfile.toolProfile !== undefined) {
     const toolProfile = modelProfile.toolProfile
     if (toolProfile === null || typeof toolProfile !== 'object' || Array.isArray(toolProfile)) {
@@ -91,7 +95,13 @@ export function normalizeModelProfile(modelProfile, profileVersion) {
           (plugin.archive_id !== undefined && (!/^[0-9a-f]{32}$/.test(plugin.archive_id) ||
             !/^[0-9a-f]{64}$/.test(plugin.archive_digest ?? '') || !nonEmptyString(modelProfile.pluginGatewayUrl))) ||
           (plugin.tool_names !== undefined && (!Array.isArray(plugin.tool_names) ||
-            plugin.tool_names.some(name => !nonEmptyString(name))))) {
+            plugin.tool_names.some(name => !nonEmptyString(name)))) ||
+          (plugin.tool_requirements !== undefined && (
+            plugin.tool_requirements === null || typeof plugin.tool_requirements !== 'object' ||
+            Array.isArray(plugin.tool_requirements) ||
+            Object.entries(plugin.tool_requirements).some(([toolName, requirements]) =>
+              !plugin.tool_names?.includes(toolName) || !Array.isArray(requirements) ||
+              requirements.some(requirement => requirement !== 'workspace'))))) {
         throw new Error('plugins contains an invalid DSH plugin declaration')
       }
       names.add(plugin.name)

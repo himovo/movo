@@ -1,5 +1,5 @@
-import { resolve } from 'node:path'
-import { mkdir } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
+import { chmod, mkdir } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
@@ -39,6 +39,7 @@ import { registerAskaiSkillProvider } from './askai-skill-provider.mjs'
 import { invokeSelectedSkill, resolveSkillTurnContext } from './skill-turn-selection.mjs'
 import { SkillInvocationTracker } from './skill-invocation-tracker.mjs'
 import { registerSkillResourceTool } from './skill-resource-tool.mjs'
+import { validConversationSpaceKey } from './personal-space.mjs'
 
 export class KernelRuntime {
   #ctx
@@ -134,6 +135,7 @@ export class KernelRuntime {
     this.#sessionComposer = new OfficialSessionComposer(ctx, {
       agentOptions: this.#agentOptions(),
       enterpriseTools: enterpriseToolNames(this.modelProfile),
+      plugins: this.modelProfile?.plugins,
     })
     this.#workspaces = new DshWorkspaceService(ctx.workspaceRegistry)
 
@@ -155,16 +157,24 @@ export class KernelRuntime {
   }
 
   async createSession({
-    sessionId, cwd, workspaceId, presetId = ASKAI_ENTERPRISE_PRESET_ID,
+    sessionId, cwd, workspaceId, personalConversationKey, presetId = ASKAI_ENTERPRISE_PRESET_ID,
     permissionPreset, approvalReviewer, approvalPolicy, seed, parentSessionId,
   }) {
     this.#assertStarted()
     if (this.#handles.has(sessionId)) throw new Error(`session already live: ${sessionId}`)
     if (cwd !== undefined && workspaceId !== undefined) throw new Error('session cannot specify both cwd and workspaceId')
+    if (personalConversationKey && process.env.MOVO_PERSONAL_SPACE_ROOT && workspaceId === undefined) {
+      if (!validConversationSpaceKey(personalConversationKey)) throw new Error('invalid personal conversation key')
+      cwd = join(process.env.MOVO_PERSONAL_SPACE_ROOT, 'conversations', personalConversationKey)
+      await mkdir(cwd, { recursive: true })
+      await chmod(cwd, 0o777)
+    }
     const workspace = workspaceId === undefined
       ? undefined
       : (await this.#workspaces.get(workspaceId, { requireAvailable: true })).workspace
-    const composition = await this.#sessionComposer.prepare(presetId)
+    const composition = await this.#sessionComposer.prepare(presetId, {
+      hasWorkspace: workspace !== undefined || cwd !== undefined,
+    })
     const lineage = sessionCreationLineage(seed, parentSessionId)
     const handle = await this.#ctx.agents.create({
       sessionId: SessionId(sessionId),
@@ -205,7 +215,9 @@ export class KernelRuntime {
     const live = this.#handles.get(sessionId)
     if (live !== undefined) return await this.describeSession(live.agent)
     const persisted = await this.#sessionComposer.persistedIdentity(sessionId)
-    const composition = await this.#sessionComposer.prepare(persisted.presetId)
+    const composition = await this.#sessionComposer.prepare(persisted.presetId, {
+      hasWorkspace: Boolean(persisted.cwd),
+    })
     const handle = await this.#ctx.agents.resume({
       resumeSessionId: SessionId(sessionId),
       agentOptions: this.#agentOptions(),

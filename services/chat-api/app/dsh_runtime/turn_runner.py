@@ -31,6 +31,7 @@ from app.dsh_runtime.turn_finalization import (
 )
 from app.enterprise_capabilities.evidence import ExecutionEvidenceRepository
 from app.dsh_runtime.image_input import image_content_blocks
+from app.dsh_runtime.personal_inputs import stage_personal_inputs
 from app.knowledge_references.admission import reference_prompt
 
 
@@ -138,6 +139,16 @@ class DshTurnRunner:
             # Refresh before the first model call so a long-lived Runtime uses
             # the current speaker-scoped credential for usage attribution.
             await credential_lease.refresh_now()
+            if turn_context:
+                documents = list(turn_context.get("documents") or [])
+                images = list(turn_context.get("images") or [])
+                if documents or images:
+                    staged = await stage_personal_inputs(binding, message_id, documents + images)
+                    turn_context = {
+                        **turn_context,
+                        "documents": staged[:len(documents)],
+                        "images": staged[len(documents):],
+                    }
             image_blocks = await image_content_blocks(
                 list((turn_context or {}).get("images") or []),
                 user_id=image_owner_user_id or str(binding["user_id"]),

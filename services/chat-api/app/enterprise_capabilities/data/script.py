@@ -16,6 +16,7 @@ from app.execution_isolation import ExecutionTarget, route_capability
 from app.execution_isolation.skill_bundle import selected_skill_bundle
 from app.execution_isolation.call_audit import record_rejected_code
 from app.execution_isolation.script_backend import container_backend_enabled
+from app.execution_isolation.personal_space import bind_script_task
 
 
 async def run_script(arguments: dict[str, Any], context: CapabilityExecutionContext) -> dict[str, Any]:
@@ -23,7 +24,7 @@ async def run_script(arguments: dict[str, Any], context: CapabilityExecutionCont
         raise RuntimeError("Governed script execution route is unavailable")
     input_data = dict(arguments.get("data") or {})
     files = governed_script_files(arguments, context)
-    reserved = {"user_id", "files", "input_artifacts", "graph_artifacts"}
+    reserved = {"user_id", "files", "input_artifacts", "graph_artifacts", "personal_conversation_key"}
     if reserved.intersection(input_data):
         raise ValueError("script data uses a reserved MOVO context key")
     # The active turn is the authority for the user's text. DSH supplies code
@@ -64,6 +65,10 @@ async def run_script(arguments: dict[str, Any], context: CapabilityExecutionCont
         skill_id=str(context.turn_context.get("selected_skill_id") or ""),
         tenant_id=context.tenant_id, user_id=context.user_id,
     )
+    conversation_key = bind_script_task(
+        context.message_id, context.tenant_id, context.user_id, context.conversation_id,
+    )
+    inputs.output_spec["personal_conversation_key"] = conversation_key
     async for event, produced in ScriptPluginExecutor().execute(
         runtime=None, task_id=context.message_id, run_id=context.action_id,
         node=node, inputs=inputs,

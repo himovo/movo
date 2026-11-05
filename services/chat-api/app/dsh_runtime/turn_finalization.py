@@ -11,6 +11,7 @@ from app.dsh_runtime.bindings import KernelBindingRepository
 from app.dsh_runtime.conversation import ConversationRepository
 from app.execution_isolation.task_audit import finalize_task_audit
 from app.dsh_runtime.plugin_management.audit import index_plugin_calls
+from app.dsh_runtime.personal_output_delivery import deliver_personal_outputs
 
 
 logger = logging.getLogger(__name__)
@@ -71,12 +72,18 @@ class TurnStateFinalizer:
         if flush is not None:
             await self._step(flush, "persist and flush the terminal event")
         if assistant is not None:
+            delivered = None
+            try:
+                delivered = await deliver_personal_outputs(binding)
+            except Exception:
+                logger.exception("failed to publish personal workspace outputs")
             await self._step(
                 lambda: self._conversations.update_assistant_projection(
                     message_id=message_id,
                     tenant_id=str(binding["tenant_id"]),
                     user_id=str(binding["user_id"]),
                     content=assistant.content,
+                    documents=delivered or None,
                     execution_events=list(assistant.execution_events),
                     evidence_bundles=(
                         None

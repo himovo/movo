@@ -105,7 +105,8 @@ export class RuntimeHttpServer {
     if (request.method === 'POST' && parts.join('/') === 'v1/runtimes') {
       const body = await readJson(request)
       body.modelProfile = await this.#pluginArchives.prepareProfile(body.modelProfile)
-      const runtime = body.modelProfile?.plugins?.length && process.env.MOVO_DSH_PLUGIN_CHILD !== '1'
+      const needsPersonalRuntime = Boolean(body.modelProfile?.subjectUserId || body.modelProfile?.plugins?.length)
+      const runtime = needsPersonalRuntime && process.env.MOVO_DSH_PLUGIN_CHILD !== '1'
         ? await this.#isolated.create(body)
         : await this.#manager.create(body)
       const health = runtimeHealth([])

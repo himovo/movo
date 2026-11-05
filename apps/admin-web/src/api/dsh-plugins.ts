@@ -22,6 +22,7 @@ export interface PluginAvailability {
   checks: Record<string, boolean>
   discovered_tools?: string[]
   session_tools?: string[]
+  workspace_required_tools?: string[]
 }
 
 type Response<T> = { code: number; data: T }

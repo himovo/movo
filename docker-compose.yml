@@ -178,6 +178,7 @@ services:
       DSH_MODEL_GATEWAY_URL: http://chat-api:8000/internal/dsh/model/generate
       MOVO_SANDBOX_MANAGER_URL: ${MOVO_SANDBOX_MANAGER_URL:-}
       MOVO_SANDBOX_WORKSPACE_ROOT: /workspaces
+      MOVO_PERSONAL_SPACE_MAX_BYTES: ${MOVO_PERSONAL_SPACE_MAX_BYTES:-2147483648}
     volumes:
       - deployment-secrets:/run/askai-secrets:ro
       - askai-storage:/app/storage

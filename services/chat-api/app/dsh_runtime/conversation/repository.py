@@ -404,10 +404,13 @@ class ConversationRepository:
         tenant_id: str,
         user_id: str,
         content: str,
+        documents: list[dict[str, Any]] | None = None,
         execution_events: list[dict[str, Any]],
         evidence_bundles: list[dict[str, Any]] | None = None,
     ) -> None:
         update = {"content": content, "execution_events": execution_events}
+        if documents is not None:
+            update["documents"] = list(documents)
         if evidence_bundles is not None:
             update["evidence_bundles"] = list(evidence_bundles)
         result = await self._messages.update_one(

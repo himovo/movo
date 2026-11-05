@@ -22,6 +22,7 @@ export const dshPluginMessages: Record<string, LabelMap> = {
   'dshPlugins.failureNextStep': { 'zh-CN': '可先点击“重新检查”。若仍失败，请根据上方原始错误检查插件版本、依赖和服务器访问安装源的网络；在检查通过前不要启用。', 'en-US': 'Try “Check again”. If it still fails, use the raw error above to check the plugin version, dependencies, and server access to the package source. Do not enable it until the check passes.' },
   'dshPlugins.detectedTools': { 'zh-CN': '发现的工具', 'en-US': 'Detected tools' },
   'dshPlugins.detectedToolsList': { 'zh-CN': '发现的工具：{names}', 'en-US': 'Detected tools: {names}' },
+  'dshPlugins.workspaceRequiredTools': { 'zh-CN': '以下工具需要工作目录；服务端普通对话会为会话提供目录：{names}', 'en-US': 'These tools need a working directory; server conversations provide one for the session: {names}' },
   'dshPlugins.availability.session_exposed': { 'zh-CN': '对话工具可用·调用未验证', 'en-US': 'Conversation tools available · invocation untested' },
   'dshPlugins.availability.verified': { 'zh-CN': '对话工具已调用', 'en-US': 'Conversation tool invoked' },
   'dshPlugins.availability.unsupported': { 'zh-CN': '无可用对话工具', 'en-US': 'No usable conversation tools' },

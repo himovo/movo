@@ -40,21 +40,7 @@ export function ensureMessageExecutionV3(message: ExecutionMessageV3): Execution
 
   const store = createExecutionStoreV3()
   store.loadHistory(message.execution_events)
-
-  if (!store.state.artifacts.length) {
-    const documents = message.documents || []
-    const hasRenderedDocument = documents.some((document) => document.type !== 'md')
-    const visibleDocuments = hasRenderedDocument
-      ? documents.filter((document) => document.type !== 'md')
-      : documents
-    visibleDocuments.forEach((document, index) => {
-      const identity = String(document.id || document.object_path || document.filename || index)
-      store.applyEvent(completedItem('artifact', `artifact_${identity}`, {
-        ...document,
-        kind: document.kind || document.type || 'document',
-      }))
-    })
-  }
+  seedDocuments(store, message.documents)
 
   if (!store.state.evidenceBundles.length) {
     const bundles = message.evidence_bundles || message.evidenceBundles || []
@@ -75,4 +61,19 @@ export function reconcileMessageExecutionSnapshot(message: ExecutionMessageV3): 
   for (const event of message.execution_events || []) {
     if (isExecutionEventV3(event)) store.applyEvent(event)
   }
+  seedDocuments(store, message.documents)
+}
+
+function seedDocuments(store: ExecutionStoreV3, documents: PersistedDocument[] | undefined): void {
+  const rows = documents || []
+  const hasRenderedDocument = store.state.artifacts.length > 0 || rows.some((document) => document.type !== 'md')
+  const visibleDocuments = hasRenderedDocument ? rows.filter((document) => document.type !== 'md') : rows
+  visibleDocuments.forEach((document, index) => {
+    if (document.object_path && store.state.artifacts.some((artifact) => artifact.object_path === document.object_path)) return
+    const identity = String(document.id || document.object_path || document.filename || index)
+    store.applyEvent(completedItem('artifact', `artifact_${identity}`, {
+      ...document,
+      kind: document.kind || document.type || 'document',
+    }))
+  })
 }

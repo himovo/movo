@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from app.core.db import get_db
 from app.execution_isolation import ExecutionTarget, route_plugin
 from app.product.resource_access import filter_allowed_resource_ids
+from app.dsh_runtime.plugin_management.tool_requirements import tool_requirements
 
 
 class MongoPluginCatalog:
@@ -35,6 +37,9 @@ class MongoPluginCatalog:
                 not row.get("owner_user_id") and str(row["_id"]) not in allowed_ids
             ):
                 continue
+            requirements = tool_requirements(
+                name, str(row.get("version") or ""), list(row.get("tool_names") or []),
+            )
             # A user's own version takes precedence over the tenant default.
             effective[name] = {
                 "name": name,
@@ -43,6 +48,7 @@ class MongoPluginCatalog:
                 **({"registry": str(row["registry"])} if row.get("registry") else {}),
                 "source_scope": "personal" if row.get("owner_user_id") else "organization",
                 "tool_names": list(row.get("tool_names") or []),
+                **({"tool_requirements": requirements} if requirements else {}),
                 **({"archive_id": row["archive_id"], "archive_digest": row["archive_digest"]}
                    if row.get("archive_id") else {}),
             }
@@ -52,5 +58,6 @@ class MongoPluginCatalog:
 def plugin_versions(plugins: tuple[dict[str, Any], ...]) -> tuple[str, ...]:
     return tuple(
         f"{item['source_scope']}:{item['name']}@{item['version']}:{item['spec']}:{item.get('registry', '')}:{item.get('archive_digest', '')}:{','.join(item.get('tool_names') or [])}"
+        + (f":{json.dumps(item['tool_requirements'], sort_keys=True)}" if item.get('tool_requirements') else "")
         for item in plugins
     )
