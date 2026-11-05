@@ -71,7 +71,7 @@ REQUIRED_ROOT_FILES = (
     "SUPPORT.md",
     "CODE_OF_CONDUCT.md",
 )
-EXPECTED_MOVO_VOLUMES = 9
+EXPECTED_MOVO_VOLUMES = 10
 
 
 def tracked_files() -> list[str]:
