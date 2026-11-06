@@ -8,3 +8,4 @@ python-multipart>=0.0.9
 oss2>=2.18.0
 msgpack==1.2.2
 certifi>=2024.8.30
+httpx==0.28.1

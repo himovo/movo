@@ -17,6 +17,7 @@ export const offlinePackageMessages = {
   'offline.files': { 'zh-CN': '文件数', 'en-US': 'Files' },
   'offline.size': { 'zh-CN': '占用空间', 'en-US': 'Storage' },
   'offline.platform': { 'zh-CN': '平台架构', 'en-US': 'Platform' },
+  'offline.packagesTab': { 'zh-CN': '包源概况', 'en-US': 'Package overview' },
   'offline.collections': { 'zh-CN': '环境准备记录', 'en-US': 'Preparation records' },
   'offline.noCollections': { 'zh-CN': '暂无环境准备记录', 'en-US': 'No preparation records yet' },
   'offline.source': { 'zh-CN': '下载来源', 'en-US': 'Package source' },

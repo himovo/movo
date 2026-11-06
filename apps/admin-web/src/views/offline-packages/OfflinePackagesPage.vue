@@ -7,45 +7,46 @@
         <p>{{ t('offline.scopeHint') }}</p>
       </div>
       <div class="offline-actions">
+        <div class="mode-control" :title="t('offline.offlineHint')">
+          <CloudOfflineOutline aria-hidden="true" />
+          <span>{{ t('offline.offlineOnly') }}</span>
+          <n-switch :value="inventory?.offlineOnly || false" :disabled="!inventory || saving || activeTransfer !== null" :aria-label="t('offline.offlineOnly')" @update:value="updateMode" />
+        </div>
         <n-button :loading="loading" @click="load"><template #icon><n-icon><RefreshOutline /></n-icon></template>{{ t('offline.refresh') }}</n-button>
-        <n-button :loading="transferring" :disabled="!inventory" @click="download"><template #icon><n-icon><CloudDownloadOutline /></n-icon></template>{{ t('offline.export') }}</n-button>
-        <n-button :loading="transferring" :disabled="!selectedRecords.length" @click="downloadSelected">{{ t('offline.exportSelected') }}</n-button>
-        <n-button type="primary" :loading="transferring" @click="fileInput?.click()"><template #icon><n-icon><CloudUploadOutline /></n-icon></template>{{ t('offline.import') }}</n-button>
+        <n-button :loading="activeTransfer === 'export'" :disabled="!inventory || activeTransfer !== null" @click="download"><template #icon><n-icon><CloudDownloadOutline /></n-icon></template>{{ t('offline.export') }}</n-button>
+        <n-button :loading="activeTransfer === 'selected'" :disabled="!selectedRecords.length || activeTransfer !== null" @click="downloadSelected">{{ t('offline.exportSelected') }}</n-button>
+        <n-button type="primary" :loading="activeTransfer === 'import'" :disabled="activeTransfer !== null" @click="fileInput?.click()"><template #icon><n-icon><CloudUploadOutline /></n-icon></template>{{ t('offline.import') }}</n-button>
         <input ref="fileInput" type="file" accept=".zip,application/zip" hidden @change="upload" />
       </div>
     </div>
 
-    <n-spin :show="loading">
-      <section class="offline-card mode-card">
-        <div>
-          <strong class="section-title"><CloudOfflineOutline aria-hidden="true" />{{ t('offline.offlineOnly') }}</strong>
-          <p>{{ t('offline.offlineHint') }}</p>
+    <n-spin class="offline-content" :show="loading">
+      <section class="offline-card tab-card">
+        <div class="offline-tabs" role="tablist" :aria-label="t('offline.title')">
+          <button type="button" role="tab" :aria-selected="activeTab === 'packages'" :class="{ active: activeTab === 'packages' }" @click="activeTab = 'packages'"><LayersOutline aria-hidden="true" />{{ t('offline.packagesTab') }}</button>
+          <button type="button" role="tab" :aria-selected="activeTab === 'records'" :class="{ active: activeTab === 'records' }" @click="activeTab = 'records'"><TimeOutline aria-hidden="true" />{{ t('offline.collections') }}<span class="record-count">{{ inventory?.collections?.length ?? 0 }}</span></button>
         </div>
-        <n-switch :value="inventory?.offlineOnly || false" :disabled="!inventory || saving" @update:value="updateMode" />
-      </section>
-      <section class="offline-card">
-        <div class="inventory-head"><strong class="section-title"><LayersOutline aria-hidden="true" />{{ t('offline.platform') }}</strong><span>{{ inventory ? `${inventory.os} / ${inventory.platform}` : '—' }}</span></div>
-        <div class="package-table">
+        <div v-if="activeTab === 'packages'" class="tab-scroll" role="tabpanel">
+          <div class="inventory-head"><strong class="section-title">{{ t('offline.platform') }}</strong><span>{{ inventory ? `${inventory.os} / ${inventory.platform}` : '—' }}</span></div>
           <div v-for="row in rows" :key="row.key" class="package-row">
             <div class="package-name"><span class="package-icon"><component :is="row.icon" aria-hidden="true" /></span><strong>{{ t(row.label) }}</strong></div>
             <span>{{ t('offline.files') }} · {{ inventory ? count(row.keys) : '—' }}</span>
             <span>{{ t('offline.size') }} · {{ inventory ? size(bytes(row.keys)) : '—' }}</span>
           </div>
         </div>
-      </section>
-      <section class="offline-card">
-        <strong class="section-title"><TimeOutline aria-hidden="true" />{{ t('offline.collections') }}</strong>
-        <p v-if="!inventory?.collections?.length" class="empty-records">{{ t('offline.noCollections') }}</p>
-        <div v-for="collection in inventory?.collections || []" :key="collection.recordId" class="collection-row">
-          <div class="collection-head">
-            <n-checkbox :checked="selectedRecords.includes(collection.recordId)" @update:checked="toggleRecord(collection.recordId, $event)" />
-            <strong class="mono">{{ collection.skillName || collection.name || collection.digest.slice(0, 12) }}{{ collection.version ? `@${collection.version}` : '' }}</strong>
-            <span>{{ collection.createdAt.slice(0, 19).replace('T', ' ') }}</span>
-            <span>{{ t('offline.source') }} · {{ collection.source }}</span>
-          </div>
-          <div class="collection-deps">
-            <span>{{ t('offline.declared') }}</span>
-            <code v-for="kind in ['pip', 'npm', 'apt']" :key="kind" v-show="collection.declared[kind]?.length">{{ kind }}: {{ collection.declared[kind]?.join(', ') }}</code>
+        <div v-else class="tab-scroll" role="tabpanel">
+          <p v-if="!inventory?.collections?.length" class="empty-records">{{ t('offline.noCollections') }}</p>
+          <div v-for="collection in inventory?.collections || []" :key="collection.recordId" class="collection-row">
+            <div class="collection-head">
+              <n-checkbox :checked="selectedRecords.includes(collection.recordId)" @update:checked="toggleRecord(collection.recordId, $event)" />
+              <strong class="mono">{{ collection.skillName || collection.name || collection.digest.slice(0, 12) }}{{ collection.version ? `@${collection.version}` : '' }}</strong>
+              <span>{{ collection.createdAt.slice(0, 19).replace('T', ' ') }}</span>
+              <span>{{ t('offline.source') }} · {{ collection.source }}</span>
+            </div>
+            <div class="collection-deps">
+              <span>{{ t('offline.declared') }}</span>
+              <code v-for="kind in ['pip', 'npm', 'apt']" :key="kind" v-show="collection.declared[kind]?.length">{{ kind }}: {{ collection.declared[kind]?.join(', ') }}</code>
+            </div>
           </div>
         </div>
       </section>
@@ -67,9 +68,10 @@ const message = useMessage()
 const inventory = ref<OfflinePackageInventory | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const loading = ref(false)
-const transferring = ref(false)
+const activeTransfer = ref<'export' | 'selected' | 'import' | null>(null)
 const saving = ref(false)
 const selectedRecords = ref<string[]>([])
+const activeTab = ref<'packages' | 'records'>('packages')
 const rows = [
   { key: 'pip', keys: ['pip'], label: 'offline.pip', icon: CodeSlashOutline },
   { key: 'npm', keys: ['npm'], label: 'offline.npm', icon: LogoNpm },
@@ -105,17 +107,19 @@ async function updateMode(value: boolean) {
 }
 
 async function download() {
-  transferring.value = true
+  if (activeTransfer.value !== null) return
+  activeTransfer.value = 'export'
   try { await exportOfflinePackages() }
   catch { message.error(t('offline.exportFailed')) }
-  finally { transferring.value = false }
+  finally { activeTransfer.value = null }
 }
 
 async function downloadSelected() {
-  transferring.value = true
+  if (activeTransfer.value !== null) return
+  activeTransfer.value = 'selected'
   try { await exportOfflinePackages(selectedRecords.value) }
   catch { message.error(t('offline.exportFailed')) }
-  finally { transferring.value = false }
+  finally { activeTransfer.value = null }
 }
 
 function toggleRecord(id: string, selected: boolean) {
@@ -128,43 +132,16 @@ async function upload(event: Event) {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   if (!file) return
-  transferring.value = true
+  if (activeTransfer.value !== null) { target.value = ''; return }
+  activeTransfer.value = 'import'
   try {
     inventory.value = await importOfflinePackages(file)
     message.success(t('offline.imported'))
   } catch { message.error(t('offline.importFailed')) }
-  finally { transferring.value = false; target.value = '' }
+  finally { activeTransfer.value = null; target.value = '' }
 }
 
 onMounted(load)
 </script>
 
-<style scoped>
-.offline-page { display: grid; align-content: start; gap: 20px; height: 100%; overflow: auto; padding: 24px; background: #f7f9fd; color: #1d2b46; }
-.offline-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
-.offline-toolbar h1 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 22px; }
-.offline-toolbar h1 svg { width: 23px; height: 23px; color: #386be8; }
-.offline-toolbar p, .mode-card p { margin: 7px 0 0; color: #718099; font-size: 13px; }
-.offline-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.offline-card { padding: 24px; border: 1px solid #dfe7f3; border-radius: 16px; background: #fff; box-shadow: 0 5px 18px rgba(30,55,90,.04); }
-.mode-card, .inventory-head, .package-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.inventory-head { margin-bottom: 18px; }
-.section-title { display: inline-flex; align-items: center; gap: 9px; }
-.section-title svg { width: 18px; height: 18px; color: #5474ad; }
-.inventory-head span { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #718099; }
-.package-row { padding: 16px 0; border-top: 1px solid #edf1f7; }
-.package-row > * { flex: 1; }
-.package-name { display: flex; align-items: center; gap: 11px; }
-.package-icon { display: inline-grid; width: 32px; height: 32px; flex: none; place-items: center; border-radius: 9px; background: #edf3ff; color: #4a70bc; }
-.package-icon svg { width: 17px; height: 17px; }
-.package-row span { color: #66758e; }
-.empty-records { margin: 16px 0 0; color: #718099; }
-.collection-row { padding: 16px 0; border-top: 1px solid #edf1f7; }
-.collection-row:first-of-type { margin-top: 16px; }
-.collection-head { display: flex; flex-wrap: wrap; gap: 10px 24px; color: #66758e; font-size: 13px; }
-.collection-head strong { color: #1d2b46; }
-.collection-deps { display: grid; gap: 6px; margin-top: 10px; color: #718099; font-size: 12px; }
-.collection-deps code { overflow-wrap: anywhere; color: #405477; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
-.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-@media (max-width: 800px) { .offline-page { padding: 12px; }.offline-toolbar { align-items: flex-start; flex-direction: column; }.package-row { align-items: flex-start; flex-direction: column; gap: 6px; } }
-</style>
+<style scoped src="./offlinePackagesPage.css"></style>
