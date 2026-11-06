@@ -98,5 +98,7 @@ jobs:
         run: bash scripts/test_cli_module_loading.sh
       - name: Validate Compose command detection
         run: bash scripts/test_compose_detection.sh
+      - name: Validate offline deployment contracts
+        run: python -m pytest -q scripts/tests/test_offline_deployment.py
       - name: Validate source-build Compose
         run: docker compose -f docker-compose.yml -f docker-compose.build.yml config --quiet

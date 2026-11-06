@@ -4,6 +4,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${ROOT_DIR}/deploy/cli/compose.sh"
 source "${ROOT_DIR}/deploy/cli/images.sh"
 movo_msg() { :; }
+dotenv_value() { :; }
 DOCKER_BIN=fake_docker
 plugin_version='Docker Compose version v2.33.1'
 standalone_version='Docker Compose version v2.33.1'

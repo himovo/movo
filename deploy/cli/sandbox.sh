@@ -45,6 +45,10 @@ movo_sandbox_start() {
     local script_image
     script_image="${configured_image:-${MOVO_IMAGE_PREFIX}-sandbox-script:${MOVO_VERSION}}"
     if ! "${DOCKER_BIN}" image inspect "${script_image}" >/dev/null 2>&1; then
+      if [[ "${MOVO_OFFLINE_ONLY:-$(dotenv_value MOVO_OFFLINE_ONLY)}" == 1 ]]; then
+        movo_msg missing_image_unavailable "${script_image}" >&2
+        return 1
+      fi
       if [[ -n "${configured_image}" ]]; then
         "${DOCKER_BIN}" pull "${script_image}" || return 1
       else

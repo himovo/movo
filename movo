@@ -231,6 +231,10 @@ command_build() {
 
 command_update() {
   local sandbox_image
+  if [[ "${MOVO_OFFLINE_ONLY:-$(dotenv_value MOVO_OFFLINE_ONLY)}" == 1 ]]; then
+    printf 'Offline deployment: use install-offline.sh with a new release bundle.\n' >&2
+    return 2
+  fi
   print_logo
   require_docker
   movo_sandbox_preflight

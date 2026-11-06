@@ -32,6 +32,10 @@ movo_compose() {
   if [[ "${MOVO_COMPOSE_BUILD}" == "true" ]]; then
     compose_args+=(-f "${ROOT_DIR}/docker-compose.build.yml")
   fi
+  local offline_file="${MOVO_OFFLINE_COMPOSE_FILE:-$(dotenv_value MOVO_OFFLINE_COMPOSE_FILE)}"
+  if [[ -n "${offline_file}" ]]; then
+    compose_args+=(-f "${ROOT_DIR}/${offline_file}")
+  fi
   movo_compose_command "${compose_args[@]}" "$@"
 }
 

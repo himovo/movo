@@ -7,6 +7,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${ROOT_DIR}/deploy/cli/pull.sh"
 
 movo_msg() { :; }
+dotenv_value() { :; }
 sleep() { :; }
 
 calls=()
@@ -81,3 +82,14 @@ fi
 [[ ${#docker_calls[@]} -eq 0 ]]
 
 printf 'Serial image pull behavior is valid.\n'
+
+movo_compose() { printf '%s\n' missing:v1; }
+MOVO_OFFLINE_ONLY=1
+pull_failure=false
+docker_calls=()
+if movo_pull_images_serially missing; then
+  printf 'Expected an offline missing image to fail.\n' >&2
+  exit 1
+fi
+[[ "${#docker_calls[@]}" -eq 1 ]]
+[[ "${docker_calls[0]}" == 'image inspect missing:v1' ]]

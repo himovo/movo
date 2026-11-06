@@ -15,6 +15,10 @@ movo_pull_missing_images() {
     return 0
   fi
   for image in "${missing[@]}"; do
+    if [[ "${MOVO_OFFLINE_ONLY:-$(dotenv_value MOVO_OFFLINE_ONLY)}" == 1 ]]; then
+      movo_msg missing_image_unavailable "${image}" >&2
+      return 1
+    fi
     movo_msg pulling_missing_image "${image}"
     if ! "${DOCKER_BIN}" pull "${image}"; then
       movo_msg missing_image_unavailable "${image}" >&2
