@@ -16,6 +16,7 @@ export const deploymentStatusMessages = {
   'deployment.checkedAt': { 'zh-CN': '检查时间', 'en-US': 'Checked at' },
   'deployment.upgradedAt': { 'zh-CN': '最近成功升级', 'en-US': 'Latest successful upgrade' },
   'deployment.version': { 'zh-CN': '代码版本', 'en-US': 'Source revision' },
+  'deployment.dshVersion': { 'zh-CN': 'DSH 版本', 'en-US': 'DSH version' },
   'deployment.revision': { 'zh-CN': '源码提交', 'en-US': 'Source commit' },
   'deployment.mixedRevisions': { 'zh-CN': '多个代码版本', 'en-US': 'Mixed revisions' },
   'deployment.unknown': { 'zh-CN': '暂无记录', 'en-US': 'No record' },

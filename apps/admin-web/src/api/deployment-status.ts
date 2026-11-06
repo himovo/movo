@@ -16,7 +16,7 @@ export interface DeploymentService {
 
 export interface DeploymentStatus {
   checkedAt: string
-  deployment: { upgradedAt?: string; version?: string; commit?: string; revisions?: string[] }
+  deployment: { upgradedAt?: string; version?: string; commit?: string; dshVersion?: string; revisions?: string[] }
   services: DeploymentService[]
   scriptImage: { image: string; imageId: string; available: boolean }
   sandboxImages?: SandboxImage[]

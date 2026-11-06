@@ -12,7 +12,7 @@
 .state-dot.warning { background: #d68520; box-shadow: 0 0 0 5px #fff2db; }
 .state-dot.neutral { background: #94a3b8; box-shadow: 0 0 0 5px #edf1f6; }
 .checked-at { margin-left: 10px; color: #718099; font-size: 12px; font-weight: 400; }
-.summary-metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+.summary-metrics { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
 .summary-metrics > div { min-width: 0; border-top: 1px solid #e5ebf4; padding-top: 14px; }
 .summary-metrics span, .runtime-id span { display: block; color: #718099; font-size: 12px; }
 .summary-metrics strong, .runtime-id strong { display: block; margin-top: 6px; overflow-wrap: anywhere; font-size: 15px; }

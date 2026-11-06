@@ -1,4 +1,4 @@
-.offline-page { display: flex; flex-direction: column; gap: 16px; height: 100%; min-height: 0; overflow: hidden; padding: 24px; background: #f7f9fd; color: #1d2b46; }
+.offline-page { display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; height: calc(100dvh - 70px); min-height: 0; overflow: hidden; padding: 24px; background: #f7f9fd; color: #1d2b46; }
 .offline-toolbar { display: flex; flex: none; justify-content: space-between; align-items: center; gap: 20px; padding: 24px; border: 1px solid #dfe7f3; border-radius: 16px; background: #fff; box-shadow: 0 5px 18px rgba(30,55,90,.04); }
 .offline-toolbar h1 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 22px; }
 .offline-toolbar h1 svg { width: 23px; height: 23px; color: #386be8; }
@@ -28,13 +28,5 @@
 .package-icon { display: inline-grid; width: 32px; height: 32px; flex: none; place-items: center; border-radius: 9px; background: #edf3ff; color: #4a70bc; }
 .package-icon svg { width: 17px; height: 17px; }
 .package-row span { color: #66758e; }
-.empty-records { margin: 16px 0 0; color: #718099; }
-.collection-row { padding: 16px 0; border-top: 1px solid #edf1f7; }
-.collection-row:first-of-type { border-top: 0; }
-.collection-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; color: #66758e; font-size: 13px; }
-.collection-head strong { color: #1d2b46; }
-.collection-deps { display: grid; gap: 6px; margin-top: 10px; color: #718099; font-size: 12px; }
-.collection-deps code { overflow-wrap: anywhere; color: #405477; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
-.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 @media (max-width: 1050px) { .offline-toolbar { align-items: flex-start; flex-direction: column; }.offline-actions { justify-content: flex-start; } }
 @media (max-width: 800px) { .offline-page { padding: 12px; }.offline-toolbar { padding: 16px; }.tab-scroll { padding: 8px 16px 16px; }.offline-tabs { padding: 0 16px; }.package-row { align-items: flex-start; flex-direction: column; gap: 6px; } }

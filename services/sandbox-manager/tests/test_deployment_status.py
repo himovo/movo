@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import json
 import hashlib
+import io
+import tarfile
 
 import pytest
 from fastapi import HTTPException
 
 from app import deployment_status_app
 from app.deployment_status import inventory
+from app.dsh_version import running_dsh_version
 from app.sandbox_image_inventory import inventory as sandbox_images
 
 
@@ -17,6 +20,25 @@ class Response:
 
     def json(self):
         return self.value
+
+
+def test_running_dsh_version_reads_container_manifest():
+    manifest = b'{"dependencies":{"@deepseek-ai/dsh":"0.2.1-alpha.1"}}'
+    output = io.BytesIO()
+    with tarfile.open(fileobj=output, mode="w") as archive:
+        item = tarfile.TarInfo("package.json")
+        item.size = len(manifest)
+        archive.addfile(item, io.BytesIO(manifest))
+
+    class Engine:
+        def request(self, method, path, **kwargs):
+            assert (method, path, kwargs["params"]["path"]) == (
+                "GET", "/containers/runtime-host/archive", "/app/package.json",
+            )
+            return type("Archive", (), {"content": output.getvalue()})()
+
+    assert running_dsh_version(Engine(), "runtime-host") == "0.2.1-alpha.1"
+    assert running_dsh_version(Engine(), "") == ""
 
 
 class EngineFake:

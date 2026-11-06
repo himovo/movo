@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .docker_engine import DockerEngine
+from .dsh_version import running_dsh_version
 from .sandbox_image_inventory import inventory as sandbox_images
 
 
@@ -85,6 +86,7 @@ def inventory(engine: DockerEngine) -> dict:
     revisions = sorted({service["revision"] for service in services if service.get("revision") and service["name"] not in {"mongo", "redis", "weaviate"}})
     record["revisions"] = revisions
     record["commit"] = revisions[0] if len(revisions) == 1 else ""
+    record["dshVersion"] = running_dsh_version(engine, str((rows.get("dsh-runtime-host") or {}).get("Id") or ""))
     image_name = os.environ.get("MOVO_SANDBOX_SCRIPT_IMAGE", "").strip()
     script_image = {"image": image_name, "imageId": "", "available": False}
     if image_name:

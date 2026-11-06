@@ -14,7 +14,6 @@
         </div>
         <n-button :loading="loading" @click="load"><template #icon><n-icon><RefreshOutline /></n-icon></template>{{ t('offline.refresh') }}</n-button>
         <n-button :loading="activeTransfer === 'export'" :disabled="!inventory || activeTransfer !== null" @click="download"><template #icon><n-icon><CloudDownloadOutline /></n-icon></template>{{ t('offline.export') }}</n-button>
-        <n-button :loading="activeTransfer === 'selected'" :disabled="!selectedRecords.length || activeTransfer !== null" @click="downloadSelected">{{ t('offline.exportSelected') }}</n-button>
         <n-button type="primary" :loading="activeTransfer === 'import'" :disabled="activeTransfer !== null" @click="fileInput?.click()"><template #icon><n-icon><CloudUploadOutline /></n-icon></template>{{ t('offline.import') }}</n-button>
         <input ref="fileInput" type="file" accept=".zip,application/zip" hidden @change="upload" />
       </div>
@@ -34,21 +33,7 @@
             <span>{{ t('offline.size') }} · {{ inventory ? size(bytes(row.keys)) : '—' }}</span>
           </div>
         </div>
-        <div v-else class="tab-scroll" role="tabpanel">
-          <p v-if="!inventory?.collections?.length" class="empty-records">{{ t('offline.noCollections') }}</p>
-          <div v-for="collection in inventory?.collections || []" :key="collection.recordId" class="collection-row">
-            <div class="collection-head">
-              <n-checkbox :checked="selectedRecords.includes(collection.recordId)" @update:checked="toggleRecord(collection.recordId, $event)" />
-              <strong class="mono">{{ collection.skillName || collection.name || collection.digest.slice(0, 12) }}{{ collection.version ? `@${collection.version}` : '' }}</strong>
-              <span>{{ collection.createdAt.slice(0, 19).replace('T', ' ') }}</span>
-              <span>{{ t('offline.source') }} · {{ collection.source }}</span>
-            </div>
-            <div class="collection-deps">
-              <span>{{ t('offline.declared') }}</span>
-              <code v-for="kind in ['pip', 'npm', 'apt']" :key="kind" v-show="collection.declared[kind]?.length">{{ kind }}: {{ collection.declared[kind]?.join(', ') }}</code>
-            </div>
-          </div>
-        </div>
+        <div v-else class="tab-scroll" role="tabpanel"><OfflinePreparationRecords :records="inventory?.collections || []" :downloading-id="activeRecordId" @download="downloadRecord" /></div>
       </section>
     </n-spin>
   </main>
@@ -59,6 +44,7 @@ import { onMounted, ref } from 'vue'
 import { NIcon, useMessage } from 'naive-ui'
 import { ArchiveOutline, CloudDownloadOutline, CloudOfflineOutline, CloudUploadOutline, CodeSlashOutline, CubeOutline, ExtensionPuzzleOutline, LayersOutline, LogoNpm, RefreshOutline, TimeOutline } from '@vicons/ionicons5'
 import { t } from '@/composables/i18n'
+import OfflinePreparationRecords from './OfflinePreparationRecords.vue'
 import {
   exportOfflinePackages, fetchOfflinePackages, importOfflinePackages, setOfflineOnly,
   type OfflinePackageInventory,
@@ -68,9 +54,9 @@ const message = useMessage()
 const inventory = ref<OfflinePackageInventory | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const loading = ref(false)
-const activeTransfer = ref<'export' | 'selected' | 'import' | null>(null)
+const activeTransfer = ref<'export' | 'record' | 'import' | null>(null)
+const activeRecordId = ref<string | null>(null)
 const saving = ref(false)
-const selectedRecords = ref<string[]>([])
 const activeTab = ref<'packages' | 'records'>('packages')
 const rows = [
   { key: 'pip', keys: ['pip'], label: 'offline.pip', icon: CodeSlashOutline },
@@ -114,18 +100,13 @@ async function download() {
   finally { activeTransfer.value = null }
 }
 
-async function downloadSelected() {
+async function downloadRecord(recordId: string) {
   if (activeTransfer.value !== null) return
-  activeTransfer.value = 'selected'
-  try { await exportOfflinePackages(selectedRecords.value) }
+  activeTransfer.value = 'record'
+  activeRecordId.value = recordId
+  try { await exportOfflinePackages([recordId]) }
   catch { message.error(t('offline.exportFailed')) }
-  finally { activeTransfer.value = null }
-}
-
-function toggleRecord(id: string, selected: boolean) {
-  selectedRecords.value = selected
-    ? [...selectedRecords.value, id]
-    : selectedRecords.value.filter(value => value !== id)
+  finally { activeTransfer.value = null; activeRecordId.value = null }
 }
 
 async function upload(event: Event) {

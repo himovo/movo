@@ -18,6 +18,7 @@
         <div class="summary-metrics">
           <div><span>{{ t('deployment.upgradedAt') }}</span><strong>{{ displayTime(status.deployment.upgradedAt) }}</strong></div>
           <div><span>{{ t('deployment.version') }}</span><strong class="mono" :title="status.deployment.commit || ''">{{ displayVersion }}</strong></div>
+          <div><span>{{ t('deployment.dshVersion') }}</span><strong class="mono">{{ status.deployment.dshVersion || t('deployment.unknown') }}</strong></div>
           <div><span>{{ t('deployment.runningCount') }}</span><strong>{{ counts.running }}</strong></div>
           <div><span>{{ t('deployment.issueCount') }}</span><strong :class="{ danger: counts.issues }">{{ counts.issues }}</strong></div>
           <div><span>{{ t('deployment.disabledCount') }}</span><strong>{{ counts.disabled }}</strong></div>
@@ -79,6 +80,7 @@
         <div class="summary-metrics">
           <div><span>{{ t('deployment.upgradedAt') }}</span><strong>—</strong></div>
           <div><span>{{ t('deployment.version') }}</span><strong>—</strong></div>
+          <div><span>{{ t('deployment.dshVersion') }}</span><strong>—</strong></div>
           <div><span>{{ t('deployment.runningCount') }}</span><strong>—</strong></div>
           <div><span>{{ t('deployment.issueCount') }}</span><strong>—</strong></div>
           <div><span>{{ t('deployment.disabledCount') }}</span><strong>—</strong></div>
