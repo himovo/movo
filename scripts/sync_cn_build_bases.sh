@@ -5,6 +5,8 @@ set -Eeuo pipefail
 # is used only by this maintenance job; normal MOVO builds consume ACR directly.
 registry="${MOVO_CN_BUILD_BASE_REGISTRY:-registry.cn-beijing.aliyuncs.com/himovo-cn/movo-build-base}"
 source_prefix="${MOVO_CN_BUILD_BASE_SOURCE:-m.daocloud.io/docker.io/library}"
+retry_limit="${MOVO_CN_BUILD_BASE_RETRIES:-8}"
+retry_delay="${MOVO_CN_BUILD_BASE_RETRY_DELAY_SECONDS:-15}"
 
 images=(
   "node-20-slim:node:20-slim"
@@ -26,6 +28,29 @@ if not any(item.get("platform", {}).get("os") == "linux" and item.get("platform"
 ' "${architecture}" "${image}"
 }
 
+retry() {
+  local attempt=1
+  until "$@"; do
+    if (( attempt >= retry_limit )); then
+      printf '[cn-build-base] Failed after %s attempts: %s\n' "${attempt}" "$*" >&2
+      return 1
+    fi
+    printf '[cn-build-base] Retry %s/%s after %ss: %s\n' \
+      "$((attempt + 1))" "${retry_limit}" "${retry_delay}" "$*" >&2
+    sleep "${retry_delay}"
+    attempt=$((attempt + 1))
+  done
+}
+
+copy_platform() {
+  local source="$1" target="$2" architecture="$3"
+  local local_ref="${source}"
+  retry docker pull --platform "linux/${architecture}" "${source}"
+  docker tag "${local_ref}" "${target}-${architecture}"
+  retry docker push "${target}-${architecture}"
+  docker image rm "${target}-${architecture}" >/dev/null 2>&1 || true
+}
+
 for entry in "${images[@]}"; do
   target_tag="${entry%%:*}"
   source_name="${entry#*:}"
@@ -39,7 +64,10 @@ for entry in "${images[@]}"; do
     continue
   fi
   printf '[cn-build-base] Sync %s -> %s\n' "${source}" "${target}"
-  docker buildx imagetools create --tag "${target}" "${source}"
+  copy_platform "${source}" "${target}" amd64
+  copy_platform "${source}" "${target}" arm64
+  retry docker buildx imagetools create --tag "${target}" \
+    "${target}-amd64" "${target}-arm64"
   require_platform "${target}" amd64
   require_platform "${target}" arm64
 done
