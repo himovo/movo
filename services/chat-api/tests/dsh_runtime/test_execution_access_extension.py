@@ -66,3 +66,31 @@ def test_authorized_skill_remains_visible_with_execution_reason(monkeypatch):
     assert item["id"] == "skill-1"
     assert item["available"] is False
     assert item["unavailableReason"] == "execution_access"
+
+
+def test_preparing_skill_remains_visible_but_cannot_be_selected(monkeypatch):
+    row = {"id": "skill-2", "name": "Report", "enabled": True, "environment_status": "preparing"}
+
+    async def personal(*args, **kwargs):
+        return [row]
+
+    async def organization(*args, **kwargs):
+        return []
+
+    async def no_status(*args, **kwargs):
+        return None
+
+    async def allowed(*args, **kwargs):
+        return set()
+
+    monkeypatch.setattr(skill_api.user_skill_service, "list_skills", personal)
+    monkeypatch.setattr(skill_api.organization_skill_adapter, "list_runtime_skills", organization)
+    monkeypatch.setattr(skill_api, "attach_environment_status", no_status)
+    monkeypatch.setattr(skill_api, "filter_allowed_resource_ids", allowed)
+    response = asyncio.run(skill_api.list_selectable_skills(
+        user_id="member", main_id="tenant", main_id_snake=None,
+        scope="all", keyword="", cursor=None, limit=20,
+    ))
+    item = response.data["items"][0]
+    assert item["available"] is False
+    assert item["unavailableReason"] == "environment_preparing"

@@ -54,6 +54,7 @@ async def localized_http_error(request: Request, exc: StarletteHTTPException):
     return await http_exception_handler(request, translated)
 
 _receipt_gc_task: asyncio.Task | None = None
+_skill_environment_task: asyncio.Task | None = None
 
 origins = settings.allowed_origins_list()
 
@@ -258,7 +259,7 @@ async def _ensure_end_user_login_name_index(db) -> None:
 
 @app.on_event("startup")
 async def startup_event() -> None:
-    global _receipt_gc_task
+    global _receipt_gc_task, _skill_environment_task
     init_db()
     db = get_db()
     # Keep session history list query fast: find by user_id and sort by updated_at desc.
@@ -380,6 +381,8 @@ async def startup_event() -> None:
                 pass
             await asyncio.sleep(60)
     _receipt_gc_task = asyncio.create_task(_receipt_gc_loop())
+    from app.services.skill_packages.reconcile import monitor_installed_environments
+    _skill_environment_task = asyncio.create_task(monitor_installed_environments())
     settings = get_settings()
     logger.info(
         "application startup complete",
@@ -395,7 +398,7 @@ async def startup_event() -> None:
 
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
-    global _receipt_gc_task
+    global _receipt_gc_task, _skill_environment_task
     for callback in reversed(product_extension.shutdown):
         result = callback()
         if asyncio.iscoroutine(result):
@@ -403,6 +406,9 @@ async def shutdown_event() -> None:
     if _receipt_gc_task is not None:
         _receipt_gc_task.cancel()
         _receipt_gc_task = None
+    if _skill_environment_task is not None:
+        _skill_environment_task.cancel()
+        _skill_environment_task = None
     await scheduled_task_scheduler.stop()
     await token_usage_dispatcher.stop()
     from app.dsh_runtime.application import dsh_runtime_application

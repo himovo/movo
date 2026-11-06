@@ -156,6 +156,36 @@ def test_status_restarts_preparation_after_manager_restart(tmp_path: Path, monke
     assert environments.ready_image(digest).startswith("movo-skill-deps:")
 
 
+def test_reuses_existing_image_and_rebuilds_only_after_cache_removal(tmp_path: Path, monkeypatch):
+    digest = "a" * 64
+    root = tmp_path / "skill-cache" / digest
+    root.mkdir(parents=True)
+    (root / "SKILL.md").write_text("sample")
+    (root / "requirements.txt").write_text("humanize==4.13.0")
+    monkeypatch.setenv("MOVO_SANDBOX_WORKSPACE_ROOT", str(tmp_path))
+    monkeypatch.setenv("MOVO_SANDBOX_WORKSPACE_VOLUME", "test-workspaces")
+    monkeypatch.setenv("MOVO_SANDBOX_SCRIPT_IMAGE", "base:latest")
+
+    class CountingEngine(ImageEngine):
+        def __init__(self):
+            super().__init__()
+            self.builds = 0
+
+        def create(self, name, payload):
+            self.builds += 1
+            return super().create(name, payload)
+
+    engine = CountingEngine()
+    environments = SkillEnvironments(engine)
+    image = environments.ready_image(digest)
+    assert environments.start(digest) == "ready"
+    assert engine.builds == 1
+
+    del engine.images[image]
+    assert environments.ready_image(digest) == image
+    assert engine.builds == 2
+
+
 def test_pending_build_returns_bounded_retry_error(tmp_path: Path, monkeypatch):
     digest = "e" * 64
     root = tmp_path / "skill-cache" / digest

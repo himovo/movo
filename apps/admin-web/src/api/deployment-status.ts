@@ -32,6 +32,7 @@ export interface SandboxImage {
   running: boolean | null
   baseImageId: string
   digest: string
+  preparationStatus?: string
   current?: boolean
   owners?: { id: string; name: string }[]
 }

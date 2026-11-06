@@ -94,17 +94,20 @@ def test_manager_outage_does_not_remove_an_installed_skill_from_profile(monkeypa
     readiness.assert_not_awaited()
 
 
-def test_preparing_environment_keeps_installed_skill_in_profile(monkeypatch):
+def test_preparing_environment_is_excluded_from_runtime_profile(monkeypatch):
     monkeypatch.setattr(catalog_module, "user_skill_service", PersonalService())
     monkeypatch.setattr(catalog_module, "organization_skill_adapter", EmptyOrganizationService())
 
     class PreparingPersonalService:
         async def list_skills(self, user_id, main_id, *, include_package_files=True):
-            return [{"id": "personal-1", "enabled": True, "environment_status": "preparing"}]
+            return [{"id": "personal-1", "enabled": True, "package_requires_environment": True}]
 
     monkeypatch.setattr(catalog_module, "user_skill_service", PreparingPersonalService())
+    async def preparing(rows):
+        rows[0]["environment_status"] = "preparing"
+    monkeypatch.setattr(catalog_module, "attach_environment_status", preparing)
     rows = asyncio.run(catalog_module.MongoSkillCatalog().list_enabled("tenant-a", "user-a"))
-    assert [row["id"] for row in rows] == ["personal-1"]
+    assert rows == []
 
 
 def test_package_resources_are_attached_to_the_runtime_catalog(monkeypatch):

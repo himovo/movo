@@ -70,7 +70,7 @@ class SkillEnvironments:
             return "ready"
         with self.lock:
             existing = self.pending.get(image)
-            if existing is None or (retry_failed and existing.done() and existing.exception()):
+            if existing is None or (existing.done() and (existing.exception() is None or retry_failed)):
                 existing = self.pool.submit(self._build, digest, image)
                 self.pending[image] = existing
         return "failed" if existing.done() and existing.exception() else "preparing"

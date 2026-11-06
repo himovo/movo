@@ -34,6 +34,13 @@ function skillTypeLabel(type: SelectableSkillItem['type']) {
 function skillSourceLabel(source: SelectableSkillItem['sourceScope']) {
   return source === 'organization' ? t('composer.scope.organization') : t('composer.scope.mine')
 }
+function unavailableMessage(reason?: string) {
+  const key = reason === 'environment_preparing' ? 'composer.skill.environmentPreparing'
+    : reason === 'environment_failed' ? 'composer.skill.environmentFailed'
+    : reason?.startsWith('environment_') ? 'composer.skill.environmentUnavailable'
+    : 'composer.skill.executionAccessDenied'
+  return t(key)
+}
 </script>
 
 <template>
@@ -103,7 +110,7 @@ function skillSourceLabel(source: SelectableSkillItem['sourceScope']) {
             <span class="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-500">{{ skillTypeLabel(skill.type) }}</span>
           </span>
           <span class="mt-0.5 block truncate text-xs text-slate-500">{{ skill.description || skill.scenario || (t('composer.noDescription')) }}</span>
-          <span v-if="skill.available === false" class="mt-1 block text-xs font-medium text-amber-700">{{ t('composer.skill.executionAccessDenied') }}</span>
+          <span v-if="skill.available === false" class="mt-1 block text-xs font-medium text-amber-700">{{ unavailableMessage(skill.unavailableReason) }}</span>
         </span>
       </button>
       <div v-if="items.length === 0" class="px-4 py-8 text-center text-sm text-slate-400">

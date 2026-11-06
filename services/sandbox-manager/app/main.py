@@ -5,6 +5,7 @@ from __future__ import annotations
 import hmac
 import os
 import threading
+from uuid import uuid4
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
@@ -32,6 +33,7 @@ _jobs: ScriptJobs | None = None
 _plugins: PluginRuntimes | None = None
 _tasks: TaskContainers | None = None
 _jobs_lock = threading.Lock()
+_instance_id = uuid4().hex
 
 
 def jobs() -> ScriptJobs:
@@ -103,6 +105,17 @@ def readiness(authorization: str | None = Header(default=None)) -> dict:
     _authorize(authorization)
     from .readiness import script_readiness
     return script_readiness()
+
+
+@app.get("/v1/skill-environments/base")
+def skill_environment_base(authorization: str | None = Header(default=None)) -> dict:
+    _authorize(authorization)
+    image = os.environ.get("MOVO_SANDBOX_SCRIPT_IMAGE", "").strip()
+    engine = DockerEngine()
+    try:
+        return {"instanceId": _instance_id, "baseImageId": engine.image_id(image) if image else ""}
+    finally:
+        engine.client.close()
 
 
 @app.post("/v1/script-jobs")

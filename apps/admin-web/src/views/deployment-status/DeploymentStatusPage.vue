@@ -63,7 +63,7 @@
               <td class="image-cell mono" :title="image.image">{{ image.image || '—' }}</td>
               <td>{{ t(image.kind === 'skill' ? 'deployment.skillImage' : image.kind === 'plugin' ? 'deployment.pluginImage' : 'deployment.generalImage') }}</td>
               <td class="owners-cell" :title="ownerTitle(image)">{{ ownerLabel(image) }}</td>
-              <td><span class="status-pill" :class="!image.available ? 'warning' : image.current === false ? 'muted' : 'good'">{{ t(!image.available ? 'deployment.imageMissing' : image.current === false ? 'deployment.staleImage' : 'deployment.imagePresent') }}</span></td>
+              <td><span class="status-pill" :class="imageStateTone(image)">{{ t(imageStateKey(image)) }}</span></td>
               <td>{{ image.running === null ? t('deployment.notApplicable') : t(image.running ? 'deployment.running' : 'deployment.notAvailable') }}</td>
               <td class="mono" :title="image.imageId">{{ shortId(image.imageId) }}</td>
               <td>{{ displayTime(image.createdAt) }}</td>
@@ -187,6 +187,21 @@ function ownerTitle(image: SandboxImage) {
 function ownerLabel(image: SandboxImage) {
   const value = ownerTitle(image)
   return image.owners?.length === 1 ? value : image.owners?.length ? `${image.owners.length} · ${value}` : value
+}
+
+function imageStateKey(image: SandboxImage): string {
+  if (image.available) return image.current === false ? 'deployment.staleImage' : 'deployment.imagePresent'
+  if (image.kind === 'skill' && image.preparationStatus === 'preparing') return 'deployment.imagePreparing'
+  if (image.kind === 'skill' && image.preparationStatus === 'failed') return 'deployment.imageFailed'
+  if (image.kind === 'skill' && image.preparationStatus === 'unavailable') return 'deployment.imageUnknown'
+  return 'deployment.imageMissing'
+}
+
+function imageStateTone(image: SandboxImage): string {
+  const state = imageStateKey(image)
+  if (state === 'deployment.imagePresent') return 'good'
+  if (state === 'deployment.staleImage' || state === 'deployment.imageUnknown') return 'muted'
+  return 'warning'
 }
 
 function displayTime(value?: string | null) {

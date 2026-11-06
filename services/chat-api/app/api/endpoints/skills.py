@@ -679,8 +679,6 @@ async def list_selectable_skills(
             continue
         if not _safe_bool(skill.get("enabled"), _safe_bool(skill.get("is_active"), True)):
             continue
-        if skill.get("environment_status") not in {None, "ready"} and not skill.get("pending_package"):
-            continue
         skill_id = str(skill.get("id") or skill.get("_id") or "").strip()
         if _skill_source_scope(skill) == "organization" and skill_id not in allowed_organization_ids:
             continue
@@ -692,13 +690,19 @@ async def list_selectable_skills(
         if not _matches_skill_keyword(skill, keyword):
             continue
         seen.add(skill_id)
-        available = await skill_execution_is_allowed(
+        execution_allowed = await skill_execution_is_allowed(
             row=skill, tenant_id=resolved_main_id, user_id=user_id,
         )
+        environment_status_value = str(skill.get("environment_status") or "")
+        environment_ready = environment_status_value in {"", "ready"} or bool(skill.get("pending_package"))
+        available = execution_allowed and environment_ready
         items.append({
             **_selectable_skill_item(skill),
             "available": available,
-            "unavailableReason": "execution_access" if not available else "",
+            "unavailableReason": (
+                "execution_access" if not execution_allowed else
+                f"environment_{environment_status_value}" if not environment_ready else ""
+            ),
         })
 
     offset = _cursor_offset(cursor)

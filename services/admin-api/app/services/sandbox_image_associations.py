@@ -2,7 +2,29 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from app.core.db import get_db
+from app.services.skill_package_proxy import organization_skill_dependency_status
+
+
+async def _missing_skill_states(images: list[dict], main_id: str) -> dict[str, str]:
+    semaphore = asyncio.Semaphore(8)
+
+    async def read(image: dict) -> tuple[str, str]:
+        async with semaphore:
+            try:
+                result = await asyncio.to_thread(
+                    organization_skill_dependency_status,
+                    main_id=main_id, skill_id=image["owners"][0]["id"],
+                )
+                return image["digest"], str(result.get("status") or "unavailable")
+            except Exception:
+                return image["digest"], "unavailable"
+
+    missing = [image for image in images if image.get("kind") == "skill"
+               and not image.get("available") and image.get("owners")]
+    return dict(await asyncio.gather(*(read(image) for image in missing)))
 
 
 async def attach(status: dict, main_id: str) -> dict:
@@ -33,4 +55,8 @@ async def attach(status: dict, main_id: str) -> dict:
         else:
             image["owners"] = []
             image["current"] = True
+    states = await _missing_skill_states(images, main_id)
+    for image in images:
+        if image.get("kind") == "skill" and not image.get("available"):
+            image["preparationStatus"] = states.get(str(image.get("digest") or ""), "missing")
     return status

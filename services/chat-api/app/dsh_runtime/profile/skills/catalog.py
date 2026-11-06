@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any, Protocol
 
 from app.services.org_skill_adapter import organization_skill_adapter
 from app.services.skills import user_skill_service
 from app.core.db import get_db
 from app.product.resource_access import filter_allowed_resource_ids
-from app.services.skill_packages.readiness import attach_environment_status
+from app.services.skill_packages.readiness import attach_environment_status, needs_environment
+from app.services.skill_packages.dependency_status import dependency_status
 from app.services.skill_packages.execution_requirements import EXECUTABLE_PATH_PATTERN, package_uses_execution
 
 
@@ -28,15 +30,16 @@ class MongoSkillCatalog:
         )
         rows: list[dict[str, Any]] = []
         seen: set[str] = set()
-        # Only a staged upgrade needs a readiness lookup to promote its new
-        # package. The installed version is durable even during an outage or
-        # base-image rebuild.
-        pending = [
+        managed = [
             item for item in [*personal, *organization]
-            if isinstance(item, dict) and item.get("pending_package")
+            if isinstance(item, dict) and needs_environment(item)
         ]
-        if pending:
-            await attach_environment_status(pending)
+        if managed:
+            await attach_environment_status(managed)
+            async def active_environment_status(item: dict) -> None:
+                if item.get("pending_package"):
+                    item["active_environment_status"] = await dependency_status(str(item.get("package_digest") or ""))
+            await asyncio.gather(*(active_environment_status(item) for item in managed))
         for item in [*personal, *organization]:
             if not isinstance(item, dict):
                 continue
@@ -45,8 +48,11 @@ class MongoSkillCatalog:
                 continue
             if item.get("enabled", item.get("is_active", True)) is False:
                 continue
-            # Preparation is execution readiness, not an installed Skill
-            # change. Keep the durable Skill definition in the profile.
+            if needs_environment(item):
+                state = item.get("active_environment_status") if item.get("pending_package") else item.get("environment_status")
+                if state != "ready":
+                    continue
+            # The Skill remains installed while its current runtime is unavailable.
             is_organization = str(item.get("visibility") or "").lower() == "organization" or str(item.get("source") or "") == "org_db"
             if is_organization and source_id not in allowed_organization_ids:
                 continue
