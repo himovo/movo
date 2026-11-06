@@ -50,6 +50,8 @@ copy_platform() {
     --platform "linux/$2" \
     --build-arg "SOURCE_IMAGE=$3" \
     --tag "$4-$2" \
+    --provenance=false \
+    --sbom=false \
     --push -' _ "${dockerfile}" "${architecture}" "${source}" "${target}"
 }
 
