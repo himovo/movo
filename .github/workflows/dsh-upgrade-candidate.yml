@@ -34,7 +34,7 @@ jobs:
           --output artifacts/dsh-upgrade
       - name: Upload evaluation evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dsh-upgrade-evaluation
           path: artifacts/dsh-upgrade
