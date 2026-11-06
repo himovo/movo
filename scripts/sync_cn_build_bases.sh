@@ -44,11 +44,13 @@ retry() {
 
 copy_platform() {
   local source="$1" target="$2" architecture="$3"
-  local local_ref="${source}"
-  retry docker pull --platform "linux/${architecture}" "${source}"
-  docker tag "${local_ref}" "${target}-${architecture}"
-  retry docker push "${target}-${architecture}"
-  docker image rm "${target}-${architecture}" >/dev/null 2>&1 || true
+  local dockerfile
+  dockerfile=$'ARG SOURCE_IMAGE\nFROM ${SOURCE_IMAGE}\n'
+  retry bash -c 'printf "%s" "$1" | docker buildx build \
+    --platform "linux/$2" \
+    --build-arg "SOURCE_IMAGE=$3" \
+    --tag "$4-$2" \
+    --push -' _ "${dockerfile}" "${architecture}" "${source}" "${target}"
 }
 
 for entry in "${images[@]}"; do
