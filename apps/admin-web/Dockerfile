@@ -1,4 +1,6 @@
-FROM node:20-slim AS build
+ARG NODE_BUILD_IMAGE=node:20-slim
+ARG NGINX_RUNTIME_IMAGE=nginx:1.31.6-trixie
+FROM ${NODE_BUILD_IMAGE} AS build
 
 WORKDIR /app
 
@@ -15,7 +17,7 @@ RUN npm run build
 
 # Keep this runtime aligned with user-web and gateway. The Debian/glibc variant
 # avoids the Alpine musl pwritev2 path rejected by older container hosts.
-FROM nginx:1.31.6-trixie
+FROM ${NGINX_RUNTIME_IMAGE}
 
 ARG MOVO_SECURITY_REFRESH=local
 RUN test -n "${MOVO_SECURITY_REFRESH}" \

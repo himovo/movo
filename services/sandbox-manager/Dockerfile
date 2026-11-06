@@ -1,4 +1,5 @@
-FROM python:3.10-slim-bookworm
+ARG PYTHON_BASE_IMAGE=python:3.10-slim-bookworm
+FROM ${PYTHON_BASE_IMAGE}
 
 ARG MOVO_PIP_INDEX_URL=
 WORKDIR /app

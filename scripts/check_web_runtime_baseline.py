@@ -17,6 +17,9 @@ WEB_DOCKERFILES = (
 )
 SUPPORTED_RUNTIME_SUFFIX = "-trixie"
 FROM_PATTERN = re.compile(r"^\s*FROM\s+([^\s]+)", re.IGNORECASE | re.MULTILINE)
+ARG_PATTERN = re.compile(
+    r"^\s*ARG\s+([A-Za-z_][A-Za-z0-9_]*)=([^\s]+)", re.IGNORECASE | re.MULTILINE
+)
 HEALTH_TOOLS_PATTERN = re.compile(
     r"apt-get\s+install\s+-y\s+--no-install-recommends\s+curl\s+wget\b"
 )
@@ -26,7 +29,17 @@ def final_base_image(contents: str, dockerfile: Path) -> str:
     images = FROM_PATTERN.findall(contents)
     if not images:
         raise ValueError(f"{dockerfile}: no FROM instruction found")
-    return images[-1]
+    image = images[-1]
+    match = re.fullmatch(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", image)
+    if not match:
+        return image
+    defaults = dict(ARG_PATTERN.findall(contents))
+    try:
+        return defaults[match.group(1)]
+    except KeyError as exc:
+        raise ValueError(
+            f"{dockerfile}: final FROM argument {match.group(1)} has no default"
+        ) from exc
 
 
 def validate_web_runtime_baseline(

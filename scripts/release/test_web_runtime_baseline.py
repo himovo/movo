@@ -80,6 +80,23 @@ class WebRuntimeBaselineTest(unittest.TestCase):
             ),
         )
 
+    def test_resolves_default_for_overridable_runtime(self) -> None:
+        self.assertEqual(
+            "nginx:1.31.6-trixie",
+            final_base_image(
+                "ARG NGINX_RUNTIME_IMAGE=nginx:1.31.6-trixie\n"
+                "FROM ${NGINX_RUNTIME_IMAGE}\n",
+                Path("Dockerfile"),
+            ),
+        )
+
+    def test_rejects_runtime_argument_without_default(self) -> None:
+        with self.assertRaisesRegex(ValueError, "has no default"):
+            final_base_image(
+                "ARG NGINX_RUNTIME_IMAGE\nFROM ${NGINX_RUNTIME_IMAGE}\n",
+                Path("Dockerfile"),
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

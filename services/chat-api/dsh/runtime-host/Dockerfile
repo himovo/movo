@@ -1,4 +1,5 @@
-FROM node:24-bookworm-slim AS dependencies
+ARG NODE_RUNTIME_IMAGE=node:24-bookworm-slim
+FROM ${NODE_RUNTIME_IMAGE} AS dependencies
 
 ARG MOVO_NPM_REGISTRY=
 
@@ -15,7 +16,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --prod
 RUN node -e "const declared=require('./package.json').dependencies['@deepseek-ai/dsh']; const installed=require('@deepseek-ai/dsh/package.json').version; if (declared !== installed) throw new Error('DSH version mismatch: declared='+declared+' installed='+installed); console.log('DSH Runtime installed version: '+installed)"
 
-FROM node:24-bookworm-slim
+FROM ${NODE_RUNTIME_IMAGE}
 
 ARG MOVO_APT_MIRROR=
 ARG MOVO_APT_SECURITY_MIRROR=

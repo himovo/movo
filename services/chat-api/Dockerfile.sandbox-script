@@ -1,6 +1,8 @@
-FROM node:22-bookworm-slim AS node-runtime
+ARG NODE_RUNTIME_IMAGE=node:22-bookworm-slim
+ARG PYTHON_BASE_IMAGE=python:3.10-slim-bookworm
+FROM ${NODE_RUNTIME_IMAGE} AS node-runtime
 
-FROM python:3.10-slim-bookworm
+FROM ${PYTHON_BASE_IMAGE}
 
 ARG MOVO_PIP_INDEX_URL=
 ARG MOVO_APT_MIRROR=

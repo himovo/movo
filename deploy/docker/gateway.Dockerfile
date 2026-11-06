@@ -1,6 +1,7 @@
 # Keep this runtime aligned with both web images. The Debian/glibc variant avoids
 # the Alpine musl pwritev2 path rejected by older container hosts.
-FROM nginx:1.31.6-trixie
+ARG NGINX_RUNTIME_IMAGE=nginx:1.31.6-trixie
+FROM ${NGINX_RUNTIME_IMAGE}
 
 ARG MOVO_SECURITY_REFRESH=local
 RUN test -n "${MOVO_SECURITY_REFRESH}" \
