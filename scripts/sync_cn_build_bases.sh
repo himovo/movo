@@ -31,6 +31,13 @@ for entry in "${images[@]}"; do
   source_name="${entry#*:}"
   source="${source_prefix}/${source_name}"
   target="${registry}:${target_tag}"
+  if [[ "${MOVO_CN_BUILD_BASE_FORCE:-false}" != "true" ]] \
+      && docker buildx imagetools inspect "${target}" >/dev/null 2>&1 \
+      && require_platform "${target}" amd64 \
+      && require_platform "${target}" arm64; then
+    printf '[cn-build-base] Reuse verified %s\n' "${target}"
+    continue
+  fi
   printf '[cn-build-base] Sync %s -> %s\n' "${source}" "${target}"
   docker buildx imagetools create --tag "${target}" "${source}"
   require_platform "${target}" amd64
