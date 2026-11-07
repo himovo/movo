@@ -143,6 +143,18 @@ def test_vision_selection_passes_tenant_and_user_to_policy(monkeypatch):
     resolver.assert_awaited_once_with('vision-for-user', 'tenant-a', capability='vision')
 
 
+def test_optional_image_models_do_not_block_chat_profile(monkeypatch):
+    from types import SimpleNamespace
+    from app.services import image_generation
+
+    policy = SimpleNamespace(resolve_model_id=AsyncMock(side_effect=PermissionError('no model')))
+    monkeypatch.setattr(checks, 'get_product_extension', lambda: SimpleNamespace(model_access_policy=policy))
+    monkeypatch.setattr(image_generation, 'resolve_image_generation_model', AsyncMock(side_effect=PermissionError('no model')))
+
+    refs = ['image.generate@v1', 'vision.extract_facts@v1']
+    assert asyncio.run(InternalToolAvailability().unavailable_for_profile(refs, 'tenant-a', 'user-a')) == set(refs)
+
+
 def test_sandbox_requires_configured_token(monkeypatch):
     monkeypatch.setenv('MOVO_SANDBOX_MANAGER_URL', 'http://manager:8300')
     monkeypatch.delenv('MOVO_SANDBOX_MANAGER_TOKEN', raising=False)

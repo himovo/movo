@@ -23,15 +23,21 @@ async def profile_browser(tenant_id: str, user_id: str) -> bool:
 
 async def images(tenant_id: str, user_id: str) -> bool:
     from app.services.image_generation import resolve_image_generation_model
-    return bool(await resolve_image_generation_model(tenant_id, user_id))
+    try:
+        return bool(await resolve_image_generation_model(tenant_id, user_id))
+    except PermissionError:
+        return False
 
 
 async def vision_model(tenant_id: str, user_id: str):
     policy = get_product_extension().model_access_policy
     if policy is not None:
-        model_id = await policy.resolve_model_id(
-            main_id=tenant_id, user_id=user_id, model_id=None, capability="vision",
-        )
+        try:
+            model_id = await policy.resolve_model_id(
+                main_id=tenant_id, user_id=user_id, model_id=None, capability="vision",
+            )
+        except PermissionError:
+            return None
         if not model_id:
             return None
         return await get_model_config_by_capability(str(model_id), tenant_id, capability="vision")
