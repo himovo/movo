@@ -26,22 +26,29 @@ const emit = defineEmits<{
       <img src="/movo-logo.png" alt="" class="h-8 w-10 object-contain" />
       <span class="text-[15px] font-extrabold tracking-[0.14em] text-slate-800">MOVO</span>
     </div>
-    <div class="space-y-0.5 px-3 pb-1 pt-3">
+    <div class="sidebar-quick-actions flex items-center gap-1.5 px-3 pb-2 pt-2">
       <button
-        v-for="item in items"
+        v-for="item in items.filter(action => action.icon === 'plus')"
         :key="item.label"
-        class="group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium transition-all active:scale-95"
-        :class="item.icon === 'search' && searchOpen
-          ? 'bg-white text-blue-700 shadow-sm border border-gray-200'
-          : 'text-gray-700 hover:bg-gray-200/60'"
+        class="group flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-xl px-3 text-left text-sm font-medium text-gray-700 transition-all hover:bg-gray-200/60 active:scale-95"
         @click="emit('action', item.icon)"
       >
         <span class="text-gray-500 group-hover:text-gray-900 transition-colors">
-          <svg v-if="item.icon === 'plus'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-7-7v14"/></svg>
-          <svg v-else-if="item.icon === 'clock'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-          <svg v-else-if="item.icon === 'search'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-7-7v14"/></svg>
         </span>
-        <span>{{ item.label }}</span>
+        <span class="truncate">{{ item.label }}</span>
+      </button>
+      <button
+        v-for="item in items.filter(action => action.icon !== 'plus')"
+        :key="item.label"
+        class="group flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gray-600 transition-all hover:bg-gray-200/60 active:scale-95"
+        :class="item.icon === 'search' && searchOpen ? 'border border-gray-200 bg-white text-blue-700 shadow-sm' : ''"
+        :title="item.label"
+        :aria-label="item.label"
+        @click="emit('action', item.icon)"
+      >
+        <svg v-if="item.icon === 'clock'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <svg v-else-if="item.icon === 'search'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
       </button>
     </div>
 
