@@ -1,33 +1,35 @@
 import assert from 'node:assert/strict'
+import { createServer } from 'node:http'
 import test from 'node:test'
 
 import { AskaiModelGatewayAdapter } from '../src/askai-model-gateway-plugin.mjs'
 import { normalizeTurnContext, renderTurnContext } from '../src/runtime-turn-context.mjs'
 import { materializeModelImages } from '../src/official-host/model-image-compat.mjs'
 
-test('vision profile materializes durable images for the authenticated model gateway', async () => {
-  const originalFetch = globalThis.fetch
+test('vision profile materializes durable images for the authenticated model gateway', async t => {
   const requests = []
-  globalThis.fetch = async (_url, options) => {
-    requests.push(JSON.parse(options.body))
-    return new Response('{"type":"text-delta","text":"ok"}\n{"type":"finish","reason":{"kind":"stop"}}\n', { status: 200 })
-  }
-  try {
-    const adapter = new AskaiModelGatewayAdapter({
-      profileVersion: 'profile-a', modelInstanceId: 'model-a', modelName: 'vision-model',
-      gatewayUrl: 'https://gateway.example.test/generate', accessToken: 'short-lived', visionEnabled: true,
-    }, { readImage: async () => ({ ref: { mediaType: 'image/png' }, data: Uint8Array.from([1, 2, 3]) }) })
-    const models = await adapter.listModels('askai-model-gateway')
-    assert.deepEqual(models[0].inputModalities, ['text', 'image'])
-    const textOnly = new AskaiModelGatewayAdapter({ ...adapter.config, visionEnabled: false })
-    assert.deepEqual((await textOnly.listModels('askai-model-gateway'))[0].inputModalities, ['text'])
-    for await (const _event of adapter.stream({ provider: 'askai-model-gateway', model: 'vision-model', sessionId: 'session-a', messages: [
-      { role: 'user', content: [{ type: 'text', text: 'Look at this' }, { type: 'image', attachment: { attachmentId: 'sha256:test', mediaType: 'image/png' } }] },
-    ] })) {}
-    assert.equal(requests[0].messages[0].content[1].image_url.url, 'data:image/png;base64,AQID')
-  } finally {
-    globalThis.fetch = originalFetch
-  }
+  const server = createServer(async (request, response) => {
+    const chunks = []
+    for await (const chunk of request) chunks.push(chunk)
+    requests.push(JSON.parse(Buffer.concat(chunks).toString('utf8')))
+    response.writeHead(200, { 'content-type': 'application/x-ndjson' })
+    response.end('{"type":"text-delta","text":"ok"}\n{"type":"finish","reason":{"kind":"stop"}}\n')
+  })
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+  t.after(() => new Promise(resolve => server.close(resolve)))
+  const gatewayUrl = `http://127.0.0.1:${server.address().port}/generate`
+  const adapter = new AskaiModelGatewayAdapter({
+    profileVersion: 'profile-a', modelInstanceId: 'model-a', modelName: 'vision-model',
+    gatewayUrl, accessToken: 'short-lived', visionEnabled: true,
+  }, { readImage: async () => ({ ref: { mediaType: 'image/png' }, data: Uint8Array.from([1, 2, 3]) }) })
+  const models = await adapter.listModels('askai-model-gateway')
+  assert.deepEqual(models[0].inputModalities, ['text', 'image'])
+  const textOnly = new AskaiModelGatewayAdapter({ ...adapter.config, visionEnabled: false })
+  assert.deepEqual((await textOnly.listModels('askai-model-gateway'))[0].inputModalities, ['text'])
+  for await (const _event of adapter.stream({ provider: 'askai-model-gateway', model: 'vision-model', sessionId: 'session-a', messages: [
+    { role: 'user', content: [{ type: 'text', text: 'Look at this' }, { type: 'image', attachment: { attachmentId: 'sha256:test', mediaType: 'image/png' } }] },
+  ] })) {}
+  assert.equal(requests[0].messages[0].content[1].image_url.url, 'data:image/png;base64,AQID')
 })
 
 test('vision model receives image context without a redundant extraction instruction', () => {

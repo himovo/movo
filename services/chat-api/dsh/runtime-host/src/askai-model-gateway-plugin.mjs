@@ -3,6 +3,7 @@ import { LlmAdapter, LlmError } from '@deepseek-ai/dsh-llm'
 import { stableModelRequest } from './official-host/model-request-compat.mjs'
 import { compatibleModelToolCall } from './official-host/model-tool-call-compat.mjs'
 import { materializeModelImages } from './official-host/model-image-compat.mjs'
+import { postGatewayNdjson } from './model-gateway-http-client.mjs'
 
 async function *readNdjson(response) {
   if (response.body === null) throw new Error('MOVO Model Gateway returned an empty stream')
@@ -67,24 +68,21 @@ export class AskaiModelGatewayAdapter extends LlmAdapter {
   async *stream(options) {
     const request = stableModelRequest(options)
     const messages = await materializeModelImages(request.messages, this.attachments, this.config.visionEnabled === true)
-    const response = await fetch(this.config.gatewayUrl, {
-      method: 'POST',
+    const response = await postGatewayNdjson(this.config.gatewayUrl, {
+      profileVersion: this.config.profileVersion,
+      modelInstanceId: this.config.modelInstanceId,
+      provider: options.provider,
+      model: options.model,
+      system: request.system,
+      messages,
+      tools: options.tools,
+      maxTokens: options.maxTokens,
+      sessionId: options.sessionId,
+      knowledgeQaEnabled: this.#knowledgeModeBySession.get(options.sessionId) === true,
+    }, {
       headers: {
         authorization: `Bearer ${this.config.accessToken}`,
-        'content-type': 'application/json',
       },
-      body: JSON.stringify({
-        profileVersion: this.config.profileVersion,
-        modelInstanceId: this.config.modelInstanceId,
-        provider: options.provider,
-        model: options.model,
-        system: request.system,
-        messages,
-        tools: options.tools,
-        maxTokens: options.maxTokens,
-        sessionId: options.sessionId,
-        knowledgeQaEnabled: this.#knowledgeModeBySession.get(options.sessionId) === true,
-      }),
       signal: options.signal,
     })
     if (!response.ok) {
