@@ -134,6 +134,8 @@ export interface SelectableSkillItem {
   scenario: string
   type: SkillType
   sourceScope: 'user' | 'organization'
+  pluginName?: string
+  entryKind?: 'command'
   enabled: boolean
   available?: boolean
   unavailableReason?: string
@@ -286,6 +288,52 @@ export async function fetchSelectableSkills(payload: {
       scope: payload.scope || 'all',
       keyword: payload.keyword || '',
       cursor: payload.cursor || '',
+      limit: payload.limit || 20,
+    },
+    timeout: 15000,
+  })
+  const data = dataOf<SelectableSkillPage>(res) || { items: [], nextCursor: '', hasMore: false }
+  return {
+    items: Array.isArray(data.items) ? data.items : [],
+    nextCursor: String(data.nextCursor || ''),
+    hasMore: Boolean(data.hasMore),
+  }
+}
+
+export async function fetchSelectablePluginSkills(payload: {
+  scope?: 'all' | 'user' | 'organization'
+  keyword?: string
+  cursor?: string
+  limit?: number
+}): Promise<SelectableSkillPage> {
+  const res = await api.get('/dsh-plugins/personal/selectable-skills', {
+    params: {
+      scope: payload.scope || 'all',
+      keyword: payload.keyword || '',
+      cursor: payload.cursor || '0',
+      limit: payload.limit || 20,
+    },
+    timeout: 15000,
+  })
+  const data = dataOf<SelectableSkillPage>(res) || { items: [], nextCursor: '', hasMore: false }
+  return {
+    items: Array.isArray(data.items) ? data.items : [],
+    nextCursor: String(data.nextCursor || ''),
+    hasMore: Boolean(data.hasMore),
+  }
+}
+
+export async function fetchSelectablePluginCommands(payload: {
+  scope?: 'all' | 'user' | 'organization'
+  keyword?: string
+  cursor?: string
+  limit?: number
+}): Promise<SelectableSkillPage> {
+  const res = await api.get('/dsh-plugins/personal/selectable-commands', {
+    params: {
+      scope: payload.scope || 'all',
+      keyword: payload.keyword || '',
+      cursor: payload.cursor || '0',
       limit: payload.limit || 20,
     },
     timeout: 15000,

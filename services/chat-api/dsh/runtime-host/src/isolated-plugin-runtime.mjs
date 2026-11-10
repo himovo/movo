@@ -2,12 +2,15 @@ import { randomBytes } from 'node:crypto'
 import { spawn } from 'node:child_process'
 import { request as httpRequest } from 'node:http'
 import { dirname, resolve } from 'node:path'
+import { mkdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
+
+import { pluginUserHome } from './plugin-user-home.mjs'
 
 const HOST_ENTRY = resolve(dirname(fileURLToPath(import.meta.url)), 'host.mjs')
 const READY_EVENT = 'askai-dsh-runtime-ready'
 
-function childEnvironment(token) {
+export function pluginChildEnvironment(token, home) {
   const names = [
     'PATH', 'HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'SYSTEMROOT',
     'TEMP', 'TMP', 'TMPDIR', 'NODE_ENV', 'DSH_TELEMETRY_DISABLED',
@@ -16,6 +19,10 @@ function childEnvironment(token) {
     .map(name => [name, process.env[name]]))
   env.DSH_RUNTIME_HOST_TOKEN = token
   env.MOVO_DSH_PLUGIN_CHILD = '1'
+  env.HOME = home
+  env.USERPROFILE = home
+  env.APPDATA = resolve(home, 'AppData', 'Roaming')
+  env.LOCALAPPDATA = resolve(home, 'AppData', 'Local')
   if (process.versions.electron) env.ELECTRON_RUN_AS_NODE = '1'
   return env
 }
@@ -87,8 +94,10 @@ export class IsolatedPluginRuntimePool {
   async create(body) {
     if (this.#byIsolation.has(body.isolationKey)) throw new Error('isolation key already has a Runtime')
     const token = randomBytes(32).toString('hex')
+    const home = pluginUserHome(this.storageRoot, body)
+    await mkdir(home, { recursive: true })
     const child = spawn(process.execPath, [HOST_ENTRY, '--host', '127.0.0.1', '--port', '0', '--storage-root', this.storageRoot], {
-      env: childEnvironment(token), stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
+      env: pluginChildEnvironment(token, home), stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
     })
     let port
     try {
@@ -112,6 +121,10 @@ export class IsolatedPluginRuntimePool {
   }
 
   get(runtimeId) { return this.#byRuntime.get(runtimeId) }
+  upgradeTarget(entry, path) {
+    return { url: `ws://127.0.0.1:${entry.port}${path}`,
+      headers: { authorization: `Bearer ${entry.token}` } }
+  }
   findByIsolation(isolationKey) { return this.#byIsolation.get(isolationKey)?.runtime }
   inventory() { return [...this.#byRuntime.values()].map(entry => entry.runtime) }
 

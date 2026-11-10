@@ -130,8 +130,7 @@ services:
       MOVO_SANDBOX_MANAGER_URL: ${MOVO_SANDBOX_MANAGER_URL:-}
       MOVO_SANDBOX_PLUGIN_IDLE_SECONDS: ${MOVO_SANDBOX_PLUGIN_IDLE_SECONDS:-900}
       npm_config_cache: /offline-packages/npm
-      npm_config_store_dir: /offline-packages/pnpm
-      npm_config_prefer_offline: "true"
+      MOVO_OFFLINE_PACKAGE_ROOT: /offline-packages
       npm_config_userconfig: /offline-packages/.npmrc
     volumes:
       - deployment-secrets:/run/askai-secrets:ro
@@ -184,6 +183,8 @@ services:
       MOVO_SANDBOX_MANAGER_URL: ${MOVO_SANDBOX_MANAGER_URL:-}
       MOVO_SANDBOX_WORKSPACE_ROOT: /workspaces
       MOVO_OFFLINE_PACKAGE_ROOT: /offline-packages
+      MOVO_PLUGIN_UI_PORT: ${MOVO_PLUGIN_UI_PORT:-3100}
+      MOVO_PLUGIN_UI_PUBLIC_ORIGIN: ${MOVO_PLUGIN_UI_PUBLIC_ORIGIN:-}
       MOVO_PERSONAL_SPACE_MAX_BYTES: ${MOVO_PERSONAL_SPACE_MAX_BYTES:-2147483648}
     volumes:
       - deployment-secrets:/run/askai-secrets:ro
@@ -443,6 +444,7 @@ services:
     restart: unless-stopped
     ports:
       - "${MOVO_PORT:-${ASKAI_PORT:-3000}}:80"
+      - "${MOVO_PLUGIN_UI_PORT:-3100}:81"
     volumes:
       - ./deploy/docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:

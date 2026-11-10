@@ -8,12 +8,15 @@ import { IsolatedPluginRuntimePool } from './isolated-plugin-runtime.mjs'
 import { ContainerPluginRuntimePool } from './container-plugin-runtime.mjs'
 import { admitSessionBody } from './session-admission.mjs'
 import { PluginArchiveMaterializer } from './plugin-archive-materializer.mjs'
+import { PluginHistoryMaterializer } from './plugin-history-materializer.mjs'
+import { proxyPluginUiSocket, rejectUpgrade } from './plugin-ui-websocket.mjs'
 
 export class RuntimeHttpServer {
   #server
   #manager
   #isolated
   #pluginArchives
+  #pluginHistory
   #started = false
 
   constructor({ host = '127.0.0.1', port = 0, storageRoot, authToken = '' }) {
@@ -31,6 +34,7 @@ export class RuntimeHttpServer {
         })
       : new IsolatedPluginRuntimePool(storageRoot)
     this.#pluginArchives = new PluginArchiveMaterializer(storageRoot)
+    this.#pluginHistory = new PluginHistoryMaterializer(storageRoot)
     this.#server = createServer((request, response) => {
       if (request.url?.startsWith('/v1/sandbox-relay/')) {
         if (typeof this.#isolated.relay !== 'function') {
@@ -58,6 +62,30 @@ export class RuntimeHttpServer {
           },
         })
       })
+    })
+    this.#server.on('upgrade', (request, socket, head) => {
+      if (!validBearerToken(request.headers.authorization, this.authToken)) {
+        rejectUpgrade(socket, 401)
+        return
+      }
+      const match = /^\/v1\/runtimes\/([^/]+)\/plugin-ui\/([^/]+)\/api\/remote\.mux$/.exec(
+        new URL(request.url, 'http://runtime-host.local').pathname,
+      )
+      if (!match) { rejectUpgrade(socket); return }
+      const [, runtimeId, pluginId] = match
+      const isolated = this.#isolated.get(runtimeId)
+      if (isolated) {
+        const target = this.#isolated.upgradeTarget(isolated, request.url)
+        proxyPluginUiSocket(request, socket, head, target)
+        return
+      }
+      try {
+        const runtime = this.#manager.get(runtimeId)
+        // The route is already authorized here; the native plugin bridge expects its local path.
+        request.url = '/api/remote.mux'
+        runtime.proxyPluginUiUpgrade(pluginId, request, socket, head)
+          .catch(() => rejectUpgrade(socket))
+      } catch { rejectUpgrade(socket) }
     })
   }
 
@@ -146,6 +174,31 @@ export class RuntimeHttpServer {
     }
     const runtime = this.#manager.get(runtimeId)
     if (request.method === 'GET' && parts.length === 3) return sendJson(response, 200, this.#manager.describe(runtime))
+    if (request.method === 'POST' && parts[3] === 'plugin-history' && parts[4] === 'hydrate' && parts.length === 5) {
+      const body = await readJson(request)
+      if (runtime.isolationKey !== `tenant:${body.tenantId}:profile:${body.targetProfileVersion}`) {
+        throw new TypeError('plugin history target does not match runtime')
+      }
+      const result = await this.#pluginHistory.hydrate(body, {
+        beforeReplace: sessionId => runtime.disposeSession(sessionId),
+      })
+      let resumeFailures = 0
+      for (const sessionId of result.availableSessionIds) {
+        try {
+          await runtime.resumeSession(sessionId)
+        } catch (error) {
+          resumeFailures++
+          console.warn('Plugin history session resume failed', { sessionId, error: String(error) })
+        }
+      }
+      return sendJson(response, 200, { ...result, resumeFailures })
+    }
+    if (parts[3] === 'plugin-ui' && parts[4] && parts.length >= 5) {
+      const url = new URL(request.url, 'http://runtime-host.local')
+      const prefix = `/v1/runtimes/${runtimeId}/plugin-ui/${parts[4]}`
+      const path = `${url.pathname.slice(prefix.length) || '/'}${url.search}`
+      return await runtime.proxyPluginUi(parts[4], path, request, response)
+    }
     if (process.env.MOVO_DSH_PLUGIN_CHILD === '1' && request.method === 'POST' &&
         parts[3] === 'seed-export' && parts.length === 4) {
       const { sessionId } = await readJson(request)
@@ -183,12 +236,19 @@ export class RuntimeHttpServer {
     if (parts[3] === 'sessions' && parts[4] !== undefined) {
       const sessionId = decodeURIComponent(parts[4])
       if (request.method === 'GET' && parts.length === 5) return sendJson(response, 200, await runtime.describeLiveSession(sessionId))
+      if (request.method === 'GET' && parts[5] === 'plugin-capabilities' && parts.length === 6) {
+        return sendJson(response, 200, await runtime.managedSessionCapabilities(sessionId))
+      }
       if (request.method === 'POST' && parts[5] === 'resume') {
         const body = await readJson(request)
         return sendJson(response, 200, await runtime.resumeSession(sessionId, body.cursorFloor ?? 0))
       }
       if (request.method === 'POST' && parts[5] === 'send') {
         return sendJson(response, 202, await runtime.send({ sessionId, ...await readJson(request) }))
+      }
+      if (request.method === 'POST' && parts[5] === 'plugin-command' && parts.length === 6) {
+        const body = await readJson(request)
+        return sendJson(response, 200, await runtime.executePluginCommand(sessionId, body.selectedId, body.line))
       }
       if (request.method === 'POST' && parts[5] === 'cancel') {
         const body = await readJson(request)
@@ -262,6 +322,9 @@ export class RuntimeHttpServer {
       const body = await readJson(request)
       if (request.method === 'POST' && parts[4] === 'inspect' && parts.length === 5) {
         return sendJson(response, 200, await runtime.managedPluginInspect(body.spec, body.registry))
+      }
+      if (request.method === 'POST' && parts[4] === 'manifest' && parts.length === 5) {
+        return sendJson(response, 200, await runtime.managedPluginManifest(body.name))
       }
       if (request.method === 'POST' && parts[4] === 'install' && parts.length === 5) {
         return sendJson(response, 200, await runtime.managedPluginInstall(body.spec, body))

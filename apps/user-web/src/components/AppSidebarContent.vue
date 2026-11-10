@@ -3,6 +3,7 @@ import AppSidebarLayout from './AppSidebarLayout.vue'
 import SessionHistorySidebar from './SessionHistorySidebar.vue'
 import WebFeatureNavigation from './WebFeatureNavigation.vue'
 import AccountMenu from './AccountMenu.vue'
+import PluginShortcutNavigation from './plugins/PluginShortcutNavigation.vue'
 
 type LayoutProps = InstanceType<typeof AppSidebarLayout>['$props']
 type HistoryProps = InstanceType<typeof SessionHistorySidebar>['$props']
@@ -14,6 +15,7 @@ export interface AppSidebarBindings {
   layout: LayoutProps
   history: HistoryProps
   showFeatures: boolean
+  pluginShortcuts: { mainId: string; userId: string; loggedIn: boolean; currentView: string }
   features: FeatureProps
   account: AccountProps
 }
@@ -27,6 +29,7 @@ defineProps<{ bindings: AppSidebarBindings }>()
       <SessionHistorySidebar v-bind="bindings.history" />
     </template>
     <template #features>
+      <PluginShortcutNavigation v-if="!bindings.layout.desktop" v-bind="bindings.pluginShortcuts" />
       <WebFeatureNavigation v-if="bindings.showFeatures" v-bind="bindings.features" />
     </template>
     <template #account-menu>

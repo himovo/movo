@@ -27,6 +27,12 @@ class RuntimeCoordinator:
     def isolation_key(tenant_id: str, profile_version: str) -> str:
         return f"tenant:{tenant_id}:profile:{profile_version}"
 
+    async def ensure_runtime(self, *, tenant_id: str, profile_version: str):
+        return await self._runtime(tenant_id=tenant_id, profile_version=profile_version)
+
+    async def refresh_runtime_credentials(self, runtime_id: str) -> None:
+        await self._gateway.refresh_runtime_credentials(runtime_id)
+
     async def create_binding(
         self,
         *,

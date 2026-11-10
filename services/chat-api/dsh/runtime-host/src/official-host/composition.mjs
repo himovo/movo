@@ -9,6 +9,7 @@ import {
 } from './overlay.mjs'
 import { collectInsertedEntryIds } from './overlay-planner.mjs'
 import { extractOfficialPresetIsolation } from './preset-isolation.mjs'
+import { pluginClientShellPatches } from './plugin-client-shell.mjs'
 import { resolvePresetModules } from './preset-module-resolution.mjs'
 import { readPluginInventory } from './inventory-compat.mjs'
 import { prepareManagedProfile } from './managed-profile.mjs'
@@ -25,10 +26,12 @@ export class OfficialDshHostComposition {
   #ctx
   #inventory
 
-  constructor({ storageRoot, webSearchProvider, plugins = [] }) {
+  constructor({ storageRoot, durableStorageRoot, webSearchProvider, plugins = [], pluginModelName }) {
     this.storageRoot = resolve(storageRoot)
+    this.durableStorageRoot = durableStorageRoot
     this.webSearchProvider = webSearchProvider
     this.plugins = plugins
+    this.pluginModelName = pluginModelName
   }
 
   async start() {
@@ -54,7 +57,8 @@ export class OfficialDshHostComposition {
         for (const row of item.rows ?? []) {
           const entry = this.#inventory.entries.find(candidate => candidate.entryId === row.entryId)
           if (!entry || (entry.enabled && entry.fiberPhase !== 'active')) {
-            throw new Error(`DSH plugin ${plugin.name} row ${row.rowId} did not become active (${entry?.fiberPhase ?? 'missing'})`)
+            const reason = entry?.error?.message ?? entry?.error?.code ?? entry?.problem ?? entry?.fiberPhase ?? 'missing'
+            throw new Error(`DSH plugin ${plugin.name} row ${row.rowId} did not become active (${reason})`)
           }
         }
       }
@@ -83,10 +87,13 @@ export class OfficialDshHostComposition {
     const presetIsolation = extractOfficialPresetIsolation(webAppPatches)
     const askaiOverlay = buildAskaiHostOverlay({
       storageRoot: this.storageRoot,
+      durableStorageRoot: this.durableStorageRoot,
       askaiPresetRoot: ASKAI_PRESET_ROOT,
       shippedPresetRoot: installation.shippedPresetRoot,
       declarativePresets: presetIsolation.declarative,
       webSearchProvider: this.webSearchProvider,
+      pluginWeb: this.plugins.length > 0,
+      pluginModelName: this.pluginModelName,
       occupiedIds: collectInsertedEntryIds(basePatches),
       hostFeatures: {
         subagentModelSelection: installation.canResolveDependency(
@@ -94,7 +101,8 @@ export class OfficialDshHostComposition {
         ),
       },
     })
-    const overlays = [...resolvePresetModules([...presetIsolation.patches, ...askaiOverlay], installation)]
+    const clientPatches = this.plugins.length === 0 ? [] : pluginClientShellPatches(webAppPatches)
+    const overlays = [...resolvePresetModules([...presetIsolation.patches, ...clientPatches, ...askaiOverlay], installation)]
     const managedProfile = await prepareManagedProfile({
       appBoot, installation, moduleHome, overlays,
     })

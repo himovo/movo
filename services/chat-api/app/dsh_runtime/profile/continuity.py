@@ -6,6 +6,8 @@ from collections import Counter
 import json
 
 from .models import RuntimeProfileSnapshot
+from .plugin_skill_selection import selection_id
+from .plugin_command_selection import selection_id as command_selection_id
 
 
 _COLLECTIONS = (
@@ -25,10 +27,25 @@ def can_defer_profile_change(
     desired: RuntimeProfileSnapshot,
     *,
     selected_skill_id: str | None = None,
+    selected_command_id: str | None = None,
 ) -> bool:
     """Keep an existing session only if its full execution contract remains allowed."""
-    if selected_skill_id and selected_skill_id not in {skill.source_id for skill in current.skills}:
-        return False
+    if selected_skill_id:
+        known = {skill.source_id for skill in current.skills}
+        for plugin in current.plugins:
+            for skill in plugin.get("skills") or []:
+                if skill.get("userInvocable") is True:
+                    known.add(selection_id(str(plugin["installation_id"]), str(skill["name"])))
+        if selected_skill_id not in known:
+            return False
+    if selected_command_id:
+        known_commands = {
+            command_selection_id(str(plugin["installation_id"]), str(command["name"]))
+            for plugin in current.plugins for command in plugin.get("commands") or []
+            if command.get("definitionId")
+        }
+        if selected_command_id not in known_commands:
+            return False
     old = current.execution_payload()
     new = desired.execution_payload()
     for names in _COLLECTIONS:

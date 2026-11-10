@@ -10,6 +10,7 @@ from uuid import uuid4
 
 
 PACKAGE = re.compile(r"^[A-Za-z0-9._-]+(?:==[A-Za-z0-9._+!-]+)?$")
+PIP_REQUIREMENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*(?:\s*(?:===|==|~=|!=|<=|>=|<|>)\s*[A-Za-z0-9._+!-]+)?$")
 APT = re.compile(r"^[a-z0-9][a-z0-9+.-]*(?::[a-z0-9-]+)?(?:=[a-z0-9:~+._-]+)?$")
 
 
@@ -18,7 +19,7 @@ def description(skill_root: Path) -> dict:
     requirements = skill_root / "requirements.txt"
     if requirements.is_file():
         declared["pip"] = [line for raw in requirements.read_text(encoding="utf-8").splitlines()
-                           if (line := raw.split("#", 1)[0].strip()) and PACKAGE.fullmatch(line)][:200]
+                           if (line := raw.split("#", 1)[0].strip()) and PIP_REQUIREMENT.fullmatch(line)][:200]
     apt = skill_root / "apt-packages.txt"
     if apt.is_file():
         declared["apt"] = [line for raw in apt.read_text(encoding="utf-8").splitlines()
@@ -57,12 +58,14 @@ def cache_files(root: Path) -> list[str]:
                   if path.is_file() and not path.is_symlink() and path.name != "lock" and "partial" not in path.relative_to(root).parts)
 
 
-def record_plugin(root: Path, *, name: str, version: str, archive_digest: str = "") -> dict:
+def record_plugin(root: Path, *, name: str, version: str, archive_digest: str = "",
+                  dsh_version: str = "") -> dict:
     collections = root / "collections"
     collections.mkdir(parents=True, exist_ok=True)
     record_id = uuid4().hex
     row = {"digest": "", "recordId": record_id, "source": "plugin", "kind": "plugin",
            "name": name[:200], "version": version[:100],
+           "dshVersion": dsh_version[:100],
            "archiveDigest": archive_digest,
            "createdAt": datetime.now(timezone.utc).isoformat(),
            "declared": {"npm": [f"{name}@{version}"]}, "files": cache_files(root)}

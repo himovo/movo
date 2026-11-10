@@ -49,6 +49,8 @@ function skillSourceLabel(source: SelectableSkillItem['sourceScope']) {
           </svg>
           <span class="shrink-0">{{ t('composer.selected') }}</span>
           <span class="min-w-0 truncate">{{ selectedSkill.name }}</span>
+          <span v-if="selectedSkill.entryKind === 'command'" class="shrink-0 rounded-full bg-white/70 px-1.5 py-0.5 text-[11px] text-indigo-600">{{ t('composer.skill.pluginCommand') }}</span>
+          <span v-if="selectedSkill.pluginName" class="shrink-0 rounded-full bg-white/70 px-1.5 py-0.5 text-[11px] text-indigo-600">{{ t('composer.skill.pluginSource', { name: selectedSkill.pluginName }) }}</span>
           <span class="shrink-0 rounded-full bg-white/70 px-1.5 py-0.5 text-[11px] text-indigo-600">{{ skillSourceLabel(selectedSkill.sourceScope) }}</span>
           <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
             <path d="M18 6 6 18"></path>

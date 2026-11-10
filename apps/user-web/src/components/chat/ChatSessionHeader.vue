@@ -2,6 +2,7 @@
   <header class="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4">
     <span class="min-w-0 flex-1 truncate text-[13px] font-semibold text-slate-700" :title="headerTitle">{{ headerTitle }}</span>
     <div class="flex shrink-0 items-center gap-1">
+      <ConversationPluginViews v-if="viewerMode === 'owner' && sessionId && (!detail?.execution_location || detail.execution_location === 'server')" :session-id="sessionId" :user-id="userId" :main-id="mainId" />
       <button
         v-if="detail && (viewerMode === 'participant' || canShare)"
         type="button"
@@ -35,6 +36,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import SessionShareDialog from '../session/SessionShareDialog.vue'
+import ConversationPluginViews from './ConversationPluginViews.vue'
 import { getSession, type SessionDetail } from '../../api/sessions'
 import { t } from '../../composables/i18n'
 

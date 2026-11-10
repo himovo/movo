@@ -203,6 +203,7 @@ cp .env.example .env
 
 ```env
 MOVO_PORT=3000
+MOVO_PLUGIN_UI_PORT=3100
 MOVO_VOLUME_PREFIX=movo
 MOVO_IMAGE_PREFIX=ghcr.io/himovo/movo
 MOVO_VERSION=vX.Y.Z
@@ -210,6 +211,7 @@ PUBLIC_BASE_URL=https://movo.example.com
 ```
 
 Keep `MOVO_VOLUME_PREFIX` stable after first startup. DNS, TLS certificates and the external reverse proxy remain the deployment operator's responsibility.
+Set a distinct `MOVO_PLUGIN_UI_PORT` for each deployment on the same host. For HTTPS, configure `MOVO_PLUGIN_UI_PUBLIC_ORIGIN` to a separate HTTPS origin routed to the plugin UI gateway port.
 
 ## Build from source
 

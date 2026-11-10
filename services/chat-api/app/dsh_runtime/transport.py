@@ -31,6 +31,7 @@ class KernelHostTransport(Protocol):
 
 
 class HttpKernelHostTransport:
+    _PLUGIN_COMMAND_TIMEOUT_SECONDS = 250.0
     def __init__(
         self,
         base_url: str,
@@ -60,6 +61,8 @@ class HttpKernelHostTransport:
             timeout = (
                 self._startup_timeout_seconds
                 if method.upper() == "POST" and path == "/v1/runtimes"
+                else self._PLUGIN_COMMAND_TIMEOUT_SECONDS
+                if method.upper() == "POST" and path.endswith("/plugin-command")
                 else self._client.timeout
             )
             response = await self._client.request(method, path, json=json, params=params, timeout=timeout)

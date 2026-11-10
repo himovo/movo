@@ -225,6 +225,30 @@ def test_selected_new_skill_cannot_silently_use_old_profile() -> None:
     asyncio.run(run())
 
 
+def test_revoked_plugin_cannot_continue_on_old_session_when_rotation_fails() -> None:
+    plugin = {"installation_id": "a" * 24, "name": "example", "version": "1.0.0"}
+    old = _profile("rp-old").model_copy(update={
+        "plugins": (plugin,), "plugin_versions": ("example@1.0.0",),
+    })
+
+    class Profiles(_Profiles):
+        async def get(self, profile_version):
+            assert profile_version == "rp-old"
+            return old
+
+    class FailingCoordinator(_Coordinator):
+        async def rotate_binding(self, binding, *, profile_version, model_instance_id):
+            raise DshTransportError("new Runtime is temporarily unavailable")
+
+    async def run() -> None:
+        with pytest.raises(DshTransportError):
+            await ConversationProfileSynchronizer(
+                Profiles(_profile("rp-new")), FailingCoordinator(),
+            ).synchronize(_binding(), tenant_id="tenant-a", user_id="user-a")
+
+    asyncio.run(run())
+
+
 def test_missing_binding_replacement_does_not_seed_from_lost_session() -> None:
     from app.dsh_runtime.runtime_coordinator import RuntimeCoordinator
 

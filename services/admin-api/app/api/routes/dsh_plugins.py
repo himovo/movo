@@ -85,6 +85,11 @@ async def install_plugin(body: InstallRequest, admin=Depends(get_current_admin_u
     return await asyncio.to_thread(_forward, "POST", "/install", str(admin["main_id"]), body.model_dump())
 
 
+@router.post("/preflight")
+async def preflight_plugin(body: InstallRequest, admin=Depends(get_current_admin_user)):
+    return await asyncio.to_thread(_forward, "POST", "/preflight", str(admin["main_id"]), body.model_dump())
+
+
 @router.post("/upload")
 async def upload_plugin(file: UploadFile = File(...), admin=Depends(get_current_admin_user)):
     chunks = []

@@ -179,6 +179,14 @@ class KernelBindingRepository:
             "user_id": user_id,
         })
 
+    async def by_kernel_session_for_tenant(
+        self, kernel_session_id: str, *, tenant_id: str
+    ) -> dict[str, Any] | None:
+        return await self._collection.find_one({
+            "kernel_session_id": kernel_session_id,
+            "tenant_id": tenant_id,
+        })
+
     async def update_runtime(self, binding_id: str, *, runtime_id: str) -> None:
         await self._collection.update_one(
             {"binding_id": binding_id},
@@ -297,6 +305,20 @@ class KernelBindingRepository:
                 "active_turn.status": "running",
             }
         )
+
+    async def mark_plugin_command_head(
+        self, binding_id: str, *, message_id: str, native_cursor: int,
+    ) -> bool:
+        result = await self._collection.update_one(
+            {
+                "binding_id": binding_id,
+                "active_turn.message_id": message_id,
+                "active_turn.status": "running",
+                "active_turn.turn_context.selected_command_id": {"$exists": True},
+            },
+            {"$set": {"active_turn.command_after_cursor": max(0, int(native_cursor))}},
+        )
+        return result.matched_count > 0
 
     async def finish_turn(self, binding_id: str, *, message_id: str, status: str) -> bool:
         if status not in {"completed", "failed", "cancelled"}:

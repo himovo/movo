@@ -111,7 +111,7 @@ refresh_gateway_resolution() {
 }
 
 deployment_urls() {
-  local configured_port configured_base
+  local configured_port configured_base configured_plugin_ui_port
   configured_port="${MOVO_PORT:-$(dotenv_value MOVO_PORT)}"
   if [[ -z "${configured_port}" ]]; then
     configured_port="${ASKAI_PORT:-$(dotenv_value ASKAI_PORT)}"
@@ -119,6 +119,17 @@ deployment_urls() {
   configured_base="${PUBLIC_BASE_URL:-$(dotenv_value PUBLIC_BASE_URL)}"
   MOVO_PORT="${configured_port:-3000}"
   export MOVO_PORT
+  configured_plugin_ui_port="${MOVO_PLUGIN_UI_PORT:-$(dotenv_value MOVO_PLUGIN_UI_PORT)}"
+  if [[ -z "${configured_plugin_ui_port}" ]]; then
+    if [[ "${MOVO_PORT}" =~ ^[0-9]+$ ]] && (( MOVO_PORT > 0 && MOVO_PORT <= 65435 )); then
+      configured_plugin_ui_port="$((MOVO_PORT + 100))"
+    else
+      printf 'Invalid MOVO_PORT for a separate plugin UI port: %s\n' "${MOVO_PORT}" >&2
+      return 1
+    fi
+  fi
+  MOVO_PLUGIN_UI_PORT="${configured_plugin_ui_port}"
+  export MOVO_PLUGIN_UI_PORT
   MOVO_LOCAL_BASE="http://127.0.0.1:${MOVO_PORT}"
   MOVO_PUBLIC_BASE="${configured_base%/}"
   if [[ -z "${MOVO_PUBLIC_BASE}" ]]; then

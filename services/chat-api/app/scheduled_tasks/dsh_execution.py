@@ -76,6 +76,7 @@ class ScheduledDshExecution:
             ).strip() or None,
             selected_writing_skill_id=selection.selected_writing_skill_id,
             selected_skill_id=selection.selected_skill_id,
+            selected_command_id=selection.selected_command_id,
         )
         await self._mark_started(
             job=job,

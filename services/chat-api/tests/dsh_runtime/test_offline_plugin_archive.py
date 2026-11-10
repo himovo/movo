@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from app.dsh_runtime.plugin_management.offline_package_capture import imported_archive
+from app.dsh_runtime.plugin_management.offline_package_capture import imported_archive, imported_plugin_record
 
 
 def test_imported_plugin_archive_resolves_exact_version(monkeypatch, tmp_path: Path) -> None:
@@ -14,8 +14,11 @@ def test_imported_plugin_archive_resolves_exact_version(monkeypatch, tmp_path: P
     (archives / f"{digest}.tgz").write_bytes(b"package")
     (collections / "plugin-record.json").write_text(json.dumps({
         "name": "@example/plugin", "version": "1.2.3", "archiveDigest": digest,
+        "dshVersion": "0.2.1-alpha.1",
     }), encoding="utf-8")
 
     assert imported_archive("@example/plugin@1.2.3") == str(archives / f"{digest}.tgz")
+    assert imported_plugin_record("@example/plugin@1.2.3") == (
+        str(archives / f"{digest}.tgz"), "0.2.1-alpha.1")
     assert imported_archive("@example/plugin@1.2.4") == ""
     assert imported_archive("../plugin@1.2.3") == ""

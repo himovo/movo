@@ -87,6 +87,9 @@ importers:
       pnpm:
         specifier: 11.28.5
         version: 11.28.5
+      ws:
+        specifier: 8.21.3
+        version: 8.21.3
 
 packages:
 

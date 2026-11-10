@@ -34,6 +34,7 @@ class PluginCollection(BaseModel):
     name: str
     version: str
     archiveDigest: str = ""
+    dshVersion: str = ""
 
 
 @router.get("")
@@ -51,7 +52,7 @@ def plugin_collection(value: PluginCollection, _: None = Depends(authorized)) ->
     if value.archiveDigest and not re.fullmatch(r"[0-9a-f]{64}", value.archiveDigest):
         raise HTTPException(status_code=400, detail="Invalid plugin archive digest")
     return record_plugin(OfflinePackageStore().root, name=value.name, version=value.version,
-                         archive_digest=value.archiveDigest)
+                         archive_digest=value.archiveDigest, dsh_version=value.dshVersion)
 
 
 @router.post("/plugin-archives/{digest}")

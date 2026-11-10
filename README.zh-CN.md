@@ -205,6 +205,7 @@ cp .env.example .env
 
 ```env
 MOVO_PORT=3000
+MOVO_PLUGIN_UI_PORT=3100
 MOVO_VOLUME_PREFIX=movo
 MOVO_IMAGE_PREFIX=ghcr.io/himovo/movo
 MOVO_VERSION=vX.Y.Z
@@ -212,6 +213,7 @@ PUBLIC_BASE_URL=https://movo.example.com
 ```
 
 首次启动后应保持 `MOVO_VOLUME_PREFIX` 不变。DNS、TLS 证书和外部反向代理由部署者负责配置。
+同一主机部署多个实例时，每个实例需使用不同的 `MOVO_PLUGIN_UI_PORT`。HTTPS 部署还需将 `MOVO_PLUGIN_UI_PUBLIC_ORIGIN` 设为独立的 HTTPS 地址，并由反向代理转发到插件页面网关端口。
 
 ## 从源码构建
 

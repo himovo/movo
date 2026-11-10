@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import os
+import secrets
 from typing import Any
 
 from app.enterprise_capabilities.availability import InternalToolAvailability, capability_available
@@ -24,6 +25,7 @@ from app.dsh_runtime.profile.compiler import ModelProfileCompiler
 from app.dsh_runtime.profile.tools import MongoToolCatalog, ToolProfileCompiler
 from app.dsh_runtime.profile.skills import MongoSkillCatalog, SkillProfileCompiler
 from app.dsh_runtime.profile.plugins import MongoPluginCatalog
+from app.dsh_runtime.plugin_ui.service import PluginUiService
 from app.dsh_runtime.plugin_management.repository import PluginInstallationRepository
 from app.dsh_runtime.profile.resolver import RuntimeProfileResolver
 from app.dsh_runtime.profile.service import RuntimeProfilePublisher
@@ -55,6 +57,7 @@ class DshRuntimeApplication:
         self.desktop_bootstrap: DesktopRuntimeBootstrapService | None = None
         self.desktop_bindings: DesktopCodeBindingService | None = None
         self.topic_admission: TopicAdmissionService | None = None
+        self.plugin_ui: PluginUiService | None = None
         self.host_healthy = False
 
     async def start(self) -> None:
@@ -139,19 +142,26 @@ class DshRuntimeApplication:
         self.desktop_bindings = DesktopCodeBindingService(
             conversations, bindings, publisher, kernel_version=self.KERNEL_VERSION
         )
+        coordinator = RuntimeCoordinator(
+            gateway, bindings,
+            events=events,
+            attachment_transfer=SeedAttachmentTransfer(
+                Path(settings.DSH_RUNTIME_STORAGE_ROOT)
+                if settings.DSH_RUNTIME_STORAGE_ROOT
+                else Path(__file__).resolve().parents[2] / "dsh" / "storage",
+                workspace_root=Path(os.environ.get("MOVO_SANDBOX_WORKSPACE_ROOT", "/workspaces"))
+                if os.environ.get("MOVO_SANDBOX_MANAGER_URL", "").strip() else None,
+            ),
+        )
+        self.plugin_ui = PluginUiService(
+            publisher=publisher, coordinator=coordinator,
+            runtime_host_url=settings.DSH_RUNTIME_HOST_URL,
+            runtime_host_token=settings.DSH_RUNTIME_HOST_TOKEN,
+            signing_secret=secret or settings.DSH_RUNTIME_HOST_TOKEN or secrets.token_urlsafe(48),
+        )
         self.chat = DshChatService(
             gateway=gateway,
-            coordinator=RuntimeCoordinator(
-                gateway, bindings,
-                events=events,
-                attachment_transfer=SeedAttachmentTransfer(
-                    Path(settings.DSH_RUNTIME_STORAGE_ROOT)
-                    if settings.DSH_RUNTIME_STORAGE_ROOT
-                    else Path(__file__).resolve().parents[2] / "dsh" / "storage",
-                    workspace_root=Path(os.environ.get("MOVO_SANDBOX_WORKSPACE_ROOT", "/workspaces"))
-                    if os.environ.get("MOVO_SANDBOX_MANAGER_URL", "").strip() else None,
-                ),
-            ),
+            coordinator=coordinator,
             conversations=conversations,
             bindings=bindings,
             events=events,
@@ -178,6 +188,8 @@ class DshRuntimeApplication:
         await self.claim_recovery.reconcile_all_active_claims()
 
     async def stop(self) -> None:
+        if self.plugin_ui is not None:
+            await self.plugin_ui.close()
         if self.chat is not None:
             await self.chat.shutdown()
         if self._transport is not None:
@@ -188,6 +200,7 @@ class DshRuntimeApplication:
         self.desktop_bootstrap = None
         self.desktop_bindings = None
         self.topic_admission = None
+        self.plugin_ui = None
         self._transport = None
         self.host_healthy = False
 
@@ -206,6 +219,11 @@ class DshRuntimeApplication:
         if self.chat is None:
             raise RuntimeError("DSH Runtime Application is not started")
         return self.chat
+
+    def require_plugin_ui(self) -> PluginUiService:
+        if self.plugin_ui is None:
+            raise RuntimeError("DSH Plugin UI is not started")
+        return self.plugin_ui
 
     def require_transport(self) -> HttpKernelHostTransport:
         if self._transport is None:

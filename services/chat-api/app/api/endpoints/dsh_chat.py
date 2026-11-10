@@ -232,6 +232,10 @@ async def _start_chat_completions(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except (LookupError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if skill_selection.selected_command_id and (
+        latest.images or latest.documents or latest.knowledge_references
+    ):
+        raise HTTPException(status_code=400, detail="plugin_command_attachments_not_supported")
     conversation_id = str(output_spec.get("task_id") or output_spec.get("session_id") or "").strip() or None
     # F2 re-admission (no new client contract): the stable claim token is
     # derived from the already-validated, already-echoed X-User-Message-Id —
@@ -258,6 +262,7 @@ async def _start_chat_completions(
             language_name=str(output_spec.get("language") or output_spec.get("locale") or "") or None,
             selected_writing_skill_id=skill_selection.selected_writing_skill_id,
             selected_skill_id=skill_selection.selected_skill_id,
+            selected_command_id=skill_selection.selected_command_id,
             user_message_id=user_message_id,
         )
     except ConversationBusyError as exc:

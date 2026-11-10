@@ -1,7 +1,7 @@
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const PACKAGE_MANAGER = resolve(dirname(fileURLToPath(import.meta.url)), '../../node_modules/pnpm/bin/pnpm.mjs')
+const PACKAGE_MANAGER = resolve(dirname(fileURLToPath(import.meta.url)), 'pnpm-package-manager.mjs')
 
 // DSH's manager only mounts when the Host supplies a real, writable profile.
 // Keep the profile beside this Runtime's durable sessions, never in the image.

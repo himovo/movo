@@ -104,12 +104,14 @@ function unavailableMessage(reason?: string) {
           </svg>
         </span>
         <span class="min-w-0 flex-1">
-          <span class="flex min-w-0 items-center gap-2">
-            <span class="truncate text-sm font-semibold text-slate-900">{{ skill.name }}</span>
+          <span class="block break-words text-sm font-semibold text-slate-900">{{ skill.name }}</span>
+          <span class="mt-1 flex flex-wrap items-center gap-1.5">
+            <span v-if="skill.entryKind === 'command'" class="shrink-0 rounded-full bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">{{ t('composer.skill.pluginCommand') }}</span>
+            <span v-if="skill.pluginName" class="shrink-0 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[11px] font-medium text-indigo-700">{{ t('composer.skill.pluginSource', { name: skill.pluginName }) }}</span>
             <span class="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-500">{{ skillSourceLabel(skill.sourceScope) }}</span>
             <span class="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-500">{{ skillTypeLabel(skill.type) }}</span>
           </span>
-          <span class="mt-0.5 block truncate text-xs text-slate-500">{{ skill.description || skill.scenario || (t('composer.noDescription')) }}</span>
+          <span class="mt-1 block truncate text-xs text-slate-500" :title="skill.description || skill.scenario || t('composer.noDescription')">{{ skill.description || skill.scenario || (t('composer.noDescription')) }}</span>
           <span v-if="skill.available === false" class="mt-1 block text-xs font-medium text-amber-700">{{ unavailableMessage(skill.unavailableReason) }}</span>
         </span>
       </button>

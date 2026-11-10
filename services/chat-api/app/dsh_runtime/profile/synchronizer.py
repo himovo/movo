@@ -45,6 +45,7 @@ class ConversationProfileSynchronizer:
         user_id: str,
         model_instance_id: str | None = None,
         selected_skill_id: str | None = None,
+        selected_command_id: str | None = None,
     ) -> ProfileSyncResult:
         missing_session = False
         try:
@@ -98,7 +99,10 @@ class ConversationProfileSynchronizer:
             if missing_session:
                 raise
             previous = await self._profiles.get(previous_version)
-            if not can_defer_profile_change(previous, desired, selected_skill_id=selected_skill_id):
+            if not can_defer_profile_change(
+                previous, desired, selected_skill_id=selected_skill_id,
+                selected_command_id=selected_command_id,
+            ):
                 raise
             # Verify that the predecessor still exists before admitting the
             # turn. An unavailable Host must not be reported as a success.

@@ -87,6 +87,7 @@ if [ -z "$NODE_BIN" ]; then
     echo "Node.js 22.19+ or 24+ is required by the pinned DSH runtime."
     exit 1
 fi
+export PATH="$(dirname "$NODE_BIN"):$PATH"
 
 PNPM_BIN="$(find_pnpm || true)"
 if [ -z "$PNPM_BIN" ]; then

@@ -82,6 +82,7 @@ export interface AppSidebarSources {
   quotaUsedPercentLabel: Ref<string>
   availableTenants: Ref<Account['availableTenants']>
   getMainId: () => string
+  getUserId: () => string | null
   switchingTenant: Ref<boolean>
   adminSsoStarting: Ref<boolean>
   canCreateOrganization: Ref<boolean>
@@ -123,7 +124,7 @@ export function useAppSidebarBindings(sources: AppSidebarSources) {
     openSkillsPage, navigateTo, openToolsPage, openKnowledgePage,
     userMenuOpen, maskedPhone, billingSummary, billingSummaryLoading,
     billingSummaryLoaded, quotaRemaining, quotaTotal, quotaTotalLabel,
-    quotaUsedPercent, quotaUsedPercentLabel, availableTenants, getMainId,
+    quotaUsedPercent, quotaUsedPercentLabel, availableTenants, getMainId, getUserId,
     switchingTenant, adminSsoStarting, canCreateOrganization, canUpgradePlan,
     userProfile, locale, canAccessAdmin, isEnterpriseTenant,
     openProfileEditor, openTokenUsagePage, handleSwitchTenant,
@@ -196,6 +197,12 @@ export function useAppSidebarBindings(sources: AppSidebarSources) {
     createProject,
   },
   showFeatures: !capabilities.isDesktop && (canUseSkills.value || canUseTools.value),
+  pluginShortcuts: {
+    mainId: getMainId(),
+    userId: getUserId() || '',
+    loggedIn: isLoggedIn.value,
+    currentView: currentView.value,
+  },
   features: {
     currentView: currentView.value,
     canUseSkills: canUseSkills.value,

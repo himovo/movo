@@ -55,6 +55,7 @@ async def localized_http_error(request: Request, exc: StarletteHTTPException):
 
 _receipt_gc_task: asyncio.Task | None = None
 _skill_environment_task: asyncio.Task | None = None
+_plugin_compatibility_task: asyncio.Task | None = None
 
 origins = settings.allowed_origins_list()
 
@@ -127,6 +128,7 @@ from app.api.endpoints import (
     user_questions,
     desktop_question_answers,
     dsh_plugins,
+    dsh_plugin_ui,
     dsh_plugin_archives,
     dsh_skill_bundles,
     debug,
@@ -183,6 +185,7 @@ app.include_router(tasks.router, prefix="/api")
 app.include_router(skills.router, prefix="/api")
 app.include_router(skill_package_install.router, prefix="/api")
 app.include_router(dsh_plugins.router, prefix="/api")
+app.include_router(dsh_plugin_ui.router)
 app.include_router(dsh_plugin_archives.router)
 app.include_router(skill_lifecycle.router, prefix="/api")
 app.include_router(skill_updates.router, prefix="/api")
@@ -259,7 +262,7 @@ async def _ensure_end_user_login_name_index(db) -> None:
 
 @app.on_event("startup")
 async def startup_event() -> None:
-    global _receipt_gc_task, _skill_environment_task
+    global _receipt_gc_task, _skill_environment_task, _plugin_compatibility_task
     init_db()
     db = get_db()
     # Keep session history list query fast: find by user_id and sort by updated_at desc.
@@ -383,6 +386,8 @@ async def startup_event() -> None:
     _receipt_gc_task = asyncio.create_task(_receipt_gc_loop())
     from app.services.skill_packages.reconcile import monitor_installed_environments
     _skill_environment_task = asyncio.create_task(monitor_installed_environments())
+    from app.dsh_runtime.plugin_management.revalidation import monitor_plugin_compatibility
+    _plugin_compatibility_task = asyncio.create_task(monitor_plugin_compatibility())
     settings = get_settings()
     logger.info(
         "application startup complete",
@@ -398,7 +403,7 @@ async def startup_event() -> None:
 
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
-    global _receipt_gc_task, _skill_environment_task
+    global _receipt_gc_task, _skill_environment_task, _plugin_compatibility_task
     for callback in reversed(product_extension.shutdown):
         result = callback()
         if asyncio.iscoroutine(result):
@@ -409,6 +414,9 @@ async def shutdown_event() -> None:
     if _skill_environment_task is not None:
         _skill_environment_task.cancel()
         _skill_environment_task = None
+    if _plugin_compatibility_task is not None:
+        _plugin_compatibility_task.cancel()
+        _plugin_compatibility_task = None
     await scheduled_task_scheduler.stop()
     await token_usage_dispatcher.stop()
     from app.dsh_runtime.application import dsh_runtime_application

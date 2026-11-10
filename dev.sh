@@ -12,6 +12,8 @@ BACKEND_PORT="${BACKEND_PORT:-8000}"
 FRONTEND_PORT="${FRONTEND_PORT:-3000}"
 ADMIN_API_PORT="${ADMIN_API_PORT:-8100}"
 ADMIN_WEB_PORT="${ADMIN_WEB_PORT:-3100}"
+MOVO_PLUGIN_UI_PORT="${MOVO_PLUGIN_UI_PORT:-3200}"
+export MOVO_PLUGIN_UI_PORT
 DOC_PROCESSING_PORT="${DOC_PROCESSING_PORT:-8200}"
 ASKAI_REDIS_URL="${ASKAI_REDIS_URL:-redis://127.0.0.1:6379/0}"
 BACKEND_PYTHON_BIN=""
@@ -41,6 +43,7 @@ cleanup_ports() {
     kill_port "$FRONTEND_PORT"
     kill_port "$ADMIN_API_PORT"
     kill_port "$ADMIN_WEB_PORT"
+    kill_port "$MOVO_PLUGIN_UI_PORT"
     kill_port "$DOC_PROCESSING_PORT"
 }
 
@@ -106,7 +109,7 @@ start_runtime_backend() {
     echo "Starting Backend on :$BACKEND_PORT ..."
     cd "$CHAT_API_DIR"
     PYTHONPATH="$(pwd)" "$BACKEND_PYTHON_BIN" -m uvicorn app.main:app --reload --reload-dir app --port "$BACKEND_PORT" \
-        --timeout-graceful-shutdown "${BACKEND_GRACEFUL_SHUTDOWN_SECONDS:-5}" \
+        --timeout-graceful-shutdown "${BACKEND_GRACEFUL_SHUTDOWN_SECONDS:-120}" \
         --reload-exclude "backend.log" \
         --reload-exclude "static/*" \
         --reload-exclude "*.pyc" \
@@ -151,6 +154,11 @@ start_admin_web() {
     cd "$ROOT_DIR"
 }
 
+start_plugin_ui_gateway() {
+    echo "Starting Plugin UI Gateway on :$MOVO_PLUGIN_UI_PORT ..."
+    MOVO_PLUGIN_UI_BACKEND="http://127.0.0.1:$BACKEND_PORT" node "$ROOT_DIR/scripts/dev/plugin-ui-gateway.mjs" &
+}
+
 echo "Starting AskAI Platform..."
 movo_prepare_internal_service_auth "$ROOT_DIR"
 cleanup_ports
@@ -166,12 +174,14 @@ start_admin_api
 start_document_processing_service
 start_document_worker
 start_admin_web
+start_plugin_ui_gateway
 
 echo ""
 echo "Services are starting up!"
 echo "  - Frontend:    http://localhost:$FRONTEND_PORT"
 echo "  - Backend:     http://localhost:$BACKEND_PORT/docs"
 echo "  - Admin Web:   http://localhost:$ADMIN_WEB_PORT"
+echo "  - Plugin UI:   http://localhost:$MOVO_PLUGIN_UI_PORT"
 echo "  - Admin API:   http://localhost:$ADMIN_API_PORT/docs"
 echo "  - Doc Process: http://localhost:$DOC_PROCESSING_PORT/docs"
 echo "  - Redis:       $ASKAI_REDIS_URL"

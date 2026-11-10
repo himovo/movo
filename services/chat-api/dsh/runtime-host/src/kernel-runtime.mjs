@@ -18,6 +18,7 @@ import { hasConfiguredWebSearch } from './web-search-availability.mjs'
 import { RuntimeTemporalContext } from './runtime-temporal-context.mjs'
 import { RuntimeTurnContext } from './runtime-turn-context.mjs'
 import { OfficialDshHostComposition } from './official-host/composition.mjs'
+import { globalPluginCapabilities, sessionPluginCapabilities } from './official-host/plugin-capability-snapshot.mjs'
 import { compatibleSessionEvents } from './official-host/event-compat.mjs'
 import { LiveAssistantStream } from './official-host/live-assistant-stream.mjs'
 import { ASKAI_ENTERPRISE_PRESET_ID } from './official-host/overlay.mjs'
@@ -40,6 +41,9 @@ import { invokeSelectedSkill, resolveSkillTurnContext } from './skill-turn-selec
 import { SkillInvocationTracker } from './skill-invocation-tracker.mjs'
 import { registerSkillResourceTool } from './skill-resource-tool.mjs'
 import { validConversationSpaceKey } from './personal-space.mjs'
+import { resolvePluginCommand, requireCurrentCommand } from './plugin-command-selection.mjs'
+import { NativePluginWeb } from './native-plugin-web.mjs'
+import { migrateLegacyHostStorage } from './plugin-user-home.mjs'
 
 export class KernelRuntime {
   #ctx
@@ -64,6 +68,7 @@ export class KernelRuntime {
   #skillProvider
   #skillResourceToolDispose
   #skillInvocations
+  #nativePluginWeb
 
   constructor({ runtimeId, isolationKey, profileVersion, storageRoot, modelProfile }) {
     this.runtimeId = runtimeId
@@ -77,10 +82,15 @@ export class KernelRuntime {
 
   async start() {
     await mkdir(this.storageRoot, { recursive: true })
+    const durableStorageRoot = process.env.MOVO_DSH_PLUGIN_CHILD === '1' &&
+      this.modelProfile?.subjectUserId ? process.env.HOME : undefined
+    if (durableStorageRoot) await migrateLegacyHostStorage(durableStorageRoot, this.storageRoot)
     this.#composition = new OfficialDshHostComposition({
       storageRoot: this.storageRoot,
+      durableStorageRoot,
       webSearchProvider: hasConfiguredWebSearch(this.modelProfile) ? 'askai-enterprise' : undefined,
       plugins: this.modelProfile?.plugins,
+      pluginModelName: this.modelProfile?.modelName,
     })
     const ctx = await this.#composition.start()
     if (this.#composition.unavailablePlugins.length > 0) {
@@ -91,6 +101,7 @@ export class KernelRuntime {
       })
     }
     this.#ctx = ctx
+    this.#nativePluginWeb = new NativePluginWeb(ctx, this.modelProfile?.plugins)
     this.#managedPlugins = new ManagedPluginBridge(ctx)
     this.#temporalContext.install(ctx)
     this.#turnContext.install(ctx, { visionEnabled: this.modelProfile?.visionEnabled === true })
@@ -154,6 +165,16 @@ export class KernelRuntime {
       composed: specifier => this.#composition.inventory().entries
         .some(entry => entry.enabled && entry.moduleName === specifier),
     })
+  }
+
+  async proxyPluginUi(pluginId, path, request, response) {
+    this.#assertStarted()
+    await this.#nativePluginWeb.proxy(pluginId, path, request, response)
+  }
+
+  async proxyPluginUiUpgrade(pluginId, request, socket, head) {
+    this.#assertStarted()
+    await this.#nativePluginWeb.proxyUpgrade(pluginId, request, socket, head)
   }
 
   async createSession({
@@ -250,6 +271,17 @@ export class KernelRuntime {
     }
     this.#temporalContext.update(sessionId, temporalContext)
     const resolvedTurnContext = resolveSkillTurnContext(this.modelProfile, turnContext)
+    if (resolvedTurnContext.selectedSkill?.sourceScope === 'plugin') {
+      const selected = resolvedTurnContext.selectedSkill
+      const current = (await this.#ctx.skills.list({
+        scope: scopeOf(agent.ctx),
+        ...(agent.session.header.cwd ? { cwd: agent.session.header.cwd } : {}),
+      })).find(item => item.name === resolvedTurnContext.skillName)
+      if (!current || current.invocation?.userInvocable !== true ||
+          current.provider !== selected.provider || current.source !== selected.source) {
+        throw new Error('selected plugin Skill is not provided by the authorized plugin in this Session')
+      }
+    }
     this.#turnContext.update(sessionId, resolvedTurnContext.context)
     this.#modelAdapter?.setKnowledgeMode(sessionId, resolvedTurnContext.context?.knowledge_qa_enabled === true)
     const promptParts = content.map((block, index) => {
@@ -279,6 +311,30 @@ export class KernelRuntime {
       throw error
     }
     return { accepted: true, messageId: message.id }
+  }
+
+  async executePluginCommand(sessionId, selectedId, line) {
+    const agent = this.#requireAgent(sessionId)
+    const selected = resolvePluginCommand(this.modelProfile, selectedId, line)
+    const commands = this.#ctx.get('commands')
+    if (!commands) throw new Error('DSH command registry is unavailable')
+    requireCurrentCommand(commands, agent, selected)
+    await agent.whenIdle()
+    const execution = await commands.execute(agent, line, [], AbortSignal.timeout(120_000))
+    if (!execution) throw new Error('selected plugin command did not resolve in this Session')
+    let idleTimer
+    try {
+      await Promise.race([
+        agent.whenIdle(),
+        new Promise((_, reject) => {
+          idleTimer = setTimeout(() => reject(new Error('selected plugin command did not become idle')), 120_000)
+          idleTimer.unref?.()
+        }),
+      ])
+    } finally {
+      clearTimeout(idleTimer)
+    }
+    return { commandId: execution.commandId, result: execution.result }
   }
 
   async cancel(sessionId, cause) {
@@ -401,10 +457,17 @@ export class KernelRuntime {
   async managedPluginList() {
     return {
       ...(await this.#managedPlugins.list()),
+      dshVersion: this.#composition.inventory().dshVersion,
       globalTools: this.#ctx.tools.schemas().map(tool => tool.name),
+      ...(await globalPluginCapabilities(this.#ctx)),
     }
   }
+
+  async managedSessionCapabilities(sessionId) {
+    return await sessionPluginCapabilities(this.#ctx, this.#requireAgent(sessionId))
+  }
   managedPluginInspect(spec, registry) { return this.#managedPlugins.inspect(spec, registry) }
+  managedPluginManifest(name) { return this.#managedPlugins.manifest(name) }
   managedPluginInstall(spec, options) { return this.#managedPlugins.install(spec, options) }
   managedPluginEnable(name, enabled) { return this.#managedPlugins.enable(name, enabled) }
   managedPluginRemove(name) { return this.#managedPlugins.remove(name) }

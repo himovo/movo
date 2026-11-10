@@ -39,8 +39,10 @@ export function useAppSessionController(options: {
   async function selectSession(sessionId: string): Promise<void> {
     const userId = options.userId()
     if (!userId) return
-    options.navigateToChat()
-    if (chatRuntime.currentSessionId.value === sessionId) return
+    if (chatRuntime.currentSessionId.value === sessionId) {
+      options.navigateToChat()
+      return
+    }
     // Clear a shared row's unread marker immediately; the server read cursor
     // catches up when selectSession fetches the conversation.
     if (sharedSessions.value.some(session => session.id === sessionId && session.shared_unread)) {
@@ -49,6 +51,7 @@ export function useAppSessionController(options: {
       ))
     }
     const pane = await chatRuntime.selectSession(sessionId, userId, options.mainId(), options.authToken() || null)
+    options.navigateToChat()
     if (options.canUseCode() && pane.codeProject?.workspace_id && !codeRuntime.stateFor(pane.key).session) {
       codeRuntime.beginRestore(pane.key)
       try {

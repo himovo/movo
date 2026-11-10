@@ -33,10 +33,18 @@ const accessPlugin = ref<DshPlugin | null>(null)
 function openAccess(plugin: DshPlugin) { accessPlugin.value = plugin; accessVisible.value = true }
 function errorText(error: unknown): string {
   const detail = (error as any)?.response?.data?.detail
+  if (typeof detail === 'string' && detail.startsWith('incompatible-version')) {
+    return `${t('dshPlugins.installError.incompatibleVersion')} ${detail}`
+  }
+  if (typeof detail === 'string' && detail.startsWith('dsh_runtime_version_mismatch')) {
+    return `${t('dshPlugins.installError.runtimeMismatch')} ${detail}`
+  }
   const messages: Record<string, string> = {
     plugin_package_not_found: 'dshPlugins.installError.notFound',
     plugin_offline_package_missing: 'dshPlugins.installError.offlineMissing',
     plugin_registry_unavailable: 'dshPlugins.installError.registryUnavailable',
+    fixed_plugin_version_required: 'dshPlugins.installError.fixedVersion',
+    plugin_source_must_be_prebuilt: 'dshPlugins.installError.prebuiltOnly',
     'not-a-bundle': 'dshPlugins.installError.notBundle',
   }
   const key = messages[String(detail)]
@@ -56,7 +64,7 @@ async function install(source: string | File) {
     showInstall.value = false
     const status = plugin.availability?.reason === 'no_global_tool_detected' ? 'unsupported' : plugin.availability?.status
     if (status === 'unsupported') message.warning(t('dshPlugins.installedUnsupported'))
-    else if (status === 'session_exposed' || status === 'verified') message.success(t('dshPlugins.installed'))
+    else if (status === 'session_exposed' || status === 'runtime_active' || status === 'verified') message.success(t('dshPlugins.installed'))
     else message.warning(t('dshPlugins.installedNeedsCheck'))
     await reload()
   } catch (error) { message.error(String(errorText(error))) }

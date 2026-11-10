@@ -460,7 +460,7 @@ const sidebarBindings = useAppSidebarBindings({
   openSkillsPage, navigateTo, openToolsPage, openKnowledgePage,
   userMenuOpen, maskedPhone, billingSummary, billingSummaryLoading,
   billingSummaryLoaded, quotaRemaining, quotaTotal, quotaTotalLabel,
-  quotaUsedPercent, quotaUsedPercentLabel, availableTenants, getMainId,
+  quotaUsedPercent, quotaUsedPercentLabel, availableTenants, getMainId, getUserId,
   switchingTenant, adminSsoStarting, canCreateOrganization, canUpgradePlan,
   userProfile, locale, canAccessAdmin, isEnterpriseTenant,
   openProfileEditor, openTokenUsagePage, handleSwitchTenant,

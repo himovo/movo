@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 
 import { ASKAI_DSH_HOST_PROTOCOL_VERSION, ASKAI_DSH_KERNEL_VERSION, ASKAI_DSH_READY_EVENT } from './host-protocol.mjs'
 import { RuntimeHttpServer } from './runtime-http-server.mjs'
+import { migrateLegacyPluginHome } from './plugin-user-home.mjs'
 
 function parseArgs(argv) {
   const values = { host: '127.0.0.1', port: 8101, storageRoot: './storage', authTokenFile: '' }
@@ -28,6 +29,9 @@ async function consumeTokenFile(path) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2))
+  if (process.env.MOVO_PLUGIN_LEGACY_HOME && process.env.HOME) {
+    await migrateLegacyPluginHome(process.env.HOME, process.env.MOVO_PLUGIN_LEGACY_HOME)
+  }
   const runtime = new RuntimeHttpServer({
     host: options.host,
     port: options.port,

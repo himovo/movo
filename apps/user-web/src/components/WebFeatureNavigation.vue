@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { entryVisible } from '../composables/useEntryVisibility'
 import { t } from '../composables/i18n'
 import type { AppView } from '../composables/useAppNavigation'
@@ -12,13 +12,22 @@ const props = defineProps<{
   personalKnowledgeUnreadCount: number
 }>()
 const hasVisibleEntries = computed(() => (props.canUseSkills && entryVisible('skills')) || entryVisible('plugins') || (props.canUseTools && (entryVisible('tools') || entryVisible('knowledge'))))
+const expanded = ref(true)
 const emit = defineEmits<{ skills: []; plugins: []; tools: []; knowledge: [] }>()
 </script>
 
 <template>
   <template v-if="hasVisibleEntries">
-  <div class="mt-2 px-5 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em]">{{ t('app.sidebar.skills') }}</div>
-  <div class="mb-2 space-y-0.5 px-3">
+  <button
+    type="button"
+    class="mt-4 flex w-full items-center gap-1 px-5 pb-1 text-left text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400"
+    :aria-expanded="expanded"
+    @click="expanded = !expanded"
+  >
+    <span>{{ t('app.sidebar.skills') }}</span>
+    <svg class="h-3.5 w-3.5 transition-transform duration-150" :class="expanded ? 'rotate-90' : ''" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m5 3 5 5-5 5"/></svg>
+  </button>
+  <div v-if="expanded" class="mb-2 space-y-0.5 px-3">
     <button
       v-if="props.canUseSkills && entryVisible('skills')"
       class="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2 text-left text-sm transition-all active:scale-95"

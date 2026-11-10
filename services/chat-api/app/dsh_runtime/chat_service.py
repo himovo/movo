@@ -38,6 +38,7 @@ from app.dsh_runtime.session_access import (
 from app.dsh_runtime.temporal_context import build_temporal_context
 from app.dsh_runtime.turn_cancellation import TurnCancellationCoordinator
 from app.dsh_runtime.turn_runner import DshTurnRunner
+from app.dsh_runtime.plugin_command_runner import PluginCommandRunner
 from app.dsh_runtime.turn_finalization import TurnStateFinalizer
 from app.dsh_runtime.turn_recovery import TurnTerminalRecovery
 from app.enterprise_capabilities.evidence import ExecutionEvidenceRepository
@@ -117,6 +118,10 @@ class DshChatService:
             authoritative_deliveries=authoritative_deliveries,
             plugin_invocations=PluginInvocationRecorder(),
         )
+        self._plugin_command_runner = PluginCommandRunner(
+            gateway=gateway, conversations=conversations, bindings=bindings,
+            events=events, turn_events=turn_events,
+        )
         self._tasks: dict[str, asyncio.Task[str]] = {}
         self._turn_outcomes: dict[str, str] = {}
         self._live_streams: dict[str, LiveTurnStream] = {}
@@ -158,6 +163,7 @@ class DshChatService:
         language_name: str | None = None,
         selected_writing_skill_id: str | None = None,
         selected_skill_id: str | None = None,
+        selected_command_id: str | None = None,
     ) -> PreparedTurn:
         if self._topic_admission is None:
             raise RuntimeError("topic admission is not configured")
@@ -184,6 +190,8 @@ class DshChatService:
             turn_context["selected_writing_skill_id"] = str(selected_writing_skill_id)
         if selected_skill_id:
             turn_context["selected_skill_id"] = str(selected_skill_id)
+        if selected_command_id:
+            turn_context["selected_command_id"] = str(selected_command_id)
         # Server-built turn metadata (plan todo 14): the turn's initiator is
         # recorded here — never copied from ChatRequest — and travels with the
         # claimed turn (claim_turn) for the approval stamp and the
@@ -325,6 +333,7 @@ class DshChatService:
                     user_id=user_id,
                     model_instance_id=sync_model_id,
                     selected_skill_id=selected_skill_id,
+                    selected_command_id=selected_command_id,
                 )).binding
             except BindingReplacementConflict as exc:
                 raise ConversationBusyError(
@@ -465,7 +474,10 @@ class DshChatService:
                 live_stream,
             )
         task = asyncio.create_task(
-            self._turn_runner.run(
+            self._plugin_command_runner.run(
+                binding=claimed, message_id=message_id, text=text,
+                selected_command_id=selected_command_id, live_stream=live_stream,
+            ) if selected_command_id else self._turn_runner.run(
                 binding=claimed,
                 message_id=message_id,
                 request_id=request_id,

@@ -90,6 +90,9 @@ class PluginRuntimes:
                 personal_root = self.volume_root / "personal" / personal_space_key
                 personal_root.mkdir(parents=True, exist_ok=True)
                 personal_root.chmod(0o777)
+                plugin_home = personal_root / "plugin-home"
+                plugin_home.mkdir(exist_ok=True)
+                plugin_home.chmod(0o777)
                 personal_tmp = personal_root / "tmp"
                 personal_tmp.mkdir(exist_ok=True)
                 personal_tmp.chmod(0o777)
@@ -112,15 +115,15 @@ class PluginRuntimes:
                 "WorkingDir": "/app",
                 "Env": [
                     f"DSH_RUNTIME_HOST_TOKEN={token}", "MOVO_DSH_PLUGIN_CHILD=1",
-                    "HOME=/data/dsh-runtime",
+                    f"HOME={'/job/home/plugin-home' if personal_space_key else '/data/dsh-runtime'}",
+                    *(["MOVO_PLUGIN_LEGACY_HOME=/data/dsh-runtime"] if personal_space_key else []),
                     f"TMPDIR={'/job/home/tmp' if personal_space_key else '/tmp'}",
                     "NODE_USE_ENV_PROXY=1",
                     *(["MOVO_PERSONAL_SPACE_ROOT=/job/home"] if personal_space_key else []),
                     "HTTP_PROXY=http://sandbox-egress:3128", "HTTPS_PROXY=http://sandbox-egress:3128",
                     "NO_PROXY=sandbox-gateway,localhost,127.0.0.1",
-                    *(["npm_config_userconfig=/offline-packages/.npmrc",
-                       "npm_config_store_dir=/offline-packages/pnpm",
-                       "npm_config_prefer_offline=true"] if offline_volume else []),
+                    *(["MOVO_OFFLINE_PACKAGE_ROOT=/offline-packages",
+                       "npm_config_userconfig=/offline-packages/.npmrc"] if offline_volume else []),
                 ],
                 "HostConfig": {
                     "NetworkMode": network_id, "ReadonlyRootfs": True,

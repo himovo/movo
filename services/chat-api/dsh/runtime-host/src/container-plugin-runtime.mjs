@@ -123,6 +123,10 @@ export class ContainerPluginRuntimePool {
     if (entry) this.#reaper.touch(entry)
     return entry
   }
+  upgradeTarget(entry, path) {
+    return { url: `ws://${entry.host}:${entry.port}${path}`,
+      headers: { authorization: `Bearer ${entry.token}` } }
+  }
   findByIsolation(isolationKey) {
     const entry = this.#byIsolation.get(isolationKey)
     if (entry) this.#reaper.touch(entry)

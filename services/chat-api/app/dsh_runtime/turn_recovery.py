@@ -16,6 +16,7 @@ from app.dsh_runtime.events.authoritative_delivery import (
 )
 from app.dsh_runtime.events.tool_presentation import tool_presentations
 from app.dsh_runtime.gateway import DshAgentKernelGateway
+from app.dsh_runtime.plugin_command_recovery import recover_plugin_command_terminal
 from app.dsh_runtime.profile.service import RuntimeProfilePublisher
 from app.dsh_runtime.runtime_coordinator import RuntimeCoordinator
 from app.dsh_runtime.turn_finalization import (
@@ -46,7 +47,7 @@ class TurnTerminalRecovery:
         self._finalizer = TurnStateFinalizer(bindings, conversations)
         self._coordinator = RuntimeCoordinator(gateway, bindings, events=events)
 
-    async def ingest_once(self, *, binding: dict[str, Any], message_id: str) -> None:
+    async def ingest_once(self, *, binding: dict[str, Any], message_id: str) -> bool:
         native_events = await self._gateway.events_once(
             str(binding["kernel_session_id"]), int(binding.get("event_cursor") or 0)
         )
@@ -90,7 +91,15 @@ class TurnTerminalRecovery:
                     "cursor": cursor,
                 },
             )
-        await self.finalize_persisted_terminal(binding=binding, message_id=message_id)
+        finalized = await self.finalize_persisted_terminal(binding=binding, message_id=message_id)
+        if not finalized:
+            rebuilt = await recover_plugin_command_terminal(
+                gateway=self._gateway, events=self._events,
+                binding=binding, message_id=message_id,
+            )
+            if rebuilt:
+                finalized = await self.finalize_persisted_terminal(binding=binding, message_id=message_id)
+        return finalized
 
     async def finalize_persisted_terminal(
         self, *, binding: dict[str, Any], message_id: str
@@ -185,7 +194,7 @@ class TurnTerminalRecovery:
         if not message_id:
             return False
         try:
-            await self.ingest_once(binding=binding, message_id=message_id)
+            return await self.ingest_once(binding=binding, message_id=message_id)
         except DshNotFoundError:
             # The host definitively reports no such session AFTER a
             # successful restore: the claim is orphaned and finalization is
@@ -196,7 +205,6 @@ class TurnTerminalRecovery:
                 return False
         except Exception:
             return False
-        return True
 
     async def _finalize_orphaned_claim(
         self, binding: dict[str, Any], message_id: str
@@ -254,6 +262,9 @@ class TurnTerminalRecovery:
                     await self._coordinator.restore(binding)
                 except DshSessionMissingError:
                     await self._finalize_orphaned_claim(binding, message_id)
+                else:
+                    if (binding.get("active_turn") or {}).get("turn_context", {}).get("selected_command_id"):
+                        await self.ingest_once(binding=binding, message_id=message_id)
             current = await self._bindings.current(
                 str(binding["conversation_id"]),
                 tenant_id=str(binding["tenant_id"]),

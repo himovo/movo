@@ -83,7 +83,9 @@ const {
   onScroll: onSkillPickerScroll, selectShortcutSkill,
 } = useComposerSkillPicker({
   userId: () => props.userId, mainId: () => props.mainId,
-  allowSkills: () => props.allowSkills, running: () => props.running,
+  allowSkills: () => props.allowSkills,
+  allowPluginEntries: () => true,
+  running: () => props.running,
   input: userInput, inputElement: composerInputRef,
   pickerElement: () => skillPickerRef.value?.root,
   closeAttachmentMenu, resizeInput: autoResizeComposerInput,
@@ -265,13 +267,16 @@ async function sendMessage() {
   const hasSelectedSkill = !!selectedSkill.value
   if (!hasText && !hasImages && !hasDocuments && !hasSelectedSkill) return
 
-  const text = userInput.value
+  const rawText = userInput.value
   const knowledgeRefs = [...mentions.selected.value]
   mentions.close()
   mentions.selected.value = []
   const imageFiles = pendingImages.value.map((item) => item.file)
   const documentFiles = pendingDocuments.value.map((item) => ({ file: item.file, kind: item.kind }))
   const skill = selectedSkill.value
+  const text = skill?.entryKind === 'command'
+    ? `/${skill.name}${rawText.trim() ? ` ${rawText.trim()}` : ''}`
+    : rawText
   const knowledgeEnabled = knowledgeQaEnabled.value
   closeAttachmentMenu()
   userInput.value = ''
@@ -292,7 +297,7 @@ async function sendMessage() {
     selectedSkillId: skill?.id || undefined,
     modelId: props.selectedModelId || undefined,
     onRejected: () => {
-      userInput.value = userInput.value ? `${text}\n\n${userInput.value}` : text
+      userInput.value = userInput.value ? `${rawText}\n\n${userInput.value}` : rawText
       pendingImages.value.push(...imageFiles.map((file) => ({ file, previewUrl: URL.createObjectURL(file) })))
       pendingDocuments.value.push(...documentFiles)
       mentions.selected.value = [...knowledgeRefs, ...mentions.selected.value]

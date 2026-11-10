@@ -1,4 +1,6 @@
 export const chatComposerMessages = {
+  'composer.skill.pluginSource': { zh: '来自插件 {name}', en: 'Plugin: {name}' },
+  'composer.skill.pluginCommand': { zh: '插件命令', en: 'Plugin command' },
   'composer.scope.all': { zh: '全部', en: 'All' },
   'composer.scope.mine': { zh: '我的', en: 'Mine' },
   'composer.scope.organization': { zh: '企业', en: 'Org' },

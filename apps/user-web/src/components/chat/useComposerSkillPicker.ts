@@ -1,5 +1,5 @@
-import { nextTick, onBeforeUnmount, ref, watch, type Ref } from 'vue'
-import { fetchSelectableSkills, type SelectableSkillItem } from '../../api/skills'
+import { computed, nextTick, onBeforeUnmount, ref, watch, type Ref } from 'vue'
+import { fetchSelectablePluginCommands, fetchSelectablePluginSkills, fetchSelectableSkills, type SelectableSkillItem } from '../../api/skills'
 
 type Scope = 'all' | 'user' | 'organization'
 
@@ -7,6 +7,7 @@ interface Options {
   userId: () => string | undefined
   mainId: () => string | undefined
   allowSkills: () => boolean | undefined
+  allowPluginEntries: () => boolean
   running: () => boolean
   input: Ref<string>
   inputElement: Ref<HTMLTextAreaElement | null>
@@ -23,6 +24,11 @@ export function useComposerSkillPicker(options: Options) {
   const keyword = ref('')
   const cursor = ref('')
   const hasMore = ref(false)
+  const pluginCursor = ref('')
+  const pluginHasMore = ref(false)
+  const commandCursor = ref('')
+  const commandHasMore = ref(false)
+  const combinedHasMore = computed(() => hasMore.value || pluginHasMore.value || commandHasMore.value)
   const items = ref<SelectableSkillItem[]>([])
   const activeIndex = ref(-1)
   const selectedSkill = ref<SelectableSkillItem | null>(null)
@@ -55,25 +61,43 @@ export function useComposerSkillPicker(options: Options) {
     if (reset) {
       cursor.value = ''
       hasMore.value = false
-    } else if (!hasMore.value || loadingMore.value) return
+      pluginCursor.value = ''
+      pluginHasMore.value = false
+      commandCursor.value = ''
+      commandHasMore.value = false
+    } else if ((!hasMore.value && !pluginHasMore.value && !commandHasMore.value) || loadingMore.value) return
 
     const requestId = ++requestSequence
     if (reset) loading.value = true
     else loadingMore.value = true
     try {
-      const page = await fetchSelectableSkills({
-        userId,
-        mainId: options.mainId() || 'default',
-        scope: scope.value,
-        keyword: keyword.value,
-        cursor: reset ? '' : cursor.value,
-        limit: 20,
-      })
+      const [native, plugin, commands] = await Promise.allSettled([
+        options.allowSkills() !== false && (reset || hasMore.value) ? fetchSelectableSkills({
+          userId, mainId: options.mainId() || 'default', scope: scope.value,
+          keyword: keyword.value, cursor: reset ? '' : cursor.value, limit: 20,
+        }) : Promise.resolve(null),
+        options.allowPluginEntries() && (reset || pluginHasMore.value) ? fetchSelectablePluginSkills({
+          scope: scope.value, keyword: keyword.value,
+          cursor: reset ? '' : pluginCursor.value, limit: 20,
+        }) : Promise.resolve(null),
+        options.allowPluginEntries() && (reset || commandHasMore.value) ? fetchSelectablePluginCommands({
+          scope: scope.value, keyword: keyword.value,
+          cursor: reset ? '' : commandCursor.value, limit: 20,
+        }) : Promise.resolve(null),
+      ])
       if (requestId !== requestSequence) return
-      items.value = reset ? page.items : [...items.value, ...page.items]
-      cursor.value = page.nextCursor
-      hasMore.value = page.hasMore
-      if (reset) activeIndex.value = page.items.findIndex(item => item.available !== false)
+      const nativePage = native.status === 'fulfilled' ? native.value : null
+      const pluginPage = plugin.status === 'fulfilled' ? plugin.value : null
+      const commandPage = commands.status === 'fulfilled' ? commands.value : null
+      const incoming = [...(nativePage?.items || []), ...(pluginPage?.items || []), ...(commandPage?.items || [])]
+      items.value = reset ? incoming : [...items.value, ...incoming]
+      cursor.value = nativePage?.nextCursor || ''
+      hasMore.value = nativePage?.hasMore || false
+      pluginCursor.value = pluginPage?.nextCursor || ''
+      pluginHasMore.value = pluginPage?.hasMore || false
+      commandCursor.value = commandPage?.nextCursor || ''
+      commandHasMore.value = commandPage?.hasMore || false
+      if (reset) activeIndex.value = incoming.findIndex(item => item.available !== false)
       else if (activeIndex.value >= items.value.length) activeIndex.value = items.value.findIndex(item => item.available !== false)
     } catch {
       if (requestId !== requestSequence) return
@@ -94,7 +118,7 @@ export function useComposerSkillPicker(options: Options) {
     searchTimer = setTimeout(() => { void load(true) }, 180)
   }
   function openPicker(nextKeyword = '') {
-    if (options.allowSkills() === false || !options.userId() || options.running()) return
+    if ((options.allowSkills() === false && !options.allowPluginEntries()) || !options.userId() || options.running()) return
     open.value = true
     options.closeAttachmentMenu()
     scheduleSearch(nextKeyword)
@@ -144,7 +168,7 @@ export function useComposerSkillPicker(options: Options) {
   }
   function onScroll(event: Event) {
     const element = event.currentTarget as HTMLElement | null
-    if (!element || loading.value || loadingMore.value || !hasMore.value) return
+    if (!element || loading.value || loadingMore.value || !combinedHasMore.value) return
     if (element.scrollTop + element.clientHeight >= element.scrollHeight - 24) void load(false)
   }
   async function selectShortcutSkill(skillId: string, label: string): Promise<boolean> {
@@ -168,7 +192,7 @@ export function useComposerSkillPicker(options: Options) {
     items.value = []
   })
   watch(options.allowSkills, allowed => {
-    if (allowed !== false) return
+    if (allowed !== false || options.allowPluginEntries()) return
     requestSequence += 1
     if (searchTimer) clearTimeout(searchTimer)
     close()
@@ -181,7 +205,7 @@ export function useComposerSkillPicker(options: Options) {
   })
 
   return {
-    open, loading, loadingMore, scope, hasMore, items, activeIndex,
+    open, loading, loadingMore, scope, hasMore: combinedHasMore, items, activeIndex,
     selectedSkill, close, openPicker, handleInput, load, setScope, select,
     moveActive, selectActive, onScroll, selectShortcutSkill,
   }

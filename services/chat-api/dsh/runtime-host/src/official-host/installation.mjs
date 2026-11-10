@@ -1,12 +1,19 @@
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { readFile, readdir } from 'node:fs/promises'
 
 const requireFromHost = createRequire(import.meta.url)
 
 async function readManifest(path) {
   return JSON.parse(await readFile(path, 'utf8'))
+}
+
+export function assertLockedDshVersion(actualVersion, hostManifest) {
+  const expectedVersion = hostManifest.dependencies?.['@deepseek-ai/dsh']
+  if (typeof expectedVersion !== 'string' || !expectedVersion || expectedVersion !== actualVersion) {
+    throw new Error(`Installed DSH ${actualVersion} does not match the MOVO Runtime lock ${expectedVersion ?? 'missing'}`)
+  }
 }
 
 async function resolveShippedPresetRoot(candidates) {
@@ -39,6 +46,8 @@ export async function resolveDshInstallation() {
     throw new Error('@deepseek-ai/dsh-web-app does not declare dsh.bundle.patch')
   }
   const dshManifest = await readManifest(dshManifestPath)
+  const hostManifest = await readManifest(join(dirname(dirname(dirname(fileURLToPath(import.meta.url)))), 'package.json'))
+  assertLockedDshVersion(dshManifest.version, hostManifest)
   let shippedPresetRoot
   if (webAppPatches.length === 1) {
     const presetManifestPath = requireFromDsh.resolve('@deepseek-ai/dsh-agent-presets/package.json')

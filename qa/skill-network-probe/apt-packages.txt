@@ -1,0 +1,1 @@
+# Trigger a dedicated Skill image without installing packages.

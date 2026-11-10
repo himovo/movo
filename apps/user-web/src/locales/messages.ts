@@ -21,6 +21,7 @@ import { chatComposerMessages } from './chatComposerMessages'
 import { workspaceContextMessages } from './workspaceContextMessages'
 import { skillDependencyMessages } from './skillDependencyMessages'
 import { pluginEnvironmentMessages } from './pluginEnvironmentMessages'
+import { conversationPluginMessages } from './conversationPluginMessages'
 
 export type Locale = 'zh' | 'en'
 export type MessageValue = string | Record<Locale, string>
@@ -380,7 +381,16 @@ export const messages = {
   'plugins.check.runtime': { zh: 'DSH 运行时加载', en: 'DSH runtime loaded' },
   'plugins.check.session': { zh: 'MOVO 会话发现工具', en: 'MOVO session discovered tools' },
   'plugins.check.invocation': { zh: '实际调用验证', en: 'Actual invocation tested' },
-  'plugins.specHelp': { zh: '推荐固定版本的 npm 包，如 dsh-translate@0.2.20，从配置的 npm 源获取。也支持公开的 HTTPS Git 或 tarball 地址，服务器需能访问该地址。安装后检查 DSH 加载和会话工具；实际调用需在新对话中验证。', en: 'Use a fixed npm version such as dsh-translate@0.2.20, fetched from the configured npm registry. Public HTTPS Git or tarball URLs are also supported if the server can reach them. Installation checks DSH loading and session tools; verify actual invocation in a new conversation.' },
+  'plugins.specHelp': { zh: '支持固定版本的 npm 包和公开的 HTTPS .tgz 或 .tar.gz 成品包地址。服务器需能访问安装源。', en: 'Install a fixed npm version or a public HTTPS .tgz or .tar.gz package archive. The server must be able to reach the source.' },
+  'plugins.sourceTypes': { zh: '支持的安装来源', en: 'Supported sources' },
+  'plugins.sourceLimits': { zh: 'npm 必须指定准确版本；不支持 Git 源码、源码构建、latest、版本范围或仅填写包名。个人安装不支持内网地址。', en: 'npm requires an exact version. Git sources, source builds, latest, version ranges, and bare names are unsupported. Personal installs cannot use private network addresses.' },
+  'plugins.installChecksTitle': { zh: '安装后检查', en: 'Checks after installation' },
+  'plugins.installChecks': { zh: '检查当前 DSH 能否加载插件，并识别工具、Skill、命令和界面；实际调用仍需验证。', en: 'Checks whether the current DSH can load the plugin and discovers tools, Skills, commands, and UI. Actual use still needs verification.' },
+  'plugins.capabilityLimits': { zh: '暂不支持插件自带模型。', en: 'Models supplied by plugins are not currently supported.' },
+  'plugins.capabilitiesTitle': { zh: 'MOVO 中的可用能力', en: 'Capabilities in MOVO' },
+  'plugins.capabilitiesSupported': { zh: '支持插件工具、可选择的 Skill、命令，以及插件注册的独立页面和会话视图；具体以安装后的诊断结果为准。', en: 'Plugin tools, selectable Skills, commands, standalone pages, and conversation views are supported. Check the post-install diagnosis for this package.' },
+  'plugins.capabilitiesConditional': { zh: 'MCP 连接器、浏览器界面和需要外部账号或密钥的功能，仍需完成配置并实际调用验证。发现界面不代表所有按钮都可用。', en: 'MCP connectors, browser UI, and features needing external accounts or keys require configuration and an actual use test. Detecting a page does not verify every action.' },
+  'plugins.capabilitiesUnsupported': { zh: '不支持插件自带模型，也不提供完整的 DSH 管理界面和全部客户端插槽。', en: 'Plugin-supplied models, the full DSH administration UI, and every client slot are not supported.' },
   'plugins.empty': { zh: '还没有可用插件', en: 'No plugins available yet' },
   'plugins.dsh': { zh: 'DSH 插件', en: 'DSH plugin' },
   'plugins.enterprise': { zh: '企业提供', en: 'Enterprise' },
@@ -391,6 +401,8 @@ export const messages = {
   'plugins.confirmRemove': { zh: '删除这个个人插件安装记录？新会话将不再加载它。', en: 'Remove this personal plugin? New conversations will no longer load it.' },
   'plugins.error': { zh: '插件操作失败', en: 'Plugin operation failed' },
   'plugins.installError.notFound': { zh: '未在已配置的 npm 源或 npm 官方源找到该包及版本。请核对包名和版本号，或稍后重试。', en: 'The package and version were not found in the configured npm registry or the official registry. Check the name and version, or try again later.' },
+  'plugins.installError.prebuiltOnly': { zh: '仅支持固定版本 npm 包或 HTTPS .tgz/.tar.gz 成品包；也可以在“本地上传”中选择成品包。Git 源码安装不受支持。', en: 'Use a fixed npm version or an HTTPS .tgz/.tar.gz package archive, or upload an archive locally. Git source installation is unsupported.' },
+  'plugins.installError.publicSource': { zh: '个人插件的远程安装地址必须是公网 HTTPS 地址。', en: 'Personal plugins require a public HTTPS package URL.' },
   'plugins.installError.registryUnavailable': { zh: '当前 npm 镜像未找到该版本，且服务器无法连接 npm 官方源。请检查服务器网络，或使用本地上传。', en: 'The configured npm mirror does not have this version, and the server cannot reach the official npm registry. Check server connectivity or upload a local package.' },
   'plugins.installError.restrictedEnterprise': { zh: '企业已安装同名插件，但你目前没有使用权限，因此无法安装个人副本。请联系管理员在“插件管理”中授权你使用该插件。', en: 'Your organization has installed a plugin with this name, but you do not have access. Ask an administrator to grant you access in Plugin Management.' },
   'plugins.installError.notBundle': { zh: '这个包没有声明 DSH 插件 bundle，无法作为插件安装。', en: 'This package does not declare a DSH plugin bundle and cannot be installed as a plugin.' },
@@ -1425,6 +1437,7 @@ export const messages = {
   'code.history_read_only.missing_folder_detail': { zh: '这台电脑没有原项目目录。历史记录可以查看；如需继续开发，请在本机选择目录，开始一个新会话。', en: 'The original project folder is unavailable on this device. You can read the history; choose a local folder to start a new task.' },
   'code.history_read_only.start_local': { zh: '选择本机目录，开始新会话', en: 'Choose a local folder for a new task' },
   ...pluginEnvironmentMessages,
+  ...conversationPluginMessages,
 } as const
 
 export type MessageKey = keyof typeof messages

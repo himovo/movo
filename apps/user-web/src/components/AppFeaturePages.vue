@@ -58,7 +58,7 @@ const emit = defineEmits<{
       @share-count-change="emit('shareCountChange')"
     />
   </div>
-  <div v-else-if="currentView === 'plugins'" class="flex-1 min-w-0 min-h-0 overflow-hidden"><PluginsPage /></div>
+  <div v-else-if="currentView === 'plugins'" class="flex-1 min-w-0 min-h-0 overflow-hidden"><PluginsPage :user-id="userId" :main-id="mainId" @open-session="emit('openSession', $event)" /></div>
   <div v-else-if="currentView === 'tools'" class="flex-1 min-w-0 min-h-0 overflow-hidden">
     <ToolsPage :userId="userId" :mainId="mainId" />
   </div>

@@ -25,6 +25,7 @@ from .event_mapper import DshEventMapper
 from .transport import KernelHostTransport
 from .temporal_context import build_temporal_context
 from .profile.plugin_runtime_recovery import profile_without_unavailable_plugins
+from .plugin_management.runtime_health import mark_runtime_unavailable
 from app.execution_isolation.personal_space import conversation_space_key
 
 
@@ -91,6 +92,12 @@ class DshAgentKernelGateway(AgentKernelContract):
         except DshTransportError as failure:
             recovered = await profile_without_unavailable_plugins(self._transport, payload, failure)
             response = await self._transport.request("POST", "/v1/runtimes", json=recovered)
+            original_plugins = payload.get("modelProfile", {}).get("plugins") or []
+            active_plugins = recovered.get("modelProfile", {}).get("plugins") or []
+            await mark_runtime_unavailable(
+                tenant_id=request.tenant_id, requested=original_plugins,
+                activated=active_plugins, reason=str(failure),
+            )
         runtime_id = self._required_text(response, "runtimeId")
         self._runtimes[runtime_id] = _RuntimeBinding(
             tenant_id=request.tenant_id,
@@ -245,6 +252,17 @@ class DshAgentKernelGateway(AgentKernelContract):
             },
         )
         return self._required_text(response, "messageId")
+
+    async def execute_plugin_command(
+        self, session_id: str, selected_id: str, line: str,
+    ) -> dict[str, Any]:
+        binding = self._binding(session_id)
+        await self._refresh_model_credential(binding.runtime_id)
+        return await self._transport.request(
+            "POST",
+            f"/v1/runtimes/{binding.runtime_id}/sessions/{session_id}/plugin-command",
+            json={"selectedId": selected_id, "line": line},
+        )
 
     async def refresh_session_credentials(self, session_id: str) -> None:
         """Refresh scoped gateway credentials without starting another turn."""
@@ -419,6 +437,9 @@ class DshAgentKernelGateway(AgentKernelContract):
                     f"/v1/runtimes/{runtime_id}/tool-credential",
                     json={"accessToken": tool_profile.get("accessToken")},
                 )
+
+    async def refresh_runtime_credentials(self, runtime_id: str) -> None:
+        await self._refresh_model_credential(runtime_id)
 
     @staticmethod
     def _event_cursor(item: object) -> int:

@@ -5,13 +5,30 @@ export function resolveSkillTurnContext(modelProfile, value) {
   const selectedSkillId = String(input.selected_skill_id || '')
   let selectedSkill
   if (selectedSkillId) {
-    const skill = profile?.skills?.find(item => item.source_id === selectedSkillId)
-    if (skill === undefined) throw new Error('selected Skill is unavailable in this immutable Runtime Profile')
-    skillName = skill.name
-    selectedSkill = {
-      sourceId: skill.source_id,
-      displayName: String(skill.display_name || skill.name),
-      sourceScope: skill.source_scope,
+    if (selectedSkillId.startsWith('dsh_plugin_skill:')) {
+      const match = /^dsh_plugin_skill:([0-9a-f]{24}):([A-Za-z0-9_-]+)$/.exec(selectedSkillId)
+      const decodedName = match ? Buffer.from(match[2], 'base64url').toString('utf8') : ''
+      const plugin = match && modelProfile?.plugins?.find(item => item.installation_id === match[1])
+      const skill = plugin?.skills?.find(item => item.name === decodedName && item.userInvocable === true)
+      if (!plugin || !skill) throw new Error('selected plugin Skill is unavailable in this immutable Runtime Profile')
+      skillName = skill.name
+      selectedSkill = {
+        sourceId: selectedSkillId,
+        displayName: skill.name,
+        sourceScope: 'plugin',
+        pluginName: plugin.name,
+        provider: skill.provider,
+        source: skill.source,
+      }
+    } else {
+      const skill = profile?.skills?.find(item => item.source_id === selectedSkillId)
+      if (skill === undefined) throw new Error('selected Skill is unavailable in this immutable Runtime Profile')
+      skillName = skill.name
+      selectedSkill = {
+        sourceId: skill.source_id,
+        displayName: String(skill.display_name || skill.name),
+        sourceScope: skill.source_scope,
+      }
     }
   }
   const selectedStyleId = String(input.selected_writing_skill_id || '')
