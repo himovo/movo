@@ -25,16 +25,15 @@
             <div class="card-head">
               <div class="card-tags">
                 <n-tag size="small" :bordered="false" type="info">{{ t('dshPlugins.engine') }}</n-tag>
-                <n-tag size="small" :bordered="false" :type="plugin.enabled ? 'success' : 'default'">{{ t(plugin.enabled ? 'dshPlugins.enabled' : 'dshPlugins.disabled') }}</n-tag>
-                <n-tag size="small" :bordered="false" type="success">v{{ plugin.version }}</n-tag>
+                <span class="card-version">v{{ plugin.version }}</span>
               </div>
               <span v-if="plugin.updatedAt" class="card-time">{{ formatAdminDateTime(plugin.updatedAt) }}</span>
             </div>
             <div class="card-title">{{ plugin.name }}</div>
-            <div class="card-desc">{{ plugin.description || plugin.spec }}</div>
-            <PluginAvailability :availability="plugin.availability" :busy="busyId === plugin.id" @verify="emit('verify', plugin)" />
+            <n-tooltip trigger="hover" :delay="350"><template #trigger><div class="card-desc">{{ plugin.description || plugin.spec }}</div></template>{{ plugin.description || plugin.spec }}</n-tooltip>
+            <PluginAvailability :availability="plugin.availability" :enabled="plugin.enabled" :busy="busyId === plugin.id" @verify="emit('verify', plugin)" />
             <div class="card-footrow">
-              <n-tag size="small" :bordered="false" type="info">{{ t('dshPlugins.enterprise') }}</n-tag>
+              <span class="card-scope"><n-icon :component="BusinessOutline" />{{ t('dshPlugins.enterprise') }}</span>
               <div class="card-actions">
                 <n-button v-if="canManageAccess" size="small" quaternary :title="t('dshPlugins.access')" @click="emit('access', plugin)">{{ t('dshPlugins.access') }}</n-button>
                 <div class="card-switch"><span>{{ t(plugin.enabled ? 'dshPlugins.running' : 'dshPlugins.disabled') }}</span><n-switch size="small" :value="plugin.enabled" :loading="busyId === plugin.id" :disabled="!plugin.enabled && !['session_exposed', 'verified'].includes(plugin.availability?.status || '')" @update:value="value => emit('toggle', plugin, value)" /></div>
@@ -54,7 +53,8 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { NButton, NCard, NInput, NPopconfirm, NSelect, NSpace, NSpin, NSwitch, NTag } from 'naive-ui'
+import { NButton, NCard, NIcon, NInput, NPopconfirm, NSelect, NSpace, NSpin, NSwitch, NTag, NTooltip } from 'naive-ui'
+import { BusinessOutline } from '@vicons/ionicons5'
 import type { DshPlugin } from '@/api/dsh-plugins'
 import { t } from '@/composables/i18n'
 import { formatAdminDateTime } from '@/composables/adminTimezone'
@@ -82,7 +82,7 @@ const filtered = computed(() => {
 <style scoped>
 .list-card{width:calc(100% - 24px);margin:-16px 12px 0;flex:1;min-height:0;overflow:hidden;border:1px solid #e6ebf5;border-radius:8px;background:#fff;box-shadow:0 6px 20px rgba(16,38,84,.05)}
 .list-card :deep(.n-card__content){height:100%;display:flex;flex-direction:column}.filter-row{padding:0 44px 12px;margin:0 -44px 12px;border-bottom:1px solid #edf1f7}.filter-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px}.filter-left,.filter-right{flex-wrap:wrap}.keyword-input{width:360px}.status-select{width:160px}.filter-toolbar svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.list-body{flex:1;min-height:0;overflow:auto}.plugin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}.plugin-card{min-height:188px;padding:14px;border:1px solid rgba(28,45,82,.08);border-radius:8px;background:#fff;box-shadow:0 8px 18px rgba(15,31,69,.06),0 1px 2px rgba(15,31,69,.04);display:flex;flex-direction:column;gap:10px;transition:border-color .2s,box-shadow .2s,transform .2s}.plugin-card:hover{border-color:rgba(54,106,255,.36);box-shadow:0 14px 34px rgba(33,58,126,.14),0 4px 10px rgba(33,58,126,.08);transform:translateY(-2px)}.plugin-card-disabled{background:linear-gradient(180deg,#fbfcfe,#f6f8fc)}.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.card-tags{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}.card-time{color:#7a8797;font-size:12px;white-space:nowrap}.card-title{color:#17233d;font-size:16px;font-weight:800;overflow-wrap:anywhere}.card-desc{color:#5f6f85;font-size:13px;line-height:1.55;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}.card-footrow{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:10px}.card-actions{display:inline-flex;align-items:center;gap:6px}.card-switch{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border-radius:999px;background:#f6f9ff;border:1px solid #e3ebfb;color:#4a5d7c;font-size:12px}.delete-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}.delete-btn:hover{color:#d03050}
+.list-body{flex:1;min-height:0;overflow:auto}.plugin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}.plugin-card{min-height:188px;padding:14px;border:1px solid rgba(28,45,82,.08);border-radius:8px;background:#fff;box-shadow:0 8px 18px rgba(15,31,69,.06),0 1px 2px rgba(15,31,69,.04);display:flex;flex-direction:column;gap:10px;transition:border-color .2s,box-shadow .2s,transform .2s}.plugin-card:hover{border-color:rgba(54,106,255,.36);box-shadow:0 14px 34px rgba(33,58,126,.14),0 4px 10px rgba(33,58,126,.08);transform:translateY(-2px)}.plugin-card-disabled{background:linear-gradient(180deg,#fbfcfe,#f6f8fc)}.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.card-tags{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}.card-time{color:#7a8797;font-size:12px;white-space:nowrap}.card-version{color:#63816d;font-size:12px;font-weight:650}.card-title{color:#17233d;font-size:16px;font-weight:800;overflow-wrap:anywhere}.card-desc{color:#5f6f85;font-size:13px;line-height:1.55;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}.card-footrow{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:10px}.card-actions{display:inline-flex;align-items:center;gap:6px}.card-scope{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;color:#547563;font-size:12px}.card-scope .n-icon{font-size:15px}.card-switch{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border-radius:999px;background:#f6f9ff;border:1px solid #e3ebfb;color:#4a5d7c;font-size:12px}.delete-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}.delete-btn:hover{color:#d03050}
 .empty-shell{min-height:320px;border:1px dashed #d8e2f2;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;background:linear-gradient(180deg,#fbfdff,#fff)}.empty-icon{width:36px;height:36px;color:#2d63ff}.empty-title{color:#101c3d;font-size:24px;font-weight:800}.empty-desc{color:#65748c;font-size:14px}
 @media(max-width:768px){.filter-row{padding:0 16px 12px;margin:0 -16px 12px}.keyword-input{width:min(360px,100%)}.plugin-grid{grid-template-columns:1fr}.card-time{display:none}}
 </style>
