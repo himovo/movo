@@ -64,11 +64,11 @@ async def _check_plugin_ui_capabilities(monkeypatch):
         "tenant", "user", "plugin") == catalog.plugins[0]
 
 
-def test_plugin_ui_launch_without_host_token():
-    asyncio.run(_launch_without_host_token())
+def test_plugin_ui_launch_without_host_token(monkeypatch):
+    asyncio.run(_launch_without_host_token(monkeypatch))
 
 
-async def _launch_without_host_token():
+async def _launch_without_host_token(monkeypatch):
     class Publisher:
         async def publish_model_profile(self, **kwargs):
             return type("Profile", (), {"profile_version": "profile"})()
@@ -91,6 +91,10 @@ async def _launch_without_host_token():
     )
     service._http = httpx.AsyncClient(transport=httpx.MockTransport(handler))
     service._authorized_plugin = lambda *args, **kwargs: _plugin_for_launch()
+    async def skip_history(**_kwargs):
+        return None
+
+    monkeypatch.setattr(plugin_ui_service, "hydrate_owned_history", skip_history)
     try:
         ticket, kernel_session_id = await service.launch(tenant_id="tenant", user_id="user", plugin_id="id")
         assert service.tickets.verify(ticket).plugin_id == "id"

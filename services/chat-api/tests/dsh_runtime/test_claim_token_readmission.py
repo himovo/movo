@@ -211,7 +211,10 @@ def _drive_header(monkeypatch, harness, *, header_value, chat):
         return {}
 
     async def _admit(**kwargs: Any):
-        return SimpleNamespace(selected_writing_skill_id=None, selected_skill_id=None)
+        return SimpleNamespace(
+            selected_writing_skill_id=None, selected_skill_id=None,
+            selected_command_id=None,
+        )
 
     monkeypatch.setattr(dsh_chat, "_resolve_session_user", _fake_resolve)
     monkeypatch.setattr(dsh_chat, "assert_quota_available", _allow_quota)
