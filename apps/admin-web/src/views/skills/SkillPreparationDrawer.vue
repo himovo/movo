@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { NButton, NDrawer, NDrawerContent, NEmpty, NSpin, NTag, useMessage } from 'naive-ui'
 import { fetchSkillPreparationRecord, fetchSkillPreparationRecords, type SkillPreparationRecord } from '@/api/skills'
 import { t } from '@/composables/i18n'
@@ -49,60 +49,91 @@ const selectedId = ref('')
 const loading = ref(false)
 const loadError = ref('')
 const downloading = ref(false)
-let timer: ReturnType<typeof setInterval> | null = null
+let session: { skillId: string; listRequest: number; detailRequest: number } | null = null
 
 function formatTime(value: string): string { return value ? new Date(value).toLocaleString() : '—' }
 function statusText(value: SkillPreparationRecord['status']): string { return t(`skillDeps.records.status.${value}`) }
 function statusType(value: SkillPreparationRecord['status']): 'success' | 'error' | 'warning' { return value === 'ready' ? 'success' : value === 'failed' ? 'error' : 'warning' }
 async function downloadSelected(): Promise<void> {
+  const active = session
   const recordId = selectedId.value
-  if (!recordId || downloading.value) return
+  if (!active || !recordId || downloading.value) return
+  const skillName = props.skillName
   downloading.value = true
   try {
-    const record = await fetchSkillPreparationRecord(props.skillId, recordId)
+    const record = await fetchSkillPreparationRecord(active.skillId, recordId)
+    if (session !== active) return
     if (!record.log) {
       message.warning(t('skillDeps.records.noLog'))
       return
     }
-    if (selectedId.value === recordId) selected.value = record
-    downloadPreparationLog(record, props.skillName)
+    downloadPreparationLog(record, skillName)
   } catch {
-    message.error(t('skillDeps.records.downloadFailed'))
+    if (session === active) message.error(t('skillDeps.records.downloadFailed'))
   } finally {
-    downloading.value = false
+    if (session === active) downloading.value = false
   }
 }
 async function select(recordId: string): Promise<void> {
+  const active = session
+  if (!active) return
+  const request = ++active.detailRequest
+  if (selectedId.value !== recordId) selected.value = null
   selectedId.value = recordId
   try {
-    const result = await fetchSkillPreparationRecord(props.skillId, recordId)
-    if (selectedId.value === recordId) selected.value = result
-  } catch { loadError.value = t('skillDeps.records.loadFailed') }
+    const result = await fetchSkillPreparationRecord(active.skillId, recordId)
+    if (session === active && request === active.detailRequest) selected.value = result
+  } catch {
+    if (session === active && request === active.detailRequest) loadError.value = t('skillDeps.records.loadFailed')
+  }
 }
 async function refresh(force = false): Promise<void> {
-  if (!props.show || !props.skillId) return
+  const active = session
+  if (!active) return
+  const request = ++active.listRequest
   loadError.value = ''
   try {
+    const items = await fetchSkillPreparationRecords(active.skillId)
+    if (session !== active || request !== active.listRequest) return
     const previous = records.value.find(item => item.id === selectedId.value)
-    records.value = await fetchSkillPreparationRecords(props.skillId)
+    records.value = items
     const next = selectedId.value && records.value.some(item => item.id === selectedId.value) ? selectedId.value : records.value[0]?.id || ''
     const current = records.value.find(item => item.id === next)
     if (next) {
       if (force || !selected.value || next !== selectedId.value || current?.status === 'preparing' || previous?.status !== current?.status || previous?.attempts.length !== current?.attempts.length) await select(next)
-    } else { selectedId.value = ''; selected.value = null }
-  } catch { loadError.value = t('skillDeps.records.loadFailed') }
+    } else {
+      active.detailRequest++
+      selectedId.value = ''
+      selected.value = null
+    }
+  } catch {
+    if (session === active && request === active.listRequest) loadError.value = t('skillDeps.records.loadFailed')
+  }
 }
-watch(() => [props.show, props.skillId], async () => {
-  if (timer) clearInterval(timer)
-  timer = null
-  if (!props.show || !props.skillId) return
+watch([() => props.show, () => props.skillId], async ([show, skillId], _previous, onCleanup) => {
+  records.value = []
   selectedId.value = ''
   selected.value = null
+  downloading.value = false
+  loadError.value = ''
+  loading.value = false
+  if (!show || !skillId) return
+
+  const active = { skillId, listRequest: 0, detailRequest: 0 }
+  session = active
+  let timer: ReturnType<typeof setInterval> | undefined
+  onCleanup(() => {
+    session = null
+    if (timer !== undefined) clearInterval(timer)
+  })
   loading.value = true
-  try { await refresh() } finally { loading.value = false }
-  timer = setInterval(() => { if (!records.value.length || records.value.some(item => item.status === 'preparing')) void refresh() }, 3000)
+  await refresh()
+  if (session !== active) return
+  loading.value = false
+  timer = setInterval(() => {
+    if (!records.value.length || records.value.some(item => item.status === 'preparing')) void refresh()
+  }, 3000)
 }, { immediate: true })
-onBeforeUnmount(() => { if (timer) clearInterval(timer) })
 </script>
 
 <style scoped>
