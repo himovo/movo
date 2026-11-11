@@ -126,15 +126,31 @@ class DockerEngine:
         try:
             self.request("POST", f"/networks/{network_id}/disconnect", json={"Container": container_id, "Force": True})
         except httpx.HTTPStatusError as exc:
-            if exc.response.status_code not in {403, 404}:
-                raise
+            if exc.response.status_code in {403, 404}:
+                return
+            try:
+                network = self.request("GET", f"/networks/{network_id}").json()
+            except httpx.HTTPStatusError as inspect_error:
+                if inspect_error.response.status_code == 404:
+                    return
+                raise exc from inspect_error
+            if container_id not in (network.get("Containers") or {}):
+                return
+            raise
 
     def remove_network(self, network_id: str) -> None:
         try:
             self.request("DELETE", f"/networks/{network_id}")
         except httpx.HTTPStatusError as exc:
-            if exc.response.status_code != 404:
-                raise
+            if exc.response.status_code == 404:
+                return
+            try:
+                self.request("GET", f"/networks/{network_id}")
+            except httpx.HTTPStatusError as inspect_error:
+                if inspect_error.response.status_code == 404:
+                    return
+                raise exc from inspect_error
+            raise
 
     def find_compose_service(self, project: str, service: str) -> str:
         filters = {"label": [f"com.docker.compose.project={project}", f"com.docker.compose.service={service}"]}

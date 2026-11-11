@@ -64,9 +64,10 @@ def test_finalization_archives_before_releasing_container(tmp_path: Path, monkey
         async def find_one(self, query, projection):
             return None
 
-        async def update_one(self, query, update, upsert):
-            order.append("indexed")
-            assert update["$set"]["object_path"] == "audit/path.zip"
+        async def update_one(self, query, update, upsert=False):
+            if "object_path" in update["$set"]:
+                order.append("indexed")
+                assert update["$set"]["object_path"] == "audit/path.zip"
 
     class Database:
         sandbox_task_audits = Collection()
@@ -77,12 +78,57 @@ def test_finalization_archives_before_releasing_container(tmp_path: Path, monkey
     monkeypatch.setattr(task_audit, "AliyunOSSUploader", Storage)
     monkeypatch.setattr(task_audit, "get_db", Database)
     monkeypatch.setattr(task_audit, "_manager_action", manager_action)
-    asyncio.run(task_audit.finalize_task_audit(
-        message_id=message_id, tenant_id="tenant", user_id="user",
-        conversation_id="conversation", status=status,
-    ))
+    async def run() -> None:
+        assert await task_audit.finalize_task_audit(
+            message_id=message_id, tenant_id="tenant", user_id="user",
+            conversation_id="conversation", status=status,
+        )
+        assert order == ["frozen", "uploaded", "indexed"]
+        assert await task_audit.cleanup_task_audit(message_id=message_id, audit_id="tenant:" + message_id)
+
+    asyncio.run(run())
     assert order == ["frozen", "uploaded", "indexed", "released"]
     assert not workspace.exists()
+
+
+def test_cleanup_failure_does_not_block_archived_turn(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("MOVO_SANDBOX_MANAGER_URL", "http://manager")
+    monkeypatch.setenv("MOVO_SANDBOX_WORKSPACE_ROOT", str(tmp_path))
+    workspace = task_audit.task_workspace("message")
+    (workspace / "work").mkdir(parents=True)
+    states = []
+
+    class Storage:
+        def upload_bytes_with_path(self, *args):
+            return "signed", "audit/path.zip"
+
+    class Collection:
+        async def find_one(self, query, projection):
+            return None
+
+        async def update_one(self, query, update, upsert=False):
+            states.append(update["$set"].get("cleanup_pending"))
+
+    class Database:
+        sandbox_task_audits = Collection()
+
+    def manager_action(task_id, *, freeze):
+        if not freeze:
+            raise RuntimeError("Docker cleanup failed")
+
+    monkeypatch.setattr(task_audit, "AliyunOSSUploader", Storage)
+    monkeypatch.setattr(task_audit, "get_db", Database)
+    monkeypatch.setattr(task_audit, "_manager_action", manager_action)
+    async def run() -> None:
+        assert await task_audit.finalize_task_audit(
+            message_id="message", tenant_id="tenant", user_id="user",
+            conversation_id="conversation", status="completed",
+        )
+        assert not await task_audit.cleanup_task_audit(message_id="message", audit_id="tenant:message")
+
+    asyncio.run(run())
+    assert states == [True]
+    assert workspace.exists()
 
 
 def test_archive_failure_keeps_workspace_for_retry(tmp_path: Path, monkeypatch) -> None:

@@ -56,6 +56,7 @@ async def localized_http_error(request: Request, exc: StarletteHTTPException):
 _receipt_gc_task: asyncio.Task | None = None
 _skill_environment_task: asyncio.Task | None = None
 _plugin_compatibility_task: asyncio.Task | None = None
+_task_cleanup_task: asyncio.Task | None = None
 
 origins = settings.allowed_origins_list()
 
@@ -264,9 +265,10 @@ async def _ensure_end_user_login_name_index(db) -> None:
 
 @app.on_event("startup")
 async def startup_event() -> None:
-    global _receipt_gc_task, _skill_environment_task, _plugin_compatibility_task
+    global _receipt_gc_task, _skill_environment_task, _plugin_compatibility_task, _task_cleanup_task
     init_db()
     db = get_db()
+    await db.sandbox_task_audits.create_index("cleanup_pending")
     # Keep session history list query fast: find by user_id and sort by updated_at desc.
     await db.chat_sessions.create_index([("user_id", 1), ("updated_at", -1)])
     await db.chat_sessions.create_index([("user_id", 1), ("updated_at", -1), ("_id", -1)])
@@ -390,6 +392,8 @@ async def startup_event() -> None:
     _skill_environment_task = asyncio.create_task(monitor_installed_environments())
     from app.dsh_runtime.plugin_management.revalidation import monitor_plugin_compatibility
     _plugin_compatibility_task = asyncio.create_task(monitor_plugin_compatibility())
+    from app.execution_isolation.task_cleanup_monitor import monitor_task_cleanups
+    _task_cleanup_task = asyncio.create_task(monitor_task_cleanups())
     settings = get_settings()
     logger.info(
         "application startup complete",
@@ -405,7 +409,7 @@ async def startup_event() -> None:
 
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
-    global _receipt_gc_task, _skill_environment_task, _plugin_compatibility_task
+    global _receipt_gc_task, _skill_environment_task, _plugin_compatibility_task, _task_cleanup_task
     for callback in reversed(product_extension.shutdown):
         result = callback()
         if asyncio.iscoroutine(result):
@@ -419,6 +423,9 @@ async def shutdown_event() -> None:
     if _plugin_compatibility_task is not None:
         _plugin_compatibility_task.cancel()
         _plugin_compatibility_task = None
+    if _task_cleanup_task is not None:
+        _task_cleanup_task.cancel()
+        _task_cleanup_task = None
     await scheduled_task_scheduler.stop()
     await token_usage_dispatcher.stop()
     from app.dsh_runtime.application import dsh_runtime_application

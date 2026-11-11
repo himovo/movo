@@ -6,10 +6,11 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 import logging
+import asyncio
 
 from app.dsh_runtime.bindings import KernelBindingRepository
 from app.dsh_runtime.conversation import ConversationRepository
-from app.execution_isolation.task_audit import finalize_task_audit
+from app.execution_isolation.task_audit import cleanup_task_audit, finalize_task_audit
 from app.dsh_runtime.plugin_management.audit import index_plugin_calls
 from app.dsh_runtime.personal_output_delivery import deliver_personal_outputs
 
@@ -105,8 +106,9 @@ class TurnStateFinalizer:
                 # Native tool events are already durable; the query index can
                 # be rebuilt without blocking the user's turn.
                 logger.exception("failed to index plugin execution audit")
+        audit_pending = False
         if clear_conversation:
-            await self._step(
+            audit_pending = await self._step(
                 lambda: finalize_task_audit(
                     message_id=message_id,
                     tenant_id=str(binding["tenant_id"]),
@@ -130,6 +132,11 @@ class TurnStateFinalizer:
                 ),
                 "clear the session active_run",
             )
+            if audit_pending:
+                asyncio.create_task(cleanup_task_audit(
+                    message_id=message_id,
+                    audit_id=f"{binding['tenant_id']}:{message_id}",
+                ))
         elif intervention is not None:
             await self._step(
                 lambda: self._conversations.suspend_active_run(
@@ -162,9 +169,9 @@ class TurnStateFinalizer:
                 raise RuntimeError("DSH turn admission lock is still active")
 
     @staticmethod
-    async def _step(step: Callable[[], Awaitable[None]], description: str) -> None:
+    async def _step(step: Callable[[], Awaitable[Any]], description: str) -> Any:
         try:
-            await step()
+            return await step()
         except TurnFinalizationRetryableError:
             raise
         except Exception as exc:

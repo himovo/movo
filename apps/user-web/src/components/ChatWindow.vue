@@ -26,7 +26,7 @@ import KnowledgeSourceViewer from './execution/KnowledgeSourceViewer.vue'
 import { resolvePermission } from '../composables/useChatStream'
 import { useDshToolApprovals } from '../composables/useDshToolApprovals'
 import { useUserQuestions } from '../composables/useUserQuestions'
-import { useLocale } from '../composables/i18n'
+import { t, useLocale } from '../composables/i18n'
 import { useChatModels } from '../composables/useChatModels'
 import { useBrowserWorkspace } from '../composables/browser/useBrowserWorkspace'
 import type { ExecutionStoreV3 } from '../features/execution-v3/stores/executionStore'
@@ -66,6 +66,7 @@ const props = defineProps<{
   authToken?: string
   active: boolean
   running?: boolean
+  serverRunUnattached?: boolean
   foreignRun?: ForeignRun | null
   foreignRunFinished?: boolean
   refreshingSession?: boolean
@@ -396,7 +397,7 @@ useChatWindowLifecycle({
       leave-to-class="opacity-0 -translate-y-1"
     >
       <div
-        v-if="props.busyNotice"
+        v-if="props.busyNotice || props.serverRunUnattached"
         class="w-full max-w-4xl mx-auto px-4 md:px-6 pt-3 shrink-0"
         role="status"
         aria-live="polite"
@@ -407,7 +408,8 @@ useChatWindowLifecycle({
             <path d="M12 16v-4" />
             <path d="M12 8h.01" />
           </svg>
-          <span class="min-w-0">{{ props.busyNotice }}</span>
+          <span v-if="props.busyNotice" class="min-w-0">{{ props.busyNotice }}</span>
+          <span v-else class="min-w-0">{{ t('chat.server_run_unattached') }}</span>
         </div>
       </div>
     </Transition>
@@ -541,7 +543,7 @@ useChatWindowLifecycle({
         ref="composerRef"
         :active="props.active"
         :running="isLoading"
-        :blocked="Boolean(props.foreignRun || props.foreignRunFinished)"
+        :blocked="Boolean(props.foreignRun || props.foreignRunFinished || props.serverRunUnattached)"
         :stopping="Boolean(props.stopping)"
         :is-new-session-view="isNewSessionView"
         :welcome-title="welcomeTitle"

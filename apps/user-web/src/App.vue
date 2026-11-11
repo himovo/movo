@@ -195,6 +195,11 @@ const chatRuntime = useChatRuntimeStore({
   onSessionBusy: () => shareToast.info(t('app.sidebar.session_running')),
 })
 const visibleChatPanes = chatRuntime.panes
+const serverRunningSessionIds = computed(() => new Set(
+  [...sessions.value, ...sharedSessions.value]
+    .filter((session) => session.active_run?.status === 'running')
+    .map((session) => session.id),
+))
 const codeRuntime = useDshCodeRuntime(chatRuntime)
 const {
   selectBoundProject, clearUserBoundProjectState, prepareProjectBoundary,
@@ -624,6 +629,7 @@ const sidebarBindings = useAppSidebarBindings({
             />
           <AppChatPanes
             :panes="visibleChatPanes"
+            :server-running-session-ids="serverRunningSessionIds"
             :active-key="activeChatKey"
             :code-state-for="codeRuntime.stateFor"
             :user-id="getUserId() || undefined"

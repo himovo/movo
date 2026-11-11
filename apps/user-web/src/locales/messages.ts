@@ -340,6 +340,7 @@ export const messages = {
   'app.sidebar.session_running': { zh: '会话正在执行', en: 'Session is running' },
   'session.run.another_member': { zh: '其他成员', en: 'Another member' },
   'session.run.other_running': { zh: '{name} 正在执行任务，本会话暂时不能发送消息。', en: '{name} is running a task. Sending is unavailable until it finishes.' },
+  'chat.server_run_unattached': { zh: '服务端仍显示任务运行中，当前页面未连接到该任务。状态更新后即可继续发送。', en: 'The server still reports a running task, but this page is not attached to it. Sending will resume when its status updates.' },
   'session.run.finished_refresh': { zh: '其他成员在本会话发起的任务已结束。刷新会话可查看最新消息。', en: "Another member's task in this session has ended. Refresh to see the latest messages." },
   'session.run.refresh': { zh: '刷新会话', en: 'Refresh session' },
   'session.run.refreshing': { zh: '正在刷新…', en: 'Refreshing…' },

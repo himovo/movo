@@ -9,6 +9,7 @@ import AppChatPane from './AppChatPane.vue'
 
 defineProps<{
   panes: ChatRuntimePane[]
+  serverRunningSessionIds: ReadonlySet<string>
   activeKey: string
   codeStateFor: (key: string) => CodePaneState
   userId?: string
@@ -37,6 +38,7 @@ defineProps<{
   >
     <AppChatPane
       :pane="pane"
+      :server-run-unattached="Boolean(pane.sessionId && serverRunningSessionIds.has(pane.sessionId) && !pane.running && !pane.foreignRun)"
       :code-state="codeStateFor(pane.key)"
       :active="pane.key === activeKey"
       :user-id="userId"

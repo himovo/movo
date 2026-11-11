@@ -21,6 +21,7 @@ const ChatWindow = defineAsyncComponent({
 
 const props = defineProps<{
   pane: ChatRuntimePane
+  serverRunUnattached: boolean
   codeState: CodePaneState
   active: boolean
   userId?: string
@@ -56,6 +57,7 @@ const localFolderUnavailable = computed(() => Boolean(
     :main-id="mainId"
     :auth-token="authToken"
     :running="pane.running"
+    :server-run-unattached="serverRunUnattached"
     :foreign-run="pane.foreignRun"
     :foreign-run-finished="pane.foreignRunFinished"
     :refreshing-session="pane.refreshingSession"

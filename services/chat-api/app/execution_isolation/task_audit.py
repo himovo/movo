@@ -9,6 +9,7 @@ import json
 import os
 import shutil
 import zipfile
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -21,6 +22,7 @@ from .script_backend import container_backend_enabled, task_key, task_workspace
 
 MAX_AUDIT_BYTES = 512 * 1024 * 1024
 MAX_INDEXED_FILES = 1000
+logger = logging.getLogger(__name__)
 
 
 def _archive(workspace: Path) -> tuple[bytes, list[dict], list[dict]]:
@@ -63,16 +65,16 @@ def _manager_action(task_id: str, *, freeze: bool) -> None:
 
 
 async def finalize_task_audit(*, message_id: str, tenant_id: str, user_id: str,
-                              conversation_id: str, status: str) -> None:
+                              conversation_id: str, status: str) -> bool:
     if not container_backend_enabled():
-        return
+        return False
     workspace = task_workspace(message_id)
     if not (workspace / "work").is_dir():
-        return
+        return False
     await asyncio.to_thread(_manager_action, message_id, freeze=True)
     collection = get_db().sandbox_task_audits
     audit_id = f"{tenant_id}:{message_id}"
-    existing = await collection.find_one({"_id": audit_id}, {"object_path": 1})
+    existing = await collection.find_one({"_id": audit_id}, {"object_path": 1, "cleanup_pending": 1})
     if not existing or not existing.get("object_path"):
         archive, files, calls = await asyncio.to_thread(_archive, workspace)
         digest = hashlib.sha256(archive).hexdigest()
@@ -89,8 +91,25 @@ async def finalize_task_audit(*, message_id: str, tenant_id: str, user_id: str,
                 "status": status, "object_path": object_path, "sha256": digest,
                 "file_count": len(files), "files": files[:MAX_INDEXED_FILES],
                 "files_truncated": len(files) > MAX_INDEXED_FILES, "calls": calls,
-                "completed_at": datetime.now(timezone.utc),
+                "completed_at": datetime.now(timezone.utc), "cleanup_pending": True,
             }}, upsert=True,
         )
-    await asyncio.to_thread(_manager_action, message_id, freeze=False)
-    await asyncio.to_thread(shutil.rmtree, workspace)
+    elif not existing.get("cleanup_pending"):
+        await collection.update_one({"_id": audit_id}, {"$set": {"cleanup_pending": True}})
+    return True
+
+
+async def cleanup_task_audit(*, message_id: str, audit_id: str) -> bool:
+    """Release archived resources without holding the conversation's run lock."""
+    try:
+        await asyncio.to_thread(_manager_action, message_id, freeze=False)
+        workspace = task_workspace(message_id)
+        if workspace.exists():
+            await asyncio.to_thread(shutil.rmtree, workspace)
+        await get_db().sandbox_task_audits.update_one(
+            {"_id": audit_id}, {"$set": {"cleanup_pending": False}}
+        )
+        return True
+    except Exception:
+        logger.exception("sandbox task cleanup pending", extra={"message_id": message_id})
+        return False
