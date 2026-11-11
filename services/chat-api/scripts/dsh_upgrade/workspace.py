@@ -53,9 +53,16 @@ class CandidateWorkspace:
         updated, replacements = DSH_VERSION_PATTERN.subn(
             rf"\g<1>{self.candidate_version}\g<3>", source, count=1,
         )
-        if replacements != 1:
+        if replacements == 0 and not (
+            re.search(r"export const ASKAI_DSH_KERNEL_VERSION\s*=\s*installedDshVersion\b", source)
+            and re.search(
+                r"const installedDshVersion\s*=\s*require\(['\"]@deepseek-ai/dsh/package\.json['\"]\)\.version",
+                source,
+            )
+        ):
             raise ValueError("candidate staging could not update ASKAI_DSH_KERNEL_VERSION")
-        protocol_path.write_text(updated, encoding="utf-8")
+        if replacements:
+            protocol_path.write_text(updated, encoding="utf-8")
 
 
 class ReleasedWorkspace:

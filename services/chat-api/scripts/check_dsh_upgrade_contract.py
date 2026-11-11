@@ -30,6 +30,16 @@ def _constant(path: Path, name: str) -> str:
     return match.group(1)
 
 
+def _kernel_version_tracks_installed_package(path: Path) -> bool:
+    text = path.read_text(encoding="utf-8")
+    return all(re.search(pattern, text) for pattern in (
+        r"const installedDshVersion\s*=\s*require\(['\"]@deepseek-ai/dsh/package\.json['\"]\)\.version",
+        r"export const ASKAI_DSH_KERNEL_VERSION\s*=\s*installedDshVersion\b",
+        r"const lockedDshVersion\s*=\s*require\(['\"]\.\./package\.json['\"]\)\.dependencies\[['\"]@deepseek-ai/dsh['\"]\]",
+        r"ok:\s*installedDshVersion\s*===\s*lockedDshVersion",
+    ))
+
+
 def _lock_scalar(section: str, name: str) -> str | bool:
     """Read the two admission fields without adding a Python-version dependency.
 
@@ -149,7 +159,11 @@ def validate_repository() -> None:
 
     if _lock_scalar("release_train", "version") != version or _lock_scalar("upstream", "allow_floating_versions"):
         raise ValueError("versions.lock is not aligned with the compatibility matrix")
-    if _constant(HOST_PROTOCOL, "ASKAI_DSH_KERNEL_VERSION") != version:
+    try:
+        kernel_version_matches = _constant(HOST_PROTOCOL, "ASKAI_DSH_KERNEL_VERSION") == version
+    except ValueError:
+        kernel_version_matches = _kernel_version_tracks_installed_package(HOST_PROTOCOL)
+    if not kernel_version_matches:
         raise ValueError("Runtime Host kernel handshake version differs from the matrix")
     if _constant(HOST_PROTOCOL, "ASKAI_DSH_HOST_PROTOCOL_VERSION") != active["host_protocol"]:
         raise ValueError("Runtime Host protocol differs from the matrix")

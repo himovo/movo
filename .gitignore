@@ -99,6 +99,7 @@ static
 ppt/
 .claude/
 /backups/
+/docs/
 .github/
 !.github/
 .github/*

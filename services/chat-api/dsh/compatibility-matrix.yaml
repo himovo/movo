@@ -3,7 +3,7 @@ active_release:
   dsh_release_train: 0.2.1-alpha.1
   node_runtime: "^22.19.0 || >=24.0.0"
   host_protocol: askai.dsh-host.v1
-  host_overlay: askai-dsh-host-v1
+  host_overlay: askai-dsh-host-v2
   execution_projection: askai.execution-v3
   workspace_contract: askai.desktop-workspace-ref.v1
   session_persistence:
@@ -43,7 +43,7 @@ supported_releases:
   - dsh_release_train: 0.2.1-alpha.1
     node_runtime: "^22.19.0 || >=24.0.0"
     host_protocol: askai.dsh-host.v1
-    host_overlay: askai-dsh-host-v1
+    host_overlay: askai-dsh-host-v2
     old_session_resume: verified
     status: production
   - dsh_release_train: 0.1.6-alpha.1

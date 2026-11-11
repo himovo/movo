@@ -46,6 +46,24 @@ def test_candidate_workspace_pins_only_dsh_train(tmp_path: Path) -> None:
     assert host.exists()
 
 
+def test_candidate_workspace_preserves_package_derived_kernel_version(tmp_path: Path) -> None:
+    host = tmp_path / "host"
+    for directory in ("src", "config", "tests", "scripts"):
+        (host / directory).mkdir(parents=True)
+    (host / "package.json").write_text(json.dumps({
+        "dependencies": {"@deepseek-ai/dsh": "0.1.0-rc.6"},
+    }), encoding="utf-8")
+    protocol = (
+        "const installedDshVersion = require('@deepseek-ai/dsh/package.json').version\n"
+        "export const ASKAI_DSH_KERNEL_VERSION = installedDshVersion\n"
+    )
+    (host / "src" / "host-protocol.mjs").write_text(protocol, encoding="utf-8")
+
+    with CandidateWorkspace(host, "0.1.1-rc.2") as candidate:
+        assert json.loads((candidate / "package.json").read_text())["dependencies"]["@deepseek-ai/dsh"] == "0.1.1-rc.2"
+        assert (candidate / "src" / "host-protocol.mjs").read_text() == protocol
+
+
 def test_released_workspace_materializes_an_immutable_git_ref(tmp_path: Path) -> None:
     repository = tmp_path / "repository"
     repository.mkdir()
