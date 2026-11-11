@@ -108,6 +108,34 @@ export async function fetchDepartmentTree() {
   return data;
 }
 
+export interface DepartmentImportPreview {
+  digest: string;
+  createCount: number;
+  skipCount: number;
+  items: Array<{ row: number; path: string; action: 'create' | 'skip' }>;
+  errors: Array<{ row: number; path: string; code: string }>;
+}
+
+export async function downloadDepartmentImportTemplate() {
+  const { data } = await apiClient.get<Blob>('/api/directory/departments/import-template', { responseType: 'blob' });
+  return data;
+}
+
+export async function previewDepartmentImport(file: File) {
+  const form = new FormData();
+  form.append('file', file);
+  const { data } = await apiClient.post<DepartmentImportPreview>('/api/directory/departments/import-preview', form, { timeout: 30000 });
+  return data;
+}
+
+export async function commitDepartmentImport(file: File, digest: string) {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('digest', digest);
+  const { data } = await apiClient.post<{ created: number; skipped: number }>('/api/directory/departments/import-commit', form, { timeout: 60000 });
+  return data;
+}
+
 export async function createDepartment(payload: { name: string; parentId?: string | null; status: 'active' | 'disabled' }) {
   const { data } = await apiClient.post('/api/directory/departments', payload);
   return data;

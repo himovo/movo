@@ -8,12 +8,14 @@ import { sandboxSettingsMessages } from './modules/sandboxSettings';
 import { deploymentStatusMessages } from './modules/deploymentStatus';
 import { skillDependencyMessages } from './modules/skillDependencies';
 import { offlinePackageMessages } from './modules/offlinePackages';
+import { departmentImportMessages } from './modules/departmentImport';
 
 export type Locale = 'zh-CN' | 'en-US';
 export type MessageKey = keyof typeof messages;
 export type LabelMap = Record<Locale, string>;
 
 export const messages = {
+  ...departmentImportMessages,
   ...presentationAvailabilityMessages,
   ...auditExportMessages,
   'provider.openai': { 'zh-CN': 'OpenAI', 'en-US': 'OpenAI' },

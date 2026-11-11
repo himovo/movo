@@ -6,6 +6,10 @@
           <div class="panel-head">
             <span class="panel-title">{{ t('legacy.org_structure') }}</span>
             <n-space :size="6">
+              <n-button size="tiny" @click="departmentImportVisible = true">
+                <template #icon><n-icon><ImportOutlined /></n-icon></template>
+                {{ t('departmentImport.open') }}
+              </n-button>
               <n-button size="tiny" @click="() => openCreateDept()">
                 <template #icon>
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -380,6 +384,7 @@
     </template>
   </n-modal>
   <InviteHistoryPanel :open="inviteHistoryVisible" :refresh-key="inviteHistoryRefreshKey" :role-names="inviteRoleNames" :departments="inviteHistoryDepartments" @close="inviteHistoryVisible = false" />
+  <DepartmentImportDialog :open="departmentImportVisible" @close="departmentImportVisible = false" @imported="loadDepartments" />
 </template>
 
 <script setup lang="ts">
@@ -388,6 +393,7 @@ import { NIcon, NTag, useDialog, useMessage } from 'naive-ui';
 import TimeOutline from '@vicons/ionicons5/es/TimeOutline';
 import MenuFoldOutlined from '@vicons/antd/es/MenuFoldOutlined';
 import MenuUnfoldOutlined from '@vicons/antd/es/MenuUnfoldOutlined';
+import ImportOutlined from '@vicons/antd/es/ImportOutlined';
 import { computed, h, onMounted, ref, watch } from 'vue';
 import { t } from '@/composables/i18n';
 import { formatAdminDateTime } from '@/composables/adminTimezone';
@@ -419,6 +425,7 @@ import {
 import { listPositionRoles, type PositionRole } from '@/api/positionRoles';
 import BulkPositionRoleDialog from './BulkPositionRoleDialog.vue';
 import InviteHistoryPanel from './InviteHistoryPanel.vue';
+import DepartmentImportDialog from './DepartmentImportDialog.vue';
 import EmployeeCredentialsFields from '@/components/directory/EmployeeCredentialsFields.vue';
 
 const message = useMessage();
@@ -426,6 +433,7 @@ const dialog = useDialog();
 const saving = ref(false);
 const bulkRoleDialogVisible = ref(false);
 const departmentCollapsed = ref(false);
+const departmentImportVisible = ref(false);
 const selectedUserIds = ref<string[]>([]);
 
 async function handleBulkRolesSaved() {

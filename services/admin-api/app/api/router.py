@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.routes import analytics, auth, dashboard, deployment_status, directory, directory_scope, dsh_plugins, external_search, invite_history, invite_members, knowledge_directories, knowledge_documents, knowledge_settings, knowledge_source_settings, models, offline_packages, organizations, page_collection, personal_knowledge_internal, position_roles, presentation_settings, sandbox_images, sandbox_settings, setup, shortcut_settings, skill_lifecycle, skill_preparation_records, skills, system, system_audit, tools, traffic_allocations, topic_admission
+from app.api.routes import analytics, auth, dashboard, deployment_status, directory, directory_import, directory_scope, dsh_plugins, external_search, invite_history, invite_members, knowledge_directories, knowledge_documents, knowledge_settings, knowledge_source_settings, models, offline_packages, organizations, page_collection, personal_knowledge_internal, position_roles, presentation_settings, sandbox_images, sandbox_settings, setup, shortcut_settings, skill_lifecycle, skill_preparation_records, skills, system, system_audit, tools, traffic_allocations, topic_admission
 
 api_router = APIRouter()
 api_router.include_router(system.router, tags=["system"])
@@ -12,6 +12,7 @@ api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 api_router.include_router(organizations.router, prefix="/organizations", tags=["organizations"])
 api_router.include_router(directory.router, prefix="/directory", tags=["directory"])
+api_router.include_router(directory_import.router, prefix="/directory", tags=["directory"])
 api_router.include_router(directory_scope.router, prefix="/directory", tags=["directory"])
 api_router.include_router(invite_history.router, prefix="/directory", tags=["directory"])
 api_router.include_router(invite_members.router, prefix="/directory", tags=["directory"])
