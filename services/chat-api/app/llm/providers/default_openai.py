@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import AsyncGenerator, List, Type, Any, Dict
 from openai import AsyncOpenAI
 from pydantic import BaseModel
@@ -10,6 +11,8 @@ from app.llm.structured_fallback import (
     sanitize_structured_fallback_kwargs,
     validate_structured_text,
 )
+
+LOGGER = logging.getLogger(__name__)
 
 
 class DefaultOpenAIClient(BaseLLMClient):
@@ -179,8 +182,12 @@ class DefaultOpenAIClient(BaseLLMClient):
         role = Role.ASSISTANT
         usage: Dict[str, int] | None = None
         final_payload: Dict[str, Any] | None = None
+        provider_chunk_count = 0
+        provider_tool_fragment_count = 0
+        provider_finish_reason = ""
         
         async for chunk in stream:
+            provider_chunk_count += 1
             final_payload = chunk.model_dump()
             if getattr(chunk, "usage", None):
                 usage = {
@@ -189,6 +196,7 @@ class DefaultOpenAIClient(BaseLLMClient):
                     "total_tokens": int(getattr(chunk.usage, "total_tokens", 0) or 0),
                 }
             if chunk.choices and len(chunk.choices) > 0:
+                provider_finish_reason = str(chunk.choices[0].finish_reason or provider_finish_reason)
                 delta = chunk.choices[0].delta
                 if delta.role:
                     role = Role(delta.role)
@@ -196,6 +204,7 @@ class DefaultOpenAIClient(BaseLLMClient):
                     msg = Message(role=role, content=delta.content)
                     yield LLMResponse(message=msg, raw_response=chunk.model_dump())
                 if getattr(delta, "tool_calls", None):
+                    provider_tool_fragment_count += len(delta.tool_calls)
                     calls = []
                     for call in delta.tool_calls:
                         function = getattr(call, "function", None)
@@ -209,6 +218,12 @@ class DefaultOpenAIClient(BaseLLMClient):
                         message=Message(role=role, content="", tool_calls=calls),
                         raw_response=chunk.model_dump(),
                     )
+        LOGGER.info(
+            "openai_stream_finished model=%s tool_choice=%s offered_tool_count=%d "
+            "provider_chunk_count=%d provider_tool_fragment_count=%d finish_reason=%s",
+            self.model, stream_kwargs.get("tool_choice") or "none", len(stream_kwargs.get("tools") or []),
+            provider_chunk_count, provider_tool_fragment_count, provider_finish_reason or "unknown",
+        )
         self._set_last_invocation_meta(usage=usage, response_payload=final_payload)
 
     async def ainvoke_structured(

@@ -95,6 +95,7 @@ class ToolProfileCompiler:
 
     async def compile(self, *, tenant_id: str, user_id: str) -> tuple[ToolProfileDefinition, ...]:
         rows = await self._catalog.list_enabled(tenant_id, user_id)
+        candidate_count = len(rows)
         policy = await self._policy_resolver.resolve(tenant_id, user_id) if self._policy_resolver else None
         allowed_external_ids = await filter_allowed_resource_ids(
             "tool",
@@ -158,6 +159,13 @@ class ToolProfileCompiler:
         names = [item.name for item in definitions]
         if len(names) != len(set(names)):
             raise ValueError("compiled Tool Profile contains duplicate names")
+        logger.info(
+            "tool_profile_compiled tenant_id=%s user_id=%s external_candidates=%d "
+            "external_allowed=%d total_count=%d mcp_tools=%s",
+            tenant_id, user_id, candidate_count, len(rows), len(definitions),
+            [(item.external_tool_id, item.mcp_tool_name, item.name)
+             for item in definitions if item.source_type == "mcp"],
+        )
         return tuple(sorted(definitions, key=lambda item: item.name))
 
     def _compile_http(self, row: dict[str, Any]) -> ToolProfileDefinition:

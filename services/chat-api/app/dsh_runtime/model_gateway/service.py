@@ -20,6 +20,7 @@ from .message_compat import normalize_tool_history
 from .stream_guard import EmptyModelStreamError, nonempty_model_stream
 from .token import ModelGatewayClaims
 from .tool_schema import to_openai_chat_tools
+from .tool_diagnostics import log_tool_error, log_tool_offer, log_tool_result
 from .tool_visibility import visible_tools
 
 
@@ -79,6 +80,9 @@ class ModelGatewayService:
             if tools:
                 kwargs["tools"] = to_openai_chat_tools(tools)
                 kwargs["tool_choice"] = "auto"
+            log_tool_offer(session_id=request.sessionId or "", profile_version=request.profileVersion,
+                           model_id=request.modelInstanceId, model_name=request.model,
+                           incoming=request.tools, visible=tools, knowledge_only=request.knowledgeQaEnabled)
             response = await client.ainvoke(messages, **kwargs)
         except ModelConfigError as exc:
             raise ModelGatewayFailure(
@@ -128,10 +132,14 @@ class ModelGatewayService:
         if tools:
             kwargs["tools"] = to_openai_chat_tools(tools)
             kwargs["tool_choice"] = "auto"
+        log_tool_offer(session_id=request.sessionId or "", profile_version=request.profileVersion,
+                       model_id=request.modelInstanceId, model_name=request.model,
+                       incoming=request.tools, visible=tools, knowledge_only=request.knowledgeQaEnabled)
 
         async def iterator() -> AsyncIterator[dict[str, Any]]:
             usage: dict[str, int] = {}
             tool_calls: dict[int, dict[str, str]] = {}
+            raw_count = 0
             try:
                 saw_text = False
                 async for chunk in nonempty_model_stream(client, messages, kwargs, model=request.model):
@@ -143,6 +151,7 @@ class ModelGatewayService:
                     for raw_call in list(chunk.tool_calls or []):
                         if not isinstance(raw_call, dict):
                             continue
+                        raw_count += 1
                         index = int(raw_call.get("index") or 0)
                         current = tool_calls.setdefault(index, {"id": "", "name": "", "arguments": ""})
                         current["id"] = str(raw_call.get("id") or current["id"])
@@ -155,6 +164,11 @@ class ModelGatewayService:
                         usage = self._usage(chunk.usage)
                 valid_calls = [tool_calls[index] for index in sorted(tool_calls)
                                if tool_calls[index]["id"] and tool_calls[index]["name"]]
+                incomplete_calls = [tool_calls[index] for index in sorted(tool_calls)
+                                    if not tool_calls[index]["id"] or not tool_calls[index]["name"]]
+                log_tool_result(session_id=request.sessionId or "", model_id=request.modelInstanceId,
+                                saw_text=saw_text, raw_count=raw_count, calls=valid_calls,
+                                incomplete_calls=incomplete_calls)
                 if not saw_text and not valid_calls:
                     raise EmptyModelStreamError("Model returned no usable text or tool calls")
                 for call in valid_calls:
@@ -168,6 +182,7 @@ class ModelGatewayService:
                     if isinstance(exc, EmptyModelStreamError)
                     else self._classify_provider_failure(exc)
                 )
+                log_tool_error(session_id=request.sessionId or "", model_id=request.modelInstanceId, code=code)
                 yield {
                     "type": "error",
                     "error": {

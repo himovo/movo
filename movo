@@ -325,7 +325,7 @@ case "${command}" in
     ;;
   logs)
     require_docker
-    movo_compose logs --tail=200 "$@"
+    movo_compose logs "$@"
     ;;
   restart)
     print_logo
