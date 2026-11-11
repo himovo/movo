@@ -21,6 +21,7 @@ test('a Skill-produced PPTX offers download without a misleading online edit act
     openPresentationEditor: () => calls.push('presentation-editor'),
     confirmPresentationPreview: () => {},
     openHtmlPreview: () => {},
+    openFilePreview: () => {},
   })
   actions.onArtifactOpen(artifact, message, 0)
   assert.deepEqual(calls, ['download'])
@@ -39,7 +40,28 @@ test('a presentation with a blueprint keeps its online editor action', () => {
     openPresentationEditor: () => { opened = true },
     confirmPresentationPreview: () => {},
     openHtmlPreview: () => {},
+    openFilePreview: () => {},
   })
   actions.onArtifactOpen(artifact, message, 0)
   assert.equal(opened, true)
+})
+
+test('generated PDF, Word, and Excel open the file preview without an edit action', () => {
+  const calls: string[] = []
+  const actions = useChatArtifactActions({
+    downloadDocument: () => calls.push('download'),
+    openDocumentEditor: () => calls.push('document-editor'),
+    openPresentationEditor: () => calls.push('presentation-editor'),
+    confirmPresentationPreview: () => {},
+    openHtmlPreview: () => {},
+    openFilePreview: () => calls.push('file-preview'),
+  })
+  for (const kind of ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'xlsm']) {
+    const artifact: ArtifactItem = { id: kind, ts: 1, kind, filename: `result.${kind}`, object_path: `owner/result.${kind}` }
+    assert.ok(actionsFor(artifact).includes('preview'))
+    assert.ok(!actionsFor(artifact).includes('edit'))
+    actions.onArtifactOpen(artifact, message, 0)
+    actions.onArtifactPreviewHtml(artifact)
+  }
+  assert.deepEqual(calls, Array(12).fill('file-preview'))
 })

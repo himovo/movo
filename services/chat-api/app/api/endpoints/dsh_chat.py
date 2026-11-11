@@ -716,7 +716,7 @@ async def upload_chat_document(
     file: UploadFile = File(...),
     authorization: str | None = Header(default=None),
 ) -> ApiResponse:
-    _, authenticated_user_id, _ = await _identity(authorization)
+    tenant_id, authenticated_user_id, _ = await _identity(authorization)
     filename = str(file.filename or "chat_document.bin").strip() or "chat_document.bin"
     ext = os.path.splitext(filename)[1].lower()
     allowed_exts = {".pdf", ".doc", ".docx", ".ppt", ".pptx", ".txt", ".md", ".xlsx", ".xlsm", ".csv", ".tsv", ".xls"}
@@ -730,6 +730,11 @@ async def upload_chat_document(
         user_id=authenticated_user_id,
         file_name=filename,
         content_type=file.content_type,
+    )
+    await get_db().chat_uploads.update_one(
+        {"_id": object_path},
+        {"$set": {"user_id": authenticated_user_id, "main_id": tenant_id, "filename": filename}},
+        upsert=True,
     )
     return ApiResponse(code=0, message="success", data={
         "object_path": object_path,

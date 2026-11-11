@@ -99,7 +99,7 @@ ensure_document_processing_venv() {
         "$BACKEND_PYTHON_BIN" -m venv .venv
     fi
     DOC_PROCESSING_PYTHON_BIN="$(pwd)/.venv/bin/python"
-    if ! "$DOC_PROCESSING_PYTHON_BIN" -c "import celery, fastapi, oss2, pymongo, pydantic_settings, redis, uvicorn" >/dev/null 2>&1; then
+    if ! "$DOC_PROCESSING_PYTHON_BIN" -c "import celery, fastapi, openpyxl, oss2, pymongo, pydantic_settings, redis, uvicorn" >/dev/null 2>&1; then
         "$DOC_PROCESSING_PYTHON_BIN" -m pip install -r requirements.txt
     fi
     cd "$ROOT_DIR"

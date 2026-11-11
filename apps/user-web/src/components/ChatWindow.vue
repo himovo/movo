@@ -8,12 +8,14 @@ import CodeDraftContextBar from './code/CodeDraftContextBar.vue'
 import CodePermissionPicker from './code/CodePermissionPicker.vue'
 import ChatComposer from './chat/ChatComposer.vue'
 import DocumentEditorDialog from './chat/DocumentEditorDialog.vue'
+import ChatFilePreviewPanel from './chat/ChatFilePreviewPanel.vue'
 import UserMessageContent from './chat/UserMessageContent.vue'
 import AssistantMessageBody from './chat/AssistantMessageBody.vue'
 import ChatTurnInterruptions from './chat/ChatTurnInterruptions.vue'
 import AssistantImagePreview from './chat/AssistantImagePreview.vue'
 import type { PendingDocument } from './chat/types'
 import { useDocumentEditors } from './chat/useDocumentEditors'
+import { useChatFilePreview } from './chat/useChatFilePreview'
 import { useAuthoritativeMessages } from './chat/useAuthoritativeMessages'
 import PromptGuidePanel from './chat/PromptGuidePanel.vue'
 import { usePromptGuide } from './chat/usePromptGuide'
@@ -263,6 +265,7 @@ const {
   openHtmlPreview, closePresentationEditor, onPresentationExported,
   downloadDocument, confirmPresentationPreview, regenerateDocument,
 } = useDocumentEditors({ messages, getUserId: () => props.userId, debugEnabled })
+const filePreview = useChatFilePreview(() => props.sessionId, () => props.userId, () => props.authToken)
 const {
   showScrollButton, stickyState, stickyAssistantMsgId,
   stickyNeedsInitialAlign, markUserScrollIntent, recomputeStickyTurnMinHeight,
@@ -322,7 +325,7 @@ const {
   downloadMessageArtifact,
 } = useChatArtifactActions({
   downloadDocument, openDocumentEditor, openPresentationEditor,
-  confirmPresentationPreview, openHtmlPreview,
+  confirmPresentationPreview, openHtmlPreview, openFilePreview: filePreview.show,
 })
 
 function openImagePreview(src?: string, alt?: string) {
@@ -355,7 +358,7 @@ useChatWindowLifecycle({
   <BrowserWorkspace
     :active="props.active"
     :enabled="allowBrowser"
-    :open="isPreviewExpanded"
+    :open="isPreviewExpanded && !filePreview.open.value"
     :tabs="props.desktopToolTabs || []"
     :active-tool="props.desktopActiveTool"
     :active-kind="desktopActiveTab?.kind"
@@ -369,10 +372,10 @@ useChatWindowLifecycle({
     @close-tab="emit('close-desktop-tool', $event)"
     @open-tab="emit('open-desktop-tool', $event)"
   >
-    <div class="relative flex h-full w-full overflow-hidden">
+    <div class="chat-file-workspace relative flex h-full w-full overflow-hidden" :class="{ 'chat-file-workspace-open': filePreview.open.value }">
     <!-- Main Chat Area -->
     <div 
-      class="relative flex h-full min-w-0 flex-1 flex-col"
+      class="chat-file-main relative flex h-full min-w-0 flex-1 flex-col"
     >
     <!-- T8: transient concurrent-send notice, in-flow at the top of the
          conversation (never covering messages, never a thread row). The store
@@ -472,6 +475,7 @@ useChatWindowLifecycle({
               :locale="locale"
               :session-id="props.sessionId"
               @image-preview="openImagePreview"
+              @document-preview="filePreview.show"
               @schedule="emit('schedule-message', $event)"
             />
           </div>
@@ -545,6 +549,7 @@ useChatWindowLifecycle({
         @stop="emit('stop')"
         @select-model="selectChatModel"
         @image-preview="({ src, alt }) => openImagePreview(src, alt)"
+        @document-preview="filePreview.showPending"
         @knowledge-source="setKnowledgeSourceSummary"
       >
         <template #model-actions>
@@ -591,7 +596,7 @@ useChatWindowLifecycle({
   </div>
     <ProjectWorkspacePanel
       v-if="capabilities.codeInspector && props.codeSession && hasDesktopCodeTabs"
-      v-show="Boolean(desktopCodePanelMode)"
+      v-show="Boolean(desktopCodePanelMode) && !filePreview.open.value"
       :session="props.codeSession"
       :active-id="props.desktopActiveTool || ''"
       :tabs="props.desktopToolTabs || []"
@@ -608,6 +613,17 @@ useChatWindowLifecycle({
       @open-file="emit('open-desktop-file-tab', $event)"
       @open-diff="(path, changes) => emit('open-desktop-diff-tab', path, changes)"
       @workspace-change="emit('code-workspace-change')"
+    />
+    <ChatFilePreviewPanel
+      :open="filePreview.open.value"
+      :document="filePreview.document.value"
+      :state="filePreview.state.value"
+      :text="filePreview.text.value"
+      :busy="filePreview.busy.value"
+      :error="filePreview.error.value"
+      @close="filePreview.close"
+      @retry="filePreview.refresh(true)"
+      @download="filePreview.pending.value ? filePreview.downloadPending() : filePreview.document.value && downloadDocument(filePreview.document.value)"
     />
     </div>
   <DocumentEditorDialog
@@ -653,3 +669,10 @@ useChatWindowLifecycle({
     @close="closeKnowledgeSourceViewer"
   />
 </template>
+
+<style scoped>
+.chat-file-workspace { container-type: inline-size; }
+@container (max-width: 980px) {
+  .chat-file-workspace-open .chat-file-main { display: none; }
+}
+</style>

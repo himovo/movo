@@ -22,6 +22,7 @@ import { workspaceContextMessages } from './workspaceContextMessages'
 import { skillDependencyMessages } from './skillDependencyMessages'
 import { pluginEnvironmentMessages } from './pluginEnvironmentMessages'
 import { conversationPluginMessages } from './conversationPluginMessages'
+import { chatFilePreviewMessages } from './chatFilePreviewMessages'
 
 export type Locale = 'zh' | 'en'
 export type MessageValue = string | Record<Locale, string>
@@ -39,6 +40,7 @@ export const messages = {
   ...internalToolMessages,
   ...appShellMessages,
   ...chatComposerMessages,
+  ...chatFilePreviewMessages,
   ...workspaceContextMessages,
   ...skillDependencyMessages,
   'chat.question.title': { zh: '需要你的回答', en: 'Your input is needed' },

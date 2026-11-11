@@ -29,6 +29,21 @@ def test_container_output_path_is_mapped_to_job_workspace(tmp_path: Path):
     assert result["documents"][0]["object_path"] == "user-a/result.txt"
 
 
+def test_generated_html_is_delivered_as_a_document(tmp_path: Path):
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+    (output_dir / "report.html").write_bytes(b"sandbox output")
+    result = export_script_artifacts(
+        raw_artifacts=[{"path": "/job/out/report.html"}],
+        output_dir=output_dir,
+        user_id="user-a",
+        uploader=Storage(),
+        sandbox_output_dir=Path("/job/out"),
+    )
+    assert result["documents"][0]["type"] == "html"
+    assert result["documents"][0]["object_path"] == "user-a/report.html"
+
+
 @pytest.mark.parametrize("path", ["/job/out/../secret.txt", "/job/other/secret.txt"])
 def test_container_output_path_cannot_escape_job_output(tmp_path: Path, path: str):
     output_dir = tmp_path / "out"

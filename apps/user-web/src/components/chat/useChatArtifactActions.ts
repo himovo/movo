@@ -11,6 +11,7 @@ export function useChatArtifactActions(options: {
   openPresentationEditor: (document: ReturnType<typeof artifactToDocumentInfo>, message: ChatMessage) => unknown
   confirmPresentationPreview: (document: ReturnType<typeof artifactToDocumentInfo>, message: ChatMessage) => unknown
   openHtmlPreview: (document: ReturnType<typeof artifactToDocumentInfo>) => unknown
+  openFilePreview: (document: ReturnType<typeof artifactToDocumentInfo>) => unknown
 }) {
   function visibleMessageArtifacts(message: ChatMessage): ArtifactItem[] {
     const state = ensureMessageExecutionV3(message).state
@@ -19,8 +20,11 @@ export function useChatArtifactActions(options: {
 
   function onArtifactOpen(artifact: ArtifactItem, message: ChatMessage, index: number) {
     const document = artifactToDocumentInfo(artifact)
+    if (document.object_path && ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'xlsm', 'html'].includes(document.type)) {
+      return options.openFilePreview(document)
+    }
     if (document.local_artifact_id) return options.openDocumentEditor(document, message, index)
-    if (document.type === 'doc') return options.downloadDocument(document)
+    if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'xlsm'].includes(document.type)) return options.downloadDocument(document)
     if (document.type === 'ppt' || document.type === 'pptx') {
       return document.bundle?.preview_metadata?.blueprint_artifact_path || document.bundle?.deck_ir_artifact?.object_path
         ? options.openPresentationEditor(document, message)
@@ -30,6 +34,9 @@ export function useChatArtifactActions(options: {
   }
   function onArtifactEditPresentation(artifact: ArtifactItem, message: ChatMessage) {
     const document = artifactToDocumentInfo(artifact)
+    if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'xlsm'].includes(document.type)) {
+      return options.openFilePreview(document)
+    }
     if (document.local_artifact_id) return options.openDocumentEditor(document, message, -1)
     if (document.type === 'docx') return options.openDocumentEditor(document, message, -1)
     return options.openPresentationEditor(document, message)
@@ -39,8 +46,12 @@ export function useChatArtifactActions(options: {
     return options.confirmPresentationPreview(artifactToDocumentInfo(artifact), message)
   }
   function onArtifactPreviewHtml(artifact: ArtifactItem) {
+    const document = artifactToDocumentInfo(artifact)
+    if (document.object_path && ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'xlsm', 'html'].includes(document.type)) {
+      return options.openFilePreview(document)
+    }
     if (artifact.local_artifact_id && artifact.local_session_id) return openDshPresentedFile(artifact.local_session_id, artifact.local_artifact_id)
-    return options.openHtmlPreview(artifactToDocumentInfo(artifact))
+    return options.openFilePreview(document)
   }
   function onArtifactDownload(artifact: ArtifactItem) {
     return options.downloadDocument(artifactToDocumentInfo(artifact))

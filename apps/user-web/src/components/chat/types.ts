@@ -3,11 +3,13 @@ export type ChatDocumentKind = 'pdf' | 'docx' | 'ppt' | 'pptx' | 'md' | 'html' |
 export interface PendingDocument {
   file: File
   kind: ChatDocumentKind
+  uploaded?: import('../../api/chat').UploadedDocument
+  uploadPromise?: Promise<import('../../api/chat').UploadedDocument>
 }
 
 export interface DocumentInfo {
   id?: string
-  type: 'pdf' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'ppt' | 'pptx' | 'md' | 'html' | 'presentation_preview_bundle' | 'generic'
+  type: 'pdf' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'xlsm' | 'ppt' | 'pptx' | 'md' | 'txt' | 'csv' | 'tsv' | 'html' | 'presentation_preview_bundle' | 'generic'
   url: string
   filename?: string
   title?: string

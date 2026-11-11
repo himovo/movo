@@ -59,6 +59,25 @@ movo_prepare_internal_service_auth() {
     export ASKAI_ADMIN_DOCUMENT_PROCESSING_SERVICE_TOKEN="$document_token"
     export DOCUMENT_PROCESSING_SERVICE_TOKEN="$document_token"
 
+    # Preview callbacks from document-parser must use the same token that
+    # chat-api and admin-api validate, including in source-development mode.
+    local callback_token="${MOVO_DOC_PROCESSING_CALLBACK_TOKEN:-${ASKAI_ADMIN_DOCUMENT_PROCESSING_CALLBACK_TOKEN:-}}"
+    if [ -z "$callback_token" ] && [ -n "$root_dir" ]; then
+        callback_token="$(_movo_read_env_value ASKAI_ADMIN_DOCUMENT_PROCESSING_CALLBACK_TOKEN "$root_dir/services/admin-api/.env")"
+    fi
+    if [ -z "$callback_token" ] && [ -n "$root_dir" ]; then
+        callback_token="$(_movo_read_env_value MOVO_DOC_PROCESSING_CALLBACK_TOKEN "$root_dir/services/document-parser/.env")"
+    fi
+    if [ -z "$callback_token" ]; then
+        if command -v openssl >/dev/null 2>&1; then
+            callback_token="$(openssl rand -hex 32)"
+        else
+            callback_token="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+        fi
+    fi
+    export MOVO_DOC_PROCESSING_CALLBACK_TOKEN="$callback_token"
+    export ASKAI_ADMIN_DOCUMENT_PROCESSING_CALLBACK_TOKEN="$callback_token"
+
     # Model Center secrets are encrypted by admin-api with its JWT secret and
     # decrypted by both the document API and Celery worker. They must receive
     # the exact same stable value or every embedding/rerank key is unreadable.

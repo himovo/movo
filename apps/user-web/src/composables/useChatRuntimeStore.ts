@@ -101,6 +101,8 @@ export type RuntimeMessage = {
 export type PendingRuntimeDocument = {
   file: File
   kind: RuntimeDocumentInfo['type']
+  uploaded?: UploadedDocument
+  uploadPromise?: Promise<UploadedDocument>
 }
 
 export type RuntimeIntervention = {
@@ -668,7 +670,7 @@ async function uploadImages(userId: string, files: File[], authToken?: string | 
 async function uploadDocuments(userId: string, docs: PendingRuntimeDocument[], authToken?: string | null): Promise<RuntimeDocumentInfo[]> {
   const uploaded: RuntimeDocumentInfo[] = []
   for (const item of docs) {
-    const result: UploadedDocument = await uploadChatDocument(userId, item.file, authToken)
+    const result: UploadedDocument = item.uploaded || await (item.uploadPromise || uploadChatDocument(userId, item.file, authToken))
     uploaded.push({
       type: item.kind,
       url: result.url || result.signed_url || '',

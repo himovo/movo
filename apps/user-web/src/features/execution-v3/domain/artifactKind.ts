@@ -14,7 +14,7 @@ export interface ArtifactIdentity {
 }
 
 const SUPPORTED_KINDS = new Set([
-  'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'md', 'html',
+  'pdf', 'doc', 'docx', 'xls', 'xlsx', 'xlsm', 'ppt', 'pptx', 'md', 'html',
   'presentation_preview_bundle', 'email_draft', 'code_diff',
 ])
 
@@ -31,6 +31,7 @@ const MIME_KINDS: Record<string, string> = {
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
   'application/vnd.ms-excel': 'xls',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+  'application/vnd.ms-excel.sheet.macroenabled.12': 'xlsm',
   'application/vnd.ms-powerpoint': 'ppt',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
   'text/markdown': 'md',

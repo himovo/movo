@@ -34,6 +34,7 @@ defineProps<{
 }>()
 const emit = defineEmits<{
   (e: 'image-preview', src: string, alt: string): void
+  (e: 'document-preview', document: DocumentInfo): void
   (e: 'schedule', payload: { prompt: string; sessionId?: string }): void
 }>()
 function getDocPresentation(doc: DocumentInfo) {
@@ -79,10 +80,12 @@ function normalizeUserContent(content: string): string {
     />
     </div>
     <div v-if="message.documents?.length" class="mt-3 space-y-2">
-    <div
+    <button
+      type="button"
       v-for="(doc, docIdx) in getDisplayDocuments(message.documents)"
       :key="docIdx"
-      class="flex items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 px-4 py-3 shadow-sm"
+      class="flex w-full items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 px-4 py-3 text-left shadow-sm hover:bg-blue-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
+      @click="emit('document-preview', doc)"
     >
       <div class="h-10 w-10 rounded-xl bg-white flex items-center justify-center">
         <img
@@ -100,7 +103,8 @@ function normalizeUserContent(content: string): string {
           {{ doc.filename || chatChromeMessages.document[locale](doc.type.toUpperCase()) }}
         </div>
       </div>
-    </div>
+      <span class="text-xs font-medium text-blue-700">{{ t('ui.preview') }}</span>
+    </button>
     </div>
   </div>
   <UserMessageActions

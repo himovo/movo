@@ -42,6 +42,7 @@ const emit = defineEmits<{
   (e: 'stop'): void
   (e: 'select-model', modelId: string): void
   (e: 'image-preview', payload: { src: string; alt: string }): void
+  (e: 'document-preview', document: PendingDocument): void
   (e: 'knowledge-source', source: KnowledgeSourceSummary): void
 }>()
 
@@ -272,7 +273,7 @@ async function sendMessage() {
   mentions.close()
   mentions.selected.value = []
   const imageFiles = pendingImages.value.map((item) => item.file)
-  const documentFiles = pendingDocuments.value.map((item) => ({ file: item.file, kind: item.kind }))
+  const documentFiles = pendingDocuments.value.map((item) => ({ ...item }))
   const skill = selectedSkill.value
   const text = skill?.entryKind === 'command'
     ? `/${skill.name}${rawText.trim() ? ` ${rawText.trim()}` : ''}`
@@ -382,6 +383,7 @@ watch(() => props.allowKnowledge, (allowed) => {
         :documents="pendingDocuments"
         :doc-icon="docIcon"
         @image-preview="openPendingImagePreview"
+        @document-preview="emit('document-preview', $event)"
         @remove-image="removePendingImage"
         @remove-document="removePendingDocument"
       />
