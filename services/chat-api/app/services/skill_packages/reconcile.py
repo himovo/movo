@@ -74,7 +74,8 @@ async def reconcile_installed(client: httpx.AsyncClient, base: str, headers: dic
 
     for offset in range(0, len(package_ids), 200):
         rows = db.skill_packages.find({"_id": {"$in": package_ids[offset:offset + 200]}})
-        await asyncio.gather(*(prepare(package) async for package in rows))
+        packages = [package async for package in rows]
+        await asyncio.gather(*(prepare(package) for package in packages))
     return not failed
 
 
