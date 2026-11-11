@@ -41,8 +41,7 @@ RUN if [ -n "${MOVO_APT_MIRROR}" ]; then \
 RUN if [ "${INSTALL_SYSTEM_DEPS_AT_BUILD}" = "true" ]; then \
         unset XZ_DEFAULTS XZ_OPT \
         && rm -f /etc/apt/apt.conf.d/docker-clean \
-        && apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update \
-        && apt-get install -y --no-install-recommends \
+        && python /tmp/document-parser-scripts/apt_with_mirror_fallback.py install \
             ca-certificates \
             curl \
             fontconfig \
@@ -55,8 +54,7 @@ RUN if [ "${INSTALL_SYSTEM_DEPS_AT_BUILD}" = "true" ]; then \
             libreoffice-common \
             libreoffice-writer \
             libreoffice-calc \
-            libreoffice-impress \
-        && rm -rf /var/lib/apt/lists/*; \
+            libreoffice-impress; \
     else \
         echo "Skip apt system dependencies in build stage (INSTALL_SYSTEM_DEPS_AT_BUILD=false)"; \
     fi
@@ -105,9 +103,7 @@ RUN if [ "${INSTALL_DOCLING_MODELS_AT_BUILD}" = "true" ]; then \
 
 ARG MOVO_SECURITY_REFRESH=local
 RUN test -n "${MOVO_SECURITY_REFRESH}" \
-    && apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update \
-    && apt-get upgrade -y \
-    && rm -rf /var/lib/apt/lists/*
+    && python /tmp/document-parser-scripts/apt_with_mirror_fallback.py upgrade
 
 ENV HF_HUB_OFFLINE=1
 
