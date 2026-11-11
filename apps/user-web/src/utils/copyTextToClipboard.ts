@@ -5,14 +5,12 @@ interface ClipboardWriter {
 interface ClipboardEnvironment {
   clipboard?: ClipboardWriter
   document?: Document
-  secureContext?: boolean
 }
 
 function browserEnvironment(): ClipboardEnvironment {
   return {
     clipboard: typeof navigator === 'undefined' ? undefined : navigator.clipboard,
     document: typeof document === 'undefined' ? undefined : document,
-    secureContext: typeof window === 'undefined' ? undefined : window.isSecureContext,
   }
 }
 
@@ -56,10 +54,6 @@ export async function copyTextToClipboard(
       // Desktop WebViews can expose the Clipboard API while denying write access.
     }
   }
-
-  // An HTTP IP address is not a secure context. Chrome may report success from
-  // the legacy copy command without updating the system clipboard.
-  if (environment.secureContext === false) throw new Error('Clipboard write is unavailable in an insecure context')
 
   if (environment.document && copyWithSelection(text, environment.document)) return
   throw new Error('Clipboard write is unavailable')

@@ -45,21 +45,27 @@ async function testUnavailableClipboard() {
   await assert.rejects(() => copyTextToClipboard('share-url', {}), /unavailable/)
 }
 
-async function testInsecureContextDoesNotReportLegacyCopyAsSuccess() {
+async function testInsecureContextUsesLegacyCopy() {
   let legacyCopyAttempted = false
+  const textarea = {
+    value: '', readOnly: false, style: {}, setAttribute() {}, focus() {},
+    select() {}, setSelectionRange() {}, remove() {},
+  }
   const environment: ClipboardEnvironment = {
-    secureContext: false,
     document: {
-      body: {},
+      activeElement: null,
+      body: { appendChild() {} },
+      createElement() { return textarea },
       execCommand() { legacyCopyAttempted = true; return true },
     } as unknown as Document,
   }
-  await assert.rejects(() => copyTextToClipboard('share-url', environment), /insecure context/)
-  assert.equal(legacyCopyAttempted, false)
+  await copyTextToClipboard('share-url', environment)
+  assert.equal(legacyCopyAttempted, true)
+  assert.equal(textarea.value, 'share-url')
 }
 
 await testClipboardApi()
 await testSelectionFallback()
 await testUnavailableClipboard()
-await testInsecureContextDoesNotReportLegacyCopyAsSuccess()
+await testInsecureContextUsesLegacyCopy()
 console.log('copy-text-to-clipboard tests passed')
