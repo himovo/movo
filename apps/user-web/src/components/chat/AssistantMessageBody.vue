@@ -17,6 +17,7 @@ import type { BrowserAssistanceHandoff } from '../../composables/browser/useBrow
 const props = defineProps<{
   message: ChatMessage
   live: boolean
+  connectionLostAt?: number
   codeSession?: DshCodeSession | null
   locale: Locale
   evidenceVisible: boolean
@@ -65,6 +66,7 @@ function isPlainAssistantText(content: string): boolean {
     <ExecutionViewV3
       :store="store"
       :live="live"
+      :connection-lost-at="connectionLostAt"
       @resolve-permission="(requestId, decision) => emit('resolve-permission', requestId, decision)"
     />
   </div>

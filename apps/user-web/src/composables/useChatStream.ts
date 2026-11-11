@@ -3,6 +3,7 @@
 import type { ExecutionEventV3 } from '../features/execution-v3/domain/protocol'
 import { notifyAuthExpiredFromResponse } from '../api/authExpiry'
 import { createStreamReadiness } from './tasks/streamReadiness'
+import { ChatStreamConnectionLostError, heartbeatDeadline } from './chatStreamHeartbeat'
 import { isChatStreamAccessRevokedEvent, type ChatStreamAccessRevokedEvent } from './sessionLiveProjection'
 
 export {
@@ -140,6 +141,7 @@ export function startChatStream(
       if (!resp.body) throw new Error('No response body')
 
       const reader = resp.body.getReader()
+      const heartbeat = heartbeatDeadline(resp, ctrl)
       const decoder = new TextDecoder()
       let buffer = ''
       let accessRevoked = false
@@ -164,16 +166,27 @@ export function startChatStream(
           console.warn('[chat-stream] bad line', s)
         }
       }
-      while (!accessRevoked) {
-        const { done, value } = await reader.read()
-        if (done) break
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
-        for (const line of lines) {
-          pumpLine(line)
-          if (accessRevoked) break
+      try {
+        while (!accessRevoked) {
+          let chunk: ReadableStreamReadResult<Uint8Array>
+          try { chunk = await reader.read() }
+          catch (error) {
+            if (heartbeat?.expired()) throw new ChatStreamConnectionLostError()
+            throw error
+          }
+          if (heartbeat?.expired()) throw new ChatStreamConnectionLostError()
+          if (chunk.done) break
+          heartbeat?.received()
+          buffer += decoder.decode(chunk.value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() || ''
+          for (const line of lines) {
+            pumpLine(line)
+            if (accessRevoked) break
+          }
         }
+      } finally {
+        heartbeat?.close()
       }
       if (accessRevoked) {
         // Terminal line already seen: close our side of the reader without

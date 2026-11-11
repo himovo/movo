@@ -20,6 +20,7 @@ export interface ChatMessage {
   content: string
   _id?: string
   _execV3?: ExecutionStoreV3
+  _connectionLostAt?: number
   /** Backend chat session id captured from streaming response header */
   _backendSid?: string
   /** Stable id for this assistant turn; used to bind persisted exec log */

@@ -70,6 +70,31 @@ test('stream readiness also settles when request setup fails', async () => {
   }
 })
 
+test('heartbeat keeps a quiet stream alive and missing heartbeats disconnect it', async () => {
+  const originalFetch = globalThis.fetch
+  let streamController!: ReadableStreamDefaultController<Uint8Array>
+  globalThis.fetch = (async (_url, init) => {
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) { streamController = controller },
+    })
+    init?.signal?.addEventListener('abort', () => streamController.error(new Error('aborted')), { once: true })
+    return new Response(body, {
+      status: 200,
+      headers: { 'X-Chat-Heartbeat-Seconds': '0.01' },
+    })
+  }) as typeof fetch
+  try {
+    const handle = startChatStream({ messages: [] }, () => undefined)
+    await handle.ready
+    streamController.enqueue(new TextEncoder().encode('\n'))
+    await new Promise(resolve => setTimeout(resolve, 15))
+    streamController.enqueue(new TextEncoder().encode('\n'))
+    await assert.rejects(handle.done, /Chat stream connection lost/)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
 test('cancellation requires the API business acknowledgement', async () => {
   const originalFetch = globalThis.fetch
   try {

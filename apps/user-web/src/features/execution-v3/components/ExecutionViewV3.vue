@@ -11,7 +11,7 @@ import { collapseRepeatedToolCalls } from '../domain/repeatedToolCalls'
 import { elapsedRunMs, formatRunDuration } from '../domain/runTiming'
 import { failureMessageKey } from '../domain/failureMessage'
 
-const props = defineProps<{ store: ExecutionStoreV3; live?: boolean }>()
+const props = defineProps<{ store: ExecutionStoreV3; live?: boolean; connectionLostAt?: number }>()
 const emit = defineEmits<{
   (event: 'resolve-permission', requestId: string, decision: 'allow' | 'deny' | 'always_allow'): void
 }>()
@@ -32,18 +32,20 @@ const rows = computed(() => {
 const passiveRunningIds = computed(() => runningContainerIds(rows.value))
 const timeline = computed(() => collapseRepeatedToolCalls(rows.value))
 const showIdlePlaceholder = computed(
-  () => Boolean(props.live)
+  () => Boolean(props.live && !props.connectionLostAt)
     && !hasVisibleActiveRunningLeaf(rows.value, passiveRunningIds.value),
 )
 const terminalWithoutAnswer = computed(
-  () => !props.live && ['failed', 'cancelled', 'blocked'].includes(props.store.state.runStatus),
+  () => Boolean(props.connectionLostAt) || (!props.live && ['failed', 'cancelled', 'blocked'].includes(props.store.state.runStatus)),
 )
 const terminalText = computed(() => {
+  if (props.connectionLostAt) return t('execution.v3.connection_lost')
   if (props.store.state.runStatus === 'blocked') return t('execution.v3.blocked')
   if (props.store.state.runStatus === 'cancelled') return t('execution.v3.cancelled')
   return t('execution.v3.failed')
 })
 const terminalDetail = computed(() => {
+  if (props.connectionLostAt) return ''
   if (props.store.state.runStatus !== 'failed') return ''
   const failedEvent = [...props.store.state.rawEvents].reverse().find(event => event.type === 'run.failed')
   const message = String(failedEvent?.payload?.message || '').trim()
@@ -55,7 +57,7 @@ const activityCount = computed(() => rows.value.filter(
   (item) => !['commentary', 'final_answer'].includes(item.kind),
 ).length)
 const elapsedText = computed(() => formatRunDuration(
-  elapsedRunMs(props.store.state.runStartedAt, props.store.state.runEndedAt, clock.value),
+  elapsedRunMs(props.store.state.runStartedAt, props.store.state.runEndedAt, props.connectionLostAt || clock.value),
   locale.value,
 ))
 const toggleText = computed(() => {
@@ -70,7 +72,7 @@ watch(() => props.store.state.finalAnswerComplete, (done) => {
 }, { immediate: true, flush: 'sync' })
 
 watch(
-  () => Boolean(props.live) && props.store.state.runStatus === 'running' && props.store.state.runStartedAt !== null,
+  () => Boolean(props.live && !props.connectionLostAt) && props.store.state.runStatus === 'running' && props.store.state.runStartedAt !== null,
   (running) => {
     if (clockHandle !== null) clearInterval(clockHandle)
     clockHandle = null
@@ -109,7 +111,7 @@ function toggle() {
         <ActivityItem
           v-else
           :item="entry.item"
-          :active="!passiveRunningIds.has(entry.item.id)"
+          :active="!props.connectionLostAt && !passiveRunningIds.has(entry.item.id)"
           :run-status="store.state.runStatus"
           @resolve-permission="(requestId, decision) => emit('resolve-permission', requestId, decision)"
         />

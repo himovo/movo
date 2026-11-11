@@ -240,6 +240,7 @@ export const messages = {
   'execution.v3.blocked': { zh: '等待你的操作', en: 'Waiting for your input' },
   'execution.v3.cancelled': { zh: '已停止', en: 'Stopped' },
   'execution.v3.failed': { zh: '任务未正常完成', en: 'The task did not complete' },
+  'execution.v3.connection_lost': { zh: '与服务端连接断开，任务状态待确认', en: 'Connection to the server lost. Task status is unconfirmed.' },
   'execution.v3.failed_network': { zh: '无法连接模型服务，请检查企业服务地址或网络连接', en: 'Could not reach the model service. Check the enterprise service address or network connection.' },
   'execution.v3.failed_session_missing': { zh: '历史会话的运行环境数据已丢失，本次任务未完成。历史消息仍可查看；重新发送后会建立新运行环境，模型可能需要你补充先前上下文。', en: 'The runtime data for this conversation is missing, so this task did not complete. Your messages remain available. Sending again starts a new runtime, and you may need to restate earlier context.' },
   'execution.v3.process': { zh: '执行过程', en: 'Activity' },

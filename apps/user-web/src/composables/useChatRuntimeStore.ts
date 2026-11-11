@@ -72,6 +72,7 @@ export type RuntimeMessage = {
   progress?: { content: string; timestamp?: string }[]
   _id?: string
   _execV3?: ExecutionStoreV3
+  _connectionLostAt?: number
   _provisionalTextByItem?: Record<string, string>
   _backendSid?: string
   message_id?: string
@@ -807,6 +808,7 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
   const applyAssistantEvent = (ev: ExecutionEventV3, options: { fromBackend?: boolean } = {}) => {
     const msg = pane.messages.find((item) => item._id === assistantMsg._id)
     if (!msg || !isExecutionEventV3(ev)) return
+    if (options.fromBackend) msg._connectionLostAt = undefined
     if (
       options.fromBackend &&
       (ev.type === 'run.completed' || ev.type === 'run.failed' || ev.type === 'run.cancelled')
@@ -842,6 +844,7 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
     while (!ctrl.signal.aborted) {
       try {
         const recovered = await fetchChatMessageEvents(messageId, after, { authToken: input.authToken })
+        assistantMsg._connectionLostAt = undefined
         for (const ev of recovered.events) applyAssistantEvent(ev, { fromBackend: true })
         after = recovered.next_cursor
         backendEventCursor = recovered.next_cursor
@@ -910,6 +913,7 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
       paneAlive: findPaneByKey(pane.key) === pane,
       aborted: ctrl.signal.aborted,
     })) {
+      assistantMsg._connectionLostAt = Date.now()
       // A proxy may close a streaming response cleanly. Verify the backend run
       // reached a terminal state instead of treating EOF as task completion.
       await recoverDisconnectedStream(true)
@@ -969,6 +973,7 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
         }
       }
     } else if (error?.name !== 'AbortError') {
+      if (!(error instanceof ChatStreamHttpError) && !ctrl.signal.aborted) assistantMsg._connectionLostAt = Date.now()
       const recovered = await recoverDisconnectedStream().catch(() => false)
       if (!recovered && !ctrl.signal.aborted) {
         const errText = error instanceof ChatStreamHttpError && error.code === 'topic_admission_denied'
@@ -1114,6 +1119,7 @@ export function useChatRuntimeStore(callbacks: RuntimeCallbacks = {}) {
             try {
               while (!controller.signal.aborted) {
                 const recovered = await fetchChatMessageEvents(detail.active_run!.message_id, cursor, { authToken })
+                assistant._connectionLostAt = undefined
                 for (const event of recovered.events) {
                   if (!isExecutionEventV3(event)) continue
                   store.applyEvent(event)
@@ -1127,6 +1133,7 @@ export function useChatRuntimeStore(callbacks: RuntimeCallbacks = {}) {
                 await new Promise((resolve) => setTimeout(resolve, 2000))
               }
             } catch {
+              assistant._connectionLostAt = Date.now()
               // Sidebar polling and a future re-open provide another recovery path.
             }
             if (pane.activeIntervention) {

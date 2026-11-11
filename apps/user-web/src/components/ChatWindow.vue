@@ -451,6 +451,7 @@ useChatWindowLifecycle({
               v-if="msg.role === 'assistant'"
               :message="msg"
               :live="isAssistantGenerating(idx, msg)"
+              :connection-lost-at="msg._connectionLostAt"
               :code-session="props.codeSession"
               :locale="locale"
               :intervention="idx === displayMessages.length - 1 ? activeIntervention : null"

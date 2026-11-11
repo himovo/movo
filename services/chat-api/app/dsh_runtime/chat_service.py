@@ -61,6 +61,7 @@ class ConversationBusyError(RuntimeError):
 # The POST stream's producer wait reauthorizes at least this often even while
 # the live queue is idle (one-second monotonic authorization timer, plan L48).
 _STREAM_AUTH_RECHECK_SECONDS = 1.0
+STREAM_HEARTBEAT_SECONDS = 10.0
 
 
 def _access_revoked_ndjson_line(session_id: str) -> str:
@@ -547,6 +548,7 @@ class DshChatService:
         authorizer = SessionReadAuthorizer(get_db())
         send_lock = asyncio.Lock()
         pending_event: asyncio.Task[dict[str, Any]] | None = None
+        last_write = asyncio.get_running_loop().time()
         try:
             events = live_stream.events().__aiter__()
             while True:
@@ -582,6 +584,10 @@ class DshChatService:
                         row.setdefault("session_id", turn.conversation_id)
                         row.setdefault("task_id", turn.conversation_id)
                         yield json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n"
+                        last_write = asyncio.get_running_loop().time()
+                    elif asyncio.get_running_loop().time() - last_write >= STREAM_HEARTBEAT_SECONDS:
+                        yield "\n"
+                        last_write = asyncio.get_running_loop().time()
         finally:
             if pending_event is not None:
                 pending_event.cancel()

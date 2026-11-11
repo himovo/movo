@@ -23,7 +23,7 @@ from app.core.db import get_db
 from app.core.quota_policy import QuotaExceededError, assert_quota_available
 from app.core.tenant import resolve_main_id
 from app.dsh_runtime.application import dsh_runtime_application
-from app.dsh_runtime.chat_service import ConversationBusyError
+from app.dsh_runtime.chat_service import ConversationBusyError, STREAM_HEARTBEAT_SECONDS
 from app.dsh_runtime.conversation import ConversationRepository
 from app.dsh_runtime.conversation.participants_repository import (
     SessionParticipantsRepository,
@@ -300,6 +300,9 @@ async def _start_chat_completions(
         dsh_runtime_application.require_chat().stream(turn, tenant_id=tenant_id, user_id=user_id),
         media_type="text/event-stream",
         headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+            "X-Chat-Heartbeat-Seconds": str(STREAM_HEARTBEAT_SECONDS),
             "X-Session-Id": turn.conversation_id,
             "X-Message-Id": turn.message_id,
             "X-User-Message-Id": turn.user_message_id,
