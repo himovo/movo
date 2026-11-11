@@ -52,7 +52,7 @@ const editingSessionTitle = defineModel<string>('editingTitle', { required: true
 </script>
 
 <template>
-      <section class="px-3 pt-2">
+      <section v-if="pinnedSessions.length" class="px-3 pt-2">
         <button type="button" class="flex w-full items-center gap-1 px-2 pb-1 text-left text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400" :aria-expanded="pinnedHistoryExpanded" @click="pinnedHistoryExpanded = !pinnedHistoryExpanded">
           <span>{{ t('app.pinned') }}</span>
           <svg class="h-3.5 w-3.5 transition-transform duration-150" :class="pinnedHistoryExpanded ? 'rotate-90' : ''" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m5 3 5 5-5 5"/></svg>

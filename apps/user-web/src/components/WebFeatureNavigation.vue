@@ -20,7 +20,7 @@ const emit = defineEmits<{ skills: []; plugins: []; tools: []; knowledge: [] }>(
   <template v-if="hasVisibleEntries">
   <button
     type="button"
-    class="mt-4 flex w-full items-center gap-1 px-5 pb-1 text-left text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400"
+    class="mt-2 flex w-full items-center gap-1 px-5 pb-1 text-left text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400"
     :aria-expanded="expanded"
     @click="expanded = !expanded"
   >
