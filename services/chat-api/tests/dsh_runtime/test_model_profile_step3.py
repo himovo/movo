@@ -98,6 +98,39 @@ class FakeClient(BaseLLMClient):
         raise NotImplementedError
 
 
+def test_agent_name_changes_runtime_profile_and_host_identity() -> None:
+    async def run() -> None:
+        identity = {"name": "Atlas"}
+
+        async def resolve(_tenant_id: str) -> dict[str, str]:
+            return dict(identity)
+
+        compiler = ModelProfileCompiler(FakeCatalog(), agent_presentation_resolver=resolve)
+        first = await compiler.compile(tenant_id="tenant-a")
+        assert first.agent_name == "Atlas"
+        assert first.host_payload(gateway_url="http://gateway", access_token="token")["agentName"] == "Atlas"
+        identity["name"] = "Nova"
+        second = await compiler.compile(tenant_id="tenant-a")
+        assert second.agent_name == "Nova"
+        assert second.profile_version != first.profile_version
+
+    asyncio.run(run())
+
+
+def test_legacy_profile_export_keeps_original_wire_shape() -> None:
+    async def run() -> None:
+        compiler = ModelProfileCompiler(FakeCatalog())
+        current = await compiler.compile(tenant_id="tenant-a")
+        document = current.model_dump(mode="json", exclude={"agent_name", "content_hash", "profile_version", "plugins", "plugin_versions"})
+        old_hash = compiler.content_hash(document)
+        legacy = current.model_copy(update={"content_hash": old_hash, "profile_version": f"rp-{old_hash[:24]}"})
+        exported = RuntimeProfileBundle.export(legacy)
+        assert "agent_name" not in json.loads(exported)
+        assert RuntimeProfileBundle.load(exported) == legacy
+
+    asyncio.run(run())
+
+
 def test_profile_compile_publish_rollback_disable_and_secret_exclusion() -> None:
     asyncio.run(_test_profile_compile_publish_rollback_disable_and_secret_exclusion())
 

@@ -38,6 +38,7 @@ class ProductExtension:
     resource_access_policy: Any | None = None
     execution_access_policy: Any | None = None
     topic_rule_audience_policy: Any | None = None
+    agent_presentation_resolver: Callable[[str], Any] | None = None
 
     def capability_payload(self) -> dict[str, object]:
         merged = dict(COMMUNITY_FEATURES)

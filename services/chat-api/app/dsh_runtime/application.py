@@ -135,6 +135,7 @@ class DshRuntimeApplication:
                 SkillProfileCompiler(MongoSkillCatalog()),
                 get_product_extension().model_access_policy,
                 MongoPluginCatalog(),
+                agent_presentation_resolver=get_product_extension().agent_presentation_resolver,
             ),
             store,
         )

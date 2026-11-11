@@ -69,7 +69,8 @@ test('runtime persona keeps short writing in DSH and uses semantic long-form rou
   assert.match(ASKAI_RUNTIME_PERSONA, /A Skill may use presentation_create as part of its own workflow/)
   assert.match(ASKAI_RUNTIME_PERSONA, /Do not independently start a second workflow for the same requested deliverable/)
   assert.match(ASKAI_RUNTIME_PERSONA, /An embedded table or chart does not authorize a separate spreadsheet/)
-  assert.match(ASKAI_RUNTIME_PERSONA, /^You are MOVO,/)
+  assert.match(ASKAI_RUNTIME_PERSONA, /^You are an enterprise AI assistant/)
+  assert.match(ASKAI_RUNTIME_PERSONA, /assistant name supplied by the deployment identity section/)
   assert.doesNotMatch(ASKAI_RUNTIME_PERSONA, /You are ASKAI/)
 })
 

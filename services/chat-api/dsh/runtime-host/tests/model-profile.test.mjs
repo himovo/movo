@@ -23,6 +23,12 @@ test('model profile accepts only the secret-free ephemeral Host schema', () => {
   )
 })
 
+test('model profile validates deployment assistant identity', () => {
+  assert.equal(normalizeModelProfile({ ...valid, agentName: 'Atlas' }, 'profile-a').agentName, 'Atlas')
+  assert.throws(() => normalizeModelProfile({ ...valid, agentName: '' }, 'profile-a'), /agentName/)
+  assert.throws(() => normalizeModelProfile({ ...valid, agentName: 'A'.repeat(81) }, 'profile-a'), /agentName/)
+})
+
 test('model profile rejects malformed or ambiguous Skill definitions', () => {
   const skill = {
     name: 'report-a1', version: 'skill-v1', source_id: 'skill-1',

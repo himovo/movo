@@ -6,14 +6,13 @@ import json
 
 from .compiler import ModelProfileCompiler
 from .models import RuntimeProfileSnapshot
+from .serialization import snapshot_document
 
 
 class RuntimeProfileBundle:
     @staticmethod
     def export(snapshot: RuntimeProfileSnapshot) -> bytes:
-        document = snapshot.model_dump(
-            mode="json", exclude={"plugins", "plugin_versions"} if not snapshot.plugins else None,
-        )
+        document = snapshot_document(snapshot)
         return json.dumps(document, ensure_ascii=False, sort_keys=True, indent=2).encode("utf-8")
 
     @staticmethod

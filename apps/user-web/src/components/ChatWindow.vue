@@ -16,6 +16,7 @@ import AssistantImagePreview from './chat/AssistantImagePreview.vue'
 import type { PendingDocument } from './chat/types'
 import { useDocumentEditors } from './chat/useDocumentEditors'
 import { useChatFilePreview } from './chat/useChatFilePreview'
+import { useAgentPresentation } from './chat/useAgentPresentation'
 import { useAuthoritativeMessages } from './chat/useAuthoritativeMessages'
 import PromptGuidePanel from './chat/PromptGuidePanel.vue'
 import { usePromptGuide } from './chat/usePromptGuide'
@@ -120,6 +121,12 @@ const props = defineProps<{
 }>()
 
 const { locale } = useLocale()
+const { welcomeTitle } = useAgentPresentation({
+  token: () => props.authToken,
+  tenantId: () => props.mainId,
+  sessionId: () => props.sessionId,
+  locale,
+})
 const allowCode = computed(() => props.agentPolicy?.capabilities.code_generation !== false)
 const allowBrowser = computed(() => props.agentPolicy?.capabilities.browser_automation !== false)
 const allowKnowledge = computed(() => props.agentPolicy?.capabilities.internal_knowledge !== false)
@@ -536,6 +543,7 @@ useChatWindowLifecycle({
         :blocked="Boolean(props.foreignRun || props.foreignRunFinished)"
         :stopping="Boolean(props.stopping)"
         :is-new-session-view="isNewSessionView"
+        :welcome-title="welcomeTitle"
         :chat-models="chatModels"
         :selected-model-id="selectedModelId"
         :model-selector-label="modelSelectorLabel"

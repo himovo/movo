@@ -27,6 +27,7 @@ class RuntimeProfileSnapshot(BaseModel):
     provider_name: str = Field(min_length=1, max_length=256)
     model_name: str = Field(min_length=1, max_length=256)
     display_name: str = Field(min_length=1, max_length=256)
+    agent_name: str = Field(default="", max_length=80)
     capabilities: tuple[str, ...]
     context_window: int = Field(default=0, ge=0)
     max_output_tokens: int = Field(default=0, ge=0)
@@ -88,6 +89,8 @@ class RuntimeProfileSnapshot(BaseModel):
             "gatewayUrl": gateway_url,
             "accessToken": access_token,
         }
+        if self.agent_name:
+            payload["agentName"] = self.agent_name
         if self.tools:
             native_replacements = [
                 tool.name for tool in self.tools if tool.name == "external_search"

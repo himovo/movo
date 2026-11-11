@@ -88,6 +88,13 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="nav-icon"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10M15 10v10"/></svg>
         <span>{{ t('sandbox.title') }}</span>
       </button>
+      <router-link
+        v-for="item in adminProductUiExtension.settingsLinks || []"
+        :key="item.path"
+        class="settings-nav-item"
+        :class="{ active: route.path === item.path }"
+        :to="item.path"
+      >{{ currentLocale === 'en-US' ? item.label.en : item.label.zh }}</router-link>
     </aside>
 
     <main v-if="activeSection === 'general'" class="settings-main">
@@ -1193,6 +1200,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', warnBeforeUnloa
 }
 
 .settings-nav-item {
+  text-decoration: none;
   width: 100%;
   min-height: 44px;
   border: 0;

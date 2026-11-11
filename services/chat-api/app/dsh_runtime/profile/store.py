@@ -9,6 +9,7 @@ from app.core.db import get_db
 from pymongo.errors import DuplicateKeyError
 
 from .models import RuntimeProfileSnapshot
+from .serialization import snapshot_document
 
 
 PROFILE_COLLECTION = "runtime_profile_versions"
@@ -106,9 +107,7 @@ class MongoRuntimeProfileStore:
     ) -> None:
         db = get_db()
         existing = await db[PROFILE_COLLECTION].find_one({"profile_version": snapshot.profile_version})
-        document = snapshot.model_dump(
-            mode="json", exclude={"plugins", "plugin_versions"} if not snapshot.plugins else None,
-        )
+        document = snapshot_document(snapshot)
         if existing is not None:
             previous = {key: existing.get(key) for key in document}
             if previous != document:

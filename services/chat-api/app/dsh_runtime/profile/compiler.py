@@ -21,12 +21,14 @@ class ModelProfileCompiler:
         skill_compiler: SkillProfileCompiler | None = None,
         model_access_policy: Any | None = None,
         plugin_catalog: MongoPluginCatalog | None = None,
+        agent_presentation_resolver: Any | None = None,
     ) -> None:
         self._catalog = catalog
         self._tool_compiler = tool_compiler
         self._skill_compiler = skill_compiler
         self._model_access_policy = model_access_policy
         self._plugin_catalog = plugin_catalog
+        self._agent_presentation_resolver = agent_presentation_resolver
 
     async def compile(
         self,
@@ -54,6 +56,7 @@ class ModelProfileCompiler:
             tenant_id=tenant_id, user_id=user_id, tools=tools,
         ) if self._skill_compiler else None
         plugins = await self._plugin_catalog.list_enabled(tenant_id, user_id) if self._plugin_catalog else ()
+        presentation = await self._agent_presentation_resolver(tenant_id) if self._agent_presentation_resolver else None
         payload: dict[str, Any] = {
             "schema_version": "askai.runtime-profile.v1",
             "tenant_id": tenant_id,
@@ -80,6 +83,10 @@ class ModelProfileCompiler:
         if plugins:
             payload["plugins"] = plugins
             payload["plugin_versions"] = plugin_versions(plugins)
+        if presentation:
+            agent_name = str(presentation.get("name") or "").strip()
+            if agent_name:
+                payload["agent_name"] = agent_name[:80]
         content_hash = self.content_hash(payload)
         return RuntimeProfileSnapshot(
             **payload,

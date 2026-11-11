@@ -4,6 +4,7 @@ const ALLOWED_FIELDS = new Set([
   'modelInstanceId',
   'modelName',
   'displayName',
+  'agentName',
   'visionEnabled',
   'contextWindow',
   'maxOutputTokens',
@@ -66,6 +67,10 @@ export function normalizeModelProfile(modelProfile, profileVersion) {
   if (modelProfile.profileVersion !== profileVersion) throw new Error('modelProfile version mismatch')
   if (modelProfile.subjectUserId !== undefined && typeof modelProfile.subjectUserId !== 'string') {
     throw new Error('subjectUserId must be a string')
+  }
+  if (modelProfile.agentName !== undefined &&
+      (typeof modelProfile.agentName !== 'string' || !modelProfile.agentName.trim() || modelProfile.agentName.length > 80)) {
+    throw new Error('agentName must contain 1 to 80 characters')
   }
   if (modelProfile.toolProfile !== undefined) {
     const toolProfile = modelProfile.toolProfile

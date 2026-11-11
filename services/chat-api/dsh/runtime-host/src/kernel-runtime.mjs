@@ -59,6 +59,7 @@ export class KernelRuntime {
   #webSearchDispose
   #temporalContext = new RuntimeTemporalContext()
   #turnContext = new RuntimeTurnContext()
+  #agentIdentityDispose
   #composition
   #sessionComposer
   #workspaces
@@ -105,6 +106,11 @@ export class KernelRuntime {
     this.#managedPlugins = new ManagedPluginBridge(ctx)
     this.#temporalContext.install(ctx)
     this.#turnContext.install(ctx, { visionEnabled: this.modelProfile?.visionEnabled === true })
+    this.#agentIdentityDispose = ctx.systemPrompt.section({
+      name: 'deployment:agent-identity',
+      order: 1,
+      text: `Your public assistant name is ${JSON.stringify(this.modelProfile?.agentName || 'MOVO')}. Use this name when asked who you are.`,
+    })
     const skillProviderRegistration = registerAskaiSkillProvider(
       ctx, this.modelProfile?.skillProfile, {
         storageRoot: this.storageRoot,
@@ -495,6 +501,8 @@ export class KernelRuntime {
     this.#skillProviderDispose?.()
     this.#temporalContext.dispose()
     this.#turnContext.dispose()
+    this.#agentIdentityDispose?.()
+    this.#agentIdentityDispose = undefined
     await this.#composition?.dispose()
     this.#ctx = undefined
   }

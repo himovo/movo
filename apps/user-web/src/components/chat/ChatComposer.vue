@@ -26,6 +26,7 @@ const props = defineProps<{
   stopping?: boolean
   active: boolean
   isNewSessionView: boolean
+  welcomeTitle: string
   chatModels: ChatModelOption[]
   selectedModelId: string
   modelSelectorLabel: string
@@ -376,7 +377,7 @@ watch(() => props.allowKnowledge, (allowed) => {
   >
     <div class="max-w-4xl mx-auto">
       <div v-if="isNewSessionView" class="mb-6 text-center text-4xl font-semibold text-slate-800">
-        {{ t('chat.welcome_title') }}
+        {{ welcomeTitle }}
       </div>
       <ComposerAttachmentPreviews
         :images="pendingImages"
