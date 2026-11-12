@@ -17,6 +17,7 @@ from app.services.chat_file_previews import (
 )
 from app.services.knowledge_preview_stream import parse_byte_range, preview_response
 from app.utils.object_storage import ObjectStorageClient
+from app.utils.oss_uploader import AliyunOSSUploader
 
 router = APIRouter(tags=["chat-file-preview"])
 
@@ -60,6 +61,8 @@ async def prepare_draft_preview(payload: DraftPreviewRequest, authorization: str
     )
     if result["status"] == "ready":
         result["url"] = f"/askai-api/api/chat/file-previews/drafts/content?object_path={quote(payload.object_path, safe='')}"
+        if result["kind"] == "html":
+            result["render_url"] = AliyunOSSUploader().sign_url(payload.object_path)
     result["filename"] = filename
     return result
 
@@ -80,6 +83,8 @@ async def prepare_preview(payload: PreviewRequest, authorization: str | None = H
     )
     if result["status"] == "ready":
         result["url"] = f"/askai-api/api/chat/file-previews/{payload.session_id}/content?object_path={quote(payload.object_path, safe='')}"
+        if result["kind"] == "html":
+            result["render_url"] = AliyunOSSUploader().sign_url(payload.object_path)
     result["filename"] = filename
     return result
 

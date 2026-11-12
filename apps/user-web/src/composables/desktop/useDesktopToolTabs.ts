@@ -7,6 +7,7 @@ import {
   type DesktopToolTab,
 } from '../../components/desktop/desktopToolTabs'
 import type { DshTaskChangeSet } from '../../platform/types'
+import type { DocumentInfo } from '../../components/chat/types'
 import { desktopChromeMessages, desktopTerminalTabTitle } from '../../locales/desktopChromeMessages'
 
 interface DesktopToolTabsOptions {
@@ -77,6 +78,12 @@ export function useDesktopToolTabs(options: DesktopToolTabsOptions) {
     addOrActivate({ id: desktopDiffTabId(path, taskChanges?.task_id), kind: 'diff', title: `${desktopResourceName(path)} (Diff)`, resource: { path, taskChanges } })
   }
 
+  function openPreview(document: DocumentInfo): void {
+    const key = document.object_path || (document.local_session_id && document.local_artifact_id ? `${document.local_session_id}:${document.local_artifact_id}` : '') || document.url
+    if (!key) return
+    addOrActivate({ id: `preview:${encodeURIComponent(key)}`, kind: 'preview', title: document.filename || document.title || key, resource: { document } })
+  }
+
   function select(id: string): void {
     const tab = state().tabs.find(item => item.id === id)
     if (tab) activate(tab)
@@ -100,6 +107,7 @@ export function useDesktopToolTabs(options: DesktopToolTabsOptions) {
   }
   function pruneUnavailable(): void {
     const remaining = state().tabs.filter(tab => {
+      if (tab.kind === 'preview') return true
       const launcher = tab.kind === 'file' ? 'files' : tab.kind === 'diff' ? 'changes' : tab.kind
       return options.isAvailable(launcher)
     })
@@ -109,5 +117,5 @@ export function useDesktopToolTabs(options: DesktopToolTabsOptions) {
     }
   }
 
-  return { tabs, active, activeTab, activeKind, tabsFor, activeFor, open, reveal, openFile, openDiff, select, close, hide, reset, pruneUnavailable }
+  return { tabs, active, activeTab, activeKind, tabsFor, activeFor, open, reveal, openFile, openDiff, openPreview, select, close, hide, reset, pruneUnavailable }
 }

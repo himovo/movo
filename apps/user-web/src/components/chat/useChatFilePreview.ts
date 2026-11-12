@@ -70,14 +70,19 @@ export function useChatFilePreview(getSessionId: () => string | undefined, getUs
       }
       const result = await prepareChatFilePreview(sessionId!, selected.object_path!, retry)
       if (current !== generation) return
-      state.value = result
-      if (result.status === 'ready' && (result.kind === 'text' || result.kind === 'code' || result.kind === 'html') && result.url) {
-        text.value = await fetchChatFilePreviewText(result.url)
+      if (result.status === 'ready' && (result.kind === 'text' || result.kind === 'code' || (result.kind === 'html' && !result.render_url)) && result.url) {
+        const content = await fetchChatFilePreviewText(result.url)
+        if (current !== generation) return
+        text.value = content
       }
+      state.value = result
       if (result.status === 'queued') timer = setTimeout(() => void refresh(), 1600)
     } catch (cause) {
       if (draft && !draft.uploaded) draft.uploadPromise = undefined
-      if (current === generation) error.value = cause instanceof Error ? cause.message : String(cause)
+      if (current === generation) {
+        state.value = { kind: 'unsupported', status: 'failed', filename: selected.filename || '' }
+        error.value = cause instanceof Error ? cause.message : String(cause)
+      }
     } finally {
       if (current === generation) busy.value = false
     }

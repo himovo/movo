@@ -271,7 +271,7 @@ const {
   desktopWorkspaceSummary, refreshDesktopWorkspaceSummary,
   desktopAvailableTools, desktopToolTabs, desktopActiveTool,
   desktopActiveToolKind, desktopToolTabsFor, desktopActiveToolFor,
-  openDesktopTool, revealDesktopTool, openDesktopFileTab, openDesktopDiffTab,
+  openDesktopTool, revealDesktopTool, openDesktopFileTab, openDesktopDiffTab, openDesktopPreviewTab,
   selectDesktopTool, closeDesktopTool, hideDesktopTools,
   toggleDesktopCodePanel, reviewCodeChanges, openCodeFile, requestDesktopBrowser,
 } = useAppDesktopTools({
@@ -439,6 +439,7 @@ const chatPaneActions = {
   openDesktopTool,
   openDesktopFileTab,
   openDesktopDiffTab,
+  openDesktopPreviewTab,
   codeWorkspaceChange: refreshDesktopWorkspaceSummary,
   reviewCodeChanges,
   openCodeFile,

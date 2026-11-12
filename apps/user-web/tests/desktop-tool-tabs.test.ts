@@ -22,6 +22,14 @@ workspace.openDiff('src/App.vue')
 workspace.openDiff('src/App.vue', { task_id: 'task-1', session_id: 'session-a', created_at: 0, files: [], additions: 0, deletions: 0, undo_available: false, undone: false })
 assert.equal(workspace.tabs.value.filter(tab => tab.kind === 'diff').length, 2, 'workspace and task diffs remain independent')
 
+workspace.openPreview({ type: 'html', filename: 'first.html', url: '', object_path: 'outputs/first.html' })
+workspace.openPreview({ type: 'html', filename: 'second.html', url: '', object_path: 'outputs/second.html' })
+workspace.openPreview({ type: 'html', filename: 'first.html', url: '', object_path: 'outputs/first.html' })
+assert.equal(workspace.tabs.value.filter(tab => tab.kind === 'preview').length, 2, 'each delivered file has one reusable preview tab')
+assert.equal(workspace.activeKind.value, 'preview')
+workspace.open('browser')
+assert.equal(workspace.activeKind.value, 'browser', 'browser remains available while previews are open')
+
 const chatATabs = workspace.tabs.value
 scope.value = 'chat-b'
 assert.equal(workspace.tabs.value.length, 0, 'a new conversation starts with an empty workspace')

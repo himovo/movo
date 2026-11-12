@@ -1,11 +1,13 @@
 import type { DshTaskChangeSet } from '../../platform/types'
+import type { DocumentInfo } from '../chat/types'
 
 export type DesktopToolLauncherKind = 'browser' | 'changes' | 'files' | 'terminal'
-export type DesktopToolTabKind = DesktopToolLauncherKind | 'file' | 'diff'
+export type DesktopToolTabKind = DesktopToolLauncherKind | 'file' | 'diff' | 'preview'
 
 export interface DesktopToolTabResource {
   path?: string
   taskChanges?: DshTaskChangeSet
+  document?: DocumentInfo
 }
 
 export interface DesktopToolTab {

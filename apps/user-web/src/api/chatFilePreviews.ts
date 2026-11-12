@@ -5,6 +5,7 @@ export type ChatFilePreviewState = {
   status: 'ready' | 'queued' | 'failed' | 'unsupported'
   filename: string
   url?: string
+  render_url?: string
   error?: string
 }
 

@@ -78,6 +78,7 @@ defineProps<{
       @open-desktop-tool="actions.openDesktopTool($event)"
       @open-desktop-file-tab="actions.openDesktopFileTab($event)"
       @open-desktop-diff-tab="(path, changes) => actions.openDesktopDiffTab(path, changes)"
+      @open-desktop-preview-tab="actions.openDesktopPreviewTab($event)"
       @code-workspace-change="actions.codeWorkspaceChange()"
       @review-code-changes="(changes, path) => actions.reviewCodeChanges(changes, path)"
       @open-code-file="actions.openCodeFile($event)"

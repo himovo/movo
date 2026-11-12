@@ -13,7 +13,7 @@ import UserMessageContent from './chat/UserMessageContent.vue'
 import AssistantMessageBody from './chat/AssistantMessageBody.vue'
 import ChatTurnInterruptions from './chat/ChatTurnInterruptions.vue'
 import AssistantImagePreview from './chat/AssistantImagePreview.vue'
-import type { PendingDocument } from './chat/types'
+import type { DocumentInfo, PendingDocument } from './chat/types'
 import { useDocumentEditors } from './chat/useDocumentEditors'
 import { useChatFilePreview } from './chat/useChatFilePreview'
 import { useAgentPresentation } from './chat/useAgentPresentation'
@@ -161,6 +161,7 @@ const emit = defineEmits<{
   (e: 'close-desktop-tool', id: string): void
   (e: 'open-desktop-tool', kind: DesktopToolLauncherKind): void
   (e: 'open-desktop-file-tab', path: string): void
+  (e: 'open-desktop-preview-tab', document: DocumentInfo): void
   (e: 'open-desktop-diff-tab', path: string, changes?: DshTaskChangeSet): void
   (e: 'code-workspace-change'): void
   (e: 'review-code-changes', changes: DshTaskChangeSet, path?: string): void
@@ -253,7 +254,7 @@ const {
 })
 const desktopActiveTab = computed(() => (props.desktopToolTabs || []).find(tab => tab.id === props.desktopActiveTool) || null)
 watch(() => desktopActiveTab.value?.kind, kind => {
-  isPreviewExpanded.value = kind === 'browser'
+  isPreviewExpanded.value = kind === 'browser' || kind === 'preview'
 })
 const desktopCodePanelMode = computed<ProjectPanelMode | null>(() => {
   const mode = desktopActiveTab.value?.kind
@@ -274,6 +275,26 @@ const {
   downloadDocument, confirmPresentationPreview, regenerateDocument,
 } = useDocumentEditors({ messages, getUserId: () => props.userId, debugEnabled })
 const filePreview = useChatFilePreview(() => props.sessionId, () => props.userId, () => props.authToken)
+const activePreviewTab = computed(() => desktopActiveTab.value?.kind === 'preview' ? desktopActiveTab.value : null)
+watch(() => activePreviewTab.value?.id, id => {
+  if (!id) return
+  const document = activePreviewTab.value?.resource?.document
+  if (document) filePreview.show(document)
+})
+function openDocumentPreview(document: DocumentInfo) {
+  if (capabilities.embeddedBrowser) {
+    emit('open-desktop-preview-tab', document)
+    isPreviewExpanded.value = true
+  } else filePreview.show(document)
+}
+function closeDocumentPreview() {
+  if (filePreview.pending.value) {
+    filePreview.close()
+    const document = activePreviewTab.value?.resource?.document
+    if (document) filePreview.show(document)
+  } else if (activePreviewTab.value) emit('close-desktop-tool', activePreviewTab.value.id)
+  else filePreview.close()
+}
 const {
   showScrollButton, stickyState, stickyAssistantMsgId,
   stickyNeedsInitialAlign, markUserScrollIntent, recomputeStickyTurnMinHeight,
@@ -333,7 +354,7 @@ const {
   downloadMessageArtifact,
 } = useChatArtifactActions({
   downloadDocument, openDocumentEditor, openPresentationEditor,
-  confirmPresentationPreview, openHtmlPreview, openFilePreview: filePreview.show,
+  confirmPresentationPreview, openHtmlPreview, openFilePreview: openDocumentPreview,
 })
 
 function openImagePreview(src?: string, alt?: string) {
@@ -366,7 +387,7 @@ useChatWindowLifecycle({
   <BrowserWorkspace
     :active="props.active"
     :enabled="allowBrowser"
-    :open="isPreviewExpanded && !filePreview.open.value"
+    :open="isPreviewExpanded && !filePreview.pending.value"
     :tabs="props.desktopToolTabs || []"
     :active-tool="props.desktopActiveTool"
     :active-kind="desktopActiveTab?.kind"
@@ -380,7 +401,7 @@ useChatWindowLifecycle({
     @close-tab="emit('close-desktop-tool', $event)"
     @open-tab="emit('open-desktop-tool', $event)"
   >
-    <div class="chat-file-workspace relative flex h-full w-full overflow-hidden" :class="{ 'chat-file-workspace-open': filePreview.open.value }">
+    <div class="chat-file-workspace relative flex h-full w-full overflow-hidden">
     <!-- Main Chat Area -->
     <div 
       class="chat-file-main relative flex h-full min-w-0 flex-1 flex-col"
@@ -485,7 +506,7 @@ useChatWindowLifecycle({
               :locale="locale"
               :session-id="props.sessionId"
               @image-preview="openImagePreview"
-              @document-preview="filePreview.show"
+              @document-preview="openDocumentPreview"
               @schedule="emit('schedule-message', $event)"
             />
           </div>
@@ -607,7 +628,7 @@ useChatWindowLifecycle({
   </div>
     <ProjectWorkspacePanel
       v-if="capabilities.codeInspector && props.codeSession && hasDesktopCodeTabs"
-      v-show="Boolean(desktopCodePanelMode) && !filePreview.open.value"
+      v-show="Boolean(desktopCodePanelMode)"
       :session="props.codeSession"
       :active-id="props.desktopActiveTool || ''"
       :tabs="props.desktopToolTabs || []"
@@ -626,13 +647,21 @@ useChatWindowLifecycle({
       @workspace-change="emit('code-workspace-change')"
     />
     <ChatFilePreviewPanel
-      :open="filePreview.open.value"
+      :open="filePreview.open.value && (Boolean(filePreview.pending.value) || !capabilities.embeddedBrowser || Boolean(activePreviewTab))"
+      :embedded="Boolean(activePreviewTab) && !filePreview.pending.value"
+      :tabs="props.desktopToolTabs || []"
+      :active-tool="props.desktopActiveTool"
+      :available-tools="props.desktopAvailableTools || []"
+      :locale="locale === 'en' ? 'en' : 'zh'"
       :document="filePreview.document.value"
       :state="filePreview.state.value"
       :text="filePreview.text.value"
       :busy="filePreview.busy.value"
       :error="filePreview.error.value"
-      @close="filePreview.close"
+      @close="closeDocumentPreview"
+      @select-tab="emit('select-desktop-tool', $event)"
+      @close-tab="emit('close-desktop-tool', $event)"
+      @open-tab="emit('open-desktop-tool', $event)"
       @retry="filePreview.refresh(true)"
       @download="filePreview.pending.value ? filePreview.downloadPending() : filePreview.document.value && downloadDocument(filePreview.document.value)"
     />
@@ -680,10 +709,3 @@ useChatWindowLifecycle({
     @close="closeKnowledgeSourceViewer"
   />
 </template>
-
-<style scoped>
-.chat-file-workspace { container-type: inline-size; }
-@container (max-width: 980px) {
-  .chat-file-workspace-open .chat-file-main { display: none; }
-}
-</style>

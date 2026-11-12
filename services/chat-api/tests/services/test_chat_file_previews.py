@@ -104,3 +104,24 @@ def test_generated_file_title_without_extension_uses_storage_path_type():
     assert previews.preview_kind("Final report", "owner/output.pdf") == "pdf"
     assert previews.preview_kind("Landing page", "owner/page.html") == "html"
     assert previews.preview_kind("Generated script", "owner/result.py") == "code"
+
+
+def test_html_preview_refreshes_isolated_render_url_after_authorization(monkeypatch):
+    async def authorized(*_args):
+        return {"filename": "page.html"}, "tenant"
+
+    async def ready(**_kwargs):
+        return {"kind": "html", "status": "ready"}
+
+    class Storage:
+        def sign_url(self, object_path):
+            assert object_path == "owner/page.html"
+            return "/askai-api/api/files/owner/page.html?signature=fresh"
+
+    monkeypatch.setattr(endpoints, "_authorized_file", authorized)
+    monkeypatch.setattr(endpoints, "get_or_start_preview", ready)
+    monkeypatch.setattr(endpoints, "AliyunOSSUploader", Storage)
+    payload = endpoints.PreviewRequest(session_id="session", object_path="owner/page.html")
+    result = asyncio.run(endpoints.prepare_preview(payload, "Bearer token"))
+    assert result["render_url"].endswith("signature=fresh")
+    assert result["url"].endswith("owner%2Fpage.html")

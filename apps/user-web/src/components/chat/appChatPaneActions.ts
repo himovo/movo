@@ -1,6 +1,7 @@
 import type { PaneSendPayload } from '../../composables/usePaneTurnActions'
 import type { CodePermissionMode, DshTaskChangeSet, DshWorkspace } from '../../platform/types'
 import type { DesktopToolLauncherKind } from '../desktop/desktopToolTabs'
+import type { DocumentInfo } from './types'
 
 /** Commands supplied by the app coordinator to each visible chat pane. */
 export interface AppChatPaneActions {
@@ -28,6 +29,7 @@ export interface AppChatPaneActions {
   openDesktopTool(kind: DesktopToolLauncherKind): unknown
   openDesktopFileTab(path: string): unknown
   openDesktopDiffTab(path: string, changes?: DshTaskChangeSet): unknown
+  openDesktopPreviewTab(document: DocumentInfo): unknown
   codeWorkspaceChange(): unknown
   reviewCodeChanges(changes: DshTaskChangeSet, path?: string): unknown
   openCodeFile(path: string): unknown
