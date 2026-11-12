@@ -364,7 +364,7 @@ watch(() => props.allowKnowledge, (allowed) => {
   <input
     ref="documentInputRef"
     type="file"
-    accept=".pdf,.doc,.docx,.ppt,.pptx,.md,.txt,.xlsx,.xlsm,.csv,.tsv,.xls"
+    accept=".pdf,.doc,.docx,.ppt,.pptx,.md,.txt,.html,.htm,.xlsx,.xlsm,.csv,.tsv,.xls"
     multiple
     class="hidden"
     @change="onDocumentSelected"

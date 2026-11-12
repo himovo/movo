@@ -38,6 +38,7 @@ export function useComposerAttachments(options: Options) {
     if (name.endsWith('.pptx') || name.endsWith('.ppt')) return 'pptx'
     // The backend reads the original extension; text uses the Markdown path.
     if (name.endsWith('.md') || name.endsWith('.txt')) return 'md'
+    if (name.endsWith('.html') || name.endsWith('.htm')) return 'html'
     if (name.endsWith('.xlsx') || name.endsWith('.xlsm') || name.endsWith('.xls')) return 'xlsx'
     if (name.endsWith('.csv') || name.endsWith('.tsv')) return 'xlsx'
     return null

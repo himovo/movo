@@ -722,7 +722,7 @@ async def upload_chat_document(
     tenant_id, authenticated_user_id, _ = await _identity(authorization)
     filename = str(file.filename or "chat_document.bin").strip() or "chat_document.bin"
     ext = os.path.splitext(filename)[1].lower()
-    allowed_exts = {".pdf", ".doc", ".docx", ".ppt", ".pptx", ".txt", ".md", ".xlsx", ".xlsm", ".csv", ".tsv", ".xls"}
+    allowed_exts = {".pdf", ".doc", ".docx", ".ppt", ".pptx", ".txt", ".md", ".html", ".htm", ".xlsx", ".xlsm", ".csv", ".tsv", ".xls"}
     if ext not in allowed_exts:
         raise HTTPException(status_code=400, detail="Unsupported document type")
     settings = get_settings()
