@@ -49,8 +49,17 @@ const emit = defineEmits<{
 const store = computed(() => ensureMessageExecutionV3(props.message))
 const artifactPaths = computed(() => {
   const state = store.value.state
-  return visibleAnswerArtifacts(state.artifacts, state.runStatus)
-    .map(item => item.object_path || '').filter(Boolean)
+  const artifacts = visibleAnswerArtifacts(state.artifacts, state.runStatus)
+  const references: Record<string, string> = {}
+  const names = new Map<string, string | null>()
+  for (const item of artifacts) {
+    const key = item.object_path || item.id
+    if (!key) continue
+    if (item.object_path) references[item.object_path] = key
+    if (item.filename) names.set(item.filename, names.has(item.filename) ? null : key)
+  }
+  for (const [name, key] of names) if (key) references[name] = key
+  return references
 })
 
 function isPlainAssistantText(content: string): boolean {

@@ -61,7 +61,7 @@ test('runtime delegates to a DSH subagent and returns the child result to MOVO',
           'parent did not finish after subagent execution',
           15_000,
         )
-        assert.ok(calls.length >= 3, `expected parent, child, parent model calls; received ${calls.length}`)
+        await waitFor(() => calls.length >= 3, 'subagent result did not resume the parent', 15_000)
         assert.ok(calls.some(call => JSON.stringify(call.messages).includes('CHILD_TASK_MARKER')))
         assert.ok(calls.some(call => JSON.stringify(call.messages).includes('CHILD_RESULT_MARKER')))
         assert.ok(runtime.events('parent', -1).some(event => (

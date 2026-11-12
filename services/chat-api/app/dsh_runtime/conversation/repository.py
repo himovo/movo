@@ -422,6 +422,20 @@ class ConversationRepository:
         if result.matched_count == 0:
             raise LookupError("assistant_message_not_found")
 
+    async def ensure_assistant_terminal(self, *, message_id: str, tenant_id: str, status: str) -> None:
+        from .terminal_projection import with_terminal
+
+        row = await self._messages.find_one({"message_id": message_id, "main_id": tenant_id})
+        if row is None:
+            raise LookupError("assistant_message_not_found")
+        events = list(row.get("execution_events") or [])
+        completed = with_terminal(message_id, status, events)
+        if completed is not events:
+            await self._messages.update_one(
+                {"_id": row["_id"], "main_id": tenant_id},
+                {"$set": {"execution_events": completed}},
+            )
+
     async def mark_active_run(
         self,
         *,

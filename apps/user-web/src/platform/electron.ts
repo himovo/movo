@@ -29,6 +29,7 @@ interface ElectronApi {
   dshCodeSession: {
     openPresentedFile(sessionId: string, artifactId: string): Promise<{ opened: boolean }>
     savePresentedFile(sessionId: string, artifactId: string): Promise<{ saved: boolean }>
+    readPresentedText(sessionId: string, artifactId: string): Promise<{ text: string; filename: string }>
     attach(conversationId: string): Promise<DshCodeSession | null>
     send(sessionId: string, text: string, permissionMode?: import('./types').CodePermissionMode, selectedSkillId?: string): Promise<{ accepted: boolean; messageId: string }>
     openPermissionConfig(): Promise<string>
@@ -135,6 +136,7 @@ export const createDshCodeSession = (workspaceId: string, draftId: string, title
 export const sendDshCodeTurn = (sessionId: string, text: string, permissionMode?: import('./types').CodePermissionMode, selectedSkillId?: string) => api().dshCodeSession.send(sessionId, text, permissionMode, selectedSkillId)
 export const openDshPresentedFile = (sessionId: string, artifactId: string) => api().dshCodeSession.openPresentedFile(sessionId, artifactId)
 export const saveDshPresentedFile = (sessionId: string, artifactId: string) => api().dshCodeSession.savePresentedFile(sessionId, artifactId)
+export const readDshPresentedText = (sessionId: string, artifactId: string) => api().dshCodeSession.readPresentedText(sessionId, artifactId)
 export const openDshCodePermissionConfig = () => api().dshCodeSession.openPermissionConfig()
 export const validateDshCodePermissionConfig = () => api().dshCodeSession.validatePermissionConfig()
 export const attachDshCodeConversation = (conversationId: string) => api().dshCodeSession.attach(conversationId)

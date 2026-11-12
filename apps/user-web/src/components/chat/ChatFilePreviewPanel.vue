@@ -4,6 +4,7 @@ import { t } from '../../composables/i18n'
 import { authenticatedHeaders } from '../../api/authHeaders'
 import { resolveArtifactIcon } from '../../registries'
 import PdfDocumentViewer from '../knowledge/PdfDocumentViewer.vue'
+import CodeFilePreview from './CodeFilePreview.vue'
 import type { ChatFilePreviewState } from '../../api/chatFilePreviews'
 import type { DocumentInfo } from './types'
 import { useDesktopToolPanelSize } from '../../composables/desktop/useDesktopToolPanelSize'
@@ -47,6 +48,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
             :http-headers="state.url.startsWith('blob:') ? {} : authenticatedHeaders()"
           />
           <pre v-else-if="state?.status === 'ready' && state.kind === 'text'" class="whitespace-pre-wrap break-words p-5 text-sm text-slate-800">{{ text }}</pre>
+          <CodeFilePreview v-else-if="state?.status === 'ready' && state.kind === 'code'" :content="text" :filename="state.filename" />
           <iframe v-else-if="state?.status === 'ready' && state.kind === 'html'" class="h-full w-full border-0 bg-white" :title="state.filename" :srcdoc="text" sandbox="allow-scripts" referrerpolicy="no-referrer" />
           <div v-else class="flex h-full flex-col items-center justify-center gap-3 p-8 text-center text-sm text-slate-600" role="status" aria-live="polite">
             <template v-if="state?.status === 'queued' || busy">

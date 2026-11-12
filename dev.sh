@@ -107,10 +107,12 @@ ensure_document_processing_venv() {
 
 start_runtime_backend() {
     echo "Starting Backend on :$BACKEND_PORT ..."
+    mkdir -p "$CHAT_API_DIR/storage"
     cd "$CHAT_API_DIR"
     PYTHONPATH="$(pwd)" "$BACKEND_PYTHON_BIN" -m uvicorn app.main:app --reload --reload-dir app --port "$BACKEND_PORT" \
         --timeout-graceful-shutdown "${BACKEND_GRACEFUL_SHUTDOWN_SECONDS:-120}" \
         --reload-exclude "backend.log" \
+        --reload-exclude "$CHAT_API_DIR/storage" \
         --reload-exclude "static/*" \
         --reload-exclude "*.pyc" \
         --reload-exclude "__pycache__/*" &

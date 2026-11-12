@@ -1,6 +1,7 @@
 import { onBeforeUnmount, ref } from 'vue'
 import { fetchChatFilePreviewText, prepareChatFilePreview, prepareDraftFilePreview, type ChatFilePreviewState } from '../../api/chatFilePreviews'
 import { uploadChatDocument } from '../../api/chat'
+import { readDshPresentedText } from '../../platform'
 import type { DocumentInfo, PendingDocument } from './types'
 
 export function useChatFilePreview(getSessionId: () => string | undefined, getUserId: () => string | undefined, getToken: () => string | undefined) {
@@ -26,13 +27,20 @@ export function useChatFilePreview(getSessionId: () => string | undefined, getUs
     const sessionId = getSessionId()
     const current = ++generation
     stopTimer()
-    if (!selected || (!draft && (!selected.object_path || !sessionId))) {
+    if (!selected || (!draft && !(selected.local_session_id && selected.local_artifact_id) && (!selected.object_path || !sessionId))) {
       error.value = 'unavailable'
       return
     }
     busy.value = true
     error.value = ''
     try {
+      if (selected.local_session_id && selected.local_artifact_id) {
+        const result = await readDshPresentedText(selected.local_session_id, selected.local_artifact_id)
+        if (current !== generation) return
+        text.value = result.text
+        state.value = { kind: 'code', status: 'ready', filename: result.filename }
+        return
+      }
       if (draft) {
         const name = draft.file.name.toLowerCase()
         if (name.endsWith('.pdf')) {
@@ -63,7 +71,7 @@ export function useChatFilePreview(getSessionId: () => string | undefined, getUs
       const result = await prepareChatFilePreview(sessionId!, selected.object_path!, retry)
       if (current !== generation) return
       state.value = result
-      if (result.status === 'ready' && (result.kind === 'text' || result.kind === 'html') && result.url) {
+      if (result.status === 'ready' && (result.kind === 'text' || result.kind === 'code' || result.kind === 'html') && result.url) {
         text.value = await fetchChatFilePreviewText(result.url)
       }
       if (result.status === 'queued') timer = setTimeout(() => void refresh(), 1600)

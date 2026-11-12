@@ -44,6 +44,20 @@ def test_generated_html_is_delivered_as_a_document(tmp_path: Path):
     assert result["documents"][0]["object_path"] == "user-a/report.html"
 
 
+def test_generated_python_is_delivered_without_a_document_format_allowlist(tmp_path: Path):
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+    (output_dir / "result.py").write_bytes(b"sandbox output")
+    result = export_script_artifacts(
+        raw_artifacts=[{"path": "/job/out/result.py"}],
+        output_dir=output_dir,
+        user_id="user-a",
+        uploader=Storage(),
+        sandbox_output_dir=Path("/job/out"),
+    )
+    assert result["documents"][0]["object_path"] == "user-a/result.py"
+
+
 @pytest.mark.parametrize("path", ["/job/out/../secret.txt", "/job/other/secret.txt"])
 def test_container_output_path_cannot_escape_job_output(tmp_path: Path, path: str):
     output_dir = tmp_path / "out"

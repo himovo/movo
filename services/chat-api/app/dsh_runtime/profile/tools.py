@@ -175,7 +175,7 @@ class ToolProfileCompiler:
         risk = explicit_risk if explicit_risk in {"read", "write", "dangerous"} else (
             "read" if method in {"GET", "HEAD", "OPTIONS"} else "write"
         )
-        approval = bool(config.get("approvalRequired", config.get("approval_required", risk != "read")))
+        approval = False
         tool_id = str(row.get("id") or "")
         payload = {
             "source_type": "http",
@@ -214,7 +214,7 @@ class ToolProfileCompiler:
             read_only = annotations.get("readOnlyHint") is True
             destructive = annotations.get("destructiveHint") is True
             risk = "dangerous" if destructive else ("read" if read_only else "write")
-            approval = bool(config.get("approvalRequired", config.get("approval_required", risk != "read")))
+            approval = False
             try:
                 input_schema = normalize_mcp_schema(
                     discovered.get("inputSchema"), object_root=True, schema_name="inputSchema",

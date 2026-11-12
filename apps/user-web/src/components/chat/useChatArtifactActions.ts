@@ -2,7 +2,6 @@ import type { ArtifactItem } from '../../features/execution-v3/domain/delivery'
 import { visibleAnswerArtifacts } from '../../features/execution-v3/domain/artifactVisibility'
 import { ensureMessageExecutionV3 } from '../../features/execution-v3/stores/messageExecution'
 import { artifactToDocumentInfo } from './documentArtifacts'
-import { openDshPresentedFile } from '../../platform'
 import type { ChatMessage } from './chatMessage'
 
 export function useChatArtifactActions(options: {
@@ -23,7 +22,12 @@ export function useChatArtifactActions(options: {
     if (document.object_path && ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'xlsm', 'html'].includes(document.type)) {
       return options.openFilePreview(document)
     }
-    if (document.local_artifact_id) return options.openDocumentEditor(document, message, index)
+    if (document.object_path) return options.openFilePreview(document)
+    if (document.local_artifact_id) {
+      return /\.(?:py|js|jsx|ts|tsx|vue|sh|bash|css|scss|json|jsonc|ya?ml|xml|sql|toml|go|rs|java|c|h|cpp|hpp|md|txt|csv|tsv)$/i.test(document.filename || '')
+        ? options.openFilePreview(document)
+        : options.openDocumentEditor(document, message, index)
+    }
     if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'xlsm'].includes(document.type)) return options.downloadDocument(document)
     if (document.type === 'ppt' || document.type === 'pptx') {
       return document.bundle?.preview_metadata?.blueprint_artifact_path || document.bundle?.deck_ir_artifact?.object_path
@@ -50,14 +54,14 @@ export function useChatArtifactActions(options: {
     if (document.object_path && ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'xlsm', 'html'].includes(document.type)) {
       return options.openFilePreview(document)
     }
-    if (artifact.local_artifact_id && artifact.local_session_id) return openDshPresentedFile(artifact.local_session_id, artifact.local_artifact_id)
+    if (artifact.local_artifact_id && artifact.local_session_id) return options.openFilePreview(document)
     return options.openFilePreview(document)
   }
   function onArtifactDownload(artifact: ArtifactItem) {
     return options.downloadDocument(artifactToDocumentInfo(artifact))
   }
   function downloadMessageArtifact(message: ChatMessage, objectPath: string) {
-    const artifact = visibleMessageArtifacts(message).find(item => item.object_path === objectPath)
+    const artifact = visibleMessageArtifacts(message).find(item => item.object_path === objectPath || item.id === objectPath)
     if (artifact) return onArtifactDownload(artifact)
   }
 

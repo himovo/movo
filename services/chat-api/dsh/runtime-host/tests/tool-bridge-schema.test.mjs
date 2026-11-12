@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import { AskaiToolBridge, validateDescriptorArguments } from '../src/askai-tool-bridge-plugin.mjs'
+import { DesktopApprovalBroker } from '../src/desktop-approval-broker.mjs'
 
 const descriptor = {
   input_schema: {
@@ -278,5 +279,41 @@ test('browser approval forwards the exact action and uses a bounded ASKAI deadli
     assert.equal(body.timeoutSeconds, 240)
   } finally {
     bridge.dispose()
+  }
+})
+
+test('enterprise approval reaches the gateway before the desktop approval broker', async () => {
+  const listeners = new Map()
+  const ctx = {
+    tools: { register: () => () => {} },
+    on: (name, handler, options = {}) => {
+      const entries = listeners.get(name) ?? []
+      if (options.prepend) entries.unshift(handler)
+      else entries.push(handler)
+      listeners.set(name, entries)
+      return () => listeners.set(name, entries.filter(entry => entry !== handler))
+    },
+  }
+  const broker = new DesktopApprovalBroker(ctx)
+  let forwarded = false
+  const bridge = new AskaiToolBridge(ctx, {
+    profileVersion: 'profile-a', gatewayUrl: 'http://gateway.test', accessToken: 'test',
+    tools: [{ name: 'run_script', description: 'script', input_schema: { type: 'object' },
+      output_schema: {}, timeout_ms: 90000, risk_level: 'dangerous', approval_required: true }],
+  }, { requestJson: async () => {
+    forwarded = true
+    return { ok: true, payload: { outcome: 'allowed-once' } }
+  } })
+  try {
+    const handlers = listeners.get('approval/request')
+    const dispatch = index => handlers[index]({
+      agent: { id: 'session-a' }, toolName: 'run_script', callId: 'call-a', reason: 'script',
+    }, () => index + 1 < handlers.length ? dispatch(index + 1) : 'unavailable')
+    assert.equal(await dispatch(0), 'allowed-once')
+    assert.equal(forwarded, true)
+    assert.deepEqual(broker.list('session-a'), [])
+  } finally {
+    bridge.dispose()
+    broker.dispose()
   }
 })

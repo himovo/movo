@@ -1,4 +1,4 @@
-// Model-facing names admitted from DSH 0.2.1-alpha.1's official PTC-backed
+// Model-facing names admitted from DSH 0.2.2-rc.2's official Code
 // `code` composition. Keep this collision boundary explicit when DSH adds a
 // native tool; MOVO enterprise tools must not shadow native Code semantics.
 // The pinned-preset compatibility test inventories this same surface. ASKAI

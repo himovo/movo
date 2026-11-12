@@ -1,4 +1,5 @@
 import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { planOverlayRows } from './overlay-planner.mjs'
 
@@ -33,7 +34,7 @@ function hostRows({ askaiPresetRoot, shippedPresetRoot, storageDomainRoot, hostF
         order: 0,
         plugins: [
           { id: 'askai-enterprise-persona', name: resolve(askaiPresetRoot, '..', '..', 'src', 'official-host', 'enterprise-preset-plugin.mjs') },
-          { id: 'tool-web', name: '@deepseek-ai/dsh-tool-web', config: { fetch: false, searchTimeoutMs: 60000 } },
+          { id: 'tool-web', name: '@deepseek-ai/dsh-tool-web', config: { fetch: false, searchMaxResults: 8, searchTimeoutMs: 60000 } },
           { id: 'tool-skill', name: '@deepseek-ai/dsh-tool-skill' },
           { id: 'tool-ask-user', name: '@deepseek-ai/dsh-tool-ask-user' },
         ],
@@ -58,6 +59,10 @@ function hostRows({ askaiPresetRoot, shippedPresetRoot, storageDomainRoot, hostF
     },
     { id: 'workspace', name: '@deepseek-ai/dsh-workspace' },
     ...(pluginWeb ? [{ id: 'workspace-controller', name: '@deepseek-ai/dsh-api-workspace-controller' }] : []),
+    ...(pluginWeb ? [{
+      id: 'plugin-web-startup',
+      name: fileURLToPath(new URL('./web-startup-compat.mjs', import.meta.url)),
+    }] : []),
     ...(pluginWeb ? [{
       id: 'plugin-web-server',
       name: '@deepseek-ai/dsh-host-webserver',

@@ -3,6 +3,7 @@ import { postGatewayJson } from './gateway-http-client.mjs'
 import { assertNoDshCodeToolCollisions } from './official-host/tool-name-policy.mjs'
 
 const APPROVAL_WAIT_SECONDS = 240
+const APPROVAL_TRANSPORT_GRACE_MS = 5_000
 const TOOL_GATEWAY_DEADLINE_GRACE_MS = 30_000
 
 export function validateDescriptorArguments(descriptor, args) {
@@ -91,6 +92,9 @@ export class AskaiToolBridge {
       if (descriptor === undefined) return next()
       const key = `${request.agent.id}:${String(request.callId ?? '')}`
       try {
+        const timeoutSignal = AbortSignal.timeout(APPROVAL_WAIT_SECONDS * 1_000 + APPROVAL_TRANSPORT_GRACE_MS)
+        const signal = request.signal
+          ? AbortSignal.any([request.signal, timeoutSignal]) : timeoutSignal
         const payload = await this.#post('/approval/request', {
           profileVersion: this.#config.profileVersion,
           sessionId: request.agent.id,
@@ -100,12 +104,16 @@ export class AskaiToolBridge {
           arguments: this.#approvalArguments.get(key) ?? {},
           // Resolve before DSH's native approval answerer reaches its own deadline.
           timeoutSeconds: APPROVAL_WAIT_SECONDS,
-        }, request.signal)
+        }, signal)
         return payload.outcome
+      } catch (error) {
+        if (request.signal?.aborted) return 'cancelled'
+        console.warn('MOVO Tool Gateway approval unavailable:', descriptor.name, error)
+        return 'unavailable'
       } finally {
         this.#approvalArguments.delete(key)
       }
-    }))
+    }, { prepend: true }))
   }
 
   updateCredential(accessToken) {

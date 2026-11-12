@@ -227,7 +227,7 @@ export function useDocumentEditors<T extends DocumentMessage>(options: {
       }
       return
     }
-    if (doc.type === 'presentation_preview_bundle' || doc.type === 'html') {
+    if (doc.type === 'presentation_preview_bundle') {
       const targetUrl = await resolveDocumentOpenUrl(doc)
       if (targetUrl) {
         await openPreviewResource(targetUrl)

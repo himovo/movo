@@ -103,3 +103,4 @@ def test_generated_file_title_without_extension_uses_storage_path_type():
     assert previews.preview_kind("Sales data", "owner/output.xlsx") == "office"
     assert previews.preview_kind("Final report", "owner/output.pdf") == "pdf"
     assert previews.preview_kind("Landing page", "owner/page.html") == "html"
+    assert previews.preview_kind("Generated script", "owner/result.py") == "code"

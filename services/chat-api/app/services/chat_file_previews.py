@@ -22,6 +22,7 @@ from app.utils.object_storage import ObjectStorageClient
 OFFICE_SUFFIXES = {".doc", ".docx", ".xls", ".xlsx", ".xlsm", ".ppt", ".pptx"}
 TEXT_SUFFIXES = {".txt", ".md", ".csv", ".tsv"}
 HTML_SUFFIXES = {".html", ".htm"}
+CODE_SUFFIXES = {".py", ".js", ".jsx", ".ts", ".tsx", ".vue", ".sh", ".bash", ".css", ".scss", ".json", ".jsonc", ".yaml", ".yml", ".xml", ".sql", ".toml", ".go", ".rs", ".java", ".c", ".h", ".cpp", ".hpp"}
 MAX_PREVIEW_SOURCE_BYTES = 200 * 1024 * 1024
 
 
@@ -73,7 +74,7 @@ def _artifact_from_event(event: Any, object_path: str) -> dict[str, Any] | None:
 
 def preview_kind(filename: str, object_path: str) -> str:
     suffix = Path(filename).suffix.lower()
-    if suffix not in OFFICE_SUFFIXES | TEXT_SUFFIXES | HTML_SUFFIXES | {".pdf"}:
+    if suffix not in OFFICE_SUFFIXES | TEXT_SUFFIXES | HTML_SUFFIXES | CODE_SUFFIXES | {".pdf"}:
         suffix = Path(object_path).suffix.lower()
     if suffix == ".pdf":
         return "pdf"
@@ -81,6 +82,8 @@ def preview_kind(filename: str, object_path: str) -> str:
         return "office"
     if suffix in TEXT_SUFFIXES:
         return "text"
+    if suffix in CODE_SUFFIXES:
+        return "code"
     if suffix in HTML_SUFFIXES:
         return "html"
     return "unsupported"

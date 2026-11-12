@@ -87,6 +87,7 @@ export async function createDshCodeSession(_workspaceId: string, _draftId: strin
 export async function sendDshCodeTurn(_sessionId: string, _text: string, _permissionMode?: import('./types').CodePermissionMode, _selectedSkillId?: string): Promise<{ accepted: boolean; messageId: string }> { throw new Error('local Code execution is only available in the desktop app') }
 export async function openDshPresentedFile(_sessionId: string, _artifactId: string): Promise<{ opened: boolean }> { throw new Error('Local artifacts are only available in the desktop app') }
 export async function saveDshPresentedFile(_sessionId: string, _artifactId: string): Promise<{ saved: boolean }> { throw new Error('Local artifacts are only available in the desktop app') }
+export async function readDshPresentedText(_sessionId: string, _artifactId: string): Promise<{ text: string; filename: string }> { throw new Error('Local artifacts are only available in the desktop app') }
 export async function openDshCodePermissionConfig(): Promise<string> { throw new Error('Code permission config is only available in the desktop app') }
 export async function validateDshCodePermissionConfig(): Promise<string> { throw new Error('Code permission config is only available in the desktop app') }
 export async function attachDshCodeConversation(_conversationId: string): Promise<DshCodeSession | null> { return null }

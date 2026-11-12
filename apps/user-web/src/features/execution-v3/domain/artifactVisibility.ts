@@ -14,5 +14,14 @@ export function visibleAnswerArtifacts(
   const presentation = finalPresentationDelivery(visible)
   // Selection affects the answer only; the execution store retains every
   // version for audit. Non-presentation files keep their existing behavior.
-  return visible.filter((item) => !isPresentationDelivery(item) || item === presentation)
+  const latestByName = new Map<string, ArtifactItem>()
+  for (const item of visible) {
+    const name = String(item.relative_path || item.filename || '').trim().toLowerCase()
+    if (name) latestByName.set(name, item)
+  }
+  return visible.filter((item) => {
+    if (isPresentationDelivery(item) && item !== presentation) return false
+    const name = String(item.relative_path || item.filename || '').trim().toLowerCase()
+    return !name || latestByName.get(name) === item
+  })
 }

@@ -628,6 +628,17 @@ class DshChatService:
             (row for row in reversed(all_rows) if row.get("type") in {"run.completed", "run.failed", "run.cancelled"}),
             None,
         )
+        binding_status = str(((binding or {}).get("active_turn") or {}).get("status") or "")
+        if terminal is None and binding_status in {"completed", "failed", "cancelled"}:
+            from app.dsh_runtime.conversation.terminal_projection import terminal_event
+
+            await self._conversations.ensure_assistant_terminal(
+                message_id=message_id, tenant_id=tenant_id, status=binding_status,
+            )
+            synthesized = terminal_event(message_id, binding_status, all_rows)
+            terminal = synthesized
+            if int(synthesized["stream_seq"]) > after_cursor:
+                rows.append(synthesized)
         next_cursor = max(
             [after_cursor, *[int(row.get("stream_seq_end") or row.get("stream_seq") or 0) for row in rows]]
         )

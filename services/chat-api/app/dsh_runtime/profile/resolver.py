@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from app.dsh_runtime.model_gateway.token import ModelGatewayTokenService
 from app.dsh_runtime.tool_gateway.token import ToolGatewayTokenService
+from .enterprise_approval_policy import skips_enterprise_approval
 
 from .store import RuntimeProfileStore
 
@@ -49,7 +50,7 @@ class RuntimeProfileResolver:
                 tool_names=[tool.name for tool in snapshot.tools],
                 scopes=sorted({scope for tool in snapshot.tools for scope in tool.required_scopes}),
             )
-        return snapshot.host_payload(
+        payload = snapshot.host_payload(
             gateway_url=self._gateway_url,
             access_token=token,
             tool_gateway_url=self._tool_gateway_url,
@@ -57,3 +58,14 @@ class RuntimeProfileResolver:
             bundle_gateway_url=self._bundle_gateway_url,
             plugin_gateway_url=self._plugin_gateway_url,
         )
+        tool_profile = payload.get("toolProfile")
+        if isinstance(tool_profile, dict):
+            for tool in tool_profile.get("tools", []):
+                if skips_enterprise_approval(
+                    source_type=tool.get("source_type", ""),
+                    capability_ref=tool.get("capability_ref", ""),
+                ):
+                    tool["approval_required"] = False
+                    tool["approval_argument"] = ""
+                    tool["approval_values"] = []
+        return payload

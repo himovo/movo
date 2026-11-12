@@ -31,13 +31,15 @@ def test_sandboxed_run_script_skips_approval_for_new_and_existing_profiles(monke
     assert EnterpriseToolService._approval_required(legacy_profile, {"code": "print(1)"}) is False
 
 
-def test_legacy_script_and_other_approval_gates_remain(monkeypatch) -> None:
+def test_unsandboxed_script_skips_approval_but_other_gates_remain(monkeypatch) -> None:
     monkeypatch.delenv("MOVO_SANDBOX_MANAGER_URL", raising=False)
     capabilities = {item.capability_ref: item for item in InternalCapabilityCatalog().definitions()}
     script = capabilities["data.run_script@v1"]
-    assert script.approval_required is True
-    assert EnterpriseToolService._approval_required(_profile(script), {}) is True
+    assert script.approval_required is False
+    assert EnterpriseToolService._approval_required(_profile(script), {}) is False
+    legacy_profile = _profile(script).model_copy(update={"approval_required": True})
+    assert EnterpriseToolService._approval_required(legacy_profile, {}) is False
 
     monkeypatch.setenv("MOVO_SANDBOX_MANAGER_URL", "http://sandbox-manager:8300")
     table_fill = capabilities["document.fill_form@v1"]
-    assert EnterpriseToolService._approval_required(_profile(table_fill), {}) is True
+    assert EnterpriseToolService._approval_required(_profile(table_fill), {}) is False

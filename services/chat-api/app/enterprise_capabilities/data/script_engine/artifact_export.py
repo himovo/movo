@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from app.utils.oss_uploader import AliyunOSSUploader
-from app.execution_isolation.file_types import ALLOWED_OUTPUT_EXTS, DOCUMENT_OUTPUT_EXTS, IMAGE_OUTPUT_EXTS
+from app.execution_isolation.file_types import IMAGE_OUTPUT_EXTS
 
 
 def _safe_filename(value: str, *, fallback: str) -> str:
@@ -57,10 +57,6 @@ def export_script_artifacts(
         if not path.exists() or not path.is_file():
             raise FileNotFoundError(f"script plugin output not found: {path.name}")
         ext = path.suffix.lower()
-        if ext not in ALLOWED_OUTPUT_EXTS:
-            # Keep other files in the task audit workspace without presenting
-            # them as user-facing deliverables.
-            continue
         filename = _safe_filename(
             str(item.get("name") or item.get("filename") or path.name),
             fallback=f"plugin_output_{idx}{ext}",
@@ -80,6 +76,7 @@ def export_script_artifacts(
             "type": str(item.get("type") or ext.lstrip(".") or "file").lower(),
             "url": storage.sign_url(object_path) or signed_url,
             "filename": filename,
+            "relative_path": path.relative_to(root).as_posix(),
             "title": str(item.get("title") or filename),
             "object_path": object_path,
             "content_type": content_type,
@@ -88,4 +85,4 @@ def export_script_artifacts(
     return {"documents": documents, "images": images}
 
 
-__all__ = ["ALLOWED_OUTPUT_EXTS", "export_script_artifacts"]
+__all__ = ["export_script_artifacts"]

@@ -32,14 +32,15 @@ HOST_ENTRY = CHAT_API_ROOT / "dsh" / "runtime-host" / "src" / "host.mjs"
 CODEX_NODE = Path("/Users/jack/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node")
 
 
-def _node_22_or_newer() -> Path | None:
+def _supported_node() -> Path | None:
     candidates = [Path(value) for value in [shutil.which("node"), CODEX_NODE] if value]
     for candidate in candidates:
         if not candidate.is_file():
             continue
         result = subprocess.run([str(candidate), "--version"], capture_output=True, text=True, check=False)
         try:
-            if int(result.stdout.strip().removeprefix("v").split(".", 1)[0]) >= 22:
+            version = tuple(map(int, result.stdout.strip().removeprefix("v").split(".")[:2]))
+            if version >= (24, 9):
                 return candidate
         except ValueError:
             continue
@@ -66,7 +67,7 @@ class _GatewayHandler(BaseHTTPRequestHandler):
                 if message["role"] == "user"
                 for block in message["content"]
                 if block["type"] == "text"
-                and not str(block["text"]).startswith("Current runtime context.")
+                and (str(block["text"]).startswith("hello-") or block["text"] == "[auth-fail]")
             )
             if user_text == "[auth-fail]":
                 body = {
@@ -136,9 +137,9 @@ def test_real_dsh_uses_default_and_explicit_immutable_model_profiles(tmp_path: P
 
 
 async def _test_real_dsh_uses_default_and_explicit_immutable_model_profiles(tmp_path: Path) -> None:
-    node = _node_22_or_newer()
+    node = _supported_node()
     if node is None:
-        pytest.skip("Node.js 22+ is required for the pinned DSH runtime")
+        pytest.skip("Node.js 24.9+ is required for the pinned DSH runtime")
 
     token_service = ModelGatewayTokenService("step-3-real-host-signing-secret")
     _GatewayHandler.tokens = token_service
@@ -225,7 +226,7 @@ async def _test_real_dsh_uses_default_and_explicit_immutable_model_profiles(tmp_
                 block["text"]
                 for message in model_messages
                 for block in message["content"]
-                if block["type"] == "text" and str(block["text"]).startswith("Current runtime context.")
+                if block["type"] == "text" and "Trusted time context supplied by MOVO" in str(block["text"])
             ]
             assert snapshots
             assert "Trusted time context supplied by MOVO" in snapshots[-1]

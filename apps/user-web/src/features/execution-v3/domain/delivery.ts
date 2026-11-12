@@ -8,6 +8,7 @@ export interface ArtifactItem {
   local_session_id?: string
   local_artifact_id?: string
   filename?: string
+  relative_path?: string
   title?: string
   content_type?: string
   size?: number

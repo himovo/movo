@@ -48,6 +48,8 @@ COPY --from=dependencies /app/package.json ./package.json
 
 COPY src ./src
 COPY config ./config
+COPY scripts/verify-runtime-package.mjs ./scripts/verify-runtime-package.mjs
+RUN node scripts/verify-runtime-package.mjs
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh \
     && mkdir -p /data/dsh-runtime /job/home \

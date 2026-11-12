@@ -97,7 +97,7 @@ def test_tool_profile_compiler_is_stable_secret_free_and_risk_aware() -> None:
         assert len(first) == 4
         assert len({item.name for item in first}) == 4
         assert {item.risk_level for item in first} == {"read", "write", "dangerous"}
-        assert sum(item.approval_required for item in first) == 2
+        assert sum(item.approval_required for item in first) == 0
         assert "MUST_NOT_LEAK" not in str(first)
         http_read = next(item for item in first if item.external_tool_id == "http-read")
         assert http_read.input_schema["required"] == ["id"]
@@ -323,13 +323,8 @@ def test_policy_approval_idempotency_mcp_scope_timeout_and_cancel(monkeypatch: p
             profileVersion="profile-a", sessionId="session-a", toolName=mcp.name,
             actionId="write-1", reason="write", timeoutSeconds=2,
         )
-        pending = asyncio.create_task(service.request_approval(ask, claims))
-        while "write-1" not in repo.approvals:
-            await asyncio.sleep(0)
-        await service.decide(
-            "write-1", decision="approved", actor_id="user-a", tenant_id="tenant-a", subject_user_id="user-a"
-        )
-        assert await pending == "allowed-once"
+        assert await service.request_approval(ask, claims) == "allowed-once"
+        assert "write-1" not in repo.approvals
         write_request = ToolExecuteRequest(
             profileVersion="profile-a", sessionId="session-a", toolName=mcp.name,
             actionId="write-1", idempotencyKey="idem-write", arguments={"id": 1},
@@ -364,7 +359,8 @@ def test_policy_approval_idempotency_mcp_scope_timeout_and_cancel(monkeypatch: p
         with pytest.raises(asyncio.CancelledError):
             await cancel_task
         assert repo.receipts["cancel-1"].status == "cancelled"
-        assert {"approval.requested", "approval.approved", "tool.succeeded", "tool.timed_out"}.issubset(repo.audit_rows)
+        assert {"tool.succeeded", "tool.timed_out"}.issubset(repo.audit_rows)
+        assert "approval.requested" not in repo.audit_rows
 
     asyncio.run(run())
 
@@ -402,19 +398,11 @@ def test_internal_capability_uses_trusted_turn_scope_and_argument_aware_approval
         publish_request = read_request.model_copy(update={
             "actionId": "browser-publish", "idempotencyKey": "browser-publish", "arguments": {"operation": "publish"},
         })
-        with pytest.raises(ToolPolicyDenied, match="approval"):
-            await service.execute(publish_request, claims)
-        pending = asyncio.create_task(service.request_approval(ApprovalAskRequest(
+        assert await service.request_approval(ApprovalAskRequest(
             profileVersion="profile-a", sessionId="session-a", toolName="browser_task",
             actionId="browser-publish", arguments={"operation": "publish"}, timeoutSeconds=2,
-        ), claims))
-        while "browser-publish" not in repo.approvals:
-            await asyncio.sleep(0)
-        await service.decide(
-            "browser-publish", decision="approved", actor_id="user-a", tenant_id="tenant-a",
-            subject_user_id="user-a", grant_scope="session",
-        )
-        assert await pending == "allowed-once"
+        ), claims) == "allowed-once"
+        assert "browser-publish" not in repo.approvals
         assert (await service.execute(publish_request, claims)).status == "succeeded"
 
         second_publish = publish_request.model_copy(update={
@@ -427,15 +415,11 @@ def test_internal_capability_uses_trusted_turn_scope_and_argument_aware_approval
         assert "browser-publish-2" not in repo.approvals
         assert (await service.execute(second_publish, claims)).status == "succeeded"
 
-        delete_ask = asyncio.create_task(service.request_approval(ApprovalAskRequest(
+        assert await service.request_approval(ApprovalAskRequest(
             profileVersion="profile-a", sessionId="session-a", toolName="browser_task",
             actionId="browser-delete", arguments={"operation": "delete"}, timeoutSeconds=2,
-        ), claims))
-        while "browser-delete" not in repo.approvals:
-            await asyncio.sleep(0)
-        delete_ask.cancel()
-        with pytest.raises(asyncio.CancelledError):
-            await delete_ask
+        ), claims) == "allowed-once"
+        assert "browser-delete" not in repo.approvals
 
     asyncio.run(run())
 
@@ -708,7 +692,7 @@ def test_askai_approval_events_form_one_actionable_lifecycle() -> None:
             return publish
 
     async def run():
-        write = _tool("askai_mcp_write", source="mcp", approval=True)
+        write = _tool("askai_http_write", source="http", approval=True)
         repo = FakeRepository()
         repo.binding["active_turn"] = {"message_id": "message-a"}
         turn_events = TurnEvents()
@@ -716,23 +700,12 @@ def test_askai_approval_events_form_one_actionable_lifecycle() -> None:
             repo, FakeProfileStore(_profile(write)), turn_events=turn_events
         )
         claims = _claims([write])
-        pending = asyncio.create_task(service.request_approval(ApprovalAskRequest(
+        outcome = await service.request_approval(ApprovalAskRequest(
             profileVersion="profile-a", sessionId="session-a", toolName=write.name,
             actionId="write-a", arguments={"value": "x"}, timeoutSeconds=2,
-        ), claims))
-        while len(turn_events.rows) < 1:
-            await asyncio.sleep(0)
-        assert turn_events.rows[0]["type"] == "item.started"
-        assert turn_events.rows[0]["item_id"] == "write-a"
-        assert turn_events.rows[0]["payload"]["source"] == "askai-approval"
-        await service.decide(
-            "write-a", decision="approved", actor_id="user-a", tenant_id="tenant-a",
-            subject_user_id="user-a",
-        )
-        assert await pending == "allowed-once"
-        assert turn_events.rows[-1]["type"] == "item.completed"
-        assert turn_events.rows[-1]["item_id"] == "write-a"
-        assert turn_events.rows[-1]["revision"] > turn_events.rows[0]["revision"]
+        ), claims)
+        assert outcome == "allowed-once"
+        assert turn_events.rows == []
 
     asyncio.run(run())
 

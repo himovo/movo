@@ -53,6 +53,18 @@ def test_ordinary_python_reuses_download_across_call_output_directories(tmp_path
     assert first_lines[0].split()[1] != second_lines[1].split()[1]
 
 
+def test_ordinary_python_does_not_deliver_bytecode_cache(tmp_path: Path) -> None:
+    completed = _run(tmp_path, compile_script_plugin(
+        "from pathlib import Path\n"
+        "import py_compile\n"
+        "source = Path(output_dir, 'hello_world.py')\n"
+        "source.write_text('print(42)\\n')\n"
+        "py_compile.compile(str(source), doraise=True)"
+    ), "compile")
+    assert completed.returncode == 0, completed.stderr
+    assert [item["filename"] for item in json.loads(completed.stdout)["artifacts"]] == ["hello_world.py"]
+
+
 def test_isolated_runner_loads_task_local_dependency_on_later_call(tmp_path: Path) -> None:
     wheel = tmp_path / "probe_package-1.0-py3-none-any.whl"
     with ZipFile(wheel, "w") as archive:

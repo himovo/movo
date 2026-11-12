@@ -51,6 +51,7 @@ export const createDshCodeSession: (workspaceId: string, draftId: string, title:
 export const sendDshCodeTurn: (sessionId: string, text: string, permissionMode?: import('./types').CodePermissionMode, selectedSkillId?: string) => Promise<{ accepted: boolean; messageId: string }> = impl.sendDshCodeTurn
 export const openDshPresentedFile: (sessionId: string, artifactId: string) => Promise<{ opened: boolean }> = impl.openDshPresentedFile
 export const saveDshPresentedFile: (sessionId: string, artifactId: string) => Promise<{ saved: boolean }> = impl.saveDshPresentedFile
+export const readDshPresentedText: (sessionId: string, artifactId: string) => Promise<{ text: string; filename: string }> = impl.readDshPresentedText
 export const openDshCodePermissionConfig: () => Promise<string> = impl.openDshCodePermissionConfig
 export const validateDshCodePermissionConfig: () => Promise<string> = impl.validateDshCodePermissionConfig
 export const attachDshCodeConversation: (conversationId: string) => Promise<DshCodeSession | null> = impl.attachDshCodeConversation

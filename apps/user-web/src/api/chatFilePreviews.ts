@@ -1,7 +1,7 @@
 import { authenticatedJsonHeaders } from './authHeaders'
 
 export type ChatFilePreviewState = {
-  kind: 'pdf' | 'office' | 'text' | 'html' | 'unsupported'
+  kind: 'pdf' | 'office' | 'text' | 'code' | 'html' | 'unsupported'
   status: 'ready' | 'queued' | 'failed' | 'unsupported'
   filename: string
   url?: string

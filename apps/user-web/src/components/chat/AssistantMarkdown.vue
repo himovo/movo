@@ -5,7 +5,7 @@ import { renderAssistantMarkdown } from '../../utils/assistantMarkdown'
 import { copyTextToClipboard } from '../../utils/copyTextToClipboard'
 import { t } from '../../composables/i18n'
 
-const props = withDefaults(defineProps<{ content: string; compact?: boolean; fileReferences?: boolean; artifactPaths?: string[] }>(), {
+const props = withDefaults(defineProps<{ content: string; compact?: boolean; fileReferences?: boolean; artifactPaths?: Record<string, string> }>(), {
   compact: true,
   fileReferences: false,
 })

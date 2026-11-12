@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from app.api.endpoints.auth import _resolve_session_user
 from app.core.db import get_db
 from app.services.chat_file_previews import (
-    HTML_SUFFIXES, TEXT_SUFFIXES, accept_callback, get_or_start_preview, preview_id,
+    HTML_SUFFIXES, TEXT_SUFFIXES, CODE_SUFFIXES, accept_callback, get_or_start_preview, preview_id,
     preview_kind, require_session_file,
 )
 from app.services.knowledge_preview_stream import parse_byte_range, preview_response
@@ -101,9 +101,9 @@ async def _serve_content(document: dict, tenant_id: str, object_path: str, reque
         if storage.storage_backend == "oss":
             return _oss_pdf_content(storage, object_path, request.headers.get("range", ""))
         return _local_content(object_path, "application/pdf")
-    if kind == "text":
+    if kind in {"text", "code"}:
         suffix = Path(filename).suffix.lower()
-        return _text_content(object_path, suffix if suffix in TEXT_SUFFIXES else Path(object_path).suffix.lower())
+        return _text_content(object_path, suffix if suffix in TEXT_SUFFIXES | CODE_SUFFIXES else Path(object_path).suffix.lower())
     if kind == "html":
         return _text_content(object_path, ".html")
     if kind == "office":
@@ -157,7 +157,7 @@ def _oss_pdf_content(storage: ObjectStorageClient, object_path: str, range_heade
 
 
 def _text_content(object_path: str, suffix: str):
-    if suffix not in TEXT_SUFFIXES | HTML_SUFFIXES:
+    if suffix not in TEXT_SUFFIXES | HTML_SUFFIXES | CODE_SUFFIXES:
         raise HTTPException(status_code=415, detail="Unsupported preview format")
     storage = ObjectStorageClient()
     if storage.storage_backend == "local":

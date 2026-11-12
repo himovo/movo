@@ -7,6 +7,11 @@ const final = { id: 'final', ts: 2, kind: 'document', filename: 'final.docx', ob
 
 assert.deepEqual(visibleAnswerArtifacts([first, final], 'running'), [])
 assert.deepEqual(visibleAnswerArtifacts([first, final], 'completed'), [first, final])
+const revised = { ...first, id: 'revised', ts: 3, object_path: 'user/revised/draft.docx' }
+assert.deepEqual(visibleAnswerArtifacts([first, revised], 'completed'), [revised])
+const nested = { ...revised, id: 'nested', relative_path: 'reports/draft.docx' }
+const sibling = { ...revised, id: 'sibling', relative_path: 'archive/draft.docx' }
+assert.deepEqual(visibleAnswerArtifacts([nested, sibling], 'completed'), [nested, sibling])
 assert.deepEqual(visibleAnswerArtifacts([
   { ...first, lifecycle: 'intermediate', visibility: 'internal' }, final,
 ], 'completed'), [final])

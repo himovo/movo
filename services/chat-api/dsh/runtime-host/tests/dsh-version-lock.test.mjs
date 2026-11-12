@@ -6,10 +6,10 @@ import { assertLockedDshVersion } from '../src/official-host/installation.mjs'
 import { runtimeHealth } from '../src/host-protocol.mjs'
 
 test('runtime rejects a DSH installation that differs from the exact host lock', () => {
-  const manifest = { dependencies: { '@deepseek-ai/dsh': '0.2.1-alpha.1' } }
-  assert.doesNotThrow(() => assertLockedDshVersion('0.2.1-alpha.1', manifest))
+  const manifest = { dependencies: { '@deepseek-ai/dsh': '0.2.2-rc.2' } }
+  assert.doesNotThrow(() => assertLockedDshVersion('0.2.2-rc.2', manifest))
   assert.throws(() => assertLockedDshVersion('0.2.0', manifest), /does not match/)
-  assert.throws(() => assertLockedDshVersion('0.2.1-alpha.1', { dependencies: {} }), /missing/)
+  assert.throws(() => assertLockedDshVersion('0.2.2-rc.2', { dependencies: {} }), /missing/)
 })
 
 test('health reports the installed DSH release and lock agreement', () => {

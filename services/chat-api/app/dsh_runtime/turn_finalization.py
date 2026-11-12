@@ -106,6 +106,12 @@ class TurnStateFinalizer:
                 # Native tool events are already durable; the query index can
                 # be rebuilt without blocking the user's turn.
                 logger.exception("failed to index plugin execution audit")
+        ensure_terminal = getattr(self._conversations, "ensure_assistant_terminal", None)
+        if ensure_terminal is not None:
+            await self._step(
+                lambda: ensure_terminal(message_id=message_id, tenant_id=str(binding["tenant_id"]), status=status),
+                "persist the assistant terminal state",
+            )
         audit_pending = False
         if clear_conversation:
             audit_pending = await self._step(

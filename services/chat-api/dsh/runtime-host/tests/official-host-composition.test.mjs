@@ -270,7 +270,8 @@ test('ordinary and code sessions use isolated official preset capability surface
         PLATFORM_SHELL_MODULE,
         '@deepseek-ai/dsh-tool-jobs',
         '@deepseek-ai/dsh-skill-filesystem',
-        '@deepseek-ai/dsh-agent-tool-presentation',
+        '@deepseek-ai/dsh-tool-present',
+        '@deepseek-ai/dsh-tool-executor-native',
       ]) assert.ok(mountedModules.has(moduleName), moduleName)
 
       assert.ok((await runtime.describeLiveSession('ordinary')).capabilityTools.includes('ask_user_question'))

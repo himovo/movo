@@ -1,12 +1,12 @@
 # MOVO DSH dependency lock policy (format 1)
-# Updated for the DSH 0.2.1-alpha.1 candidate on 2026-10-06.
+# Updated for the DSH 0.2.2-rc.2 candidate on 2026-11-12.
 # This file records approved direct artifacts; pnpm-lock.yaml and the SBOM pin
 # the resolved graph, and the release gate rejects a mixed DSH release train.
 
 [upstream]
 repository = "https://github.com/deepseek-ai/deepseek-harness"
-reviewed_commit = "5badb15009ae1756c3afe0ae0cef1faafc290ccc"
-reviewed_commit_root_version = "0.2.1-alpha.1"
+reviewed_commit = "ddac96760b6edf8fa0fe17cbdcf0b512f4c12b2c"
+reviewed_commit_root_version = "0.2.2-rc.2"
 default_branch = "master"
 deploy_from_branch = false
 allow_floating_versions = false
@@ -15,57 +15,57 @@ allow_floating_versions = false
 # installable release train, so source-to-package provenance remains explicitly
 # unverified until DeepSeek publishes that mapping.
 [release_train]
-version = "0.2.1-alpha.1"
+version = "0.2.2-rc.2"
 source_mapping = "unverified-by-upstream"
-policy = "all @deepseek-ai/dsh and @deepseek-ai/dsh-* packages must resolve exactly to 0.2.1-alpha.1"
+policy = "all @deepseek-ai/dsh and @deepseek-ai/dsh-* packages must resolve exactly to 0.2.2-rc.2"
 
 [[artifact]]
 name = "@deepseek-ai/dsh"
-version = "0.2.1-alpha.1"
+version = "0.2.2-rc.2"
 registry = "https://registry.npmjs.org"
-tarball = "https://registry.npmjs.org/@deepseek-ai/dsh/-/dsh-0.2.1-alpha.1.tgz"
-integrity = "sha512-DJ8pwG/XqzwDrYQTgJXuIga6ku153Z4vJI/B3MzNtudVCkDaOf4O2pUQh1ToroLHPPe4mxhhFeNJ7ttNculqMw=="
-shasum = "4f0727d2b8b62d798cfbb5d5df0c797671a3a888"
+tarball = "https://registry.npmjs.org/@deepseek-ai/dsh/-/dsh-0.2.2-rc.2.tgz"
+integrity = "sha512-J727r2C471x2cYXGjqZ0D9T1ZyaYQDFH/Ynx8iq+85oslM4nky5YTBnbAuTtxMhW7nhY8wuAEfjjFCQ+K6Swgw=="
+shasum = "ff003ca75f37975c40b800fb925df70b38841fd4"
 
 [[artifact]]
 name = "@deepseek-ai/cordis"
-version = "4.0.5-alpha.1"
+version = "4.1.0"
 registry = "https://registry.npmjs.org"
-integrity = "sha512-I0akiPAK9EEWO+GMAO0YGbn3/rzg/yopaxohBaG9JHM8dDzGaCZNp3mehjeC66IQL0AyTyDwvgv7v1aB+eMnKQ=="
-shasum = "8263adb7532157edb9fe02c002cc05d5e657f7c4"
+integrity = "sha512-CJrjNyBkKn1SfvBQUcgFYKFnLjS+uKrhdMsbHU60xabvi12d+xQ+IQSNlME5Z+B+4Zi6n4BDknKY94tEPeo47w=="
+shasum = "c4c62a252d8042cea30360c6a90368f3241e23c7"
 
 [[artifact]]
 name = "@deepseek-ai/cordis-plugin-loader"
-version = "1.0.6-alpha.1"
+version = "1.1.0"
 registry = "https://registry.npmjs.org"
-integrity = "sha512-S+3ygx3cyoA/uvcX8hpWf+FnNlygO2pE3BgLMC0Y+vss3SHmGPPC/gfELBQFu0WPRa4ieE0ZRdTk0FLW12e1Eg=="
-shasum = "6729ebf74cc334ecd20175452798f4f99c305cb3"
+integrity = "sha512-154u0LnADauDvOdQ41QtoOrRFQtvP2Ih68aYYaXzI/l7gRPwX/5MDtDDsJWeDffQA3ELn2xt3MUYsyizi+O9KA=="
+shasum = "15e25f16548fb0f23d80a4e324e7b753fae82d0a"
 
 [[artifact]]
 name = "@deepseek-ai/cordis-plugin-include"
-version = "1.0.10-alpha.1"
+version = "1.1.0"
 registry = "https://registry.npmjs.org"
-integrity = "sha512-rGRfj74+IzeN9yDPMh9kO2VVUur75mcllouKZhyb5Vk77ZdQqSmo4KPibGsRbXEHaP8rzscTC267UPZVmWztWA=="
-shasum = "8196575805047486b0c292c50231bb1d0e8bb864"
+integrity = "sha512-tD5JTHTDU1j1bkjgTK150UUSzypBSVhHoEl7/vgpYiDt7Czg43++IFUKaRlwXHMl5WC51S8T2V7p2IHpJ1Ny0A=="
+shasum = "700a6d1a204b48e9e042d8b6d6ba6a3c57322ae3"
 
 [[artifact]]
 name = "@deepseek-ai/cordis-plugin-group"
-version = "1.0.5-alpha.1"
+version = "1.1.0"
 registry = "https://registry.npmjs.org"
-integrity = "sha512-sxreqVFNaU+htapFHLjc7zQnC10afWeHRPWfWZi+I9nvMrXGLoj2qanXGoYL7QHo8F95NMQYRL5ENZJnqw9trw=="
-shasum = "1327546b5ca5311144f17529f3c9ccce762cd4e1"
+integrity = "sha512-VVGcw29YWG83D9YqYsivyfIkcPdd+tgrc/Lj4GkxS5n0i6++jpY6nNSKM/6JU7F7phUT/Q5Y9o30rcYbE1pW4w=="
+shasum = "046f48b1a54e58ff3a93b833e320de1320171274"
 
 [[artifact]]
 name = "@deepseek-ai/cordis-plugin-timer"
-version = "1.1.7-alpha.1"
+version = "1.2.0"
 registry = "https://registry.npmjs.org"
-integrity = "sha512-dpf1EITAFD8Fi6YsS3uiA5yUDRtoMk60tRPDCzTRUlRe1iaio9ok6ie9dsNBIAkNiVd1D9aq1T/r4jw/Cwqe3A=="
-shasum = "bd77dacc9659d7c0bf78a0409740f60ce29fb221"
+integrity = "sha512-DTFp2IcK4Xnp0BWG546fwgeKjrBcSm9a9QjCtaV5Ko9hxiB/Cg03FINSNiR7OEbeg7/s4Y7QBxgQYFVYRl9V+g=="
+shasum = "af10b9b4028604e2cd7f3355b0222106d2009fde"
 
 [license_evidence]
 license = "MIT"
 license_sha256 = "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be"
-third_party_notices_sha256 = "a8879c4c694423f0837acc8234150b286643ad3112a792448a1448ce21a12d64"
+third_party_notices_sha256 = "4bd8832885ca31daf3e480fb950b9e849446438c0089b05fab67d6c2673fa2ef"
 
 [step_2_requirements]
 generate_pnpm_lock = true

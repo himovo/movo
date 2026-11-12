@@ -19,6 +19,8 @@ def test_only_current_user_conversation_outputs_are_delivered(tmp_path: Path, mo
     conversation.mkdir(parents=True)
     report = conversation / "report.docx"
     report.write_bytes(b"report")
+    script = conversation / "result.py"
+    script.write_text("print('ready')")
     internal = conversation / "outputs" / "script-call" / "other.docx"
     internal.parent.mkdir(parents=True)
     internal.write_bytes(b"script result")
@@ -29,7 +31,7 @@ def test_only_current_user_conversation_outputs_are_delivered(tmp_path: Path, mo
              "conversations" / conversation_space_key("chat") / "private.docx")
     other.parent.mkdir(parents=True)
     other.write_bytes(b"private")
-    assert _candidates(binding) == [report]
+    assert _candidates(binding) == [report, script]
 
 
 def test_symlinked_conversation_cannot_publish_files_outside_personal_space(tmp_path: Path, monkeypatch) -> None:

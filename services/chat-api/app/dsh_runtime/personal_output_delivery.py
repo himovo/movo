@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from app.execution_isolation.file_types import ALLOWED_OUTPUT_EXTS
 from app.execution_isolation.personal_space import conversation_space_key, personal_space_key
 from app.utils.oss_uploader import AliyunOSSUploader
 
@@ -46,7 +45,7 @@ def _candidates(binding: dict[str, Any]) -> list[Path]:
         relative = path.relative_to(conversation)
         if relative.parts[0] in {"inputs", "outputs"} or any(part.startswith(".") for part in relative.parts):
             continue
-        if path.is_symlink() or not path.is_file() or path.suffix.lower() not in ALLOWED_OUTPUT_EXTS:
+        if path.is_symlink() or not path.is_file():
             continue
         if not path.resolve().is_relative_to(conversation.resolve()):
             continue
