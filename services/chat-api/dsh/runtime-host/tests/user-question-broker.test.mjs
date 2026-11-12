@@ -10,12 +10,12 @@ function fixture() {
     handler = callback
     return () => {}
   } })
-  return { broker, request: value => handler(value) }
+  return { broker, request: (value, next) => handler(value, next) }
 }
 
 test('returns a structured choice batch to the owning session only', async () => {
   const { broker, request } = fixture()
-  const result = request({ agent: { id: 'one' }, questions: [
+  const result = request({ agent: { id: 'agent-one', session: { id: 'one' } }, questions: [
     { id: 'q1', question: 'Which?', options: [{ label: 'A' }, { label: 'B' }] },
     { id: 'q2', question: 'Why?' },
   ] })
@@ -45,10 +45,23 @@ test('returns a structured choice batch to the owning session only', async () =>
 test('cancellation clears a pending human question', async () => {
   const { broker, request } = fixture()
   const controller = new AbortController()
-  const result = request({ agent: { id: 'one' }, signal: controller.signal, questions: [{ id: 'q', question: 'Proceed?' }] })
+  const result = request({ agent: { id: 'agent-one', session: { id: 'one' } }, signal: controller.signal, questions: [{ id: 'q', question: 'Proceed?' }] })
   assert.equal(broker.list('one').length, 1)
   controller.abort()
   await assert.rejects(result, /cancelled/)
   assert.deepEqual(broker.list('one'), [])
+  broker.dispose()
+})
+
+test('questions without an owning session fall through to another answerer', async () => {
+  const { broker, request } = fixture()
+  let forwarded = false
+  const result = await request({ agent: { id: 'agent-one' }, questions: [] }, async () => {
+    forwarded = true
+    return { answers: [] }
+  })
+  assert.equal(forwarded, true)
+  assert.deepEqual(result, { answers: [] })
+  assert.deepEqual(broker.list('agent-one'), [])
   broker.dispose()
 })

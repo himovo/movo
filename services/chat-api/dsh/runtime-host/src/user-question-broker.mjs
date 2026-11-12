@@ -8,7 +8,7 @@ export class UserQuestionBroker {
 
   constructor(ctx) {
     this.#dispose = ctx.on('user-questions/request', (request, next) => {
-      const sessionId = String(request.agent?.id ?? '')
+      const sessionId = String(request.agent?.session?.id ?? '')
       if (!sessionId) return next()
       const questionId = String(request.wait?.callId ?? randomUUID())
       const key = JSON.stringify([sessionId, questionId])
