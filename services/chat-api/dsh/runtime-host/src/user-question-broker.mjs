@@ -8,11 +8,12 @@ export class UserQuestionBroker {
 
   constructor(ctx) {
     this.#dispose = ctx.on('user-questions/request', (request, next) => {
-      const sessionId = String(request.agent?.session?.id ?? '')
+      const sessionId = String(request.agent?.id ?? '')
       if (!sessionId) return next()
       const questionId = String(request.wait?.callId ?? randomUUID())
       const key = JSON.stringify([sessionId, questionId])
       if (this.#pending.has(key)) throw new Error('duplicate user question call')
+      console.info('MOVO user question registered', { sessionId, questionId })
       return new Promise((resolve, reject) => {
         const abort = () => {
           request.signal?.removeEventListener('abort', abort)
@@ -35,7 +36,7 @@ export class UserQuestionBroker {
         request.signal?.addEventListener('abort', abort, { once: true })
         if (request.signal?.aborted) abort()
       })
-    }, { global: true })
+    }, { global: true, prepend: true })
   }
 
   list(sessionId) {
