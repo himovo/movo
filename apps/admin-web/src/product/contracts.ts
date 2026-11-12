@@ -10,6 +10,7 @@ export interface AdminProductMenuGroup {
 export interface AdminProductSettingsLink {
   path: string
   label: { zh: string; en: string }
+  icon?: Component
 }
 
 export interface ModelAccessUiExtension {

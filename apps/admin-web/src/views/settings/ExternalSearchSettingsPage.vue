@@ -94,7 +94,10 @@
         class="settings-nav-item"
         :class="{ active: route.path === item.path }"
         :to="item.path"
-      >{{ currentLocale === 'en-US' ? item.label.en : item.label.zh }}</router-link>
+      >
+        <component :is="item.icon" v-if="item.icon" class="nav-icon" aria-hidden="true" />
+        <span>{{ currentLocale === 'en-US' ? item.label.en : item.label.zh }}</span>
+      </router-link>
     </aside>
 
     <main v-if="activeSection === 'general'" class="settings-main">
