@@ -26,7 +26,11 @@ defineProps<{ bindings: AppSidebarBindings }>()
 <template>
   <AppSidebarLayout v-show="bindings.visible" v-bind="bindings.layout">
     <template #history>
-      <SessionHistorySidebar v-bind="bindings.history" />
+      <SessionHistorySidebar v-bind="bindings.history">
+        <template #desktop-plugin-shortcuts>
+          <PluginShortcutNavigation v-if="bindings.layout.desktop" v-bind="bindings.pluginShortcuts" embedded />
+        </template>
+      </SessionHistorySidebar>
     </template>
     <template #features>
       <PluginShortcutNavigation v-if="!bindings.layout.desktop" v-bind="bindings.pluginShortcuts" />

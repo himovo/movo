@@ -67,7 +67,7 @@ const editingSessionTitle = defineModel<string>('editingTitle', { required: true
       <!-- Scripts Section -->
       <button
         type="button"
-        class="group mt-2 flex w-full items-center gap-1 px-5 pb-1 text-left text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400"
+        class="group mt-4 flex w-full items-center gap-1 px-5 pb-1 text-left text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400"
         :aria-expanded="normalHistoryExpanded"
         @click="normalHistoryExpanded = !normalHistoryExpanded"
       >
@@ -169,7 +169,7 @@ const editingSessionTitle = defineModel<string>('editingTitle', { required: true
         </button>
         <!-- Shared conversations follow ordinary conversations. -->
         <template v-if="sharedSessions.length">
-          <button type="button" class="group mt-2 flex w-full items-center gap-1 px-2 pb-1 text-left text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400" :aria-expanded="sharedHistoryExpanded" @click="sharedHistoryExpanded = !sharedHistoryExpanded">
+          <button type="button" class="group mt-4 flex w-full items-center gap-1 px-2 pb-1 text-left text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400" :aria-expanded="sharedHistoryExpanded" @click="sharedHistoryExpanded = !sharedHistoryExpanded">
             <span>{{ t('session.sharedWithMe.title') }}</span>
             <svg class="h-3.5 w-3.5 transition-transform duration-150" :class="sharedHistoryExpanded ? 'rotate-90' : ''" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m5 3 5 5-5 5"/></svg>
           </button>
@@ -215,8 +215,9 @@ const editingSessionTitle = defineModel<string>('editingTitle', { required: true
             {{ sharedSessionsLoadingMore ? t('ui.loading') : t('app.sidebar.load_more') }}
           </button>
         </template>
-        <section v-if="canUseCode && supportsLocalCodeProjects" class="space-y-3 pt-7" :aria-label="t('projectDialog.projectsLabel')">
-          <div class="group flex items-center justify-between px-2 text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">
+        <slot name="desktop-plugin-shortcuts" />
+        <section v-if="canUseCode && supportsLocalCodeProjects" class="space-y-0.5 pt-4" :aria-label="t('projectDialog.projectsLabel')">
+          <div class="group flex items-center justify-between px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">
             <span>{{ t('app.projects') }}</span>
             <button v-if="canUseCode && localWorkspacePicker" type="button" class="flex h-4 w-4 items-center justify-center rounded text-blue-600 opacity-0 transition-opacity hover:bg-blue-50 group-hover:opacity-100" :aria-label="t('app.createProject')" :title="t('app.createProject')" @click="createProject"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button>
           </div>
