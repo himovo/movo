@@ -83,6 +83,21 @@ def test_inventory_reports_actual_image_and_optional_services(tmp_path, monkeypa
     assert [image["kind"] for image in result["sandboxImages"]] == ["general", "plugin"]
 
 
+@pytest.mark.parametrize("contents", ["null", "[]"])
+def test_inventory_survives_non_object_deployment_record(tmp_path, monkeypatch, contents):
+    record = tmp_path / "deployment.json"
+    record.write_text(contents, encoding="utf-8")
+    monkeypatch.setenv("MOVO_DEPLOYMENT_RECORD", str(record))
+    monkeypatch.setenv("MOVO_SANDBOX_COMPOSE_PROJECT", "movo")
+
+    result = inventory(EngineFake())
+
+    assert "version" not in result["deployment"]
+    chat = next(item for item in result["services"] if item["name"] == "chat-api")
+    assert chat["status"] == "running"
+    assert result["deployment"]["commit"] == chat["revision"]
+
+
 def test_observer_requires_shared_token(monkeypatch):
     monkeypatch.setenv("MOVO_SANDBOX_MANAGER_TOKEN", "server-token")
     with pytest.raises(HTTPException) as error:

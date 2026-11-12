@@ -26,6 +26,8 @@ def deployment_record() -> dict:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
+    if not isinstance(data, dict):
+        return {}
     return {key: data.get(key) for key in ("upgradedAt", "version", "commit") if isinstance(data.get(key), str)}
 
 
