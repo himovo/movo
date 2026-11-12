@@ -328,6 +328,7 @@ tests/*
 # 运行时数据与生成文件
 services/admin-api/data/knowledge-documents/knowledge-documents/*
 services/admin-api/data/admin-static/
+/services/admin-api/data/
 services/chat-api/storage/
 services/chat-api/dsh/storage/
 services/chat-api/dsh/runtime-host.log
@@ -343,3 +344,5 @@ outputs/*
 /apps/admin-web/pnpm-workspace.yaml
 /apps/user-web/pnpm-lock.yaml
 /apps/user-web/pnpm-workspace.yaml
+/apps/admin-web/.askai-vite-*.config.mjs
+/apps/user-web/.askai-vite-*.config.mjs
