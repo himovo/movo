@@ -1,3 +1,4 @@
+minimumReleaseAge: 0
 allowBuilds:
   '@deepseek-ai/dsh-subprocess-local': false
   '@google/genai': false
