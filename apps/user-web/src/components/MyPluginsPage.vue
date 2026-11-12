@@ -26,6 +26,7 @@
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useMessage } from 'naive-ui'
 import { t } from '../composables/i18n'
+import { localizePluginUiUrl } from '../platform'
 import { getPluginExecutionAccess, installDshPlugin, launchDshPluginUi, listDshPlugins, removeDshPlugin, resolveDshPluginUiSession, setDshPluginEnabled, uploadDshPlugin, verifyDshPlugin, type DshPlugin } from '../api/dshPlugins'
 import PluginOverview from './plugins/PluginOverview.vue'
 import PluginCatalog from './plugins/PluginCatalog.vue'
@@ -65,7 +66,7 @@ async function openUi(plugin: DshPlugin) {
     const { url } = await launchDshPluginUi(plugin.id)
     if (new URL(url).origin === window.location.origin) throw new Error(t('plugins.uiOriginRequired'))
     uiName.value = plugin.name
-    uiUrl.value = url
+    uiUrl.value = await localizePluginUiUrl(url)
     uiOpen.value = true
   } catch (error) { message.error(String(errorText(error))) }
   finally { uiOpeningId.value = '' }

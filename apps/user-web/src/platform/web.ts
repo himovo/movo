@@ -22,6 +22,7 @@ const DEFAULTS: Settings = {
 export async function connectEnterpriseServer(_address: string): Promise<EnterpriseConnectionResult> {
   throw new Error('Enterprise server binding is only available in the desktop app')
 }
+export async function localizePluginUiUrl(url: string): Promise<string> { return url }
 const WEB_COMPATIBILITY_STATE: import('./types').DesktopCompatibilityState = { current: { level: 'unconfigured', desktop_version: '', checked_at: 0 } }
 export async function getDesktopCompatibilityState() { return { ...WEB_COMPATIBILITY_STATE } }
 export async function checkDesktopCompatibility() { return { ...WEB_COMPATIBILITY_STATE } }

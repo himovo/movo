@@ -1,5 +1,5 @@
 <template>
-  <n-drawer :show="show" placement="right" :width="'min(96vw, 1360px)'" @update:show="emit('update:show', $event)">
+  <n-drawer :show="show" placement="right" :width="'min(96vw, 1360px)'" drawer-class="plugin-ui-drawer" @update:show="emit('update:show', $event)">
     <n-drawer-content :title="name" closable body-content-style="padding: 0; overflow: hidden;">
       <iframe v-if="show && url" class="plugin-frame" :src="url" :title="name"
         ref="pluginFrame"
@@ -32,4 +32,8 @@ onUnmounted(() => window.removeEventListener('message', onPluginMessage))
 
 <style scoped>
 .plugin-frame { display: block; width: 100%; height: 100%; min-height: calc(100vh - 64px); border: 0; background: #fff; }
+:global(html.platform-desktop .plugin-ui-drawer) { top: 48px; height: calc(100vh - 48px) !important; overflow: hidden; -webkit-app-region: no-drag; }
+:global(html.platform-desktop .plugin-ui-drawer .n-drawer-header__close) { -webkit-app-region: no-drag; }
+:global(html.platform-desktop .plugin-ui-drawer .plugin-frame) { min-height: 0; }
+:global(html.platform-desktop.platform-windows .plugin-ui-drawer) { top: 88px; height: calc(100vh - 88px) !important; }
 </style>

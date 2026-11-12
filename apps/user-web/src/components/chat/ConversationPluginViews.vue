@@ -31,6 +31,7 @@ import { NIcon, NPopover, useMessage } from 'naive-ui'
 import { AppsOutline } from '@vicons/ionicons5'
 import { getPluginExecutionAccess, launchDshPluginUi, listDshPlugins, type DshPlugin } from '../../api/dshPlugins'
 import { getLocale, t } from '../../composables/i18n'
+import { localizePluginUiUrl } from '../../platform'
 import PluginUiDrawer from '../plugins/PluginUiDrawer.vue'
 import { cachedConversationView, probeLegacyConversationView, rememberConversationView } from './conversationViewLegacy'
 
@@ -73,7 +74,7 @@ async function onPopover(show: boolean) {
     if (current !== revision) return
     try {
       const { url, kernelSessionId } = await launchDshPluginUi(item.id, props.sessionId)
-      const result = kernelSessionId ? await probeLegacyConversationView(url) : undefined
+      const result = kernelSessionId ? await probeLegacyConversationView(await localizePluginUiUrl(url)) : undefined
       if (result !== undefined) rememberConversationView(`${item.id}:${item.version}`, result)
       if (current === revision && result === true) plugins.value.push(item)
     } catch { /* Legacy metadata remains pending until revalidation completes. */ }
@@ -90,7 +91,7 @@ async function open(plugin: DshPlugin) {
     const target = new URL(url)
     target.searchParams.set('locale', getLocale())
     drawerName.value = plugin.name
-    drawerUrl.value = target.toString()
+    drawerUrl.value = await localizePluginUiUrl(target.toString())
     drawerOpen.value = true
   } catch {
     message.error(t('plugins.conversationViewsUnavailable'))

@@ -74,10 +74,22 @@ window.__ModuleLoader__.load({
           style: { height: '100vh', display: 'flex', flexDirection: 'column', background: '#fff' },
         },
         entries.length > 1 ? React.createElement('nav', {
-          style: { display: 'flex', gap: 8, padding: 12, borderBottom: '1px solid #e5e7eb' },
+          role: 'tablist',
+          style: { display: 'flex', gap: 4, padding: '8px 16px', borderBottom: '1px solid #e5e7eb', background: '#fff' },
         }, entries.map(entry => React.createElement('button', {
           key: entry.options.id, type: 'button', onClick: () => setSelected(entry.options.id),
-          'aria-current': id === entry.options.id ? 'page' : undefined,
+          role: 'tab',
+          'aria-selected': id === entry.options.id,
+          style: {
+            border: 0,
+            borderRadius: 8,
+            padding: '7px 12px',
+            background: id === entry.options.id ? '#eaf1ff' : 'transparent',
+            color: id === entry.options.id ? '#2563eb' : '#475569',
+            fontSize: 13,
+            fontWeight: id === entry.options.id ? 600 : 500,
+            cursor: 'pointer',
+          },
         }, typeof entry.options.label === 'function' ? entry.options.label() : entry.options.id))) : null,
         body ? React.createElement('div', { style: { padding: 24, color: '#64748b' } }, body)
           : React.createElement(SessionProvider, { session: reference },

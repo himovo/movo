@@ -4,6 +4,7 @@ import GitCompareOutline from '@vicons/ionicons5/es/GitCompareOutline'
 import TerminalOutline from '@vicons/ionicons5/es/TerminalOutline'
 import BrowserTestButton from '../browser/BrowserTestButton.vue'
 import DesktopSessionShareAction from './DesktopSessionShareAction.vue'
+import ConversationPluginViews from '../chat/ConversationPluginViews.vue'
 import DesktopUpdateIndicator from './DesktopUpdateIndicator.vue'
 import DesktopCompatibilityNotice from './DesktopCompatibilityNotice.vue'
 import WorkspaceContextPicker from '../code/WorkspaceContextPicker.vue'
@@ -169,6 +170,12 @@ const emit = defineEmits<{
         <DesktopCompatibilityNotice />
         <DesktopUpdateIndicator />
         <template v-if="chatActions">
+          <ConversationPluginViews
+            v-if="sessionId && userId && mainId && !codeSessionActive"
+            :session-id="sessionId"
+            :user-id="userId"
+            :main-id="mainId"
+          />
           <DesktopSessionShareAction
             v-if="sessionId && userId"
             :session-id="sessionId"

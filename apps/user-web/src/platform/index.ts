@@ -25,6 +25,7 @@ if (runningInElectron()) {
 }
 
 export const capabilities: PlatformCapabilities = impl.capabilities
+export const localizePluginUiUrl: (url: string) => Promise<string> = impl.localizePluginUiUrl
 export const getSettings: () => Promise<Settings> = impl.getSettings
 export const updateSettings: (next: Settings) => Promise<Settings> = impl.updateSettings
 export const connectEnterpriseServer: (address: string) => Promise<EnterpriseConnectionResult> = impl.connectEnterpriseServer

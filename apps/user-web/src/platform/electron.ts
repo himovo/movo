@@ -1,6 +1,7 @@
 import type { AgentStatus, BrowserBounds, BrowserOwner, BrowserPreviewFrame, BrowserPurpose, DesktopUpdateState, DshCodeSession, DshDirectoryEntry, DshExecutionEvent, DshFileDiff, DshFilePreview, DshGitBranchSnapshot, DshGitCommitResult, DshGitPushResult, DshPendingApproval, DshTaskChangeSet, DshTaskFileDiff, DshTerminalEvent, DshTurnCancelResult, DshWorkspace, DshWorkspaceInspection, DshWorkspaceSummary, EmbeddedBrowserState, EnterpriseConnectionResult, PlatformCapabilities, SaveResult, Settings } from './types'
 
 interface ElectronApi {
+  pluginUi: { relay(url: string): Promise<string> }
   compatibility: {
     state(): Promise<import('./types').DesktopCompatibilityState>
     check(): Promise<import('./types').DesktopCompatibilityState>
@@ -111,6 +112,7 @@ export const capabilities: PlatformCapabilities = {
 export const getSettings = () => api().settings.get()
 export const updateSettings = (next: Settings) => api().settings.update(next)
 export const connectEnterpriseServer = (address: string) => api().enterprise.connect(address)
+export const localizePluginUiUrl = (url: string) => api().pluginUi.relay(url)
 export const getDesktopCompatibilityState = () => api().compatibility.state()
 export const checkDesktopCompatibility = () => api().compatibility.check()
 export const onDesktopCompatibilityState = (listener: (state: import('./types').DesktopCompatibilityState) => void) => api().compatibility.onState(listener)
