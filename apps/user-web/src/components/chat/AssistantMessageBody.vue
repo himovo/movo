@@ -7,6 +7,7 @@ import CodeTaskChangeCard from '../code/CodeTaskChangeCard.vue'
 import LocalBrowserInterventionPrompt from '../execution/LocalBrowserInterventionPrompt.vue'
 import { ensureMessageExecutionV3 } from '../../features/execution-v3/stores/messageExecution'
 import { visibleAnswerArtifacts } from '../../features/execution-v3/domain/artifactVisibility'
+import { withoutCodeChangeArtifacts } from './codeChangeArtifacts'
 import { normalizeAssistantContent } from '../../utils/assistantMarkdown'
 import type { ArtifactItem } from '../../features/execution-v3/domain/delivery'
 import type { DshCodeSession, DshTaskChangeSet } from '../../platform/types'
@@ -49,7 +50,7 @@ const emit = defineEmits<{
 const store = computed(() => ensureMessageExecutionV3(props.message))
 const artifactPaths = computed(() => {
   const state = store.value.state
-  const artifacts = visibleAnswerArtifacts(state.artifacts, state.runStatus)
+  const artifacts = withoutCodeChangeArtifacts(visibleAnswerArtifacts(state.artifacts, state.runStatus), props.codeSession ? props.message._codeChanges : undefined)
   const references: Record<string, string> = {}
   const names = new Map<string, string | null>()
   for (const item of artifacts) {
@@ -118,6 +119,7 @@ function isPlainAssistantText(content: string): boolean {
   <div class="mt-3">
     <ArtifactList
       :store="store"
+      :code-changes="codeSession ? message._codeChanges : undefined"
       @open="emit('artifact-open', $event)"
       @edit="emit('artifact-edit', $event)"
       @export="emit('artifact-export', $event)"
