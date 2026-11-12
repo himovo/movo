@@ -40,11 +40,12 @@ class _BatchEvents:
         self.side_persisted: list[dict] = []
         self.projector = KernelEventProjector()
 
-    def project(self, event, *, message_id, tool_presentations=None):
+    def project(self, event, *, message_id, tool_presentations=None, assistant_kind=None):
         return self.projector.project(
             event,
             message_id=message_id,
             tool_presentations=tool_presentations,
+            assistant_kind=assistant_kind,
         )
 
     async def persist_batch(self, writes, **_scope):
@@ -84,6 +85,7 @@ class _Conversations:
         self.active_run_cleared = False
 
     async def update_assistant_projection(self, **kwargs) -> None:
+        self.content = kwargs["content"]
         self.execution_events = kwargs["execution_events"]
         self.updated_at = monotonic()
 
@@ -116,6 +118,61 @@ class _Profiles:
             provider_type="openai_compatible", provider_name="provider", model_name="model",
             display_name="model", capabilities=("chat",),
         )
+
+
+def test_runner_preserves_intermediate_reply_and_final_answer() -> None:
+    async def run() -> None:
+        class _ProgressGateway(_Gateway):
+            async def subscribe(self, _session_id: str, _after_cursor: int):
+                yield _event(1, "turn.started", {})
+                yield _event(2, "agent.message.delta", {
+                    "turn": 1, "step": 1, "chunk": {"type": "text-delta", "text": "Inspecting files"},
+                })
+                yield _event(3, "agent.message.completed", {
+                    "turn": 1, "step": 1,
+                    "message": {"content": [{"type": "text", "text": "Inspecting files"}]},
+                })
+                yield _event(4, "agent.step.started", {"turn": 1, "step": 2})
+                yield _event(5, "tool.call.started", {"callId": "call-1", "name": "bash"})
+                yield _event(6, "tool.call.completed", {"message": {
+                    "source": {"callId": "call-1"}, "content": [],
+                }})
+                yield _event(7, "agent.message.completed", {
+                    "turn": 1, "step": 3,
+                    "message": {"content": [{"type": "text", "text": "Done"}]},
+                })
+                yield _event(8, "turn.completed", {"reason": {"kind": "stop"}})
+
+        conversations = _Conversations()
+        events = _BatchEvents()
+        service = DshChatService(
+            gateway=_ProgressGateway(), coordinator=SimpleNamespace(),
+            conversations=conversations, bindings=_Bindings(), events=events,
+            profiles=_Profiles(), kernel_version="test",
+        )
+        binding = {
+            "binding_id": "binding", "tenant_id": "tenant", "user_id": "user",
+            "conversation_id": "conversation", "kernel_session_id": "session",
+            "runtime_id": "runtime", "profile_version": "profile", "event_cursor": 0,
+        }
+        live = LiveTurnStream()
+        task = asyncio.create_task(service._turn_runner.run(
+            binding=binding, message_id="message", request_id="request", text="Inspect",
+            temporal_context=build_temporal_context("UTC"), live_stream=live,
+        ))
+        received = [row async for row in live.events()]
+        assert await task == "completed"
+        assert conversations.content == "Done"
+        completed = [row for row in received if row["type"] == "item.completed"]
+        assert [row["item_kind"] for row in completed if row["item_kind"] in {"commentary", "final_answer"}] == [
+            "commentary", "final_answer",
+        ]
+        assert [row["payload"]["text"] for row in completed if row["item_kind"] in {"commentary", "final_answer"}] == [
+            "Inspecting files", "Done",
+        ]
+        assert [row["stream_seq"] for row in received] == sorted(row["stream_seq"] for row in received)
+
+    asyncio.run(run())
 
 
 def test_live_delta_bypasses_slow_persistence_but_terminal_waits_for_flush() -> None:

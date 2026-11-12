@@ -120,9 +120,10 @@ class _BatchEvents:
         self.projector = KernelEventProjector()
         self.persisted: list[dict] = []
 
-    def project(self, event, *, message_id, tool_presentations=None):
+    def project(self, event, *, message_id, tool_presentations=None, assistant_kind=None):
         return self.projector.project(
-            event, message_id=message_id, tool_presentations=tool_presentations
+            event, message_id=message_id, tool_presentations=tool_presentations,
+            assistant_kind=assistant_kind,
         )
 
     async def persist_batch(self, writes: list[KernelEventWrite], **_scope) -> None:

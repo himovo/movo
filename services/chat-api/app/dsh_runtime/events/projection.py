@@ -23,6 +23,7 @@ class KernelEventProjector:
         *,
         message_id: str,
         tool_presentations: Mapping[str, Mapping[str, Any]] | None = None,
+        assistant_kind: str | None = None,
     ) -> dict[str, Any] | None:
         event_type = event.type
         item_kind: str | None = None
@@ -62,14 +63,14 @@ class KernelEventProjector:
         elif event_type == "agent.message.completed":
             text = self._message_text(event.payload)
             has_tool_call = self._message_has_tool_call(event.payload)
-            if has_tool_call:
+            if has_tool_call or assistant_kind == "commentary":
                 if not text:
                     return None
                 projected_type, item_kind = "item.completed", "commentary"
                 payload = {
                     "text": text,
                     "source": "model",
-                    "reason": "tool_call",
+                    "reason": "tool_call" if has_tool_call else "turn_continues",
                     "retract_provisional": True,
                 }
             else:

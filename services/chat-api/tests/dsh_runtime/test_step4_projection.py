@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import asyncio
 
 from app.dsh_runtime.contracts import KernelEventEnvelope, KernelEventSource
 from app.dsh_runtime.events import KernelEventProjector
@@ -8,6 +9,7 @@ from app.dsh_runtime.event_mapper import DshEventMapper
 from app.dsh_runtime.profile.models import RuntimeProfileSnapshot
 from app.dsh_runtime.profile.store import InMemoryRuntimeProfileStore
 from app.dsh_runtime.events.tool_presentation import tool_presentations
+from app.dsh_runtime.turn_reply_buffer import classified_turn_events
 
 
 def _event(event_type: str, payload: dict, cursor: int = 1) -> KernelEventEnvelope:
@@ -38,6 +40,32 @@ def _profile(version: str, model: str) -> RuntimeProfileSnapshot:
         display_name=model,
         capabilities=("chat",),
     )
+
+
+def test_text_only_progress_is_classified_by_the_dsh_turn_boundary() -> None:
+    async def source():
+        yield _event("agent.message.delta", {"turn": 1, "step": 1, "chunk": {"type": "text-delta", "text": "Inspecting"}}, 1)
+        yield _event("agent.message.completed", {"turn": 1, "step": 1, "message": {"content": [{"type": "text", "text": "Inspecting"}]}}, 2)
+        yield _event("agent.step.completed", {"turn": 1, "step": 1}, 3)
+        yield _event("agent.step.started", {"turn": 1, "step": 2}, 4)
+        yield _event("tool.call.started", {"callId": "call-1", "name": "bash"}, 5)
+        yield _event("tool.call.completed", {"message": {"source": {"callId": "call-1"}, "content": []}}, 6)
+        yield _event("agent.message.completed", {"turn": 1, "step": 3, "message": {"content": [{"type": "text", "text": "Done"}]}}, 7)
+        yield _event("turn.completed", {"reason": {"kind": "stop"}}, 8)
+
+    async def collect():
+        return [value async for value in classified_turn_events(source(), 0)]
+
+    classified = asyncio.run(collect())
+    assert [event.cursor for event, _ in classified] == list(range(1, 9))
+    replies = [(event, kind) for event, kind in classified if event.type == "agent.message.completed"]
+    assert [kind for _, kind in replies] == ["commentary", "final_answer"]
+    projector = KernelEventProjector()
+    projected = [
+        projector.project(event, message_id="message-a", assistant_kind=kind)
+        for event, kind in classified
+    ]
+    assert [row["item_kind"] for row in projected if row and row.get("item_kind") in {"commentary", "final_answer"} and row["type"] == "item.completed"] == ["commentary", "final_answer"]
 
 
 def test_unique_plugin_tool_name_is_presented_in_started_and_completed_events() -> None:

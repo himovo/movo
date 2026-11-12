@@ -107,11 +107,13 @@ class KernelEventRepository:
         *,
         message_id: str,
         tool_presentations: Mapping[str, Mapping[str, Any]] | None = None,
+        assistant_kind: str | None = None,
     ) -> dict[str, Any] | None:
         return self._projector.project(
             event,
             message_id=message_id,
             tool_presentations=tool_presentations,
+            assistant_kind=assistant_kind,
         )
 
     async def reserve_stream_ordinals(self, *, message_id: str, span: int) -> list[int]:

@@ -29,6 +29,7 @@ from app.dsh_runtime.turn_finalization import (
     TurnAssistantProjection,
     TurnStateFinalizer,
 )
+from app.dsh_runtime.turn_reply_buffer import classified_turn_events
 from app.enterprise_capabilities.evidence import ExecutionEvidenceRepository
 from app.dsh_runtime.image_input import image_content_blocks
 from app.dsh_runtime.personal_inputs import stage_personal_inputs
@@ -164,8 +165,9 @@ class DshTurnRunner:
                 )
             )
             credential_lease.start()
-            async for event in self._gateway.subscribe(
-                str(binding["kernel_session_id"]), attach_after
+            async for event, assistant_kind in classified_turn_events(
+                self._gateway.subscribe(str(binding["kernel_session_id"]), attach_after),
+                attach_after,
             ):
                 if event.cursor <= attach_after:
                     # Pre-attach history: never project/persist/deliver it
@@ -180,6 +182,7 @@ class DshTurnRunner:
                     event,
                     message_id=message_id,
                     tool_presentations=tool_ui,
+                    assistant_kind=assistant_kind,
                 )
                 projected = await delivery_guard.apply(event, projected)
                 if (
