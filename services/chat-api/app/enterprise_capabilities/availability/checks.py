@@ -89,16 +89,9 @@ async def skillhub(tenant_id: str, user_id: str) -> bool:
 
 
 async def knowledge(tenant_id: str, user_id: str) -> bool:
-    if not await profile_knowledge(tenant_id, user_id):
-        return False
-    from app.enterprise_capabilities.knowledge_source.config import get_knowledge_source
-    source = await get_knowledge_source(tenant_id)
-    if source.get("mode") == "external":
-        return True
-    endpoint = str(get_settings().DOCUMENT_PROCESSING_BASE_URL or "").strip().rstrip("/")
-    async with httpx.AsyncClient(timeout=0.7) as client:
-        response = await client.get(endpoint + "/health")
-        return response.is_success
+    # The retrieval request reports service failures itself. A separate probe
+    # can reject an otherwise working service before retrieval is attempted.
+    return await profile_knowledge(tenant_id, user_id)
 
 
 async def profile_knowledge(tenant_id: str, user_id: str) -> bool:

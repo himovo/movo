@@ -112,6 +112,24 @@ def test_browser_requires_current_user_connection(monkeypatch):
     assert asyncio.run(checks.browser('a', 'other')) is False
 
 
+def test_knowledge_admission_uses_configuration_without_a_network_probe(monkeypatch):
+    configured = AsyncMock(return_value=True)
+    monkeypatch.setattr(checks, 'profile_knowledge', configured)
+
+    def unexpected_probe(*_args, **_kwargs):
+        raise AssertionError('knowledge admission must not probe the document service')
+
+    monkeypatch.setattr(checks.httpx, 'AsyncClient', unexpected_probe)
+    policy = InternalToolAvailability()
+    assert asyncio.run(policy.available('knowledge.search@v1', 'tenant-a', 'user-a')) is True
+    configured.assert_awaited_once_with('tenant-a', 'user-a')
+
+    configured.reset_mock()
+    configured.return_value = False
+    assert asyncio.run(policy.available('knowledge.search@v1', 'tenant-a', 'user-a')) is False
+    configured.assert_awaited_once_with('tenant-a', 'user-a')
+
+
 def test_invocation_rechecks_dependencies_before_handler():
     from app.enterprise_capabilities.runtime.service import InternalCapabilityService
     from types import SimpleNamespace
