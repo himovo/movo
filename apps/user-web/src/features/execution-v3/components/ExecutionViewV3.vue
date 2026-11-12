@@ -98,10 +98,11 @@ function toggle() {
       <span>{{ toggleText }}</span>
       <time v-if="elapsedText" class="execution-v3-elapsed" aria-live="off">· {{ elapsedText }}</time>
     </button>
-    <div v-show="!collapsed" class="execution-v3-list">
+    <div class="execution-v3-list">
       <template v-for="entry in timeline" :key="entry.key">
         <RepeatedToolCallGroup
           v-if="entry.type === 'tool-group'"
+          v-show="!collapsed"
           :items="entry.items"
           :status-items="entry.statusItems"
           :run-status="store.state.runStatus"
@@ -110,13 +111,14 @@ function toggle() {
         <ProvisionalAssistantItem v-else-if="entry.item.kind === 'final_answer'" :item="entry.item" />
         <ActivityItem
           v-else
+          v-show="!collapsed"
           :item="entry.item"
           :active="!props.connectionLostAt && !passiveRunningIds.has(entry.item.id)"
           :run-status="store.state.runStatus"
           @resolve-permission="(requestId, decision) => emit('resolve-permission', requestId, decision)"
         />
       </template>
-      <div v-if="showIdlePlaceholder" class="execution-v3-placeholder" role="status" :aria-label="t('execution.v3.processing')">
+      <div v-if="showIdlePlaceholder && !collapsed" class="execution-v3-placeholder" role="status" :aria-label="t('execution.v3.processing')">
         <span class="execution-v3-thinking">{{ t('execution.v3.thinking') }}</span>
       </div>
       <div v-if="terminalWithoutAnswer" class="execution-v3-terminal" role="status">
