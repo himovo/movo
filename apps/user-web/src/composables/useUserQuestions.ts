@@ -23,7 +23,7 @@ export function useUserQuestions(options: Options) {
 
   async function refresh() {
     const currentEpoch = epoch
-    if (!options.active()) return
+    if (!options.active() || (!options.running() && !pending.value.length)) return
     const codeId = options.codeSessionId()
     const conversationId = options.conversationId()
     const token = options.token()
@@ -35,7 +35,6 @@ export function useUserQuestions(options: Options) {
       const rows = codeId ? await listDshCodeQuestions(codeId) : await listUserQuestions(conversationId!, token!)
       if (currentEpoch === epoch) pending.value = rows
     } catch {
-      // A detached or completed runtime has no pending question. Retry on the next interval.
       if (currentEpoch === epoch) pending.value = []
     }
   }
@@ -63,12 +62,12 @@ export function useUserQuestions(options: Options) {
 
   function schedule() {
     if (timer) clearTimeout(timer)
-    if (!options.active()) return
+    if (!options.active() || (!options.running() && !pending.value.length)) return
     const generation = epoch
     timer = setTimeout(async () => {
       await refresh()
       if (generation === epoch) schedule()
-    }, options.running() || pending.value.length ? 1500 : 8000)
+    }, 1500)
   }
 
   watch(() => [options.active(), options.conversationId(), options.codeSessionId(), options.token(), options.running()], (next, previous) => {
