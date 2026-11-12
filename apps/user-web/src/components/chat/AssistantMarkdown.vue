@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useMessage } from 'naive-ui'
 import { renderAssistantMarkdown } from '../../utils/assistantMarkdown'
 import { copyTextToClipboard } from '../../utils/copyTextToClipboard'
+import { t } from '../../composables/i18n'
 
 const props = withDefaults(defineProps<{ content: string; compact?: boolean; fileReferences?: boolean; artifactPaths?: string[] }>(), {
   compact: true,
@@ -14,6 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const html = computed(() => renderAssistantMarkdown(props.content, { workspaceFileReferences: props.fileReferences, artifactPaths: props.artifactPaths }))
+const message = useMessage()
 
 function fileReference(target: EventTarget | null): HTMLElement | null {
   return target instanceof Element ? target.closest<HTMLElement>('[data-workspace-file]') : null
@@ -37,15 +40,16 @@ async function handleClick(event: Event) {
     try {
       await copyTextToClipboard(code)
       copyButton.dataset.copied = 'true'
-      copyButton.setAttribute('aria-label', 'Copied')
-      copyButton.title = 'Copied'
+      copyButton.setAttribute('aria-label', t('legacy.copied'))
+      copyButton.title = t('legacy.copied')
       window.setTimeout(() => {
         copyButton.removeAttribute('data-copied')
         copyButton.setAttribute('aria-label', 'Copy code')
         copyButton.title = 'Copy code'
       }, 1800)
     } catch {
-      copyButton.title = 'Copy failed'
+      copyButton.title = t('chat.code_copy_failed')
+      message.error(t('chat.code_copy_failed'))
     }
     return
   }
@@ -133,6 +137,9 @@ function openFileByKeyboard(event: KeyboardEvent) {
 .assistant-markdown :deep(.assistant-code-copy[data-copied="true"]) { background: var(--assistant-copy-hover); color: var(--assistant-code-text); }
 .assistant-markdown :deep(.assistant-code-copy:focus-visible) { outline: 2px solid #3b82f6; outline-offset: 1px; }
 .assistant-markdown :deep(.assistant-code-copy svg) { width: 16px; height: 16px; }
+.assistant-markdown :deep(.assistant-code-check-icon) { display: none; }
+.assistant-markdown :deep(.assistant-code-copy[data-copied="true"] .assistant-code-copy-icon) { display: none; }
+.assistant-markdown :deep(.assistant-code-copy[data-copied="true"] .assistant-code-check-icon) { display: block; }
 .assistant-markdown :deep(.assistant-code-scroll) { background: var(--assistant-code-bg); overflow-x: auto; }
 .assistant-markdown :deep(.assistant-code-content) {
   margin: 0;

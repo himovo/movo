@@ -10,7 +10,8 @@ function renderCode(code: string, language: string): string {
   return `<div class="assistant-code-block">
     <div class="assistant-code-header"><span class="assistant-code-language">${label}</span>
       <button class="assistant-code-copy" type="button" aria-label="Copy code" title="Copy code">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+        <svg class="assistant-code-copy-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+        <svg class="assistant-code-check-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>
       </button>
     </div>
     <div class="assistant-code-scroll"><pre class="assistant-code-content"><code>${content}</code></pre></div>
