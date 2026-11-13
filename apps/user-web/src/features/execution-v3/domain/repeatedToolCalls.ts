@@ -44,6 +44,19 @@ export function toolCapabilityKeys(items: ExecutionItemV3[]): ToolCapabilityKey[
   return keys.length ? keys : ['execution.v3.activity.call_tools']
 }
 
+/** Represent a mixed tool group by its active operation or most frequent capability. */
+export function groupToolCapability(items: ExecutionItemV3[]): ToolCapabilityKey {
+  const active = [...items].reverse().find(item => item.status === 'running')
+  if (active) return toolActionLabelKey(active)
+  const counts = new Map<ToolCapabilityKey, number>()
+  for (const item of items) {
+    const key = toolActionLabelKey(item)
+    counts.set(key, (counts.get(key) || 0) + 1)
+  }
+  return [...counts].sort((left, right) => right[1] - left[1])[0]?.[0]
+    || 'execution.v3.activity.call_tools'
+}
+
 export function toolName(item: ExecutionItemV3): string {
   return String(item.payload?.display_name || item.payload?.name || '').trim() || 'tool'
 }

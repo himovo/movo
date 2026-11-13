@@ -6,7 +6,7 @@ import { isRef, reactive } from 'vue'
 import { useAuthoritativeMessages } from '../src/components/chat/useAuthoritativeMessages'
 import { refreshAfterRun } from '../src/composables/chatRuntimeRefresh'
 import { activityOutcome, activityStateMessageKey, hasActiveRunningLeaf, hasVisibleActiveRunningLeaf, runningContainerIds } from '../src/features/execution-v3/domain/activityPresentation'
-import { collapseRepeatedToolCalls, toolActionLabelKey, toolCallDetail, toolCallSummary, toolCapabilityKeys, toolDisplayName } from '../src/features/execution-v3/domain/repeatedToolCalls'
+import { collapseRepeatedToolCalls, groupToolCapability, toolActionLabelKey, toolCallDetail, toolCallSummary, toolCapabilityKeys, toolDisplayName } from '../src/features/execution-v3/domain/repeatedToolCalls'
 import { elapsedRunMs, formatRunDuration } from '../src/features/execution-v3/domain/runTiming'
 import { applyAssistantContentEvent } from '../src/features/execution-v3/domain/assistantContent'
 import { decideToolApproval, listPendingToolApprovals } from '../src/api/toolApprovals'
@@ -48,6 +48,9 @@ function event(overrides: Partial<ExecutionEventV3>): ExecutionEventV3 {
   assert.equal(timeline[1].type === 'tool-group' && timeline[1].items.length, 2)
   assert.equal(timeline[1].type === 'tool-group' && timeline[1].statusItems.length, 4)
   assert.deepEqual(timeline[1].type === 'tool-group' && timeline[1].items.map(item => item.id), ['bash-1', 'read-1'])
+  const mixedTools = [items[3], items[5], { ...items[3], id: 'bash-2' }]
+  assert.equal(groupToolCapability(mixedTools), 'execution.v3.activity.run_commands')
+  assert.equal(groupToolCapability(mixedTools.map((item, index) => index === 1 ? { ...item, status: 'running' } : item)), 'execution.v3.activity.read_files')
   assert.equal(toolCallSummary(items[3]), '查看根目录')
   assert.equal(toolCallSummary(items[5]), 'README.md')
   assert.equal(toolCallDetail(items[5]), 'README.md')

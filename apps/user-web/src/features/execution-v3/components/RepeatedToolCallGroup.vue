@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { ExecutionItemV3 } from '../domain/model'
-import { toolActionLabelKey, toolCallSummary, toolName } from '../domain/repeatedToolCalls'
+import { groupToolCapability, toolActionLabelKey, toolCallSummary, toolName } from '../domain/repeatedToolCalls'
 import { t } from '../../../composables/i18n'
 import { localizedInternalToolLabel } from '../domain/internalToolLabels'
 import type { ExecutionStateV3 } from '../domain/model'
@@ -13,14 +13,11 @@ const expanded = ref(false)
 const isRunning = computed(() => props.statusItems.some(item => item.status === 'running'))
 const showsProgress = computed(() => isRunning.value)
 const activeTool = computed(() => [...props.items].reverse().find(item => item.status === 'running'))
-const groupIconCategory = computed(() => {
-  const categories = new Set(props.items.map(toolActionLabelKey))
-  return categories.size === 1 ? [...categories][0] : 'tool'
-})
+const groupIconCategory = computed(() => groupToolCapability(props.items))
 const localizedToolName = (item: ExecutionItemV3) => localizedInternalToolLabel(item.payload?.name, toolName(item))
 const label = computed(() => activeTool.value
   ? t('execution.v3.tool_group_running', { name: localizedToolName(activeTool.value) })
-  : showsProgress.value ? t('execution.v3.tool_group_waiting') : t('execution.v3.tool_group_completed'))
+  : showsProgress.value ? t('execution.v3.tool_group_waiting') : t(groupIconCategory.value))
 
 function syncExpanded(event: Event) {
   expanded.value = Boolean((event.currentTarget as HTMLDetailsElement).open)
