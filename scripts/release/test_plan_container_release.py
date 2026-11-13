@@ -152,7 +152,13 @@ class ContainerReleasePlanTests(unittest.TestCase):
             with self.subTest(dockerfile=dockerfile):
                 contents = (REPOSITORY_ROOT / dockerfile).read_text()
                 self.assertIn("ARG MOVO_SECURITY_REFRESH=local", contents)
-                self.assertIn("apt-get upgrade -y", contents)
+                if dockerfile == "services/document-parser/Dockerfile":
+                    self.assertIn("apt_with_mirror_fallback.py upgrade", contents)
+                    helper = (REPOSITORY_ROOT / "services/document-parser/scripts/apt_with_mirror_fallback.py").read_text()
+                    self.assertIn('run_apt("update")', helper)
+                    self.assertIn('run_apt("upgrade", "-y")', helper)
+                else:
+                    self.assertIn("apt-get upgrade -y", contents)
 
     def test_promotion_preflights_all_sources_before_tagging(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
