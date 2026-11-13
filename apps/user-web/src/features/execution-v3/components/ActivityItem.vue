@@ -5,7 +5,7 @@ import { t } from '../../../composables/i18n'
 import ActivityIcon from './ActivityIcon.vue'
 import ToolErrorDetails from './ToolErrorDetails.vue'
 import { activityOutcome, activityStateMessageKey } from '../domain/activityPresentation'
-import { toolActionLabelKey, toolCallSummary, toolDisplayName } from '../domain/repeatedToolCalls'
+import { commandStatusLabelKey, toolActionLabelKey, toolCallSummary, toolDisplayName } from '../domain/repeatedToolCalls'
 import { failureMessageKey } from '../domain/failureMessage'
 import { localizedInternalToolLabel } from '../domain/internalToolLabels'
 import type { ExecutionStateV3 } from '../domain/model'
@@ -43,6 +43,8 @@ const text = computed(() => {
     return String(payload.label || '')
   }
   if (props.item.kind === 'tool') {
+    const commandLabel = commandStatusLabelKey(props.item)
+    if (commandLabel) return t(commandLabel)
     const name = localizedInternalToolLabel(payload.name, toolDisplayName(props.item))
     return name ? t('execution.v3.tool_call_named', { name }) : t(toolActionLabelKey(props.item))
   }

@@ -51,7 +51,7 @@ function event(overrides: Partial<ExecutionEventV3>): ExecutionEventV3 {
   const mixedTools = [items[3], items[5], { ...items[3], id: 'bash-2' }]
   assert.equal(groupToolCapability(mixedTools), 'execution.v3.activity.run_commands')
   assert.equal(groupToolCapability(mixedTools.map((item, index) => index === 1 ? { ...item, status: 'running' } : item)), 'execution.v3.activity.read_files')
-  assert.equal(toolCallSummary(items[3]), '查看根目录')
+  assert.equal(toolCallSummary(items[3]), 'ls · 查看根目录')
   assert.equal(toolCallSummary(items[5]), 'README.md')
   assert.equal(toolCallDetail(items[5]), 'README.md')
   const persistedStringArgs = {
@@ -63,8 +63,11 @@ function event(overrides: Partial<ExecutionEventV3>): ExecutionEventV3 {
       name: 'bash', args: { command: 'curl -H "Authorization: secret" internal.example', description: '检查页面样式' },
     },
   } as any
-  assert.equal(toolCallSummary(hiddenCommand), '检查页面样式')
+  assert.equal(toolCallSummary(hiddenCommand), 'curl -H [redacted] internal.example · 检查页面样式')
   assert.doesNotMatch(toolCallDetail(hiddenCommand), /secret|curl|internal\.example/)
+  assert.equal(toolCallSummary({ ...items[3], payload: { name: 'bash', args: { command: 'git status --short' } } } as any), 'git status --short')
+  assert.equal(toolCallSummary({ ...items[3], payload: { name: 'bash', args: { command: 'git status --short', description: 'Inspect repository state' } } } as any), 'git status --short · Inspect repository state')
+  assert.equal(toolCallSummary({ ...items[3], payload: { name: 'bash', args: { command: 'python3 summarize.py sales.csv' } } } as any), 'python3 summarize.py sales.csv')
   const translatedDocument = {
     ...items[5],
     payload: {

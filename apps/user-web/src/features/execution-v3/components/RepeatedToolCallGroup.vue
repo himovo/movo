@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { ExecutionItemV3 } from '../domain/model'
-import { groupToolCapability, toolActionLabelKey, toolCallSummary, toolName } from '../domain/repeatedToolCalls'
+import { commandStatusLabelKey, groupToolCapability, toolActionLabelKey, toolCallSummary, toolName } from '../domain/repeatedToolCalls'
 import { t } from '../../../composables/i18n'
 import { localizedInternalToolLabel } from '../domain/internalToolLabels'
 import type { ExecutionStateV3 } from '../domain/model'
@@ -15,9 +15,14 @@ const showsProgress = computed(() => isRunning.value)
 const activeTool = computed(() => [...props.items].reverse().find(item => item.status === 'running'))
 const groupIconCategory = computed(() => groupToolCapability(props.items))
 const localizedToolName = (item: ExecutionItemV3) => localizedInternalToolLabel(item.payload?.name, toolName(item))
-const label = computed(() => activeTool.value
-  ? t('execution.v3.tool_group_running', { name: localizedToolName(activeTool.value) })
-  : showsProgress.value ? t('execution.v3.tool_group_waiting') : t(groupIconCategory.value))
+const label = computed(() => {
+  if (!activeTool.value) return showsProgress.value ? t('execution.v3.tool_group_waiting') : t(groupIconCategory.value)
+  const summary = toolCallSummary(activeTool.value)
+  if (summary && toolActionLabelKey(activeTool.value) === 'execution.v3.activity.run_commands') {
+    return t('execution.v3.command_group_running', { summary })
+  }
+  return t('execution.v3.tool_group_running', { name: localizedToolName(activeTool.value) })
+})
 
 function syncExpanded(event: Event) {
   expanded.value = Boolean((event.currentTarget as HTMLDetailsElement).open)
@@ -34,7 +39,7 @@ function syncExpanded(event: Event) {
     <ol>
       <li v-for="item in items" :key="item.id" :class="`status-${item.status}`">
         <ActivityIcon :category="toolActionLabelKey(item)" kind="tool" />
-        <span class="tool-call-name">{{ localizedToolName(item) }}</span>
+        <span class="tool-call-name">{{ commandStatusLabelKey(item) ? t(commandStatusLabelKey(item)!) : localizedToolName(item) }}</span>
         <span class="tool-call-summary">{{ toolCallSummary(item) || t(item.status === 'running' ? 'execution.v3.processing' : 'execution.v3.tool_call_completed') }}</span>
         <ToolErrorDetails v-if="item.status === 'failed' && item.payload?.error" :error="String(item.payload.error)" />
       </li>

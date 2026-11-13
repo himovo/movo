@@ -127,6 +127,18 @@ function compactValue(value: unknown): string {
   return ''
 }
 
+function commandSummary(value: unknown): string {
+  const command = typeof value === 'string' ? value.trim() : ''
+  if (!command) return ''
+  return command
+    .replace(/((?:^|\s)(?:--?(?:token|password|passwd|secret|api-key)|--header|-H)\s+)(?:"[^"]*"|'[^']*'|[^\s;&|]+)/gi, '$1[redacted]')
+    .replace(/(\b(?:authorization|x-api-key|api[_-]?key|access[_-]?token|token|password|passwd|secret)\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s;&|]+)/gi, '$1[redacted]')
+    .replace(/(https?:\/\/)[^\s/@]+:[^\s/@]+@/gi, '$1[redacted]@')
+    .replace(/([?&](?:token|api[_-]?key|password|secret)=)[^\s&#]+/gi, '$1[redacted]')
+    .replace(/\s+/g, ' ')
+    .slice(0, DETAIL_LIMIT)
+}
+
 function narrativeText(item: ExecutionItemV3): string {
   if (!['commentary', 'final_answer'].includes(item.kind)) return ''
   return String(item.payload?.text || '').replace(/\s+/g, ' ').trim()
@@ -229,11 +241,22 @@ export function toolCallSummary(item: ExecutionItemV3): string {
     const location = friendlyFileValue(args.path)
     return [pattern, location && location !== '.' ? location : ''].filter(Boolean).join(' · ')
   }
-  if (action === 'execution.v3.activity.run_commands') return compactValue(args.description).slice(0, DETAIL_LIMIT)
+  if (action === 'execution.v3.activity.run_commands') {
+    const command = commandSummary(args.command)
+    const description = compactValue(args.description)
+    return [command, description].filter(Boolean).join(' · ').slice(0, DETAIL_LIMIT)
+  }
   if (action === 'execution.v3.activity.update_plan') return ''
   if (fileValue) return friendlyFileValue(fileValue).slice(0, DETAIL_LIMIT)
   const description = compactValue(args.description)
   return description.slice(0, DETAIL_LIMIT)
+}
+
+export function commandStatusLabelKey(item: ExecutionItemV3): string | null {
+  if (toolActionLabelKey(item) !== 'execution.v3.activity.run_commands') return null
+  if (item.status === 'running') return 'execution.v3.command_running'
+  if (item.status === 'failed') return 'execution.v3.command_failed'
+  return 'execution.v3.command_completed'
 }
 
 /** A schema-agnostic, redacted view of supplied call arguments for the detail list. */
