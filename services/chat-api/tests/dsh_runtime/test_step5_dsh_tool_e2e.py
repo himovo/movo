@@ -171,7 +171,7 @@ async def _collect(gateway: DshAgentKernelGateway, session_id: str):
     raise AssertionError("turn did not complete")
 
 
-def test_real_dsh_tool_loop_http_mcp_approval_rejection_and_events(tmp_path: Path) -> None:
+def test_real_dsh_tool_loop_http_mcp_without_enterprise_approval(tmp_path: Path) -> None:
     asyncio.run(_run_e2e(tmp_path))
 
 
@@ -399,7 +399,7 @@ async def _run_e2e(tmp_path: Path) -> None:
             ))
             results[prompt] = await asyncio.wait_for(_collect(gateway, session.session_id), timeout=8)
 
-        assert len(_BridgeHandler.tool_calls) == 3
+        assert len(_BridgeHandler.tool_calls) == 4
         assert all(
             "Before calling a tool, briefly explain" in str(call.get("system") or "")
             for call in _BridgeHandler.model_calls
@@ -407,9 +407,11 @@ async def _run_e2e(tmp_path: Path) -> None:
         assert {call["toolName"] for call in _BridgeHandler.tool_calls} == {
             "askai_http_lookup", "askai_mcp_search", "askai_write_publish",
         }
-        assert len(_BridgeHandler.approvals) == 2
-        assert any(event.type == "tool.approval.requested" for event in results["use write"])
-        assert any(event.type == "tool.approval.decided" for event in results["reject write"])
+        assert not _BridgeHandler.approvals
+        assert all(
+            event.type not in {"tool.approval.requested", "tool.approval.decided"}
+            for events in results.values() for event in events
+        )
         assert any(event.type == "tool.call.completed" for event in results["use http"])
         assert all(any(event.type == "agent.message.completed" for event in events) for events in results.values())
     finally:

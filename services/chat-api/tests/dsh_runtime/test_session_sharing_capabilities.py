@@ -57,10 +57,7 @@ from app.dsh_runtime.profile.store import MongoRuntimeProfileStore
 from app.dsh_runtime.profile.tools import MongoToolCatalog, ToolProfileCompiler
 from app.dsh_runtime.runtime_coordinator import RuntimeCoordinator
 from app.dsh_runtime.tool_gateway import ToolGatewayTokenService
-from app.enterprise_capabilities.tools.contracts import (
-    ApprovalAskRequest,
-    ApprovalDecisionRequest,
-)
+from app.enterprise_capabilities.tools.contracts import ApprovalAskRequest
 from app.enterprise_capabilities.tools.repository import EnterpriseToolRepository
 from app.enterprise_capabilities.tools.service import EnterpriseToolService
 
@@ -232,10 +229,8 @@ def capabilities_thread(real_mongo_db, monkeypatch):
             )
         )
 
-    # The participant's approval-REQUIRED tool: an approval gate exists only
-    # for tools whose compiled definition demands one (a plain GET tool
-    # compiles to approval_required=False and request_approval returns
-    # "allowed-once" without creating a row).
+    # A participant-owned POST tool remains visible to its owner. The current
+    # HTTP policy allows it without a per-call approval row.
     harness.run(
         harness.db.external_tools.insert_one(
             {
@@ -888,11 +883,8 @@ def test_run_in_flight_at_removal_completes_and_persists(capabilities_thread):
         monkeypatch.undo()
 
 
-def _approval_setup(harness, ids, session_oid, chat, release, gated_speakers):
-    """A run in flight, paused on an approval gate: the REAL
-    ``EnterpriseToolService`` over the chat profile stack, the binding mid-run
-    with the REAL turn metadata (initiator = the participant speaker), and a
-    pending approval stamped with that initiator."""
+def _tool_turn_setup(harness, ids, session_oid, chat, gated_speakers):
+    """Prepare an in-flight participant turn and its real tool service."""
     participant_id = str(ids[PARTICIPANT])
     gated_speakers.add(participant_id)
     turn = harness.run(
@@ -910,7 +902,7 @@ def _approval_setup(harness, ids, session_oid, chat, release, gated_speakers):
     binding = _current_binding(harness, session_oid)
     assert binding["user_id"] == participant_id
     profile = harness.run(chat._profiles.get(str(binding["profile_version"])))
-    tool = next(t for t in profile.tools if t.approval_required)
+    tool = next(t for t in profile.tools if t.external_tool_id == "tool-b-gate")
     tokens = ToolGatewayTokenService("t18-tool-signing-secret")
     token = tokens.issue(
         tenant_id=TENANT, user_id=participant_id, profile_version=str(binding["profile_version"]),
@@ -921,28 +913,15 @@ def _approval_setup(harness, ids, session_oid, chat, release, gated_speakers):
     return turn, binding, claims, service
 
 
-def _approval_row(harness, action_id: str):
-    return harness.db.enterprise_tool_approvals.find_one({"action_id": action_id})
-
-
-def test_removed_initiator_can_still_decide_the_approval_gate(capabilities_thread, monkeypatch):
-    """(iv + sabotage (d) approval-gated variant): a run paused on an approval
-    gate whose initiator is removed mid-run — the removed initiator can still
-    decide that approval until terminal (the decide gate binds to the STAMP,
-    not to membership), the run reaches terminal and persists, and their
-    write admission stays denied."""
+def test_removed_initiator_does_not_block_unapproved_tool_turn(capabilities_thread, monkeypatch):
+    """A removed speaker's in-flight turn completes without a legacy HTTP approval gate."""
     harness, ids, session_oid, _gateway, chat, release, gated_speakers, _guard_ids, _guard_oid = capabilities_thread
     participant_id = str(ids[PARTICIPANT])
-    turn, binding, claims, service = _approval_setup(harness, ids, session_oid, chat, release, gated_speakers)
+    turn, binding, claims, service = _tool_turn_setup(harness, ids, session_oid, chat, gated_speakers)
     harness.run(service._repository.ensure_indexes())
-    monkeypatch.setattr(dsh_runtime_application, "tools", service)
-    monkeypatch.setattr(dsh_tool_gateway, "_identity", _identity_seam({
-        str(ids[OWNER]): (TENANT, str(ids[OWNER])),
-        participant_id: (TENANT, participant_id),
-    }))
 
     async def scenario():
-        pending = asyncio.create_task(service.request_approval(
+        outcome = await service.request_approval(
             ApprovalAskRequest(
                 profileVersion=str(binding["profile_version"]),
                 sessionId=str(binding["kernel_session_id"]),
@@ -950,24 +929,14 @@ def test_removed_initiator_can_still_decide_the_approval_gate(capabilities_threa
                 timeoutSeconds=2,
             ),
             claims,
-        ))
-        while await _approval_row(harness, "action-gate") is None:
-            await asyncio.sleep(0)
+        )
         await SessionParticipantsRepository(harness.db).remove(
             conversation_id=str(session_oid), tenant_id=TENANT, user_id=participant_id,
         )
-        decided = await dsh_tool_gateway.decide_approval(
-            "action-gate",
-            payload=ApprovalDecisionRequest(decision="approved"),
-            authorization=f"Bearer {participant_id}",
-        )
-        outcome = await pending
-        return decided, outcome
+        return outcome
 
-    decided, outcome = harness.run(scenario())
-    assert decided["data"]["status"] == "approved"
-    assert decided["data"]["decided_by"] == participant_id
-    assert outcome == "allowed-once"
+    assert harness.run(scenario()) == "allowed-once"
+    assert harness.run(harness.db.enterprise_tool_approvals.find_one({"action_id": "action-gate"})) is None
 
     # The run reaches terminal and persists; the write admission stays denied.
     with pytest.raises(LookupError):
@@ -990,20 +959,15 @@ def test_removed_initiator_can_still_decide_the_approval_gate(capabilities_threa
     assert "active_run" not in row
 
 
-def test_approval_deadline_releases_a_removed_initiators_gate(capabilities_thread, monkeypatch):
-    """(iv, deadline variant): the removal does not leave the run permanently
-    locked out — the 300s/900s approval deadline is simulated through durable
-    state (the repository's expire, no real-time waits): the decide fails
-    closed after the deadline and the run still reaches terminal and
-    persists."""
+def test_unapproved_tool_turn_creates_no_deadline_after_removal(capabilities_thread, monkeypatch):
+    """An HTTP tool has no pending gate or deadline when its speaker leaves."""
     harness, ids, session_oid, _gateway, chat, release, gated_speakers, _guard_ids, _guard_oid = capabilities_thread
     participant_id = str(ids[PARTICIPANT])
-    turn, binding, claims, service = _approval_setup(harness, ids, session_oid, chat, release, gated_speakers)
+    turn, binding, claims, service = _tool_turn_setup(harness, ids, session_oid, chat, gated_speakers)
     harness.run(service._repository.ensure_indexes())
-    monkeypatch.setattr(dsh_runtime_application, "tools", service)
 
     async def scenario():
-        pending = asyncio.create_task(service.request_approval(
+        approval_outcome = await service.request_approval(
             ApprovalAskRequest(
                 profileVersion=str(binding["profile_version"]),
                 sessionId=str(binding["kernel_session_id"]),
@@ -1011,19 +975,16 @@ def test_approval_deadline_releases_a_removed_initiators_gate(capabilities_threa
                 timeoutSeconds=2,
             ),
             claims,
-        ))
-        while await _approval_row(harness, "action-deadline") is None:
-            await asyncio.sleep(0)
+        )
         await SessionParticipantsRepository(harness.db).remove(
             conversation_id=str(session_oid), tenant_id=TENANT, user_id=participant_id,
         )
         expired = await service._repository.expire("action-deadline")
-        approval_outcome = await pending
         return expired, approval_outcome
 
     expired, approval_outcome = harness.run(scenario())
-    assert expired is not None and expired.status == "expired"
-    assert approval_outcome == "rejected"
+    assert expired is None
+    assert approval_outcome == "allowed-once"
     row = harness.run(harness.db.chat_sessions.find_one({"_id": session_oid}))
     assert row["active_run"]["status"] == "running"
 
