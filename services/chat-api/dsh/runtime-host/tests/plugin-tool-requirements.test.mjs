@@ -12,5 +12,6 @@ test('ordinary sessions omit only tools whose declared workspace prerequisite is
   }]
   assert.deepEqual(eligibleEnterpriseTools(names, plugins, { hasWorkspace: false }),
     ['run_script', 'other_tool'])
-  assert.deepEqual(eligibleEnterpriseTools(names, plugins, { hasWorkspace: true }), names)
+  assert.deepEqual(eligibleEnterpriseTools(names, plugins, { hasWorkspace: true }),
+    [...names, 'present'])
 })
