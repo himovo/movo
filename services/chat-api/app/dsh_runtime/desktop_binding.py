@@ -291,11 +291,7 @@ class DesktopCodeBindingService:
         ]
         if completed:
             return completed[-1]
-        return "".join(
-            str((event.get("payload") or {}).get("text") or "")
-            for event in events
-            if event.get("type") == "item.delta" and event.get("item_kind") == "final_answer"
-        )
+        return ""
 
     @staticmethod
     def _assert_same(binding: dict[str, Any], identity: DesktopSessionIdentity) -> None:

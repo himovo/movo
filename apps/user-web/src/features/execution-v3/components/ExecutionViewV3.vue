@@ -107,7 +107,7 @@ function toggle() {
           :status-items="entry.statusItems"
           :run-status="store.state.runStatus"
         />
-        <CommentaryItem v-else-if="entry.item.kind === 'commentary'" :item="entry.item" />
+        <CommentaryItem v-else-if="entry.item.kind === 'commentary'" v-show="!collapsed" :item="entry.item" />
         <ProvisionalAssistantItem v-else-if="entry.item.kind === 'final_answer'" :item="entry.item" />
         <ActivityItem
           v-else

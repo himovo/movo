@@ -144,6 +144,16 @@ def test_desktop_turn_projection_persists_ordered_v3_history_and_terminal_state(
     asyncio.run(run())
 
 
+def test_desktop_projection_never_uses_unclassified_deltas_as_answer() -> None:
+    events = [
+        {"type": "item.delta", "item_kind": "final_answer", "payload": {"text": "Inspecting files."}},
+        {"type": "item.completed", "item_kind": "commentary", "payload": {"text": "Inspecting files."}},
+    ]
+    assert DesktopCodeBindingService._final_content(events) == ""
+    events.append({"type": "item.completed", "item_kind": "final_answer", "payload": {"text": "Summary."}})
+    assert DesktopCodeBindingService._final_content(events) == "Summary."
+
+
 def test_desktop_cancel_turn_recovers_a_stale_server_running_state_idempotently() -> None:
     async def run():
         existing = {
