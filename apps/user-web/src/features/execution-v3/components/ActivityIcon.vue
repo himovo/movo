@@ -4,9 +4,9 @@ import { NIcon } from 'naive-ui'
 import {
   AlertCircleOutline,
   BulbOutline,
-  BuildOutline,
   ConstructOutline,
   DocumentOutline,
+  FlashOutline,
   GlobeOutline,
   LockClosedOutline,
   PeopleOutline,
@@ -33,7 +33,8 @@ const icons: Record<string, Component> = {
   repair: ConstructOutline,
   visual: SparklesOutline,
   skill: SparklesOutline,
-  tool: BuildOutline,
+  tool: FlashOutline,
+  'execution.v3.activity.call_tools': FlashOutline,
   'execution.v3.activity.read_files': DocumentOutline,
   'execution.v3.activity.edit_files': PencilOutline,
   'execution.v3.activity.run_commands': TerminalOutline,
@@ -49,7 +50,7 @@ const icons: Record<string, Component> = {
   browser_handoff: LockClosedOutline,
 }
 
-const icon = computed(() => icons[String(props.category || props.kind || 'tool')] || BuildOutline)
+const icon = computed(() => icons[String(props.category || props.kind || 'tool')] || FlashOutline)
 </script>
 
 <template>
