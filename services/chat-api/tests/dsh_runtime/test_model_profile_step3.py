@@ -23,6 +23,7 @@ from app.dsh_runtime.profile import (
     RuntimeProfileSnapshot,
 )
 from app.llm.base import BaseLLMClient
+from app.dsh_runtime.profile.skills.models import DshSkillDefinition, WritingStyleDefinition
 from app.llm.types import LLMResponse, Message, Role
 
 
@@ -171,6 +172,40 @@ def test_historical_desktop_profile_survives_additive_plugin_install_only() -> N
     })
     assert not old.is_execution_compatible_with(changed)
     assert not old.is_execution_compatible_with(added.model_copy(update={"model_name": "another-model"}))
+
+
+def test_historical_desktop_profile_survives_additive_skill_install_only() -> None:
+    base = asyncio.run(ModelProfileCompiler(FakeCatalog()).compile(tenant_id="tenant-a"))
+    skill = DshSkillDefinition(
+        name="new-skill", version="skill-v2", source_id="new-1",
+        source_scope="personal", kind="ordinary", description="New skill",
+        content="Use this skill when requested.",
+    )
+    added = base.model_copy(update={
+        "skills": (*base.skills, skill),
+        "skill_versions": (*base.skill_versions, skill.version),
+    })
+    assert base.is_execution_compatible_with(added)
+    assert not added.is_execution_compatible_with(base)
+    changed = added.model_copy(update={"skills": (*base.skills, skill.model_copy(update={"content": "Changed"}))})
+    assert not added.is_execution_compatible_with(changed)
+
+
+def test_historical_desktop_profile_survives_other_additive_capabilities() -> None:
+    base = asyncio.run(ModelProfileCompiler(FakeCatalog()).compile(tenant_id="tenant-a"))
+    style = WritingStyleDefinition(
+        ref="style-" + "a" * 24, version="style-v1", source_id="style-1",
+        source_scope="personal", name="New style", instructions="Write clearly.",
+    )
+    additions = {
+        "tool_versions": (*base.tool_versions, "new-tool-v1"),
+        "workflow_versions": (*base.workflow_versions, "new-workflow-v1"),
+        "writing_styles": (*base.writing_styles, style),
+    }
+    expanded = base.model_copy(update=additions)
+    assert base.is_execution_compatible_with(expanded)
+    assert not expanded.is_execution_compatible_with(base)
+    assert not base.is_execution_compatible_with(expanded.model_copy(update={"model_name": "different"}))
 
 
 async def _test_profile_compile_publish_rollback_disable_and_secret_exclusion() -> None:

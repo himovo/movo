@@ -53,19 +53,25 @@ class RuntimeProfileSnapshot(BaseModel):
     def is_execution_compatible_with(self, other: "RuntimeProfileSnapshot") -> bool:
         historical = self.execution_payload()
         current = other.execution_payload()
-        historical_plugins = historical.pop("plugins")
-        current_plugins = current.pop("plugins")
-        historical_versions = historical.pop("plugin_versions")
-        current_versions = current.pop("plugin_versions")
+        additive_fields = (
+            "tools", "tool_versions", "skills", "skill_versions",
+            "workflow_versions", "writing_styles", "plugins", "plugin_versions",
+        )
+        historical_additions = {key: historical.pop(key) for key in additive_fields}
+        current_additions = {key: current.pop(key) for key in additive_fields}
         if historical != current:
             return False
-        # A newly available plugin must not invalidate an existing task. The
-        # resumed task keeps its original profile; changed or removed plugins
-        # still fail this check, so their old permissions cannot be revived.
-        if not Counter(historical_versions) <= Counter(current_versions):
-            return False
-        plugin_key = lambda plugin: json.dumps(plugin, sort_keys=True, ensure_ascii=False)
-        return Counter(map(plugin_key, historical_plugins)) <= Counter(map(plugin_key, current_plugins))
+        # The resumed task retains its immutable historical profile. Newly
+        # available capabilities do not change it, while removal or mutation
+        # of a previously granted capability still fails closed.
+        def key(value: object) -> str:
+            return json.dumps(value, sort_keys=True, ensure_ascii=False)
+
+        return all(
+            Counter(map(key, historical_additions[field]))
+            <= Counter(map(key, current_additions[field]))
+            for field in additive_fields
+        )
 
     def host_payload(
         self,
