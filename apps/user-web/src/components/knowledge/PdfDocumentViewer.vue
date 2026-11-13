@@ -48,6 +48,7 @@ const currentPage = ref(1)
 const zoom = ref(1)
 const canvasRefs = new Map<number, HTMLCanvasElement>()
 const renderTasks = new Map<number, any>()
+const renderQueues = new Map<number, Promise<void>>()
 const PAGE_BATCH_SIZE = 3
 let loadingTask: any = null
 let pdfDocument: any = null
@@ -114,11 +115,23 @@ async function loadNextBatch() {
   }
 }
 
-async function renderPage(pageNumber: number) {
+function renderPage(pageNumber: number): Promise<void> {
+  const previous = renderQueues.get(pageNumber) || Promise.resolve()
+  const sequence = loadSequence
+  const next = previous.catch(() => {}).then(() => renderPageOnce(pageNumber, sequence))
+  renderQueues.set(pageNumber, next)
+  void next.finally(() => {
+    if (renderQueues.get(pageNumber) === next) renderQueues.delete(pageNumber)
+  }).catch(() => {})
+  return next
+}
+
+async function renderPageOnce(pageNumber: number, sequence: number) {
+  if (sequence !== loadSequence) return
   const canvas = canvasRefs.get(pageNumber)
   if (!pdfDocument || !canvas || !viewportRef.value) return
-  try { renderTasks.get(pageNumber)?.cancel?.() } catch {}
   const page = await pdfDocument.getPage(pageNumber)
+  if (sequence !== loadSequence || canvasRefs.get(pageNumber) !== canvas) return
   const baseViewport = page.getViewport({ scale: 1 })
   const availableWidth = Math.max(240, viewportRef.value.clientWidth - 32)
   const fitScale = Math.min(1.5, availableWidth / baseViewport.width)
@@ -191,6 +204,7 @@ async function destroyDocument() {
     try { task?.cancel?.() } catch {}
   }
   renderTasks.clear()
+  renderQueues.clear()
   const task = loadingTask
   const document = pdfDocument
   loadingTask = null
@@ -199,7 +213,7 @@ async function destroyDocument() {
   try { await document?.destroy?.() } catch {}
 }
 
-watch(() => [props.url, props.httpHeaders?.Authorization], () => { void loadDocument() })
+watch([() => props.url, () => props.httpHeaders?.Authorization], () => { void loadDocument() })
 watch(loadMoreRef, (element) => {
   loadMoreObserver?.disconnect()
   if (element) loadMoreObserver?.observe(element)
