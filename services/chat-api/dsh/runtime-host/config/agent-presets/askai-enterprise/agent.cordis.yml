@@ -24,3 +24,8 @@
 # answer surface through the Runtime Host rather than duplicating the tool.
 - id: tool-ask-user
   name: '@deepseek-ai/dsh-tool-ask-user'
+
+- id: tool-present
+  name: '@deepseek-ai/dsh-tool-present'
+  config:
+    maxFiles: 8

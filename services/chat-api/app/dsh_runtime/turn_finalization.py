@@ -75,7 +75,7 @@ class TurnStateFinalizer:
         if assistant is not None:
             delivered = None
             try:
-                delivered = await deliver_personal_outputs(binding)
+                delivered = await deliver_personal_outputs(binding, message_id)
             except Exception:
                 logger.exception("failed to publish personal workspace outputs")
             await self._step(

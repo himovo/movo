@@ -1,49 +1,95 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from types import SimpleNamespace
+import asyncio
 
-from app.dsh_runtime.personal_output_delivery import _candidates
-from app.execution_isolation.personal_space import conversation_space_key, personal_space_key
+from app.dsh_runtime import personal_output_delivery as delivery
+from app.dsh_runtime.presented_output_selection import selected_paths
+from app.execution_isolation.personal_space import conversation_space_key
 
 
-def test_only_current_user_conversation_outputs_are_delivered(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setenv("MOVO_SANDBOX_WORKSPACE_ROOT", str(tmp_path))
-    started = datetime.now(timezone.utc) - timedelta(minutes=1)
-    binding = {
-        "execution_location": "server", "tenant_id": "tenant", "user_id": "alice",
-        "conversation_id": "chat", "active_turn": {"started_at": started},
+def _present(*paths: str) -> dict:
+    return {
+        "source": {"native_event_type": "deliverables/presented"},
+        "payload": {"files": [{"path": path} for path in paths]},
     }
-    conversation = (tmp_path / "personal" / personal_space_key("tenant", "alice") /
-                    "conversations" / conversation_space_key("chat"))
-    conversation.mkdir(parents=True)
-    report = conversation / "report.docx"
-    report.write_bytes(b"report")
-    script = conversation / "result.py"
-    script.write_text("print('ready')")
-    internal = conversation / "outputs" / "script-call" / "other.docx"
-    internal.parent.mkdir(parents=True)
-    internal.write_bytes(b"script result")
-    uploaded = conversation / "inputs" / "message" / "0-upload.docx"
-    uploaded.parent.mkdir(parents=True)
-    uploaded.write_bytes(b"upload")
-    other = (tmp_path / "personal" / personal_space_key("tenant", "bob") /
-             "conversations" / conversation_space_key("chat") / "private.docx")
-    other.parent.mkdir(parents=True)
-    other.write_bytes(b"private")
-    assert _candidates(binding) == [report, script]
 
 
-def test_symlinked_conversation_cannot_publish_files_outside_personal_space(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setenv("MOVO_SANDBOX_WORKSPACE_ROOT", str(tmp_path))
-    binding = {
-        "execution_location": "server", "tenant_id": "tenant", "user_id": "alice",
-        "conversation_id": "chat", "active_turn": {"started_at": datetime.now(timezone.utc)},
-    }
-    outside = tmp_path / "outside"
-    outside.mkdir()
-    (outside / "secret.txt").write_text("private")
-    personal = tmp_path / "personal" / personal_space_key("tenant", "alice") / "conversations"
-    personal.mkdir(parents=True)
-    (personal / conversation_space_key("chat")).symlink_to(outside, target_is_directory=True)
-    assert _candidates(binding) == []
+def test_only_explicitly_presented_files_are_selected(tmp_path: Path) -> None:
+    conversation = tmp_path / "conversation"
+    conversation.mkdir()
+    final = conversation / "report.html"
+    final.write_text("final")
+    (conversation / "probe.html").write_text("probe")
+    (conversation / "notes.txt").write_text("notes")
+
+    events = [_present("report.html"), _present("report.html")]
+    assert selected_paths(events, conversation, "chat") == [final]
+    assert selected_paths([], conversation, "chat") == []
+
+
+def test_multiple_declared_formats_preserve_order(tmp_path: Path) -> None:
+    conversation = tmp_path / "conversation"
+    conversation.mkdir()
+    html = conversation / "report.html"
+    pdf = conversation / "report.pdf"
+    html.write_text("html")
+    pdf.write_bytes(b"pdf")
+    ignored = {"source": {"native_event_type": "tool/result"},
+               "payload": {"files": [{"path": "draft.txt"}]}}
+    assert selected_paths([ignored, _present("report.html", "report.pdf")], conversation, "chat") == [html, pdf]
+
+
+def test_presented_paths_must_stay_inside_conversation(tmp_path: Path) -> None:
+    conversation = tmp_path / "conversation"
+    conversation.mkdir()
+    final = conversation / "final.pdf"
+    final.write_bytes(b"final")
+    outside = tmp_path / "outside.pdf"
+    outside.write_bytes(b"outside")
+    try:
+        (conversation / "link.pdf").symlink_to(outside)
+    except OSError:
+        pass
+    key = conversation_space_key("chat")
+    runtime_path = f"/job/home/conversations/{key}/final.pdf"
+    events = [
+        _present("../outside.pdf", str(outside), "link.pdf", "missing.pdf"),
+        _present(runtime_path),
+    ]
+    assert selected_paths(events, conversation, "chat") == [final]
+
+
+def test_delivery_uses_only_persisted_present_events(tmp_path: Path, monkeypatch) -> None:
+    final = tmp_path / "final.html"
+    final.write_text("final")
+    (tmp_path / "probe.html").write_text("probe")
+
+    class Cursor:
+        def sort(self, *_args):
+            return self
+
+        async def __aiter__(self):
+            yield {"kernel_event": _present("final.html")}
+
+    class Collection:
+        def find(self, query, _projection):
+            assert query["message_id"] == "message"
+            assert query["kernel_event.source.native_event_type"] == "deliverables/presented"
+            return Cursor()
+
+    class Storage:
+        def upload_bytes_with_path(self, *, content, user_id, file_name, content_type):
+            assert content == b"final"
+            return "signed", f"user/{file_name}"
+
+        def sign_url(self, _path):
+            return "signed"
+
+    monkeypatch.setattr(delivery, "_conversation_root", lambda _binding: tmp_path)
+    monkeypatch.setattr(delivery, "get_db", lambda: SimpleNamespace(kernel_event_inbox=Collection()))
+    monkeypatch.setattr(delivery, "AliyunOSSUploader", Storage)
+    binding = {"execution_location": "server", "tenant_id": "tenant", "user_id": "user", "conversation_id": "chat"}
+    documents = asyncio.run(delivery.deliver_personal_outputs(binding, "message"))
+    assert [item["filename"] for item in documents] == ["final.html"]

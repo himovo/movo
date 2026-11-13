@@ -1,15 +1,16 @@
-"""Publish files written by server DSH plugins into the conversation."""
+"""Publish explicitly presented server Session files into the conversation."""
 
 from __future__ import annotations
 
 import asyncio
 import mimetypes
 import os
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from app.execution_isolation.personal_space import conversation_space_key, personal_space_key
+from app.core.db import get_db
+from app.dsh_runtime.presented_output_selection import selected_paths
 from app.utils.oss_uploader import AliyunOSSUploader
 
 
@@ -18,53 +19,27 @@ MAX_FILE_BYTES = 50 * 1024 * 1024
 MAX_TOTAL_BYTES = 256 * 1024 * 1024
 
 
-def _started_at(binding: dict[str, Any]) -> float | None:
-    started = (binding.get("active_turn") or {}).get("started_at")
-    if not isinstance(started, datetime):
-        return None
-    if started.tzinfo is None:
-        started = started.replace(tzinfo=timezone.utc)
-    return started.timestamp() - 2
-
-
-def _candidates(binding: dict[str, Any]) -> list[Path]:
+def _conversation_root(binding: dict[str, Any]) -> Path | None:
     if binding.get("execution_location") != "server":
-        return []
-    since = _started_at(binding)
-    if since is None:
-        return []
+        return None
     root = Path(os.environ.get("MOVO_SANDBOX_WORKSPACE_ROOT", "/workspaces"))
     personal_root = (root / "personal" /
                      personal_space_key(str(binding["tenant_id"]), str(binding["user_id"])))
     conversation = personal_root / "conversations" / conversation_space_key(str(binding["conversation_id"]))
     if not conversation.is_dir() or not conversation.resolve().is_relative_to(personal_root.resolve()):
-        return []
-    files: list[Path] = []
-    total = 0
-    for path in sorted(conversation.rglob("*")):
-        relative = path.relative_to(conversation)
-        if relative.parts[0] in {"inputs", "outputs"} or any(part.startswith(".") for part in relative.parts):
-            continue
-        if path.is_symlink() or not path.is_file():
-            continue
-        if not path.resolve().is_relative_to(conversation.resolve()):
-            continue
-        metadata = path.stat()
-        if metadata.st_mtime < since:
-            continue
-        if metadata.st_size > MAX_FILE_BYTES:
-            continue
-        if total + metadata.st_size > MAX_TOTAL_BYTES or len(files) >= MAX_DELIVERED_FILES:
-            break
-        total += metadata.st_size
-        files.append(path)
-    return files
+        return None
+    return conversation
 
 
-def _publish(binding: dict[str, Any]) -> list[dict[str, Any]]:
+def _publish(binding: dict[str, Any], files: list[Path]) -> list[dict[str, Any]]:
     storage = AliyunOSSUploader()
     documents: list[dict[str, Any]] = []
-    for path in _candidates(binding):
+    total = 0
+    for path in files[:MAX_DELIVERED_FILES]:
+        size = path.stat().st_size
+        if size > MAX_FILE_BYTES or total + size > MAX_TOTAL_BYTES:
+            continue
+        total += size
         content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
         signed_url, object_path = storage.upload_bytes_with_path(
             content=path.read_bytes(),
@@ -77,14 +52,23 @@ def _publish(binding: dict[str, Any]) -> list[dict[str, Any]]:
             "filename": path.name,
             "title": path.name,
             "content_type": content_type,
-            "size": path.stat().st_size,
+            "size": size,
             "url": storage.sign_url(object_path) or signed_url,
             "object_path": object_path,
         })
     return documents
 
 
-async def deliver_personal_outputs(binding: dict[str, Any]) -> list[dict[str, Any]]:
-    if binding.get("execution_location") != "server":
+async def deliver_personal_outputs(binding: dict[str, Any], message_id: str) -> list[dict[str, Any]]:
+    conversation = _conversation_root(binding)
+    if conversation is None:
         return []
-    return await asyncio.to_thread(_publish, binding)
+    cursor = get_db().kernel_event_inbox.find({
+        "tenant_id": str(binding["tenant_id"]),
+        "user_id": str(binding["user_id"]),
+        "message_id": message_id,
+        "kernel_event.source.native_event_type": "deliverables/presented",
+    }, {"kernel_event": 1}).sort("cursor", 1)
+    events = [row["kernel_event"] async for row in cursor]
+    files = selected_paths(events, conversation, str(binding["conversation_id"]))
+    return await asyncio.to_thread(_publish, binding, files)

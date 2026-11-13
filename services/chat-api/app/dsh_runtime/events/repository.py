@@ -61,6 +61,11 @@ class KernelEventRepository:
     async def ensure_indexes(self) -> None:
         await self._inbox.create_index([("kernel_session_id", 1), ("cursor", 1)], unique=True)
         await self._inbox.create_index("event_id", unique=True)
+        await self._inbox.create_index(
+            [("tenant_id", 1), ("message_id", 1),
+             ("kernel_event.source.native_event_type", 1), ("cursor", 1)],
+            name="presented_files_by_message",
+        )
         await self._projections.create_index("event_id", unique=True)
         await self._projections.create_index(
             [("tenant_id", 1), ("user_id", 1), ("message_id", 1), ("stream_seq", 1)]

@@ -37,6 +37,7 @@ function hostRows({ askaiPresetRoot, shippedPresetRoot, storageDomainRoot, hostF
           { id: 'tool-web', name: '@deepseek-ai/dsh-tool-web', config: { fetch: false, searchMaxResults: 8, searchTimeoutMs: 60000 } },
           { id: 'tool-skill', name: '@deepseek-ai/dsh-tool-skill' },
           { id: 'tool-ask-user', name: '@deepseek-ai/dsh-tool-ask-user' },
+          { id: 'tool-present', name: '@deepseek-ai/dsh-tool-present', config: { maxFiles: 8 } },
         ],
       },
     }] : []),

@@ -18,7 +18,9 @@ test('server conversation gets a durable cwd that survives runtime restart', asy
   let runtime = createRuntime()
   try {
     await runtime.start()
-    await runtime.createSession({ sessionId: 'conversation', personalConversationKey: key })
+    const session = await runtime.createSession({ sessionId: 'conversation', personalConversationKey: key })
+    assert.ok(session.capabilityTools.includes('present'))
+    assert.ok(session.modelTools.includes('present'))
     assert.equal((await stat(join(root, 'personal', 'conversations', key))).isDirectory(), true)
     await runtime.dispose()
     runtime = createRuntime()

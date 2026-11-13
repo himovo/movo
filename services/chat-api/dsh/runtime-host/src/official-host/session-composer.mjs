@@ -34,7 +34,7 @@ export function enterpriseToolNames(modelProfile) {
 }
 
 export function eligibleEnterpriseTools(enterpriseTools, plugins, { hasWorkspace }) {
-  if (hasWorkspace) return [...enterpriseTools]
+  if (hasWorkspace) return [...new Set([...enterpriseTools, 'present'])]
   const workspaceRequired = new Set((plugins ?? []).flatMap(plugin =>
     Object.entries(plugin.tool_requirements ?? {})
       .filter(([, requirements]) => requirements.includes('workspace'))
