@@ -47,6 +47,7 @@ supported_releases:
     old_session_resume: verified
     status: production
   - dsh_release_train: 0.2.1-alpha.1
+    source_ref: 89c58e78147ed54fd6f1f63d2a9c7ab078373b36
     node_runtime: "^22.19.0 || >=24.0.0"
     host_protocol: askai.dsh-host.v1
     host_overlay: askai-dsh-host-v2
@@ -58,7 +59,7 @@ supported_releases:
     host_protocol: askai.dsh-host.v1
     host_overlay: askai-dsh-host-v1
     old_session_resume: verified
-    status: rollback
+    status: legacy
   - dsh_release_train: 0.1.2-alpha.2
     source_ref: 62e054f09aef9e052d424cd904c00a5fd05ea0d6
     node_runtime: "^22.19.0 || >=24.0.0"
