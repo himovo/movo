@@ -14,6 +14,7 @@ import {
   SearchOutline,
   ShieldCheckmarkOutline,
   SparklesOutline,
+  TerminalOutline,
 } from '@vicons/ionicons5'
 
 const props = defineProps<{ category?: string; kind?: string }>()
@@ -33,6 +34,14 @@ const icons: Record<string, Component> = {
   visual: SparklesOutline,
   skill: SparklesOutline,
   tool: BuildOutline,
+  'execution.v3.activity.read_files': DocumentOutline,
+  'execution.v3.activity.edit_files': PencilOutline,
+  'execution.v3.activity.run_commands': TerminalOutline,
+  'execution.v3.activity.search_code': SearchOutline,
+  'execution.v3.activity.use_browser': GlobeOutline,
+  'execution.v3.activity.search_web': GlobeOutline,
+  'execution.v3.activity.install_skill': SparklesOutline,
+  'execution.v3.activity.update_plan': DocumentOutline,
   subagent: PeopleOutline,
   approval: LockClosedOutline,
   warning: AlertCircleOutline,

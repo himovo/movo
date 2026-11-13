@@ -67,7 +67,7 @@ const detail = computed(() => props.item.kind === 'tool' ? toolCallSummary(props
 
 <template>
   <div v-if="text" class="activity-row" :class="[`category-${category}`, `status-${item.kind === 'tool' && item.status === 'failed' ? 'completed' : item.status}`, `outcome-${item.kind === 'tool' && item.status === 'failed' ? 'none' : outcome || 'none'}`, { 'actively-running': activelyRunning, 'tool-activity-row': item.kind === 'tool' }]">
-    <ActivityIcon :category="category" :kind="item.kind" />
+    <ActivityIcon :category="item.kind === 'tool' ? toolActionLabelKey(item) : category" :kind="item.kind" />
     <span class="activity-copy">{{ text }}</span>
     <span v-if="detail" class="activity-detail">{{ detail }}</span>
     <span v-if="stateText" class="activity-state">{{ stateText }}</span>

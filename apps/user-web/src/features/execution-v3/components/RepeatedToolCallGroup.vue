@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { ExecutionItemV3 } from '../domain/model'
-import { toolCallSummary, toolName } from '../domain/repeatedToolCalls'
+import { toolActionLabelKey, toolCallSummary, toolName } from '../domain/repeatedToolCalls'
 import { t } from '../../../composables/i18n'
 import { localizedInternalToolLabel } from '../domain/internalToolLabels'
 import type { ExecutionStateV3 } from '../domain/model'
@@ -13,6 +13,10 @@ const expanded = ref(false)
 const isRunning = computed(() => props.statusItems.some(item => item.status === 'running'))
 const showsProgress = computed(() => isRunning.value)
 const activeTool = computed(() => [...props.items].reverse().find(item => item.status === 'running'))
+const groupIconCategory = computed(() => {
+  const categories = new Set(props.items.map(toolActionLabelKey))
+  return categories.size === 1 ? [...categories][0] : 'tool'
+})
 const localizedToolName = (item: ExecutionItemV3) => localizedInternalToolLabel(item.payload?.name, toolName(item))
 const label = computed(() => activeTool.value
   ? t('execution.v3.tool_group_running', { name: localizedToolName(activeTool.value) })
@@ -26,13 +30,13 @@ function syncExpanded(event: Event) {
 <template>
   <details class="repeated-tool-group" :open="expanded" @toggle="syncExpanded">
     <summary :class="{ running: showsProgress }">
-      <ActivityIcon category="tool" kind="tool" />
+      <ActivityIcon :category="groupIconCategory" kind="tool" />
       <span class="repeated-tool-label" :role="showsProgress ? 'status' : undefined" :aria-label="showsProgress ? `${label}${t('execution.v3.activity_separator')}${t('execution.v3.processing')}` : undefined">{{ label }}</span>
       <svg class="repeated-tool-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m5 3 5 5-5 5" /></svg>
     </summary>
     <ol>
       <li v-for="item in items" :key="item.id" :class="`status-${item.status}`">
-        <ActivityIcon category="tool" kind="tool" />
+        <ActivityIcon :category="toolActionLabelKey(item)" kind="tool" />
         <span class="tool-call-name">{{ localizedToolName(item) }}</span>
         <span class="tool-call-summary">{{ toolCallSummary(item) || t(item.status === 'running' ? 'execution.v3.processing' : 'execution.v3.tool_call_completed') }}</span>
         <ToolErrorDetails v-if="item.status === 'failed' && item.payload?.error" :error="String(item.payload.error)" />
