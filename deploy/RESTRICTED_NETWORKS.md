@@ -51,6 +51,29 @@ a differently named copy is not considered a cache hit.
 Run `./movo --lang zh-CN up` after import. Missing-image errors name the reference
 that must be imported. Importing the installer alone does not import its images.
 
+## Troubleshooting first-run setup
+
+After importing the images, the setup wizard needs to reach the deployment's
+internal services and the model endpoint you configure. To use a model hosted
+on your LAN, enter an address reachable from the `admin-api` container. A
+loopback address such as `127.0.0.1` points to that container, so use the LAN
+model server's address or a DNS name that resolves inside the container. Skip
+optional Web search if no search provider is reachable from the deployment.
+
+If the wizard shows HTTP 500 when you finish setup, reproduce the error once and
+run these commands from the deployment directory:
+
+```bash
+./movo status
+./movo logs --since 10m --tail 200 admin-api
+```
+
+Use the container status and the traceback near the time of the request to
+identify the failing step. When asking for help, include the MOVO version or
+image tag, the affected setup step, and the relevant log excerpt. Remove API
+keys, passwords, authorization headers, and private endpoint details before
+sharing.
+
 ## Versioned offline bundles
 
 New enterprise deployment archives include the offline preparation tools. On a
