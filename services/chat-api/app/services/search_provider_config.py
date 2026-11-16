@@ -15,6 +15,7 @@ PROVIDER_PRIORITIES = {
     "serpapi": 30,
     "baidu_qianfan": 40,
     "volc_ark": 50,
+    "specstream": 60,
 }
 SUPPORTED_PROVIDERS = set(PROVIDER_PRIORITIES)
 

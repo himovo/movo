@@ -3,6 +3,7 @@ import { auditExportMessages } from './modules/auditExport';
 import { additionalMessages } from './additionalMessages';
 import { uncoveredMessages } from './uncoveredMessages';
 import { deepseekSearchMessages } from './modules/deepseekSearch';
+import { specstreamSearchMessages } from './modules/specstreamSearch';
 import { schemaDescriptionMessages } from './schemaDescriptionMessages';
 import { sandboxSettingsMessages } from './modules/sandboxSettings';
 import { deploymentStatusMessages } from './modules/deploymentStatus';
@@ -24,6 +25,7 @@ export const messages = {
   ...uncoveredMessages,
   ...additionalMessages,
   ...deepseekSearchMessages,
+  ...specstreamSearchMessages,
   ...schemaDescriptionMessages,
   ...sandboxSettingsMessages,
   ...deploymentStatusMessages,

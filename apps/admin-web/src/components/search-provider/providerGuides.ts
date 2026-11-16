@@ -1,4 +1,4 @@
-export type SearchProviderId = 'deepseek' | 'tavily' | 'serper' | 'serpapi' | 'baidu_qianfan' | 'volc_ark';
+export type SearchProviderId = 'deepseek' | 'tavily' | 'serper' | 'serpapi' | 'baidu_qianfan' | 'volc_ark' | 'specstream';
 
 export interface SearchProviderGuide {
   url: string;
@@ -33,6 +33,11 @@ export const searchProviderGuides: Record<SearchProviderId, SearchProviderGuide>
     url: 'https://console.volcengine.com/ark/region:ark+cn-beijing/apikey',
     steps: ['legacy.sign_in_to_volcengine_ark_and_create_an_api', 'legacy.create_an_application_bot_with_web_access_enabled', 'legacy.enter_the_api_key_and_the_bot_application_id'],
     note: 'legacy.an_api_key_alone_is_not_enough_enter_a',
+  },
+  specstream: {
+    url: 'https://specstream.ai/workspace',
+    steps: ['search.specstream.signIn', 'search.specstream.createKey', 'search.specstream.test'],
+    note: 'search.specstream.billing',
   },
 };
 
