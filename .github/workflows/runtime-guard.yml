@@ -87,7 +87,8 @@ jobs:
           PYTHONPATH=services/admin-api python -m pytest -q \
             services/admin-api/tests/test_product_edition.py \
             services/admin-api/tests/test_employee_credentials.py \
-            services/admin-api/tests/test_setup_repository_lock.py
+            services/admin-api/tests/test_setup_repository_lock.py \
+            services/admin-api/tests/test_setup_quota.py
           PYTHONPATH=services/chat-api python -m pytest -q \
             services/chat-api/tests/core/test_product_edition.py
       - name: Validate prebuilt-image Compose
