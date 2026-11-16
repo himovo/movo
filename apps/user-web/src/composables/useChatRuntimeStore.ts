@@ -167,6 +167,7 @@ export type ChatRuntimePane = {
   /** T8: transient top-of-conversation notice for a manual-only 409; the ONLY
    *  writer is notifySessionBusy. Never appended to `messages`. */
   busyNotice: string | null
+  quotaNotice: 'enterprise' | 'personal' | null
   /** T8: monotonic token so a re-trigger resets the auto-dismiss timer. */
   busyNoticeToken: number
   /** T8: pre-header session execution buffer (200 rows / 256 KiB caps). */
@@ -290,6 +291,7 @@ function createPane(input: { key?: string; sessionId: string | null; messages?: 
     localPostPending: false,
     localPostMessageId: null,
     busyNotice: null,
+    quotaNotice: null,
     busyNoticeToken: 0,
     preHeader: createPreHeaderBufferState<SessionLiveExecutionEvent>(),
     pendingForeign: createPreHeaderBufferState<SessionLiveExecutionEvent>(),
@@ -744,15 +746,17 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
     if (pane.operationId !== operationId) return
     const remaining = Number(quota.data?.remainingPoints || 0)
     if (!quota.ok || remaining <= 0) {
+      if (!quota.ok) {
+        pane.messages.push({ _id: nextMessageId(), role: 'assistant', content: chatRuntimeMessages.requestFailed[input.locale] })
+        setPaneRunning(pane, false)
+        return
+      }
       const isEnterprise = quota.data?.spaceType === 'enterprise'
-      pane.messages.push({
-        _id: nextMessageId(),
-        role: 'assistant',
-        content: chatRuntimeMessages[isEnterprise ? 'enterpriseQuota' : 'personalQuota'][input.locale],
-      })
+      pane.quotaNotice = isEnterprise ? 'enterprise' : 'personal'
       setPaneRunning(pane, false)
       return
     }
+    pane.quotaNotice = null
 
     uploadedImages = await uploadImages(input.userId, input.images, input.authToken)
     if (pane.operationId !== operationId) return

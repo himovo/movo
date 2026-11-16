@@ -340,6 +340,11 @@ async def desktop_runtime_profile(
             model_instance_id=str(payload.model_id or "").strip() or None,
             requested_profile_version=str(payload.profile_version or "").strip() or None,
         )
+    except QuotaExceededError as exc:
+        raise HTTPException(
+            status_code=402,
+            detail={"code": "quota_exhausted", "message": str(exc)},
+        ) from exc
     except PermissionError as exc:
         raise HTTPException(
             status_code=403,

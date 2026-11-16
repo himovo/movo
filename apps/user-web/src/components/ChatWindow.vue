@@ -7,6 +7,8 @@ import CodeHistoryRestoringNotice from './code/CodeHistoryRestoringNotice.vue'
 import CodeDraftContextBar from './code/CodeDraftContextBar.vue'
 import CodePermissionPicker from './code/CodePermissionPicker.vue'
 import ChatComposer from './chat/ChatComposer.vue'
+import QuotaNoticeCard from './chat/QuotaNoticeCard.vue'
+import { useQuotaNotice, type QuotaNotice } from '../composables/useQuotaNotice'
 import DocumentEditorDialog from './chat/DocumentEditorDialog.vue'
 import ChatFilePreviewPanel from './chat/ChatFilePreviewPanel.vue'
 import UserMessageContent from './chat/UserMessageContent.vue'
@@ -75,6 +77,7 @@ const props = defineProps<{
    *  409; the store owns the auto-dismiss timer and this never enters the
    *  message thread. */
   busyNotice?: string | null
+  quotaNotice?: QuotaNotice
   /** T9: authoritative shared-session flag wired from `pane.shared` in App.vue.
    *  When true, user rows render author avatar + display name through the
    *  focused UserMessageAuthor child (architecture boundary above). */
@@ -198,6 +201,7 @@ const defaultGreeting = props.initialMessage || 'Hello! I am your AI Agent. How 
 // caused new-session runs to remain on the welcome screen while the parent was
 // already streaming events into a different array.
 const messages = useAuthoritativeMessages<Message>(() => props.initialMessages)
+const activeQuotaNotice = useQuotaNotice(messages, () => props.authToken, () => props.quotaNotice || null, () => Boolean(props.running))
 const displayMessages = useChatMessageProjection({
   messages, greeting: defaultGreeting, submittedAnswers: () => questionControl.submitted.value,
 })
@@ -477,6 +481,7 @@ useChatWindowLifecycle({
               :connection-lost-at="msg._connectionLostAt"
               :code-session="props.codeSession"
               :locale="locale"
+              :quota-notice="idx === displayMessages.length - 1 ? activeQuotaNotice : null"
               :intervention="idx === displayMessages.length - 1 ? activeIntervention : null"
               :evidence-visible="shouldShowEvidenceTrigger(idx, msg)"
               :evidence-label="evidenceTriggerTextForMessage(msg)"
@@ -537,6 +542,7 @@ useChatWindowLifecycle({
 
     <!-- New composer-area features should be mounted as child components or slot content here. -->
     <div ref="composerContainer" class="shrink-0">
+      <QuotaNoticeCard v-if="activeQuotaNotice" :kind="activeQuotaNotice" :running="isLoading" :interrupted="!isLoading && !props.quotaNotice" />
       <ChatTurnInterruptions
         :questions="questionControl"
         :approvals="approvalControl"

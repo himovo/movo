@@ -13,6 +13,7 @@ import type { ArtifactItem } from '../../features/execution-v3/domain/delivery'
 import type { DshCodeSession, DshTaskChangeSet } from '../../platform/types'
 import type { Locale } from '../../locales/messages'
 import type { ChatMessage } from './chatMessage'
+import type { QuotaNotice } from '../../composables/useQuotaNotice'
 import type { BrowserAssistanceHandoff } from '../../composables/browser/useBrowserWorkspace'
 
 const props = defineProps<{
@@ -21,6 +22,7 @@ const props = defineProps<{
   connectionLostAt?: number
   codeSession?: DshCodeSession | null
   locale: Locale
+  quotaNotice?: QuotaNotice
   evidenceVisible: boolean
   evidenceLabel: string
   intervention?: {
@@ -77,6 +79,7 @@ function isPlainAssistantText(content: string): boolean {
       :store="store"
       :live="live"
       :connection-lost-at="connectionLostAt"
+      :quota-notice="quotaNotice"
       @resolve-permission="(requestId, decision) => emit('resolve-permission', requestId, decision)"
     />
   </div>

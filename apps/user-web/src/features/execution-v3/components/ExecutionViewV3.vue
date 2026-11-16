@@ -10,8 +10,9 @@ import { hasVisibleActiveRunningLeaf, runningContainerIds } from '../domain/acti
 import { collapseRepeatedToolCalls } from '../domain/repeatedToolCalls'
 import { elapsedRunMs, formatRunDuration } from '../domain/runTiming'
 import { failureMessageKey } from '../domain/failureMessage'
+import type { QuotaNotice } from '../../../composables/useQuotaNotice'
 
-const props = defineProps<{ store: ExecutionStoreV3; live?: boolean; connectionLostAt?: number }>()
+const props = defineProps<{ store: ExecutionStoreV3; live?: boolean; connectionLostAt?: number; quotaNotice?: QuotaNotice }>()
 const emit = defineEmits<{
   (event: 'resolve-permission', requestId: string, decision: 'allow' | 'deny' | 'always_allow'): void
 }>()
@@ -50,6 +51,10 @@ const terminalDetail = computed(() => {
   const failedEvent = [...props.store.state.rawEvents].reverse().find(event => event.type === 'run.failed')
   const message = String(failedEvent?.payload?.message || '').trim()
   if (!message) return ''
+  if (props.quotaNotice && failedEvent?.payload?.code === 'MODEL_GATEWAY_UNAUTHORIZED'
+    && /token has expired/i.test(message)) {
+    return t(props.quotaNotice === 'enterprise' ? 'chat.quota.enterprise_interrupted' : 'chat.quota.personal_interrupted')
+  }
   const key = failureMessageKey(message)
   return key ? t(key) : message
 })

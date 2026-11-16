@@ -62,6 +62,7 @@ const localFolderUnavailable = computed(() => Boolean(
     :foreign-run-finished="pane.foreignRunFinished"
     :refreshing-session="pane.refreshingSession"
     :busy-notice="pane.busyNotice"
+    :quota-notice="pane.quotaNotice"
     :stopping="pane.stopping || codeState.stopping"
     :active-intervention="pane.activeIntervention"
     :code-workspace="codeState.workspace"
