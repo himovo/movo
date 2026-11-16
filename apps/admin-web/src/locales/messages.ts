@@ -704,6 +704,8 @@ export const messages = {
   'legacy.example_10000000': { 'zh-CN': '例如：10000000', 'en-US': 'e.g. 10000000' },
   'legacy.example_1000000': { 'zh-CN': '例如：1000000', 'en-US': 'e.g. 1000000' },
   'legacy.enter_the_organization_token_quota': { 'zh-CN': '请填写企业总 Token', 'en-US': 'Enter the organization token quota' },
+  'legacy.enter_valid_organization_token_quota': { 'zh-CN': '企业总 Token 请输入有效的正整数（不超过 9007199254740991）', 'en-US': 'Enter a valid positive integer for organization tokens (up to 9007199254740991)' },
+  'legacy.enter_valid_employee_token_quota': { 'zh-CN': '员工默认 Token 请输入有效的正整数（不超过 9007199254740991）', 'en-US': 'Enter a valid positive integer for employee tokens (up to 9007199254740991)' },
   'legacy.enter_the_default_employee_token_quota': { 'zh-CN': '请填写员工默认 Token', 'en-US': 'Enter the default employee token quota' },
   'legacy.default_employee_tokens_cannot_exceed_the_organization_total': { 'zh-CN': '员工默认 Token 不能超过企业总 Token', 'en-US': 'Default employee tokens cannot exceed the organization total' },
   'legacy.enter_the_organization_time_zone': { 'zh-CN': '请填写企业时区', 'en-US': 'Enter the organization time zone' },

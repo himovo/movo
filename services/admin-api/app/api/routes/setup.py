@@ -108,8 +108,8 @@ class SetupInitRequest(BaseModel):
     employeeUsername: str = Field(min_length=3, max_length=64)
     employeePassword: str = Field(min_length=10, max_length=128)
     employeeName: str = Field(min_length=2, max_length=64)
-    orgTotalTokens: int = Field(gt=0)
-    defaultUserTokens: int = Field(gt=0)
+    orgTotalTokens: int = Field(gt=0, le=9007199254740991)
+    defaultUserTokens: int = Field(gt=0, le=9007199254740991)
     quotaPeriod: str = Field(default="monthly", pattern=r"^(monthly|daily|hourly)$")
     quotaTimezone: str = Field(default="Asia/Shanghai", min_length=1, max_length=80)
     model: SetupModelRequest

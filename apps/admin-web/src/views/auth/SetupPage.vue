@@ -106,6 +106,7 @@ import SetupModelStep from '@/components/setup/SetupModelStep.vue';
 import SetupOptionalModelsStep from '@/components/setup/SetupOptionalModelsStep.vue';
 import SetupProgressSteps from '@/components/setup/SetupProgressSteps.vue';
 import SetupSearchStep from '@/components/setup/SetupSearchStep.vue';
+import { isValidSetupQuota } from '@/components/setup/quotaValidation';
 import type {
   ModelTestState,
   SearchTestState,
@@ -200,8 +201,8 @@ function validateAccountForm() {
   if (accountForm.adminUsername.trim() === accountForm.employeeUsername.trim()) return t('legacy.admin_and_employee_usernames_must_be_different');
   if (accountForm.adminPassword.trim().length < 10 || accountForm.employeePassword.trim().length < 10) return t('legacy.admin_and_employee_passwords_must_be_at_least_10');
   if (!accountForm.employeeName.trim()) return t('legacy.please_enter_initial_employee_name');
-  if (!accountForm.orgTotalTokens || accountForm.orgTotalTokens <= 0) return t('legacy.enter_the_organization_token_quota');
-  if (!accountForm.defaultUserTokens || accountForm.defaultUserTokens <= 0) return t('legacy.enter_the_default_employee_token_quota');
+  if (!isValidSetupQuota(accountForm.orgTotalTokens)) return t('legacy.enter_valid_organization_token_quota');
+  if (!isValidSetupQuota(accountForm.defaultUserTokens)) return t('legacy.enter_valid_employee_token_quota');
   if (accountForm.defaultUserTokens > accountForm.orgTotalTokens) return t('legacy.default_employee_tokens_cannot_exceed_the_organization_total');
   if (!accountForm.quotaTimezone.trim()) return t('legacy.enter_the_organization_time_zone');
   return '';

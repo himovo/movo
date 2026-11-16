@@ -69,12 +69,12 @@
       <n-grid :cols="2" :x-gap="12">
         <n-grid-item>
           <n-form-item :label="t('legacy.organization_total_tokens')">
-            <n-input-number v-model:value="model.orgTotalTokens" :min="1" :show-button="false" :placeholder="t('legacy.example_10000000')" style="width: 100%" />
+            <n-input-number v-model:value="model.orgTotalTokens" :min="1" :max="MAX_SETUP_TOKENS" :validator="isValidSetupQuota" :show-button="false" :placeholder="t('legacy.example_10000000')" style="width: 100%" />
           </n-form-item>
         </n-grid-item>
         <n-grid-item>
           <n-form-item :label="t('legacy.default_tokens_per_employee')">
-            <n-input-number v-model:value="model.defaultUserTokens" :min="1" :max="model.orgTotalTokens || undefined" :show-button="false" :placeholder="t('legacy.example_1000000')" style="width: 100%" />
+            <n-input-number v-model:value="model.defaultUserTokens" :min="1" :max="isValidSetupQuota(model.orgTotalTokens) ? model.orgTotalTokens : MAX_SETUP_TOKENS" :validator="isValidSetupQuota" :show-button="false" :placeholder="t('legacy.example_1000000')" style="width: 100%" />
           </n-form-item>
         </n-grid-item>
       </n-grid>
@@ -121,6 +121,7 @@ import { computed } from 'vue';
 import { t } from '@/composables/i18n';
 import { getBrowserTimezone } from '@/composables/adminTimezone';
 import type { SetupAccountForm } from './types';
+import { MAX_SETUP_TOKENS, isValidSetupQuota } from './quotaValidation';
 
 const model = defineModel<SetupAccountForm>({ required: true });
 defineEmits<{ next: [] }>();
