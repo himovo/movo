@@ -5,13 +5,17 @@ from __future__ import annotations
 import os
 import re
 import threading
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from .docker_engine import DockerEngine
 from .skill_environments import SkillEnvironments
 from .task_lease_store import TaskLeaseStore
-from .storage_paths import manager_state_root
+from .storage_paths import manager_state_root, legacy_runtime_root
+from .settings_store import SettingsStore
+from .execution_scheduler import ExecutionScheduler
+from .task_locks import TaskLocks
+from .execution_timing import execution_phase
 
 
 IDENTIFIER = re.compile(r"^[0-9a-f]{32}$")
@@ -27,25 +31,33 @@ class TaskLease:
     skill_digest: str
     image_ref: str = ""
     frozen: bool = False
-    lock: threading.Lock = field(default_factory=threading.Lock)
 
 
 class TaskContainers:
-    def __init__(self, engine: DockerEngine, environments: SkillEnvironments | None = None) -> None:
+    def __init__(self, engine: DockerEngine, environments: SkillEnvironments | None = None,
+                 scheduler: ExecutionScheduler | None = None, permits=None, residents=None) -> None:
         self.engine = engine
+        self.permits = permits
+        self.residents = residents
         self.root = Path(os.environ.get("MOVO_SANDBOX_WORKSPACE_ROOT", "/workspaces"))
         self.volume = os.environ["MOVO_SANDBOX_WORKSPACE_VOLUME"]
         self.image = os.environ["MOVO_SANDBOX_SCRIPT_IMAGE"]
         self.project = os.environ.get("MOVO_SANDBOX_COMPOSE_PROJECT", "movo")
         self.environments = environments or SkillEnvironments(engine)
         self.capacity = int(os.environ.get("MOVO_SANDBOX_MAX_TASKS", "10"))
-        self.slots = threading.BoundedSemaphore(int(os.environ.get("MOVO_SANDBOX_MAX_CONCURRENT", "2")))
+        self.scheduler = scheduler or ExecutionScheduler(
+            int(os.environ.get("MOVO_SANDBOX_MAX_CONCURRENT", "2")),
+            int(os.environ.get("MOVO_SANDBOX_MAX_PENDING", "8")),
+            SettingsStore(manager_state_root(), legacy_root=legacy_runtime_root()),
+        )
+        self._task_locks = TaskLocks()
+        self._creating = 0
         self._leases: dict[str, TaskLease] = {}
         self._lock = threading.RLock()
         self._store = TaskLeaseStore(manager_state_root())
         self._restore()
 
-    def execute(self, task_id: str, call_id: str) -> dict:
+    def execute(self, task_id: str, call_id: str, *, execution_permit: str = "") -> dict:
         if not IDENTIFIER.fullmatch(task_id) or not IDENTIFIER.fullmatch(call_id):
             raise ValueError("Invalid task or call identifier")
         task_root = self.root / task_id
@@ -60,33 +72,33 @@ class TaskContainers:
         personal_key = personal_marker.read_text(encoding="ascii").strip() if personal_marker.is_file() else ""
         if personal_key and not PERSONAL_KEY.fullmatch(personal_key):
             raise ValueError("Invalid personal space key")
-        with self._lock:
-            lease = self._leases.get(task_id)
-            if lease is None:
-                if len(self._leases) >= self.capacity:
-                    raise RuntimeError("Sandbox task capacity is full")
-                lease = self._create(task_id, digest, personal_key)
-                self._leases[task_id] = lease
-                self._save()
-            elif lease.skill_digest != digest:
+        parent = self.permits.parent_key(execution_permit) if execution_permit and self.permits else None
+        if execution_permit and self.permits is None:
+            raise ValueError('Execution delegation is unavailable')
+        with self.scheduler.slot(f"task:{task_id}", parent=parent,
+                                 ready=lambda active: self.residents.available(f'task:{task_id}') if self.residents else self._capacity_available(task_id, active),
+                                 reserve=(lambda: self.residents.claim(f'task:{task_id}')) if self.residents else None), self._task_locks.hold(task_id):
+            try:
+                with execution_phase("container_prepare", task_id):
+                    lease = self._get_or_create(task_id, digest, personal_key)
+            except Exception:
+                if self.residents:
+                    self.residents.release(f'task:{task_id}')
+                raise
+            if lease.skill_digest != digest:
                 raise ValueError("A task cannot change its prepared Skill image")
-            elif lease.frozen:
+            if lease.frozen:
                 raise RuntimeError("The script task is already finalizing")
-        if not self.slots.acquire(timeout=20):
-            raise RuntimeError("Sandbox execution queue wait timed out")
-        try:
-            with lease.lock:
-                try:
+            try:
+                with execution_phase("script_exec", task_id):
                     exit_code, stdout, stderr = self.engine.execute(lease.container_id, [
                         "python", "-I", f"/job/work/calls/{call_id}/runner.py",
                         f"/job/work/calls/{call_id}/plugin.py",
                         f"/job/work/calls/{call_id}/stdin.json",
                     ], 70)
-                except Exception:
-                    self.dispose(task_id)
-                    raise
-        finally:
-            self.slots.release()
+            except Exception:
+                self.dispose(task_id)
+                raise
         return {
             "exit_code": exit_code,
             "stdout": stdout[:2_097_152].decode("utf-8", errors="replace"),
@@ -94,36 +106,85 @@ class TaskContainers:
             "image_ref": lease.image_ref,
         }
 
+    def _capacity_available(self, task_id: str, active: set[str]) -> bool:
+        with self._lock:
+            if task_id in self._leases:
+                return True
+            reserved = sum(key.startswith('task:') and key[5:] not in self._leases for key in active)
+            return len(self._leases) + reserved < self.capacity
+
+    def _get_or_create(self, task_id: str, digest: str, personal_key: str) -> TaskLease:
+        with self._lock:
+            lease = self._leases.get(task_id)
+            if lease is not None:
+                return lease
+            if len(self._leases) + self._creating >= self.capacity:
+                raise RuntimeError("Sandbox task capacity is full")
+            self._creating += 1
+        lease = None
+        try:
+            lease = self._create(task_id, digest, personal_key)
+            with self._lock:
+                self._leases[task_id] = lease
+                try:
+                    self._save()
+                except Exception:
+                    self._leases.pop(task_id, None)
+                    raise
+            return lease
+        except Exception:
+            if lease is not None:
+                try:
+                    self.engine.remove(lease.container_id)
+                finally:
+                    try:
+                        self.engine.disconnect_network(lease.network_id, lease.proxy_id)
+                    finally:
+                        self.engine.remove_network(lease.network_id)
+            raise
+        finally:
+            with self._lock:
+                self._creating -= 1
+
     def dispose(self, task_id: str) -> None:
         if not IDENTIFIER.fullmatch(task_id):
             raise ValueError("Invalid task identifier")
-        with self._lock:
-            lease = self._leases.get(task_id)
-        if lease is None:
-            return
-        try:
-            self.engine.remove(lease.container_id)
-        finally:
+        with self._task_locks.hold(task_id):
+            with self._lock:
+                lease = self._leases.get(task_id)
+            if lease is None:
+                return
             try:
-                self.engine.disconnect_network(lease.network_id, lease.proxy_id)
+                self.engine.remove(lease.container_id)
             finally:
-                self.engine.remove_network(lease.network_id)
-        with self._lock:
-            self._leases.pop(task_id, None)
-            self._save()
+                try:
+                    self.engine.disconnect_network(lease.network_id, lease.proxy_id)
+                finally:
+                    self.engine.remove_network(lease.network_id)
+            with self._lock:
+                self._leases.pop(task_id, None)
+                self._save()
+            if self.residents:
+                self.residents.release(f'task:{task_id}')
+            self.scheduler.wake()
 
     def freeze(self, task_id: str) -> None:
         if not IDENTIFIER.fullmatch(task_id):
             raise ValueError("Invalid task identifier")
-        with self._lock:
-            lease = self._leases.get(task_id)
-        if lease is None:
-            return
-        with lease.lock:
+        with self._task_locks.hold(task_id):
+            with self._lock:
+                lease = self._leases.get(task_id)
+            if lease is None:
+                return
             self.engine.kill(lease.container_id)
             lease.frozen = True
             with self._lock:
                 self._save()
+
+    def recover_interrupted(self) -> None:
+        for task_id, lease in list(self._leases.items()):
+            if self.engine.inspect(lease.container_id).get('ExecIDs'):
+                self.freeze(task_id)
 
     def _restore(self) -> None:
         for task_id, row in self._store.load().items():
@@ -137,6 +198,8 @@ class TaskContainers:
             except Exception:
                 continue
             self._leases[task_id] = lease
+            if self.residents:
+                self.residents.claim(f'task:{task_id}', restoring=True)
         self._save()
 
     def _save(self) -> None:

@@ -14,6 +14,7 @@ from app.dsh_runtime.application import dsh_runtime_application
 from app.dsh_runtime.tool_gateway import ToolGatewayTokenService
 from app.enterprise_capabilities.tools import ApprovalAskRequest, ApprovalDecisionRequest, ToolExecuteRequest
 from app.enterprise_capabilities.tools.service import ToolPolicyDenied
+from app.enterprise_capabilities.tools.observability import ToolControlPlaneTimeout
 from app.enterprise_capabilities.tools.result_projection import canonical_tool_result
 
 
@@ -60,6 +61,8 @@ async def request_approval(
         disconnect.cancel()
         outcome = await approval
         return {"outcome": outcome}
+    except ToolControlPlaneTimeout as exc:
+        raise HTTPException(status_code=503, detail={'code': 'tool_control_plane_timeout', 'message': str(exc)}) from exc
     except ToolPolicyDenied as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
@@ -99,6 +102,8 @@ async def execute(payload: ToolExecuteRequest, request: Request, authorization: 
             status_code=408 if receipt.status == "timed_out" else 502,
             detail={"code": f"tool_{receipt.status}", "message": receipt.error, "receipt": receipt.model_dump(mode="json")},
         )
+    except ToolControlPlaneTimeout as exc:
+        raise HTTPException(status_code=503, detail={'code': 'tool_control_plane_timeout', 'message': str(exc)}) from exc
     except ToolPolicyDenied as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
@@ -145,6 +150,8 @@ async def decide_approval(
         raise HTTPException(status_code=404, detail="approval_not_found") from exc
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ToolControlPlaneTimeout as exc:
+        raise HTTPException(status_code=503, detail={'code': 'tool_control_plane_timeout', 'message': str(exc)}) from exc
     except ToolPolicyDenied as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     return {"code": 0, "data": row.model_dump(mode="json")}

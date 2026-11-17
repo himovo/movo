@@ -174,6 +174,10 @@ def test_discovery_debug_and_runtime_paths_all_use_initialized_sessions(monkeypa
 
     monkeypatch.setattr(service, "get", fake_get)
 
+    from app.services import mcp_session_pool
+    pool = mcp_session_pool.McpSessionPool(transport=transport)
+    monkeypatch.setattr(mcp_session_pool, 'current_mcp_pool', lambda: pool)
+
     async def exercise_all_paths():
         discovery = await service.discover_mcp_tools("tool-1")
         connection_test = await service._test_mcp(tool, {})
@@ -188,6 +192,7 @@ def test_discovery_debug_and_runtime_paths_all_use_initialized_sessions(monkeypa
             arguments={"q": "test"},
             actor_user_id="user-1",
         )
+        await pool.close()
         return discovery, connection_test, call_test, runtime
 
     discovery, connection_test, call_test, runtime = asyncio.run(exercise_all_paths())

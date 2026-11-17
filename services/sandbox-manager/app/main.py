@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hmac
 import os
 import threading
@@ -10,6 +11,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
+from .execution_workers import run_script_work
+from .execution_permits import ExecutionPermits
+from .resident_capacity import ResidentCapacity
+from .permit_markers import PermitMarkers
+from .storage_paths import manager_state_root
+from .execution_permit_routes import permit_router
 from .docker_engine import DockerEngine
 from .jobs import ScriptJobs
 from .plugin_runtimes import PluginRuntimes
@@ -23,7 +30,19 @@ from .image_archive_routes import router as image_archive_router
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     SkillBuildRecords().recover_interrupted()
-    yield
+    await run_script_work(lambda: tasks().recover_interrupted())
+    await run_script_work(lambda: permits().markers.recover(plugins().recover_interrupted_owner))
+    async def reap():
+        while True:
+            await asyncio.sleep(10)
+            if _permits is not None:
+                await run_script_work(lambda: _permits.expire(on_expire=plugins().recover_interrupted_owner))
+    reaper = asyncio.create_task(reap())
+    try:
+        yield
+    finally:
+        reaper.cancel()
+        await asyncio.gather(reaper, return_exceptions=True)
 
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
@@ -32,7 +51,12 @@ app.include_router(image_archive_router)
 _jobs: ScriptJobs | None = None
 _plugins: PluginRuntimes | None = None
 _tasks: TaskContainers | None = None
+_resident_capacity = ResidentCapacity(int(os.environ.get("MOVO_SANDBOX_MAX_TASKS", "10")))
+_permits = None
+_permits_lock = threading.Lock()
 _jobs_lock = threading.Lock()
+_tasks_lock = threading.Lock()
+_plugins_lock = threading.Lock()
 _instance_id = uuid4().hex
 
 
@@ -40,24 +64,35 @@ def jobs() -> ScriptJobs:
     global _jobs
     with _jobs_lock:
         if _jobs is None:
-            _jobs = ScriptJobs(DockerEngine())
+            _jobs = ScriptJobs(DockerEngine(), residents=_resident_capacity)
     return _jobs
+
+
+def permits() -> ExecutionPermits:
+    global _permits
+    scheduler = jobs().scheduler
+    with _permits_lock:
+        if _permits is None:
+            _permits = ExecutionPermits(scheduler, markers=PermitMarkers(manager_state_root()))
+    return _permits
 
 
 def plugins() -> PluginRuntimes:
     global _plugins
-    with _jobs_lock:
+    admission = permits()
+    with _plugins_lock:
         if _plugins is None:
-            _plugins = PluginRuntimes(DockerEngine())
+            _plugins = PluginRuntimes(DockerEngine(), scheduler=admission.scheduler, permits=admission, residents=_resident_capacity)
     return _plugins
 
 
 def tasks() -> TaskContainers:
     global _tasks
-    environments = jobs().environments
-    with _jobs_lock:
+    script_jobs = jobs()
+    environments = script_jobs.environments
+    with _tasks_lock:
         if _tasks is None:
-            _tasks = TaskContainers(DockerEngine(), environments=environments)
+            _tasks = TaskContainers(DockerEngine(), environments=environments, scheduler=script_jobs.scheduler, permits=permits(), residents=_resident_capacity)
     return _tasks
 
 
@@ -68,15 +103,18 @@ class ExecuteScriptRequest(BaseModel):
 class ExecuteTaskCallRequest(BaseModel):
     task_id: str = Field(pattern=r"^[0-9a-f]{32}$")
     call_id: str = Field(pattern=r"^[0-9a-f]{32}$")
+    execution_permit: str = Field(default="", max_length=128)
 
 
 class CreatePluginRuntimeRequest(BaseModel):
     isolation_key: str = Field(min_length=1, max_length=512)
     personal_space_key: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    startup_guard: bool = False
 
 
 class UpdateSettingsRequest(BaseModel):
-    max_pending: int = Field(ge=0, le=100)
+    max_pending: int | None = Field(default=None, ge=0, le=100)
+    capacity: int | None = Field(default=None, ge=1, le=100)
 
 
 class PrepareSkillRequest(BaseModel):
@@ -97,7 +135,8 @@ def health(authorization: str | None = Header(default=None)) -> dict:
         DockerEngine().request("GET", "/_ping")
     except Exception as exc:
         raise HTTPException(status_code=503, detail="Docker Engine unavailable") from exc
-    return {"ok": True, **jobs().status(), **plugins().status()}
+    return {"ok": True, **jobs().status(), **plugins().status(), **_resident_capacity.status(),
+            "task_capacity": _tasks.capacity if _tasks is not None else int(os.environ.get("MOVO_SANDBOX_MAX_TASKS", "10"))}
 
 
 @app.get("/v1/readiness")
@@ -119,10 +158,10 @@ def skill_environment_base(authorization: str | None = Header(default=None)) -> 
 
 
 @app.post("/v1/script-jobs")
-def run_script(payload: ExecuteScriptRequest, authorization: str | None = Header(default=None)) -> dict:
+async def run_script(payload: ExecuteScriptRequest, authorization: str | None = Header(default=None)) -> dict:
     _authorize(authorization)
     try:
-        return jobs().execute(payload.job_id)
+        return await run_script_work(lambda: jobs().execute(payload.job_id))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except DependencyPreparationError as exc:
@@ -132,10 +171,10 @@ def run_script(payload: ExecuteScriptRequest, authorization: str | None = Header
 
 
 @app.post("/v1/script-task-calls")
-def run_task_call(payload: ExecuteTaskCallRequest, authorization: str | None = Header(default=None)) -> dict:
+async def run_task_call(payload: ExecuteTaskCallRequest, authorization: str | None = Header(default=None)) -> dict:
     _authorize(authorization)
     try:
-        return tasks().execute(payload.task_id, payload.call_id)
+        return await run_script_work(lambda: tasks().execute(payload.task_id, payload.call_id, execution_permit=payload.execution_permit))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except DependencyPreparationError as exc:
@@ -214,17 +253,26 @@ def skill_environment_record(digest: str, record_id: str, authorization: str | N
 @app.put("/v1/settings")
 def update_settings(payload: UpdateSettingsRequest, authorization: str | None = Header(default=None)) -> dict:
     _authorize(authorization)
-    return jobs().set_max_pending(payload.max_pending)
+    return jobs().scheduler.configure(**payload.model_dump(exclude_none=True))
 
 
 @app.post("/v1/plugin-runtimes")
-def create_plugin_runtime(payload: CreatePluginRuntimeRequest, authorization: str | None = Header(default=None)) -> dict:
+async def create_plugin_runtime(payload: CreatePluginRuntimeRequest, authorization: str | None = Header(default=None)) -> dict:
     _authorize(authorization)
-    return plugins().create(payload.isolation_key, payload.personal_space_key)
+    try:
+        return await run_script_work(lambda: plugins().create(
+            payload.isolation_key, payload.personal_space_key, startup_guard=payload.startup_guard))
+    except RuntimeError as exc:
+        raise HTTPException(429, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
 
 @app.delete("/v1/plugin-runtimes/{lease_id}")
-def dispose_plugin_runtime(lease_id: str, authorization: str | None = Header(default=None)) -> dict:
+async def dispose_plugin_runtime(lease_id: str, authorization: str | None = Header(default=None)) -> dict:
     _authorize(authorization)
-    plugins().dispose(lease_id)
+    await run_script_work(lambda: plugins().dispose(lease_id))
     return {"disposed": True}
+
+
+app.include_router(permit_router(_authorize, permits))

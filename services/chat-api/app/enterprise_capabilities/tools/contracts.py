@@ -18,6 +18,7 @@ class ToolExecuteRequest(BaseModel):
     actionId: str
     idempotencyKey: str
     currentSkillName: str = ""
+    executionPermit: str = Field(default="", max_length=128)
     arguments: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -38,6 +39,7 @@ class ApprovalDecisionRequest(BaseModel):
 
 
 class EnterpriseActionReceipt(BaseModel):
+    execution_owner: str = Field(default="", exclude=True)
     schema_version: Literal["askai.enterprise-action-receipt.v1"] = "askai.enterprise-action-receipt.v1"
     action_id: str
     idempotency_key: str

@@ -39,3 +39,29 @@ def test_task_workspace_persists_between_calls(tmp_path: Path, monkeypatch) -> N
         assert (work / "intermediate.txt").read_text() == "kept"
     with script_backend.script_workspace("message-2") as other:
         assert not (other / "intermediate.txt").exists()
+
+
+def test_delegation_is_transport_metadata_and_not_script_input(tmp_path, monkeypatch):
+    monkeypatch.setenv('MOVO_SANDBOX_MANAGER_URL', 'http://sandbox-manager:8300')
+    monkeypatch.setenv('MOVO_SANDBOX_MANAGER_TOKEN', 'm'*64)
+    captured = []
+    class Response:
+        is_error = False
+        def json(self): return {'exit_code': 0, 'stdout': 'ok'}
+    class Client:
+        def __init__(self, **kwargs): pass
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def post(self, url, **kwargs):
+            captured.append(kwargs['json'])
+            return Response()
+    monkeypatch.setattr(script_backend.httpx, 'Client', Client)
+    stdin = tmp_path/'stdin.json'
+    stdin.write_text('{"data": {"value": 1}}')
+    script_backend.run_script_job(
+        work_dir=tmp_path, runner_path=tmp_path/'runner.py', plugin_path=tmp_path/'plugin.py',
+        stdin_path=stdin, env={}, timeout_seconds=1, limit_child_process=lambda: None,
+        task_id='message-1', call_id='a'*32, execution_permit='private-delegation',
+    )
+    assert captured[0]['execution_permit'] == 'private-delegation'
+    assert 'private-delegation' not in stdin.read_text()

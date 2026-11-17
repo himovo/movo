@@ -29,7 +29,7 @@ async def run_script(arguments: dict[str, Any], context: CapabilityExecutionCont
         raise RuntimeError("Governed script execution route is unavailable")
     input_data = dict(arguments.get("data") or {})
     files = governed_script_files(arguments, context)
-    reserved = {"user_id", "files", "input_artifacts", "graph_artifacts", "personal_conversation_key"}
+    reserved = {"user_id", "files", "input_artifacts", "graph_artifacts", "personal_conversation_key", "_execution_permit"}
     if reserved.intersection(input_data):
         raise ValueError("script data uses a reserved MOVO context key")
     # The active turn is the authority for the user's text. DSH supplies code
@@ -77,7 +77,8 @@ async def run_script(arguments: dict[str, Any], context: CapabilityExecutionCont
     async for event, produced in ScriptPluginExecutor().execute(
         runtime=None, task_id=context.message_id, run_id=context.action_id,
         node=node, inputs=inputs,
-        skills={"_movo_selected_skill_bundle": bundle} if bundle else {},
+        skills={"_movo_selected_skill_bundle": bundle,
+                "_movo_execution_permit": str(context.turn_context.get("_execution_permit") or "")},
     ):
         if isinstance(produced, dict):
             artifacts.update(produced)

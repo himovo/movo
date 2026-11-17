@@ -37,7 +37,7 @@ function requestJson(entry, method, path, body) {
       })
     })
     request.once('timeout', () => request.destroy(new Error('Plugin Runtime request timed out')))
-    request.once('error', rejectRequest)
+    request.once('error', error => { entry.unavailable?.(error); rejectRequest(error) })
     request.end(body === undefined ? undefined : JSON.stringify(body))
   })
 }
@@ -95,11 +95,33 @@ export class ContainerPluginRuntimePool {
 
   async #createFresh(body) {
     if (this.#byIsolation.has(body.isolationKey)) throw new Error('isolation key already has a Runtime')
-    const lease = await managerRequest(this.managerUrl, this.managerToken, 'POST', '/v1/plugin-runtimes', {
+    const createLease = () => managerRequest(this.managerUrl, this.managerToken, 'POST', '/v1/plugin-runtimes', {
       isolation_key: body.isolationKey,
       personal_space_key: personalSpaceKey(body.tenantId, body.modelProfile?.subjectUserId),
+      startup_guard: true,
     })
-    const entry = { ...lease, profile: body.modelProfile, runtime: undefined }
+    let lease
+    try { lease = await createLease() }
+    catch (error) {
+      if (!/resident capacity/i.test(String(error.message)) || !await this.#reaper.reclaimOne()) throw error
+      lease = await createLease()
+    }
+    const entry = { ...lease, profile: body.modelProfile, runtime: undefined, inFlight: 0, retiring: false }
+    const startupHeartbeat = lease.startup_token ? setInterval(() => {
+      managerRequest(this.managerUrl, this.managerToken, 'POST', '/v1/execution-permits/heartbeat', {
+        owner: lease.lease_id, token: lease.startup_token,
+      }).catch(() => {})
+    }, 10_000) : undefined
+    startupHeartbeat?.unref?.()
+    entry.unavailable = error => {
+      if (!['ECONNREFUSED', 'ENOTFOUND'].includes(error?.code)) return
+      if (entry.runtime) {
+        this.#byRuntime.delete(entry.runtime.runtimeId)
+        this.#byIsolation.delete(entry.runtime.isolationKey)
+      }
+      this.#byLease.delete(entry.lease_id)
+      this.#reaper.delete(entry)
+    }
     this.#byLease.set(lease.lease_id, entry)
     try {
       await waitForReady(entry)
@@ -115,6 +137,10 @@ export class ContainerPluginRuntimePool {
       this.#byLease.delete(lease.lease_id)
       await managerRequest(this.managerUrl, this.managerToken, 'DELETE', `/v1/plugin-runtimes/${lease.lease_id}`).catch(() => {})
       throw error
+    } finally {
+      clearInterval(startupHeartbeat)
+      if (lease.startup_token) await managerRequest(this.managerUrl, this.managerToken,
+        'POST', '/v1/execution-permits/release', { owner: lease.lease_id, token: lease.startup_token }).catch(() => {})
     }
   }
 
@@ -168,7 +194,7 @@ export class ContainerPluginRuntimePool {
         result.once('end', resolveForward)
         result.once('error', rejectForward)
       })
-      upstream.once('error', rejectForward)
+      upstream.once('error', error => { entry.unavailable?.(error); rejectForward(error) })
       response.once('close', () => upstream.destroy())
       request.pipe(upstream)
     }))
@@ -185,6 +211,17 @@ export class ContainerPluginRuntimePool {
     }
     const kind = parts[3]
     this.#reaper.touch(entry)
+    if (kind === 'admission') {
+      const operation = parts[4]
+      if (request.method !== 'POST' || !['acquire', 'heartbeat', 'release', 'cancel'].includes(operation) || parts.length !== 5) {
+        sendJson(response, 404, { error: { code: 'not_found' } }); return
+      }
+      const payload = await readJson(request)
+      const result = await this.#reaper.use(entry, () => managerRequest(this.managerUrl, this.managerToken,
+        'POST', `/v1/execution-permits/${operation}`, { ...payload, owner: entry.lease_id }))
+      sendJson(response, 200, result)
+      return
+    }
     const method = request.method?.toUpperCase()
     if ((kind === 'model' && method !== 'POST') ||
         (kind === 'tools' && method !== 'POST') ||

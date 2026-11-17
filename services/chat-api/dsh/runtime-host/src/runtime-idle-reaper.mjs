@@ -43,5 +43,14 @@ export class RuntimeIdleReaper {
     }
   }
 
+  async reclaimOne(now = Date.now(), minimumIdleMs = 60_000) {
+    const entry = [...this.#entries].filter(item => !item.retiring && item.inFlight === 0 &&
+      now - item.lastUsedAt >= minimumIdleMs).sort((a, b) => a.lastUsedAt - b.lastUsedAt)[0]
+    if (!entry) return false
+    entry.retiring = true
+    try { await this.onIdle(entry); return true }
+    catch { entry.retiring = false; this.touch(entry); return false }
+  }
+
   stop() { clearInterval(this.#timer) }
 }

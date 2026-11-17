@@ -13,22 +13,32 @@ class SettingsStore:
         self.path = root / "sandbox-settings.json"
         self.legacy_path = legacy_root / "sandbox-settings.json" if legacy_root else None
 
-    def max_pending(self, default: int) -> int:
+    def _read(self) -> dict:
         source = self.path if self.path.exists() else self.legacy_path
-        if source is None or not source.exists():
-            return default
-        value = json.loads(source.read_text(encoding="utf-8")).get("max_pending")
-        if not isinstance(value, int) or not 0 <= value <= 100:
-            raise ValueError("Invalid sandbox pending queue setting")
+        return json.loads(source.read_text(encoding="utf-8")) if source and source.exists() else {}
+
+    def _value(self, name: str, default: int, minimum: int) -> int:
+        value = self._read().get(name, default)
+        if type(value) is not int or not minimum <= value <= 100:
+            raise ValueError(f"Invalid sandbox {name} setting")
         return value
 
+    def capacity(self, default: int) -> int:
+        return self._value("capacity", default, 1)
+
+    def max_pending(self, default: int) -> int:
+        return self._value("max_pending", default, 0)
+
     def save_max_pending(self, value: int) -> None:
+        self.save({**self._read(), "max_pending": value})
+
+    def save(self, values: dict) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self.path.with_name(f".{self.path.name}.{uuid4().hex}.tmp")
         try:
             with temporary.open("x", encoding="utf-8") as stream:
                 os.chmod(temporary, 0o600)
-                json.dump({"max_pending": value}, stream)
+                json.dump(values, stream)
                 stream.flush()
                 os.fsync(stream.fileno())
             temporary.replace(self.path)

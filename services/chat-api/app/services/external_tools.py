@@ -978,6 +978,12 @@ class ExternalToolService:
             }
         )
         timeout = float(config.get("timeoutSeconds") or 20)
+        if runtime_headers:
+            from .mcp_session_pool import current_mcp_pool
+            actor = [runtime_headers.get('X-MOVO-Main-ID'), runtime_headers.get('X-MOVO-User-ID'), str(tool.get('_id') or '')]
+            if all(actor[:2]):
+                return await current_mcp_pool().call(endpoint=endpoint, headers=headers, timeout=timeout,
+                                                     actor=actor, method=method, params=params)
         return await StreamableHttpMcpClient(
             endpoint=endpoint,
             headers=headers,

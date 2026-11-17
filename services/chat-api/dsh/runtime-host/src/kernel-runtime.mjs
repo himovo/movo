@@ -42,6 +42,7 @@ import { SkillInvocationTracker } from './skill-invocation-tracker.mjs'
 import { registerSkillResourceTool } from './skill-resource-tool.mjs'
 import { validConversationSpaceKey } from './personal-space.mjs'
 import { resolvePluginCommand, requireCurrentCommand } from './plugin-command-selection.mjs'
+import { installIsolatedExecutionAdmission } from './isolated-execution-admission.mjs'
 import { NativePluginWeb } from './native-plugin-web.mjs'
 import { migrateLegacyHostStorage } from './plugin-user-home.mjs'
 
@@ -70,6 +71,7 @@ export class KernelRuntime {
   #skillResourceToolDispose
   #skillInvocations
   #nativePluginWeb
+  #isolationAdmissionDispose
 
   constructor({ runtimeId, isolationKey, profileVersion, storageRoot, modelProfile }) {
     this.runtimeId = runtimeId
@@ -101,6 +103,10 @@ export class KernelRuntime {
         plugins: this.#composition.availablePlugins,
       })
     }
+    this.#isolationAdmissionDispose = installIsolatedExecutionAdmission(ctx, {
+      bridgeTools: this.modelProfile?.toolProfile?.tools?.filter(tool =>
+        !this.modelProfile?.toolProfile?.nativeReplacements?.includes(tool.name)).map(tool => tool.name) ?? [],
+    })
     this.#ctx = ctx
     this.#nativePluginWeb = new NativePluginWeb(ctx, this.modelProfile?.plugins)
     this.#managedPlugins = new ManagedPluginBridge(ctx)
@@ -495,6 +501,7 @@ export class KernelRuntime {
     this.#modelAdapterDispose?.()
     this.#desktopApprovals?.dispose()
     this.#userQuestions?.dispose()
+    this.#isolationAdmissionDispose?.()
     this.#toolBridge?.dispose()
     this.#webSearchDispose?.()
     this.#skillResourceToolDispose?.()

@@ -409,6 +409,8 @@ async def startup_event() -> None:
 
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
+    from app.services.mcp_session_pool import close_mcp_pool
+    await close_mcp_pool()
     global _receipt_gc_task, _skill_environment_task, _plugin_compatibility_task, _task_cleanup_task
     for callback in reversed(product_extension.shutdown):
         result = callback()

@@ -1,3 +1,4 @@
+import { currentExecutionPermit } from './isolated-execution-admission.mjs'
 import { validateJsonSchemaValue } from '@deepseek-ai/dsh-tools'
 import { postGatewayJson } from './gateway-http-client.mjs'
 import { assertNoDshCodeToolCollisions } from './official-host/tool-name-policy.mjs'
@@ -52,6 +53,7 @@ export class AskaiToolBridge {
           const key = `${exec.agent?.id ?? ''}:${String(exec.callId)}`
           try {
             const payload = await this.#post('/execute', {
+              executionPermit: currentExecutionPermit(),
               profileVersion: this.#config.profileVersion,
               sessionId: exec.agent?.id,
               toolName: descriptor.name,

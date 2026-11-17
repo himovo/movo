@@ -24,6 +24,7 @@ from app.execution_isolation.script_backend import child_path, container_backend
 from app.execution_isolation.skill_bundle import SkillBundle, cache_skill_bundle, stage_skill_bundle
 from app.execution_isolation.runner_source import runner_source
 from app.execution_isolation.call_audit import record_call
+from app.infrastructure.observability.spans import log_span
 
 
 class ScriptPluginExecutor(BaseExecutor):
@@ -55,6 +56,7 @@ class ScriptPluginExecutor(BaseExecutor):
                 task_id=task_id,
                 run_id=run_id,
                 skill_bundle=skills.get("_movo_selected_skill_bundle"),
+                execution_permit=str(skills.get("_movo_execution_permit") or ""),
             )
         except Exception as exc:
             error = execution_error_summary(exc)
@@ -97,8 +99,12 @@ class ScriptPluginExecutor(BaseExecutor):
             },
         }, artifacts
 
-    def _run_plugin(self, *, node: CapabilityTask, inputs: CapabilityInputs, task_id: str, run_id: str,
-                    skill_bundle: SkillBundle | None = None) -> Dict[str, Any]:
+    def _run_plugin(self, **kwargs) -> Dict[str, Any]:
+        with log_span("script.total"):
+            return self._run_plugin_impl(**kwargs)
+
+    def _run_plugin_impl(self, *, node: CapabilityTask, inputs: CapabilityInputs, task_id: str, run_id: str,
+                    skill_bundle: SkillBundle | None = None, execution_permit: str = "") -> Dict[str, Any]:
         semantic_config = (node.meta or {}).get("semantic_config")
         config = dict(semantic_config or {}) if isinstance(semantic_config, dict) else {}
         plugin_code = str(
@@ -138,7 +144,8 @@ class ScriptPluginExecutor(BaseExecutor):
                 input_dir.chmod(0o777)
                 output_dir.chmod(0o777)
 
-            files = self._materialize_input_files(input_dir=input_dir, node=node, inputs=inputs)
+            with log_span("script.input_preparation"):
+                files = self._materialize_input_files(input_dir=input_dir, node=node, inputs=inputs)
             if container_backend_enabled():
                 files = [
                     {**item, "local_path": child_path(Path(item["local_path"]), work_dir)}
@@ -186,14 +193,16 @@ class ScriptPluginExecutor(BaseExecutor):
             started_ns = time.time_ns()
             started = time.monotonic()
             try:
-                completed = run_script_job(
-                    work_dir=work_dir, runner_path=runner_path, plugin_path=plugin_path,
-                    stdin_path=stdin_path, env=self._safe_env(),
-                    timeout_seconds=self._TIMEOUT_SECONDS,
-                    limit_child_process=self._limit_child_process,
-                    skill_digest=skill_digest,
-                    task_id=task_scope, call_id=call_id,
-                )
+                with log_span("script.sandbox_dispatch"):
+                    completed = run_script_job(
+                        work_dir=work_dir, runner_path=runner_path, plugin_path=plugin_path,
+                        stdin_path=stdin_path, env=self._safe_env(),
+                        timeout_seconds=self._TIMEOUT_SECONDS,
+                        limit_child_process=self._limit_child_process,
+                        skill_digest=skill_digest,
+                        task_id=task_scope, call_id=call_id,
+                        execution_permit=execution_permit,
+                    )
             except Exception as exc:
                 if task_scope:
                     record_call(call_dir, action_id=run_id, skill_digest=skill_digest,
@@ -211,19 +220,21 @@ class ScriptPluginExecutor(BaseExecutor):
                 conversation_key = str((inputs.output_spec or {}).get("personal_conversation_key") or "")
                 if task_scope and conversation_key:
                     personal_key = (work_dir.parent / "personal-space-key").read_text(encoding="ascii")
-                    save_outputs(
-                        output_dir,
-                        work_dir.parent.parent / "personal" / personal_key / "conversations" / conversation_key,
-                        call_id,
+                    with log_span("script.personal_output_save"):
+                        save_outputs(
+                            output_dir,
+                            work_dir.parent.parent / "personal" / personal_key / "conversations" / conversation_key,
+                            call_id,
+                        )
+                with log_span("script.artifact_export"):
+                    artifacts = self._build_artifacts(
+                        result=result,
+                        output_dir=output_dir,
+                        user_id=user_id,
+                        duration_ms=duration_ms,
+                        stderr=stderr,
+                        sandbox_output_dir=Path(child_path(output_dir, work_dir)) if container_backend_enabled() else None,
                     )
-                artifacts = self._build_artifacts(
-                    result=result,
-                    output_dir=output_dir,
-                    user_id=user_id,
-                    duration_ms=duration_ms,
-                    stderr=stderr,
-                    sandbox_output_dir=Path(child_path(output_dir, work_dir)) if container_backend_enabled() else None,
-                )
             except Exception as exc:
                 if task_scope:
                     record_call(call_dir, action_id=run_id, skill_digest=skill_digest,

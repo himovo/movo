@@ -2,7 +2,7 @@
   <section class="sandbox-panel">
     <header>
       <div><h2>{{ t('sandbox.title') }}</h2><p>{{ t('sandbox.description') }}</p></div>
-      <n-button :loading="loading" @click="refresh">{{ t('sandbox.refresh') }}</n-button>
+      <n-button :loading="loading" :disabled="saving" @click="refresh">{{ t('sandbox.refresh') }}</n-button>
     </header>
     <n-alert v-if="error" type="error">{{ t('sandbox.loadingFailed') }}</n-alert>
     <n-alert v-else-if="status && !status.enabled" type="warning">{{ t('sandbox.disabled') }}</n-alert>
@@ -16,25 +16,31 @@
         <div><strong>{{ status.plugin_runtimes }}</strong><span>{{ t('sandbox.plugins') }}</span></div>
       </div>
       <div class="queue-setting">
+        <span>{{ t('sandbox.capacity') }}</span>
+        <n-input-number v-model:value="capacity" :min="1" :max="100" :precision="0" :disabled="saving" />
+      </div>
+      <div class="queue-setting">
         <span>{{ t('sandbox.maxPending') }}</span>
-        <n-input-number v-model:value="maxPending" :min="0" :max="100" :precision="0" />
-        <n-button type="primary" :loading="saving" :disabled="maxPending === null || maxPending === status.max_pending" @click="save">{{ t('sandbox.save') }}</n-button>
+        <n-input-number v-model:value="maxPending" :min="0" :max="100" :precision="0" :disabled="saving" />
+        <n-button type="primary" :loading="saving" :disabled="capacity === null || maxPending === null || (capacity === status.capacity && maxPending === status.max_pending)" @click="save">{{ t('sandbox.save') }}</n-button>
       </div>
       <p>{{ t('sandbox.idle') }}: {{ t('sandbox.seconds', { count: status.plugin_idle_seconds ?? 900 }) }}</p>
       <p>{{ t('sandbox.configure') }}</p>
+      <p>{{ t('sandbox.taskCapacity', { count: status.task_capacity ?? 10, used: status.resident_containers ?? 0 }) }}</p>
     </template>
   </section>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { NAlert, NButton, NInputNumber, useMessage } from 'naive-ui'
-import { fetchSandboxStatus, saveSandboxQueueLimit, type SandboxStatus } from '@/api/sandbox-settings'
+import { fetchSandboxStatus, saveSandboxLimits, type SandboxStatus } from '@/api/sandbox-settings'
 import { t } from '@/composables/i18n'
 
 const status = ref<SandboxStatus | null>(null)
 const loading = ref(false)
 const saving = ref(false)
+const capacity = ref<number | null>(null)
 const maxPending = ref<number | null>(null)
 const error = ref(false)
 const message = useMessage()
@@ -43,22 +49,32 @@ async function refresh() {
   error.value = false
   try {
     status.value = await fetchSandboxStatus()
+    capacity.value = status.value.capacity ?? null
     maxPending.value = status.value.max_pending ?? null
   }
   catch { error.value = true }
   finally { loading.value = false }
 }
 async function save() {
-  if (maxPending.value === null) return
+  if (capacity.value === null || maxPending.value === null) return
   saving.value = true
   try {
-    await saveSandboxQueueLimit(maxPending.value)
+    await saveSandboxLimits(capacity.value, maxPending.value)
     await refresh()
     message.success(t('sandbox.saved'))
   } catch { message.error(t('sandbox.saveFailed')) }
   finally { saving.value = false }
 }
-onMounted(refresh)
+let poll: ReturnType<typeof setInterval> | undefined
+onMounted(() => {
+  void refresh()
+  poll = setInterval(async () => {
+    if (loading.value || saving.value) return
+    try { status.value = await fetchSandboxStatus(); error.value = false }
+    catch { error.value = true }
+  }, 5000)
+})
+onUnmounted(() => clearInterval(poll))
 </script>
 
 <style scoped>
@@ -68,7 +84,7 @@ h2 { margin: 0; font-size: 20px; }
 p { margin: 5px 0; color: #64748b; }
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .stats > div { display: grid; gap: 8px; padding: 18px; border: 1px solid #e2e8f0; border-radius: 10px; }
-.queue-setting { display: flex; align-items: center; gap: 12px; }
+.queue-setting { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 strong { font-size: 24px; }
 span { color: #64748b; }
 @media (max-width: 800px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

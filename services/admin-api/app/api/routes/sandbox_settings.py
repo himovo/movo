@@ -18,7 +18,8 @@ router = APIRouter()
 
 
 class UpdateQueueRequest(BaseModel):
-    max_pending: int = Field(ge=0, le=100)
+    max_pending: int | None = Field(default=None, ge=0, le=100)
+    capacity: int | None = Field(default=None, ge=1, le=100)
 
 
 def _manager_request(method: str, path: str, body: dict | None = None) -> dict:
@@ -49,6 +50,8 @@ def _status() -> dict:
         "running": int(data.get("running", 0)),
         "pending": int(data.get("pending", 0)),
         "capacity": int(data.get("capacity", 0)),
+        "task_capacity": int(data.get("resident_capacity", data.get("task_capacity", 10))),
+        "resident_containers": int(data.get("resident_containers", 0)),
         "max_pending": int(data.get("max_pending", 0)),
         "plugin_runtimes": int(data.get("plugin_runtimes", 0)),
         "plugin_idle_seconds": int(os.environ.get("MOVO_SANDBOX_PLUGIN_IDLE_SECONDS", "900")),
@@ -63,6 +66,6 @@ async def get_status(_admin=Depends(get_current_admin_user)) -> dict:
 @router.put("/settings")
 async def update_settings(body: UpdateQueueRequest, _admin=Depends(get_current_admin_user)) -> dict:
     try:
-        return await asyncio.to_thread(_manager_request, "PUT", "/v1/settings", body.model_dump())
+        return await asyncio.to_thread(_manager_request, "PUT", "/v1/settings", body.model_dump(exclude_none=True))
     except (OSError, urllib.error.URLError, RuntimeError, ValueError) as exc:
         raise HTTPException(status_code=503, detail="sandbox_manager_unavailable") from exc

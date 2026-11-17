@@ -41,6 +41,9 @@ from .execution_timeout import (
     ExecutionTimeoutPolicy,
     execute_with_timeout,
 )
+from .receipt_wait import wait_for_receipt
+from .observability import tool_stage, ToolControlPlaneTimeout
+from uuid import uuid4
 from .cancellation import ActiveCapabilityExecutions
 
 
@@ -244,13 +247,21 @@ class EnterpriseToolService:
         if sink is not None:
             await sink(event)
 
+    @tool_stage("gateway", total=True)
     async def execute(self, request: ToolExecuteRequest, claims: ToolGatewayClaims) -> EnterpriseActionReceipt:
         tool, binding = await self._authorize(request.toolName, request.profileVersion, request.sessionId, claims)
+        try:
+            return await asyncio.wait_for(self._execute_authorized(request, claims, tool, binding),
+                                          timeout=tool.timeout_ms / 1000 + 20)
+        except asyncio.TimeoutError as exc:
+            raise ToolControlPlaneTimeout('Tool gateway deadline exceeded; check the recorded outcome before retrying') from exc
+
+    async def _execute_authorized(self, request, claims, tool, binding):
         existing = await self._repository.receipt_by_idempotency(request.idempotencyKey)
         if existing is not None:
             if existing.action_id != request.actionId or existing.tool_name != request.toolName:
                 raise ToolPolicyDenied("idempotency key is bound to another action")
-            return existing
+            return await wait_for_receipt(self._repository, request.idempotencyKey) if existing.status == 'running' else existing
         if self._approval_required(tool, request.arguments):
             approval = await self._repository.approval(request.actionId)
             if approval is None or approval.status != "approved":
@@ -264,7 +275,9 @@ class EnterpriseToolService:
                 )
                 if grant is None:
                     raise ToolPolicyDenied("one-shot or session MOVO approval is required")
+        execution_owner = uuid4().hex
         receipt = EnterpriseActionReceipt(
+            execution_owner=execution_owner,
             action_id=request.actionId,
             idempotency_key=request.idempotencyKey,
             tenant_id=claims.tenant_id,
@@ -278,6 +291,8 @@ class EnterpriseToolService:
         receipt = await self._repository.start_receipt(receipt)
         if receipt.status != "running":
             return receipt
+        if receipt.execution_owner != execution_owner:
+            return await wait_for_receipt(self._repository, request.idempotencyKey)
         active_turn = dict(binding.get("active_turn") or {})
         message_id = str(active_turn.get("message_id") or "")
         if tool.delivery_mode == "authoritative_markdown" and self._authoritative_deliveries is not None:
@@ -331,6 +346,7 @@ class EnterpriseToolService:
                     **dict(active_turn.get("turn_context") or {}),
                     **dict(active_turn.get("turn_metadata") or {}),
                 }
+                capability_turn_context['_execution_permit'] = request.executionPermit
                 if str(tool.capability_ref or "") == "data.run_script@v1" and request.currentSkillName:
                     profile = await self._profiles.get(request.profileVersion)
                     try:
@@ -476,6 +492,8 @@ class EnterpriseToolService:
                 )
             await self._repository.finish_receipt(request.actionId, status="cancelled", error="tool execution cancelled")
             raise
+        except ToolControlPlaneTimeout:
+            raise
         except Exception as exc:
             receipt = await self._repository.finish_receipt(
                 request.actionId, status="failed", error=self._safe_error(exc)
@@ -488,6 +506,7 @@ class EnterpriseToolService:
         )
         return receipt
 
+    @tool_stage("authorization", timeout_seconds=5)
     async def _authorize(
         self, tool_name: str, profile_version: str, session_id: str, claims: ToolGatewayClaims
     ) -> tuple[ToolProfileDefinition, dict[str, Any]]:

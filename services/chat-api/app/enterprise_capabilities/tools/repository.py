@@ -7,6 +7,8 @@ from pymongo import ReturnDocument
 
 from app.core.db import get_db
 
+from .observability import tool_stage
+
 from .contracts import (
     EnterpriseActionReceipt,
     EnterpriseApproval,
@@ -46,16 +48,19 @@ class EnterpriseToolRepository:
     async def session_binding(self, session_id: str) -> dict[str, Any] | None:
         return await get_db().agent_kernel_bindings.find_one({"kernel_session_id": session_id, "current": True})
 
+    @tool_stage("receipt_by_idempotency", timeout_seconds=3)
     async def receipt_by_idempotency(self, key: str) -> EnterpriseActionReceipt | None:
         row = await get_db()[self.RECEIPTS].find_one({"idempotency_key": key})
         return self._receipt(row)
 
+    @tool_stage("start_receipt", timeout_seconds=3)
     async def start_receipt(self, receipt: EnterpriseActionReceipt) -> EnterpriseActionReceipt:
         existing = await self.receipt_by_idempotency(receipt.idempotency_key)
         if existing is not None:
             return existing
         try:
             document = store_json_field(receipt.model_dump(mode="python"), "result")
+            document["execution_owner"] = receipt.execution_owner
             await get_db()[self.RECEIPTS].insert_one(document)
             return receipt
         except Exception:
@@ -64,6 +69,7 @@ class EnterpriseToolRepository:
                 raise
             return concurrent
 
+    @tool_stage("finish_receipt", timeout_seconds=3)
     async def finish_receipt(
         self,
         action_id: str,
@@ -73,7 +79,7 @@ class EnterpriseToolRepository:
         error: str = "",
     ) -> EnterpriseActionReceipt:
         row = await get_db()[self.RECEIPTS].find_one_and_update(
-            {"action_id": action_id},
+            {"action_id": action_id, "status": "running"},
             {"$set": {
                 "status": status,
                 "result_json": store_json_field({"result": dict(result or {})}, "result")["result_json"],
@@ -82,6 +88,8 @@ class EnterpriseToolRepository:
             }},
             return_document=ReturnDocument.AFTER,
         )
+        if row is None:
+            row = await get_db()[self.RECEIPTS].find_one({'action_id': action_id})
         receipt = self._receipt(row)
         if receipt is None:
             raise LookupError("action receipt not found")
@@ -188,6 +196,7 @@ class EnterpriseToolRepository:
         row = await get_db()[self.SESSION_GRANTS].find_one({"grant_id": grant.grant_id})
         return EnterpriseSessionApprovalGrant.model_validate(self._clean(row))
 
+    @tool_stage("audit", timeout_seconds=3)
     async def audit(self, *, tenant_id: str, user_id: str, action_id: str, event: str, details: dict[str, Any]) -> None:
         await get_db()[self.AUDIT].insert_one({
             "tenant_id": tenant_id,

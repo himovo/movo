@@ -66,7 +66,7 @@ def child_path(path: Path, work_dir: Path) -> str:
 def run_script_job(
     *, work_dir: Path, runner_path: Path, plugin_path: Path, stdin_path: Path,
     env: dict[str, str], timeout_seconds: int, limit_child_process, skill_digest: str = "",
-    task_id: str = "", call_id: str = "",
+    task_id: str = "", call_id: str = "", execution_permit: str = "",
 ) -> subprocess.CompletedProcess[str]:
     if not container_backend_enabled():
         return subprocess.run(
@@ -83,7 +83,7 @@ def run_script_job(
     with httpx.Client(timeout=timeout_seconds + 30, trust_env=False) as client:
         response = client.post(
             f"{url}/v1/script-task-calls" if task_id else f"{url}/v1/script-jobs",
-            json={"task_id": task_key(task_id), "call_id": call_id} if task_id else {"job_id": work_dir.name},
+            json={"task_id": task_key(task_id), "call_id": call_id, **({"execution_permit": execution_permit} if execution_permit else {})} if task_id else {"job_id": work_dir.name},
             headers={"Authorization": f"Bearer {token}"},
         )
         if response.is_error:

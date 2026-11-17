@@ -16,8 +16,11 @@ from .storage_paths import legacy_runtime_root, manager_state_root, workspace_ro
 
 
 class PluginRuntimes:
-    def __init__(self, engine: DockerEngine) -> None:
+    def __init__(self, engine: DockerEngine, scheduler=None, permits=None, residents=None) -> None:
         self.engine = engine
+        self.scheduler = scheduler
+        self.permits = permits
+        self.residents = residents
         self.project = os.environ.get("MOVO_SANDBOX_COMPOSE_PROJECT", "movo")
         self.image = os.environ["MOVO_SANDBOX_RUNTIME_IMAGE"]
         self.volume = os.environ["MOVO_SANDBOX_WORKSPACE_VOLUME"]
@@ -26,13 +29,17 @@ class PluginRuntimes:
         self._store = LeaseStore(manager_state_root(), legacy_root=self.legacy_root)
         self._leases: dict[str, dict] = self._store.load()
         self._lock = threading.Lock()
+        if self.residents:
+            for entry in self._leases.values():
+                self.residents.claim(f"plugin:{entry['isolation_key']}", restoring=True)
         self._creating: set[str] = set()
+        self._starting: set[str] = set()
 
     def status(self) -> dict:
         with self._lock:
             return {"plugin_runtimes": len(self._leases)}
 
-    def create(self, isolation_key: str, personal_space_key: str | None = None) -> dict:
+    def create(self, isolation_key: str, personal_space_key: str | None = None, *, startup_guard: bool = False) -> dict:
         if not isolation_key or len(isolation_key) > 512:
             raise ValueError("Invalid Runtime isolation key")
         if personal_space_key is not None and not re.fullmatch(r"[0-9a-f]{64}", personal_space_key):
@@ -41,19 +48,47 @@ class PluginRuntimes:
             if isolation_key in self._creating:
                 raise ValueError("Runtime creation is already in progress")
             self._creating.add(isolation_key)
+        lease_id = uuid4().hex
+        permit = None
+        with self._lock:
+            self._starting.add(lease_id)
         try:
-            return self._create(isolation_key, personal_space_key)
+            if self.permits and startup_guard:
+                permit = self.permits.acquire(lease_id, 'startup',
+                    ready=(lambda active: self.residents.available(f'plugin:{isolation_key}')) if self.residents else None,
+                    reserve=(lambda: self.residents.claim(f'plugin:{isolation_key}')) if self.residents else None)
+                result = self._create(isolation_key, personal_space_key, lease_id)
+                self.permits.heartbeat(permit['token'], lease_id)
+                return {**result, 'startup_token': permit['token']}
+            if self.scheduler:
+                with self.scheduler.slot(f'plugin-start:{lease_id}',
+                        ready=(lambda active: self.residents.available(f'plugin:{isolation_key}')) if self.residents else None,
+                        reserve=(lambda: self.residents.claim(f'plugin:{isolation_key}')) if self.residents else None):
+                    return self._create(isolation_key, personal_space_key, lease_id)
+            return self._create(isolation_key, personal_space_key, lease_id)
+        except Exception:
+            with self._lock:
+                retained = lease_id in self._leases
+            if self.residents and not retained:
+                self.residents.release(f'plugin:{isolation_key}')
+                self.scheduler.wake()
+            if permit and not retained:
+                self.permits.release(permit['token'], lease_id)
+            raise
         finally:
             with self._lock:
                 self._creating.discard(isolation_key)
+                self._starting.discard(lease_id)
 
-    def _create(self, isolation_key: str, personal_space_key: str | None = None) -> dict:
+    def _create(self, isolation_key: str, personal_space_key: str | None = None, lease_id: str | None = None) -> dict:
         with self._lock:
             previous = next((item["lease_id"] for item in self._leases.values()
                              if item.get("isolation_key") == isolation_key), None)
         if previous:
             self.dispose(previous)
-        lease_id = uuid4().hex
+            if self.residents:
+                self.residents.claim(f'plugin:{isolation_key}')
+        lease_id = lease_id or uuid4().hex
         storage_key = hashlib.sha256(isolation_key.encode("utf-8")).hexdigest()
         legacy_storage = self.legacy_root / "sandbox-runtimes" / storage_key
         if legacy_storage.is_dir():
@@ -119,6 +154,8 @@ class PluginRuntimes:
                     *(["MOVO_PLUGIN_LEGACY_HOME=/data/dsh-runtime"] if personal_space_key else []),
                     f"TMPDIR={'/job/home/tmp' if personal_space_key else '/tmp'}",
                     "NODE_USE_ENV_PROXY=1",
+                    f"MOVO_EXECUTION_ADMISSION_URL=http://sandbox-gateway:8101/v1/sandbox-relay/{lease_id}/admission",
+                    f"MOVO_EXECUTION_ADMISSION_TOKEN={token}",
                     *(["MOVO_PERSONAL_SPACE_ROOT=/job/home"] if personal_space_key else []),
                     "HTTP_PROXY=http://sandbox-egress:3128", "HTTPS_PROXY=http://sandbox-egress:3128",
                     "NO_PROXY=sandbox-gateway,localhost,127.0.0.1",
@@ -155,18 +192,58 @@ class PluginRuntimes:
             try:
                 self._cleanup(container_id, network_id, proxy_id if connected_proxy else None, parent_id if connected_parent else None)
             except Exception:
-                pass
+                # Retain uncertain owners for expiry/restart cleanup before freeing capacity.
+                if container_id is not None:
+                    with self._lock:
+                        self._leases[lease_id] = {
+                            'lease_id': lease_id, 'isolation_key': isolation_key,
+                            'container_id': container_id, 'network_id': network_id,
+                            'proxy_id': proxy_id, 'parent_id': parent_id,
+                        }
+                        self._store.save(self._leases)
             raise
 
     def dispose(self, lease_id: str) -> None:
         with self._lock:
+            if lease_id in self._starting:
+                raise RuntimeError('Plugin container startup has not settled')
             lease = self._leases.get(lease_id)
         if lease is None:
             return
         self._cleanup(lease["container_id"], lease["network_id"], lease["proxy_id"], lease["parent_id"])
+        if self.permits:
+            self.permits.release_owner(lease_id)
         with self._lock:
             self._leases.pop(lease_id, None)
             self._store.save(self._leases)
+        if self.residents:
+            self.residents.release(f"plugin:{lease['isolation_key']}")
+            self.scheduler.wake()
+
+    def recover_interrupted_owner(self, owner: str) -> None:
+        with self._lock:
+            if owner in self._starting:
+                raise RuntimeError('Plugin container startup has not settled')
+            known = owner in self._leases
+        if known:
+            self.dispose(owner)
+            return
+        filters = {"label": [f"movo.lease={owner}", f"movo.project={self.project}"]}
+        import json
+        rows = self.engine.request('GET', '/containers/json', params={
+            'all': 1, 'filters': json.dumps(filters),
+        }).json()
+        for row in rows:
+            state = self.engine.inspect(row['Id'])
+            networks = [value['NetworkID'] for name, value in state.get('NetworkSettings', {}).get('Networks', {}).items()
+                        if name == f'movo-plugin-net-{owner}']
+            self.engine.kill(row['Id'])
+            self.engine.remove(row['Id'])
+            for network in networks:
+                members = self.engine.request('GET', f'/networks/{network}').json().get('Containers') or {}
+                for member in members:
+                    self.engine.disconnect_network(network, member)
+                self.engine.remove_network(network)
 
     def _cleanup(self, container_id: str | None, network_id: str | None,
                  proxy_id: str | None, parent_id: str | None) -> None:
