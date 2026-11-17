@@ -95,7 +95,7 @@ const detail = computed(() => props.item.kind === 'tool' ? toolCallSummary(props
 .activity-copy { min-width:0; overflow-wrap:anywhere; }
 .tool-activity-row .activity-copy {
   flex:0 0 auto;
-  max-width:clamp(140px,22vw,260px);
+  max-width:40%;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;

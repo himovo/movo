@@ -64,17 +64,14 @@ function syncExpanded(event: Event) {
   animation:repeated-tool-sheen 1.7s linear infinite;
 }
 .repeated-tool-group ol { display:flex; flex-direction:column; gap:2px; margin:3px 0 6px 28px; padding:2px 0 2px 12px; border-left:1px solid #e2e8f0; color:#64748b; font-size:12px; line-height:18px; }
-.repeated-tool-group li { display:grid; grid-template-columns:18px minmax(96px,220px) minmax(0,1fr) 24px; align-items:center; column-gap:7px; min-height:26px; }
+.repeated-tool-group li { display:flex; flex-wrap:wrap; align-items:center; gap:0 7px; min-height:26px; }
 .repeated-tool-label { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.tool-call-name { min-width:0; overflow:hidden; color:#475569; font-weight:500; text-overflow:ellipsis; white-space:nowrap; }
-.tool-call-summary { min-width:0; overflow:hidden; color:#94a3b8; text-overflow:ellipsis; white-space:nowrap; }
-.repeated-tool-group li :deep(.tool-error-details[open]) { grid-column: 2 / -1; width: 100%; }
+.tool-call-name { flex:none; color:#475569; font-weight:500; white-space:nowrap; }
+.tool-call-summary { min-width:0; flex:1 1 auto; overflow:hidden; color:#94a3b8; text-overflow:ellipsis; white-space:nowrap; }
+.repeated-tool-group li :deep(.tool-error-details[open]) { width:100%; margin-left:25px; }
 @keyframes repeated-tool-sheen { from { background-position:100% 0; } to { background-position:-140% 0; } }
 @media (max-width:640px) {
-  .repeated-tool-group li { grid-template-columns:18px minmax(0,1fr) 24px; row-gap:1px; }
-  .tool-call-summary { grid-column:2; }
-  .repeated-tool-group li :deep(.tool-error-details) { grid-column:3; grid-row:1; }
-  .repeated-tool-group li :deep(.tool-error-details[open]) { grid-column:2 / -1; grid-row:auto; }
+  .repeated-tool-group li { gap:1px 7px; }
 }
 @media (prefers-reduced-motion: reduce) { .repeated-tool-chevron { transition:none; } .repeated-tool-group summary.running .repeated-tool-label { color:#2563eb; background:none; animation:none; } }
 </style>

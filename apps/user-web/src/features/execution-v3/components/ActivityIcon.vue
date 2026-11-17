@@ -54,9 +54,10 @@ const icon = computed(() => icons[String(props.category || props.kind || 'tool')
 </script>
 
 <template>
-  <NIcon class="activity-icon" :component="icon" aria-hidden="true" />
+  <NIcon class="activity-icon" :class="{ 'command-icon': category === 'execution.v3.activity.run_commands' }" :component="icon" aria-hidden="true" />
 </template>
 
 <style scoped>
 .activity-icon { width:18px; height:18px; font-size:18px; }
+.activity-icon.command-icon { width:16px; height:16px; font-size:16px; }
 </style>
