@@ -170,6 +170,8 @@ http://localhost:3000/admin/setup
 
 The setup wizard checks the deployment and guides you through creating the organization and initial accounts, connecting a default chat model, and optionally configuring embedding, reranking, vision, image generation and Web search providers. Provider credentials are encrypted before storage.
 
+For offline or LAN-only installs, see [restricted-network deployment and setup troubleshooting](deploy/RESTRICTED_NETWORKS.md).
+
 After setup:
 
 | Entry | Default URL | Purpose |

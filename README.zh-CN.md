@@ -172,6 +172,8 @@ http://localhost:3000/admin/setup
 
 初始化向导会检查部署状态，并引导你创建组织和初始账号、连接默认对话模型；还可以按需配置 Embedding、Rerank、Vision、图片生成和联网搜索服务。供应商凭证会加密后存储。
 
+如果在离线环境或仅限局域网的环境中部署，请参阅[受限网络部署与初始化排查](deploy/RESTRICTED_NETWORKS.md)。
+
 初始化完成后：
 
 | 入口 | 默认地址 | 用途 |
