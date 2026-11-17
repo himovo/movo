@@ -115,10 +115,11 @@ export class ContainerPluginRuntimePool {
     startupHeartbeat?.unref?.()
     entry.unavailable = error => {
       if (!['ECONNREFUSED', 'ENOTFOUND'].includes(error?.code)) return
-      if (entry.runtime) {
-        this.#byRuntime.delete(entry.runtime.runtimeId)
-        this.#byIsolation.delete(entry.runtime.isolationKey)
-      }
+      // Health probes may fail before the child begins listening. The caller
+      // retries startup and owns cleanup until a runtime is fully registered.
+      if (!entry.runtime) return
+      this.#byRuntime.delete(entry.runtime.runtimeId)
+      this.#byIsolation.delete(entry.runtime.isolationKey)
       this.#byLease.delete(entry.lease_id)
       this.#reaper.delete(entry)
     }

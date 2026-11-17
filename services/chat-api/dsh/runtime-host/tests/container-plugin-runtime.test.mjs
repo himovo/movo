@@ -98,3 +98,41 @@ test('plugin Runtime forwards refreshed model credentials through its scoped rel
     await new Promise(resolve => child.close(resolve))
   }
 })
+
+test('transient startup refusal retains the relay lease after the child becomes ready', async () => {
+  const child = createServer((request, response) => {
+    response.writeHead(200, { 'content-type': 'application/json' })
+    response.end(JSON.stringify(request.url === '/health'
+      ? { ok: true, kernel: 'dsh' }
+      : { runtimeId: 'runtime-after-retry', isolationKey: 'startup-retry', profileVersion: 'test' }))
+  })
+  const reservation = createServer()
+  await new Promise(resolve => reservation.listen(0, '127.0.0.1', resolve))
+  const port = reservation.address().port
+  await new Promise(resolve => reservation.close(resolve))
+  const manager = createServer((request, response) => {
+    response.writeHead(200, { 'content-type': 'application/json' })
+    response.end(JSON.stringify(request.method === 'POST' ? {
+      lease_id: 'd'.repeat(32), host: '127.0.0.1', port, token: 'scoped-token',
+    } : { disposed: true }))
+  })
+  await new Promise(resolve => manager.listen(0, '127.0.0.1', resolve))
+  const pool = new ContainerPluginRuntimePool({ managerUrl: `http://127.0.0.1:${manager.address().port}`, managerToken: 'manager-token' })
+  let front
+  const startChild = setTimeout(() => child.listen(port, '127.0.0.1'), 500)
+  try {
+    await pool.create({ isolationKey: 'startup-retry', profileVersion: 'test', modelProfile: {} })
+    front = createServer((request, response) => pool.relay(request, response))
+    await new Promise(resolve => front.listen(0, '127.0.0.1', resolve))
+    const response = await fetch(`http://127.0.0.1:${front.address().port}/v1/sandbox-relay/${'d'.repeat(32)}/model`, {
+      headers: { authorization: 'Bearer scoped-token' },
+    })
+    assert.equal(response.status, 405)
+  } finally {
+    clearTimeout(startChild)
+    await pool.disposeAll()
+    if (front) await new Promise(resolve => front.close(resolve))
+    await new Promise(resolve => manager.close(resolve))
+    if (child.listening) await new Promise(resolve => child.close(resolve))
+  }
+})
