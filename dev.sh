@@ -59,6 +59,26 @@ ensure_redis() {
     fi
 }
 
+ensure_node_runtime() {
+    local major=""
+    if command -v node >/dev/null 2>&1; then
+        major="$(node -p 'process.versions.node.split(".")[0]')"
+    fi
+    if [ -z "$major" ] || [ "$major" -lt 20 ]; then
+        local nvm_script="${NVM_DIR:-$HOME/.nvm}/nvm.sh"
+        if [ -f "$nvm_script" ]; then
+            # shellcheck source=/dev/null
+            source "$nvm_script"
+            nvm use --silent 24 >/dev/null 2>&1 || nvm use --silent 20 >/dev/null 2>&1 || true
+        fi
+    fi
+    major="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || true)"
+    if [ -z "$major" ] || [ "$major" -lt 20 ]; then
+        echo "Node.js 20 or newer is required to run the web apps." >&2
+        exit 1
+    fi
+}
+
 cleanup() {
     echo ""
     echo "Stopping services..."
@@ -167,6 +187,7 @@ cleanup_ports
 ensure_backend_venv
 ensure_document_processing_venv
 ensure_redis
+ensure_node_runtime
 echo "Using Backend Python: $BACKEND_PYTHON_BIN"
 echo "Using Doc Processing Python: $DOC_PROCESSING_PYTHON_BIN"
 
