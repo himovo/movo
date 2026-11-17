@@ -4,6 +4,7 @@ import pytest
 
 from app.offline_package_store import OfflinePackageStore
 from app.offline_collections import record
+from app.offline_cache_merge import is_mutable_cache_index
 
 
 def test_export_import_reuses_package_files(tmp_path: Path) -> None:
@@ -39,6 +40,31 @@ def test_import_rejects_modified_package(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="checksum"):
         target.import_archive(modified)
     assert not (target.root / "pip" / "example.whl").exists()
+
+
+def test_import_preserves_existing_mutable_pnpm_index(tmp_path: Path) -> None:
+    source = OfflinePackageStore(tmp_path / "source")
+    index = source.root / "pnpm" / "v11" / "index.db"
+    index.parent.mkdir()
+    index.write_bytes(b"remote index")
+    (source.root / "pip" / "example.whl").write_bytes(b"wheel")
+    archive = tmp_path / "packages.zip"
+    source.export_to(archive)
+
+    target = OfflinePackageStore(tmp_path / "target")
+    local_index = target.root / "pnpm" / "v11" / "index.db"
+    local_index.parent.mkdir()
+    local_index.write_bytes(b"local index")
+    result = target.import_archive(archive)
+
+    assert local_index.read_bytes() == b"local index"
+    assert (target.root / "pip" / "example.whl").read_bytes() == b"wheel"
+    assert result["skippedCacheIndexes"] == ["pnpm/v11/index.db"]
+
+
+def test_nested_pnpm_metadata_is_mutable() -> None:
+    assert is_mutable_cache_index("pnpm-cache/v12/metadata/registry/package.jsonl")
+    assert not is_mutable_cache_index("pnpm/v11/files/immutable-data")
 
 
 def test_offline_mode_updates_plugin_package_manager_config(tmp_path: Path) -> None:

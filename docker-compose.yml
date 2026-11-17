@@ -267,6 +267,7 @@ services:
     restart: unless-stopped
     read_only: true
     cap_drop: [ALL]
+    cap_add: [DAC_OVERRIDE, FOWNER]
     security_opt: ["no-new-privileges:true"]
     tmpfs:
       - /tmp:size=64m

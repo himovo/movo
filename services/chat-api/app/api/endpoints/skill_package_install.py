@@ -148,7 +148,7 @@ async def retry_organization_skill_dependency(
         raise HTTPException(status_code=403, detail="organization_install_forbidden")
     row = await get_db().skills.find_one({
         "_id": skill_id, "main_id": principal.main_id,
-    }, {"package_digest": 1, "package_files": 1, "pending_package": 1})
+    }, {"package_id": 1, "package_digest": 1, "package_files": 1, "pending_package": 1})
     if not row:
         raise HTTPException(status_code=404, detail="Skill package not found")
     return _response({"status": await retry_environment(row) or "not_required"})

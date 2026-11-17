@@ -41,6 +41,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import axios from 'axios'
 import { NIcon, useMessage } from 'naive-ui'
 import { ArchiveOutline, CloudDownloadOutline, CloudOfflineOutline, CloudUploadOutline, CodeSlashOutline, CubeOutline, ExtensionPuzzleOutline, LayersOutline, LogoNpm, RefreshOutline, TimeOutline } from '@vicons/ionicons5'
 import { t } from '@/composables/i18n'
@@ -117,9 +118,20 @@ async function upload(event: Event) {
   activeTransfer.value = 'import'
   try {
     inventory.value = await importOfflinePackages(file)
-    message.success(t('offline.imported'))
-  } catch { message.error(t('offline.importFailed')) }
+    const skipped = inventory.value.skippedCacheIndexes?.length || 0
+    if (skipped) message.warning(t('offline.importedWithCacheIndexes', { count: skipped }))
+    else message.success(t('offline.imported'))
+  } catch (error) { message.error(importFailureMessage(error)) }
   finally { activeTransfer.value = null; target.value = '' }
+}
+
+function importFailureMessage(error: unknown): string {
+  const detail = axios.isAxiosError(error) ? String(error.response?.data?.detail || '') : ''
+  if (detail === 'System packages require the same sandbox base image') return t('offline.importError.baseImage')
+  if (detail === 'Script package environment is incompatible with this host') return t('offline.importError.scriptEnvironment')
+  if (detail === 'Runtime package environment is incompatible with this host') return t('offline.importError.runtimeEnvironment')
+  if (detail.includes('image is unavailable for package compatibility check')) return t('offline.importError.sourceImage')
+  return detail ? `${t('offline.importFailed')}: ${detail}` : t('offline.importFailed')
 }
 
 onMounted(load)

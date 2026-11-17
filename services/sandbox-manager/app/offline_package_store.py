@@ -72,7 +72,7 @@ class OfflinePackageStore:
                 "collections": list_records(self.root)}
 
     def export_to(self, output: Path, record_ids: set[str] | None = None) -> None:
-        manifest = {"version": 1, "platform": platform.machine(),
+        manifest = {"version": 2, "platform": platform.machine(),
                     "os": platform.system().lower(), "files": []}
         selected_files = None
         if record_ids is not None:
@@ -95,10 +95,14 @@ class OfflinePackageStore:
                 manifest["baseImageId"] = engine.image_id(image_name)
                 if not manifest["baseImageId"]:
                     raise ValueError("Sandbox base image is unavailable")
+                from .offline_image_compatibility import fingerprint
+                manifest["baseImageEnvironment"] = fingerprint(engine, image_name, "script")
             if runtime_name:
                 manifest["runtimeImageId"] = engine.image_id(runtime_name)
                 if not manifest["runtimeImageId"]:
                     raise ValueError("Plugin runtime image is unavailable")
+                from .offline_image_compatibility import fingerprint
+                manifest["runtimeImageEnvironment"] = fingerprint(engine, runtime_name, "runtime")
         with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=3) as archive:
             for kind in KINDS:
                 for path in sorted((self.root / kind).rglob("*")):
@@ -118,11 +122,12 @@ class OfflinePackageStore:
             raise ValueError("Offline package archive exceeds the size limit")
 
     def import_archive(self, source: Path) -> dict:
+        from .offline_cache_merge import is_mutable_cache_index
         if not source.is_file() or not 0 < source.stat().st_size <= MAX_ARCHIVE_BYTES:
             raise ValueError("Invalid offline package archive size")
         with zipfile.ZipFile(source) as archive:
             manifest = json.loads(archive.read("manifest.json"))
-            if manifest.get("version") != 1 or manifest.get("platform") != platform.machine() or manifest.get("os") != platform.system().lower():
+            if manifest.get("version") not in (1, 2) or manifest.get("platform") != platform.machine() or manifest.get("os") != platform.system().lower():
                 raise ValueError("Offline package archive is incompatible with this host")
             entries = manifest.get("files")
             if not isinstance(entries, list) or len(entries) > 100000:
@@ -134,17 +139,11 @@ class OfflinePackageStore:
             kinds = {str(path).split("/", 1)[0] for path in declared}
             skill_packages = bool(kinds.intersection(("pip", "npm", "apt-archives", "apt-lists")))
             plugin_packages = bool(kinds.intersection(("pnpm", "pnpm-cache", "plugin-archives")))
-            if skill_packages and os.environ.get("MOVO_SANDBOX_SCRIPT_IMAGE") and not manifest.get("baseImageId"):
-                raise ValueError("Sandbox base image identity is missing from the archive")
-            if plugin_packages and os.environ.get("MOVO_SANDBOX_RUNTIME_IMAGE") and not manifest.get("runtimeImageId"):
-                raise ValueError("Plugin runtime identity is missing from the archive")
-            if (manifest.get("baseImageId") and skill_packages) or (manifest.get("runtimeImageId") and plugin_packages):
+            if (skill_packages and os.environ.get("MOVO_SANDBOX_SCRIPT_IMAGE")) or (plugin_packages and os.environ.get("MOVO_SANDBOX_RUNTIME_IMAGE")):
                 from .docker_engine import DockerEngine
-                engine = DockerEngine()
-                if manifest.get("baseImageId") and skill_packages and manifest["baseImageId"] != engine.image_id(os.environ.get("MOVO_SANDBOX_SCRIPT_IMAGE", "")):
-                    raise ValueError("Skill packages require the same sandbox base image")
-                if manifest.get("runtimeImageId") and plugin_packages and manifest["runtimeImageId"] != engine.image_id(os.environ.get("MOVO_SANDBOX_RUNTIME_IMAGE", "")):
-                    raise ValueError("Plugin packages require the same runtime image")
+                from .offline_image_compatibility import verify
+                verify(DockerEngine(), manifest, script=skill_packages, runtime=plugin_packages,
+                       apt=bool(kinds.intersection(("apt-archives", "apt-lists"))))
             if sum(int(item.get("size", 0)) for item in entries) > MAX_ARCHIVE_BYTES * 2:
                 raise ValueError("Offline package archive expands beyond the size limit")
             with tempfile.TemporaryDirectory(dir=self.root) as staging:
@@ -165,6 +164,7 @@ class OfflinePackageStore:
                             target_file.write(chunk)
                     if digest.hexdigest() != item.get("sha256"):
                         raise ValueError("Offline package checksum mismatch")
+                skipped_indices = []
                 for item in entries:
                     relative = str(item["path"])
                     source = Path(staging) / relative
@@ -174,9 +174,13 @@ class OfflinePackageStore:
                     if target.is_symlink():
                         raise ValueError("Offline package target is a symbolic link")
                     if target.exists() and _sha256_file(target) != item["sha256"]:
-                        raise ValueError("Offline package path conflicts with an existing package")
+                        if not is_mutable_cache_index(relative):
+                            raise ValueError("Offline package path conflicts with an existing package")
+                        skipped_indices.append(relative)
                 for item in entries:
                     relative = str(item["path"])
+                    if relative in skipped_indices:
+                        continue
                     source = Path(staging) / relative
                     target = self.root / relative
                     target.parent.mkdir(parents=True, exist_ok=True)
@@ -188,4 +192,4 @@ class OfflinePackageStore:
                         os.replace(source, target)
                         if Path(relative).parts[0] in ("npm", "pnpm", "pnpm-cache"):
                             target.chmod(0o666)
-        return self.inventory()
+        return {**self.inventory(), "skippedCacheIndexes": skipped_indices}

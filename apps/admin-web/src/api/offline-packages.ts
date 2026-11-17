@@ -6,6 +6,7 @@ export interface OfflinePackageInventory {
   os: string
   counts: Record<string, number>
   sizes: Record<string, number>
+  skippedCacheIndexes?: string[]
   collections: {
     digest: string
     kind?: string

@@ -29,8 +29,13 @@ export const offlinePackageMessages = {
   'offline.source': { 'zh-CN': '下载来源', 'en-US': 'Package source' },
   'offline.declared': { 'zh-CN': '声明的依赖', 'en-US': 'Declared dependencies' },
   'offline.imported': { 'zh-CN': '离线包导入成功', 'en-US': 'Packages imported' },
+  'offline.importedWithCacheIndexes': { 'zh-CN': '离线包已导入；保留了本机 {count} 个不同的缓存索引。', 'en-US': 'Packages imported; {count} differing local cache indexes were preserved.' },
   'offline.exportFailed': { 'zh-CN': '导出失败', 'en-US': 'Export failed' },
   'offline.importFailed': { 'zh-CN': '导入失败，请检查压缩包和平台架构', 'en-US': 'Import failed. Check the archive and platform.' },
+  'offline.importError.baseImage': { 'zh-CN': '导入失败：Skill 系统包需要与导出设备相同的沙箱基础镜像。', 'en-US': 'Import failed: Skill system packages require the same sandbox base image as the export host.' },
+  'offline.importError.scriptEnvironment': { 'zh-CN': '导入失败：Skill 依赖环境与本机沙箱镜像不兼容。', 'en-US': 'Import failed: Skill dependencies are incompatible with the local sandbox image.' },
+  'offline.importError.runtimeEnvironment': { 'zh-CN': '导入失败：插件依赖环境与本机运行镜像不兼容。', 'en-US': 'Import failed: Plugin dependencies are incompatible with the local runtime image.' },
+  'offline.importError.sourceImage': { 'zh-CN': '导入失败：旧版离线包缺少环境信息，本机也没有导出时的源镜像用于兼容性校验。请使用新版服务重新导出。', 'en-US': 'Import failed: this legacy archive has no environment details, and its source image is unavailable for compatibility checks. Export it again with the updated service.' },
   'offline.loadFailed': { 'zh-CN': '无法读取离线包源', 'en-US': 'Cannot load offline packages' },
   'offline.saveFailed': { 'zh-CN': '设置失败', 'en-US': 'Could not save setting' },
 } as const
