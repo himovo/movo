@@ -3,6 +3,8 @@ import { NInput } from 'naive-ui'
 import type { SessionSummary } from '../api/sessions'
 import type { ProjectGroup } from '../composables/code/projectHistoryVisibility'
 import { t } from '../composables/i18n'
+import { useSessionActivityClock } from '../composables/useSessionActivityClock'
+import SessionActivityLabel from './session/SessionActivityLabel.vue'
 
 defineProps<{
   pinnedSessions: SessionSummary[]
@@ -45,6 +47,7 @@ defineProps<{
   toggleProjectHistory: (workspaceId: string) => unknown
   createProject: () => unknown
 }>()
+const activityNow = useSessionActivityClock()
 const pinnedHistoryExpanded = defineModel<boolean>('pinnedExpanded', { required: true })
 const normalHistoryExpanded = defineModel<boolean>('normalExpanded', { required: true })
 const sharedHistoryExpanded = defineModel<boolean>('sharedExpanded', { required: true })
@@ -58,9 +61,10 @@ const editingSessionTitle = defineModel<string>('editingTitle', { required: true
           <svg class="h-3.5 w-3.5 transition-transform duration-150" :class="pinnedHistoryExpanded ? 'rotate-90' : ''" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m5 3 5 5-5 5"/></svg>
         </button>
         <div v-if="pinnedHistoryExpanded" class="max-h-40 overflow-y-auto">
-          <div v-for="session in pinnedSessions" :key="session.id" class="group flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-gray-600 hover:bg-gray-200/50">
+          <div v-for="session in pinnedSessions" :key="session.id" class="group relative flex items-center gap-1 hover:pr-7 focus-within:pr-7 rounded-lg px-2 py-1 text-sm text-gray-600 hover:bg-gray-200/50">
             <button type="button" class="min-w-0 flex-1 truncate text-left" :title="displaySessionTitle(session)" @click="selectSession(session.id)">{{ compactSessionTitle(session) }}</button>
-            <button type="button" class="shrink-0 text-blue-500 opacity-0 group-hover:opacity-100 focus:opacity-100" :aria-label="t('app.unpin')" :title="t('app.unpin')" @click="toggleSessionPin(session.id)"><svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3-1-6Z"/><path d="M12 14v7"/></svg></button>
+            <SessionActivityLabel class="group-hover:hidden group-focus-within:hidden" :session="session" :now="activityNow" />
+            <button type="button" class="absolute right-0 text-blue-500 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100" :aria-label="t('app.unpin')" :title="t('app.unpin')" @click="toggleSessionPin(session.id)"><svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3-1-6Z"/><path d="M12 14v7"/></svg></button>
           </div>
         </div>
       </section>
@@ -94,7 +98,7 @@ const editingSessionTitle = defineModel<string>('editingTitle', { required: true
           role="button"
           tabindex="0"
         >
-          <div class="flex min-w-0 items-center gap-2">
+          <div class="relative flex min-w-0 items-center gap-2 group-hover:pr-12 group-focus-within:pr-12">
             <n-input
               v-if="editingSessionId === session.id"
               v-model:value="editingSessionTitle"
@@ -147,11 +151,12 @@ const editingSessionTitle = defineModel<string>('editingTitle', { required: true
               :aria-label="t('app.sidebar.session_unread')"
               :title="t('app.sidebar.session_unread')"
             ></span>
-            <button v-if="editingSessionId !== session.id" type="button" class="shrink-0 text-gray-400 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-blue-600" :aria-label="t('app.pin')" :title="t('app.pin')" @click.stop="toggleSessionPin(session.id)"><svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3-1-6Z"/><path d="M12 14v7"/></svg></button>
+            <SessionActivityLabel v-if="editingSessionId !== session.id" class="group-hover:hidden group-focus-within:hidden" :session="session" :now="activityNow" />
+            <button v-if="editingSessionId !== session.id" type="button" class="absolute right-7 text-gray-400 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 hover:text-blue-600" :aria-label="t('app.pin')" :title="t('app.pin')" @click.stop="toggleSessionPin(session.id)"><svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3-1-6Z"/><path d="M12 14v7"/></svg></button>
             <button
               type="button"
-              class="shrink-0 overflow-hidden rounded-md p-0 text-gray-400 opacity-0 transition-all hover:bg-gray-200 hover:text-red-500 group-hover:w-6 group-hover:p-1 group-hover:opacity-100"
-              :class="deletingSessionId === session.id ? 'w-6 !p-1 !opacity-100 text-red-500' : 'w-0'"
+              class="absolute right-0 rounded-md p-1 text-gray-400 opacity-0 hover:bg-gray-200 hover:text-red-500 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100"
+              :class="deletingSessionId === session.id ? '!opacity-100 text-red-500' : ''"
               :disabled="deletingSessionId === session.id"
               @click.stop="handleDeleteSession(session.id)"
             >
@@ -186,7 +191,7 @@ const editingSessionTitle = defineModel<string>('editingTitle', { required: true
             role="button"
             tabindex="0"
           >
-            <div class="flex min-w-0 items-center gap-2">
+            <div class="relative flex min-w-0 items-center gap-2 group-hover:pr-6 group-focus-within:pr-6">
               <div class="min-w-0 flex-1 text-[13px] truncate" :title="displaySessionTitle(session)">
                 {{ compactSessionTitle(session) }}
               </div>
@@ -197,7 +202,8 @@ const editingSessionTitle = defineModel<string>('editingTitle', { required: true
               >
                 {{ t('session.sharedWithMe.badge') }}
               </span>
-              <button type="button" class="shrink-0 text-gray-400 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-blue-600" :aria-label="t('app.pin')" :title="t('app.pin')" @click.stop="toggleSessionPin(session.id)"><svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3-1-6Z"/><path d="M12 14v7"/></svg></button>
+              <SessionActivityLabel class="group-hover:hidden group-focus-within:hidden" :session="session" :now="activityNow" />
+              <button type="button" class="absolute right-0 text-gray-400 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 hover:text-blue-600" :aria-label="t('app.pin')" :title="t('app.pin')" @click.stop="toggleSessionPin(session.id)"><svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3-1-6Z"/><path d="M12 14v7"/></svg></button>
               <span
                 v-if="session.shared_unread"
                 class="h-2 w-2 shrink-0 rounded-full bg-blue-500"
@@ -235,7 +241,8 @@ const editingSessionTitle = defineModel<string>('editingTitle', { required: true
               :title="displaySessionTitle(session)"
             >
               <button type="button" class="min-w-0 flex-1 truncate text-left" @click="selectSession(session.id)">{{ compactSessionTitle(session) }}</button>
-              <button type="button" class="shrink-0 text-gray-400 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-blue-600" :aria-label="t('app.pin')" :title="t('app.pin')" @click.stop="toggleSessionPin(session.id)"><svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3-1-6Z"/><path d="M12 14v7"/></svg></button>
+              <SessionActivityLabel class="group-hover:hidden group-focus-within:hidden" :session="session" :now="activityNow" />
+              <button type="button" class="absolute right-0 text-gray-400 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 hover:text-blue-600" :aria-label="t('app.pin')" :title="t('app.pin')" @click.stop="toggleSessionPin(session.id)"><svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3-1-6Z"/><path d="M12 14v7"/></svg></button>
               <span v-if="sessionIsRunning(session.id)" class="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500 animate-pulse"></span>
               <span v-else-if="sessionIsUnread(session.id)" class="h-2 w-2 shrink-0 rounded-full bg-blue-500"></span>
             </div>

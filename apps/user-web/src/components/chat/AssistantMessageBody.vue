@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import ExecutionViewV3 from '../../features/execution-v3/components/ExecutionViewV3.vue'
 import ArtifactList from '../execution/ArtifactList.vue'
 import AssistantMarkdown from './AssistantMarkdown.vue'
+import AssistantMessageActions from './AssistantMessageActions.vue'
 import CodeTaskChangeCard from '../code/CodeTaskChangeCard.vue'
 import LocalBrowserInterventionPrompt from '../execution/LocalBrowserInterventionPrompt.vue'
 import { ensureMessageExecutionV3 } from '../../features/execution-v3/stores/messageExecution'
@@ -146,4 +147,5 @@ function isPlainAssistantText(content: string): boolean {
       <span>{{ evidenceLabel }}</span>
     </button>
   </div>
+  <AssistantMessageActions :message="message" :locale="locale" :live="live" />
 </template>
