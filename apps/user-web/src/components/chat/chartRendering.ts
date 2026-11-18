@@ -253,20 +253,26 @@ export async function renderChartBlocks(
         if (container) {
           const header1 = payload.xField || chatChromeMessages.chartItem[locale]
           const header2 = payload.yField || chatChromeMessages.chartContent[locale]
-          const rowsHtml = tableRows
-            .map(([a, b]) => `<tr><td class="border border-gray-300 px-3 py-2">${a}</td><td class="border border-gray-300 px-3 py-2">${b}</td></tr>`)
-            .join('')
-          container.innerHTML = `
-            <table class="w-full text-sm border border-gray-300 border-collapse">
-              <thead>
-                <tr>
-                  <th class="border border-gray-300 px-3 py-2 text-left">${header1}</th>
-                  <th class="border border-gray-300 px-3 py-2 text-left">${header2}</th>
-                </tr>
-              </thead>
-              <tbody>${rowsHtml}</tbody>
-            </table>
-          `
+          const table = document.createElement('table')
+          table.className = 'w-full text-sm border border-gray-300 border-collapse'
+          const thead = table.createTHead()
+          const headerRow = thead.insertRow()
+          for (const value of [header1, header2]) {
+            const cell = document.createElement('th')
+            cell.className = 'border border-gray-300 px-3 py-2 text-left'
+            cell.textContent = String(value)
+            headerRow.append(cell)
+          }
+          const body = table.createTBody()
+          for (const [left, right] of tableRows) {
+            const row = body.insertRow()
+            for (const value of [left, right]) {
+              const cell = row.insertCell()
+              cell.className = 'border border-gray-300 px-3 py-2'
+              cell.textContent = String(value)
+            }
+          }
+          container.replaceChildren(table)
         }
         canvas.dataset.rendered = 'true'
         continue

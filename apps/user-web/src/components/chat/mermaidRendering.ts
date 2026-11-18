@@ -47,7 +47,13 @@ export async function renderMermaidBlocks(): Promise<void> {
       const preview = raw.length > 800 ? raw.slice(0, 800) + '…' : raw
       block.dataset.rendered = 'false'
       block.classList.remove('mermaid')
-      block.innerHTML = `<div class="text-xs text-red-600 mb-2">${t('chat.mermaid_error')}</div><pre class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs overflow-auto whitespace-pre-wrap">${preview}</pre>`
+      const error = document.createElement('div')
+      error.className = 'text-xs text-red-600 mb-2'
+      error.textContent = t('chat.mermaid_error')
+      const source = document.createElement('pre')
+      source.className = 'bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs overflow-auto whitespace-pre-wrap'
+      source.textContent = preview
+      block.replaceChildren(error, source)
     }
   }
 }

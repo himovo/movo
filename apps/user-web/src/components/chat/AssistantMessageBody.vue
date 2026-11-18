@@ -9,7 +9,6 @@ import LocalBrowserInterventionPrompt from '../execution/LocalBrowserInterventio
 import { ensureMessageExecutionV3 } from '../../features/execution-v3/stores/messageExecution'
 import { visibleAnswerArtifacts } from '../../features/execution-v3/domain/artifactVisibility'
 import { withoutCodeChangeArtifacts } from './codeChangeArtifacts'
-import { normalizeAssistantContent } from '../../utils/assistantMarkdown'
 import type { ArtifactItem } from '../../features/execution-v3/domain/delivery'
 import type { DshCodeSession, DshTaskChangeSet } from '../../platform/types'
 import type { Locale } from '../../locales/messages'
@@ -66,12 +65,6 @@ const artifactPaths = computed(() => {
   return references
 })
 
-function isPlainAssistantText(content: string): boolean {
-  const trimmed = content?.trim() || ''
-  if (!trimmed) return true
-  const markers = ['#', '>', '*', '_', '`', '[', ']', '(', ')', '/', '\\']
-  return !markers.some(token => trimmed.includes(token)) && !trimmed.includes('```')
-}
 </script>
 
 <template>
@@ -95,14 +88,8 @@ function isPlainAssistantText(content: string): boolean {
     @skip="emit('complete-intervention')"
     @show-browser="emit('show-browser')"
   />
-  <div
-    v-if="message.content && isPlainAssistantText(message.content)"
-    class="assistant-content text-[14px] text-gray-900 leading-6 whitespace-pre-wrap"
-  >
-    {{ normalizeAssistantContent(message.content) }}
-  </div>
   <AssistantMarkdown
-    v-else-if="message.content"
+    v-if="message.content"
     class="assistant-content"
     :content="message.content"
     :artifact-paths="artifactPaths"

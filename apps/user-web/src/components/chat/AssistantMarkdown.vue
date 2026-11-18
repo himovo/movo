@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useMessage } from 'naive-ui'
-import { renderAssistantMarkdown } from '../../utils/assistantMarkdown'
+import AssistantMarkdownTree from './AssistantMarkdownTree'
 import { copyTextToClipboard } from '../../utils/copyTextToClipboard'
 import { t } from '../../composables/i18n'
 
@@ -15,7 +14,6 @@ const emit = defineEmits<{
   (event: 'image-preview', payload: { src: string; alt: string }): void
 }>()
 
-const html = computed(() => renderAssistantMarkdown(props.content, { workspaceFileReferences: props.fileReferences, artifactPaths: props.artifactPaths }))
 const message = useMessage()
 
 function fileReference(target: EventTarget | null): HTMLElement | null {
@@ -44,8 +42,8 @@ async function handleClick(event: Event) {
       copyButton.title = t('legacy.copied')
       window.setTimeout(() => {
         copyButton.removeAttribute('data-copied')
-        copyButton.setAttribute('aria-label', 'Copy code')
-        copyButton.title = 'Copy code'
+        copyButton.setAttribute('aria-label', t('chat.copy_code'))
+        copyButton.title = t('chat.copy_code')
       }, 1800)
     } catch {
       copyButton.title = t('chat.code_copy_failed')
@@ -74,12 +72,17 @@ function openFileByKeyboard(event: KeyboardEvent) {
 
 <template>
   <div
-    class="assistant-markdown prose prose-slate max-w-none prose-p:leading-7 prose-headings:font-semibold prose-headings:text-slate-900 prose-a:text-blue-600 hover:prose-a:text-blue-500"
+    class="assistant-markdown prose prose-slate max-w-none prose-headings:font-bold prose-headings:text-slate-900 prose-a:text-blue-600 hover:prose-a:text-blue-500"
     :class="{ 'assistant-markdown-compact': compact }"
-    v-html="html"
     @click="handleClick"
     @keydown="openFileByKeyboard"
-  ></div>
+  >
+    <AssistantMarkdownTree
+      :content="props.content"
+      :file-references="props.fileReferences"
+      :artifact-paths="props.artifactPaths || {}"
+    />
+  </div>
 </template>
 
 <style scoped>
@@ -96,7 +99,8 @@ function openFileByKeyboard(event: KeyboardEvent) {
   --assistant-quote-bg: #f6f8fb;
   --assistant-quote-border: #96afcf;
   color: #111827;
-  line-height: 1.75rem;
+  line-height: 2;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   overflow-wrap: anywhere;
 }
 
@@ -166,9 +170,19 @@ function openFileByKeyboard(event: KeyboardEvent) {
 .assistant-markdown :deep(img:focus-visible) { outline: 2px solid #3b82f6; outline-offset: 3px; }
 .assistant-markdown :deep(hr) { border-color: var(--assistant-rule); }
 .assistant-markdown :deep(blockquote) { margin: 1em 0; padding: .35em 1em; border-left: 3px solid var(--assistant-quote-border); background: var(--assistant-quote-bg); color: inherit; }
-.assistant-markdown :deep(table) { display: block; max-width: 100%; overflow-x: auto; border-color: var(--assistant-rule); font-size: .94em; }
-.assistant-markdown :deep(th), .assistant-markdown :deep(td) { border-color: var(--assistant-rule); }
-.assistant-markdown :deep(th) { background: var(--assistant-code-header-bg); color: inherit; }
+.assistant-markdown :deep(.assistant-table-scroll) { max-width: 100%; margin: 1.1em 0; overflow-x: auto; border: 1px solid var(--assistant-rule); border-radius: 10px; }
+.assistant-markdown :deep(.assistant-table-scroll:focus-visible) { outline: 2px solid #3b82f6; outline-offset: 2px; }
+.assistant-markdown :deep(table) { width: 100%; min-width: max-content; margin: 0; border-collapse: collapse; font-size: .92em; line-height: 1.55; }
+.assistant-markdown :deep(th), .assistant-markdown :deep(td) { padding: .6em .85em; border-bottom: 1px solid var(--assistant-rule); border-right: 1px solid var(--assistant-rule); text-align: left; vertical-align: top; }
+.assistant-markdown :deep(th:last-child), .assistant-markdown :deep(td:last-child) { border-right: 0; }
+.assistant-markdown :deep(tbody tr:last-child td) { border-bottom: 0; }
+.assistant-markdown :deep(th) { background: var(--assistant-code-header-bg); color: inherit; font-weight: 650; white-space: nowrap; }
+.assistant-markdown :deep(tbody tr:nth-child(even)) { background: #f8fafc; }
+.assistant-markdown :deep(ul) { list-style-type: disc; padding-left: 1.5em; }
+.assistant-markdown :deep(ol) { list-style-type: decimal; padding-left: 1.65em; }
+.assistant-markdown :deep(ul ul) { list-style-type: circle; }
+.assistant-markdown :deep(ul ul ul) { list-style-type: square; }
+.assistant-markdown :deep(li::marker) { color: #64748b; font-weight: 600; }
 .assistant-markdown :deep(h1), .assistant-markdown :deep(h2), .assistant-markdown :deep(h3), .assistant-markdown :deep(h4), .assistant-markdown :deep(strong) { color: inherit; }
 
 .assistant-markdown :deep(.assistant-inline-code) {
@@ -217,33 +231,40 @@ function openFileByKeyboard(event: KeyboardEvent) {
 :global(html.theme-dark .assistant-markdown .assistant-inline-code){ border-color:#334155; background:#172033; color:#cbd5e1; }
 :global(html.theme-dark .assistant-markdown .assistant-file-reference){ border-color:#294c78; background:#102542; color:#8ec5ff; }
 :global(html.theme-dark .assistant-markdown .assistant-file-reference:hover){ border-color:#3b6fa8; background:#143052; color:#bfdbfe; }
+:global(html.theme-dark .assistant-markdown tbody tr:nth-child(even)){ background:#182235; }
+:global(html.theme-dark .assistant-markdown li::marker){ color:#9fb0c8; }
 
 .assistant-markdown-compact {
-  font-size: 14px;
-  line-height: 1.72;
+  font-size: 15px;
+  line-height: 2;
 }
 
-.assistant-markdown-compact :deep(p) {
-  margin-top: .65em;
-  margin-bottom: .65em;
-  line-height: 1.72;
+.assistant-markdown-compact :deep(.assistant-markdown-tree > p) {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  line-height: 2;
 }
 
-.assistant-markdown-compact :deep(h1),
-.assistant-markdown-compact :deep(h2),
-.assistant-markdown-compact :deep(h3),
-.assistant-markdown-compact :deep(h4) {
-  margin-top: 1.25em;
-  margin-bottom: .55em;
+.assistant-markdown-compact :deep(.assistant-markdown-tree > h1),
+.assistant-markdown-compact :deep(.assistant-markdown-tree > h2),
+.assistant-markdown-compact :deep(.assistant-markdown-tree > h3),
+.assistant-markdown-compact :deep(.assistant-markdown-tree > h4) {
+  margin-top: 1.6em;
+  margin-bottom: .7em;
   line-height: 1.35;
+  letter-spacing: -.015em;
+  font-weight: 700;
 }
 
-.assistant-markdown-compact :deep(h1) { font-size: 1.18em; }
-.assistant-markdown-compact :deep(h2) { font-size: 1.12em; }
-.assistant-markdown-compact :deep(h3),
-.assistant-markdown-compact :deep(h4) { font-size: 1.06em; }
-.assistant-markdown-compact :deep(ul),
-.assistant-markdown-compact :deep(ol) { margin-top: .55em; margin-bottom: .55em; }
-.assistant-markdown-compact :deep(li) { margin-top: .2em; margin-bottom: .2em; }
+.assistant-markdown-compact :deep(.assistant-markdown-tree > h1) { font-size: 1.4em; }
+.assistant-markdown-compact :deep(.assistant-markdown-tree > h2) { font-size: 1.26em; }
+.assistant-markdown-compact :deep(.assistant-markdown-tree > h3),
+.assistant-markdown-compact :deep(.assistant-markdown-tree > h4) { font-size: 1.12em; }
+.assistant-markdown-compact :deep(.assistant-markdown-tree > ul),
+.assistant-markdown-compact :deep(.assistant-markdown-tree > ol) { margin-top: .7em; margin-bottom: .7em; padding-left: 1.65em; }
+.assistant-markdown-compact :deep(li) { margin-top: .3em; margin-bottom: .3em; padding-left: .15em; }
+.assistant-markdown-compact :deep(li > p) { margin: .2em 0; }
+.assistant-markdown-compact :deep(.assistant-markdown-tree > :first-child) { margin-top: 0; }
+.assistant-markdown-compact :deep(.assistant-markdown-tree > :last-child) { margin-bottom: 0; }
 .assistant-markdown-compact :deep(pre) { font-size: .9em; line-height: 1.6; }
 </style>

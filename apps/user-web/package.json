@@ -40,11 +40,13 @@
         "codemirror": "^6.0.2",
         "fabric": "^6.9.1",
         "highlight.js": "^11.11.1",
+        "markdown-it": "^14.3.3",
         "naive-ui": "^2.44.1",
         "pdfjs-dist": "^5.6.205",
         "vue": "^3.4.0"
     },
     "devDependencies": {
+        "@types/markdown-it": "^14.2.0",
         "@vitejs/plugin-vue": "^5.0.0",
         "autoprefixer": "^10.4.17",
         "postcss": "^8.4.35",

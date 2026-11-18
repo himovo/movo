@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { t } from '../../composables/i18n'
-import { renderAssistantMarkdown } from '../../utils/assistantMarkdown'
+import AssistantMarkdownTree from './AssistantMarkdownTree'
 import type { DocumentInfo } from './types'
 
 defineProps<{
@@ -63,10 +63,9 @@ const emit = defineEmits<{
         </div>
         <div class="flex flex-col">
           <div class="text-xs text-gray-500 mb-2">{{ t('chat.preview_panel') }}</div>
-          <div
-            class="h-[60vh] overflow-y-auto rounded-2xl border border-gray-200 p-4 prose prose-slate max-w-none"
-            v-html="renderAssistantMarkdown(content)"
-          ></div>
+          <div class="h-[60vh] overflow-y-auto rounded-2xl border border-gray-200 p-4 prose prose-slate max-w-none">
+            <AssistantMarkdownTree :content="content" />
+          </div>
         </div>
       </div>
     </div>

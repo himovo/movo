@@ -1,5 +1,5 @@
 import { nextTick, onBeforeUnmount, onMounted, onUpdated, watch, type ComputedRef, type Ref } from 'vue'
-import { normalizeAssistantContent, renderAssistantMarkdown } from '../../utils/assistantMarkdown'
+import { normalizeAssistantContent } from '../../utils/assistantMarkdown'
 import { ensureScript, renderMermaidBlocks } from './mermaidRendering'
 import { renderChartBlocks } from './chartRendering'
 import type { ChatMessage } from './chatMessage'
@@ -51,7 +51,6 @@ export function useChatWindowLifecycle(options: Options): void {
     if (!debugEnabled || !content) return
     console.log('[chat-debug] assistant-raw', JSON.stringify(content))
     console.log('[chat-debug] assistant-normalized', JSON.stringify(normalizeAssistantContent(content)))
-    console.log('[chat-debug] assistant-html', renderAssistantMarkdown(content))
   })
 
   onMounted(() => {

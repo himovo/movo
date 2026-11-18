@@ -2,6 +2,8 @@ export const uncoveredMessages = {
   'legacy.message_actions': { zh: '消息操作', en: 'Message actions' },
   'legacy.copied': { zh: '已复制', en: 'Copied' },
   'chat.code_copy_failed': { zh: '复制代码失败', en: 'Failed to copy code' },
+  'chat.copy_code': { zh: '\u590d\u5236\u4ee3\u7801', en: 'Copy code' },
+  'chat.table': { zh: '\u8868\u683c', en: 'Table' },
   'legacy.copy_message': { zh: '复制消息', en: 'Copy message' },
   'legacy.copy': { zh: '复制', en: 'Copy' },
   'legacy.create_scheduled_task': { zh: '创建定时任务', en: 'Create scheduled task' },
