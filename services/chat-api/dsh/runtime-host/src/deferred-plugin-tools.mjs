@@ -1,15 +1,14 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { scopeOf } from '@deepseek-ai/dsh-scope'
 import { validateJsonSchemaValue } from '@deepseek-ai/dsh-tools'
-import { assertNoDshCodeToolCollisions } from './official-host/tool-name-policy.mjs'
+import { deferredToolOwners } from './deferred-plugin-registry.mjs'
 
 export const DEFERRED_PLUGIN_PREFIX = 'deferred-plugin:'
 
 export function registerDeferredTools(ctx, plugins, invoke) {
   if (!plugins?.length) return () => {}
   if (!invoke) throw new Error('Deferred plugin executor is unavailable')
-  assertNoDshCodeToolCollisions(plugins.flatMap(plugin => plugin.deferred_tool_contracts))
-  const unregister = plugins.flatMap(plugin => plugin.deferred_tool_contracts.map(tool =>
+  const unregister = deferredToolOwners(plugins, ctx.tools.schemas().map(tool => tool.name)).map(({ plugin, tool }) =>
     ctx.tools.register({
       name: tool.name,
       description: tool.description,
@@ -20,22 +19,27 @@ export function registerDeferredTools(ctx, plugins, invoke) {
         if (validateJsonSchemaValue(tool.schema, args, 'arguments').length) {
           throw new Error('Invalid deferred plugin tool arguments')
         }
-        return await invoke(plugin, tool.name, args, exec.signal)
+        const result = await invoke(plugin, tool.name, args, exec)
+        for (const context of result.additionalContexts ?? []) exec.deferContext(context)
+        if (result.concluded) exec.concludeTurn()
+        return { content: result.content }
       },
-    })))
+    }))
   return () => unregister.reverse().forEach(dispose => dispose())
 }
 
-export async function invokeDeferredTool(pool, prepareProfile, body, plugin, name, args, signal) {
+export async function invokeDeferredTool(pool, prepareProfile, body, plugin, name, args, execution) {
+  const { signal, context, operation } = execution
   signal?.throwIfAborted()
-  const { runtimePlacement, deferredPlugins, toolProfile, skillProfile, ...profile } = body.modelProfile
+  const { runtimePlacement, deferredPlugins, ...profile } = body.modelProfile
   const { deferred_tool_contracts, ...declaration } = plugin
   const key = createHash('sha256').update(JSON.stringify([body.isolationKey, plugin.installation_id])).digest('hex')
   const isolationKey = DEFERRED_PLUGIN_PREFIX + key
   const modelProfile = await prepareProfile({ ...profile, plugins: [declaration] })
   const runtime = pool.findByIsolation(isolationKey) ?? await pool.create({ ...body, isolationKey, modelProfile })
+  pool.get(runtime.runtimeId).profile = modelProfile
   signal?.throwIfAborted()
-  return await pool.callDeferredTool(runtime.runtimeId, { name, args }, signal)
+  return await pool.callDeferredTool(runtime.runtimeId, { name, args, context, operation }, signal)
 }
 
 export async function executeDeferredTool(ctx, agent, name, args, signal) {
@@ -47,8 +51,5 @@ export async function executeDeferredTool(ctx, agent, name, args, signal) {
   })
   const result = batch.results[0]?.result
   if (!result || result.isError) throw new Error(result?.error?.message || 'Deferred plugin tool failed')
-  if (batch.additionalContexts.length || batch.concluded) {
-    throw new Error('Deferred plugin tool requires a conversation-bound Runtime')
-  }
-  return { content: result.content }
+  return { content: result.content, additionalContexts: batch.additionalContexts, concluded: batch.concluded }
 }

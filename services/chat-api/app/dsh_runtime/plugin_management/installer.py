@@ -110,7 +110,6 @@ class DshPluginInstaller:
                 elif inspected.get("problem") == "network":
                     raise PluginInstallError("plugin_registry_unavailable")
             package = None
-            declared_placement = None
             if inspected.get("status") == "refused" and inspected.get("problem") == "already-installed":
                 bundles = await transport.request("GET", path)
                 builtin = next(
@@ -169,7 +168,6 @@ class DshPluginInstaller:
                 manifest = await transport.request("POST", f"{path}/manifest", json={"name": name})
                 if manifest.get("version") != version:
                     raise PluginInstallError("DSH plugin manifest version did not match the installed package")
-                declared_placement = manifest.get("runtimePlacement")
                 mismatch = incompatible_release(manifest, str(original_inventory.get("dshVersion") or health.get("version") or ""))
                 if mismatch:
                     raise PluginInstallError(mismatch, code="incompatible-version",
@@ -306,8 +304,7 @@ class DshPluginInstaller:
             )
             if tool_contracts:
                 capabilities["toolContracts"] = tool_contracts
-            if declared_placement in ("standalone-ui-v1", "isolated-tool-call-v1"):
-                capabilities["runtimePlacement"] = declared_placement
+            capabilities["on_demand_assessment_version"] = 1
             status, reason = classify_conversation_tools(set(discovered), exposed)
             if status == "runtime_active" and any(capabilities.get(key) for key in ("skills", "commands", "clientModules", "modelProviders", "mcpServers", "rows")):
                 reason = "other_capabilities_available"

@@ -102,8 +102,8 @@ export function normalizeModelProfile(modelProfile, profileVersion) {
     }
     normalizeModelProfile({ ...modelProfile, runtimePlacement: undefined, deferredPlugins: undefined,
       plugins: modelProfile.deferredPlugins }, profileVersion)
-    if (modelProfile.deferredPlugins.some(plugin => !Array.isArray(plugin.deferred_tool_contracts) ||
-      plugin.deferred_tool_contracts.some(tool => !plugin.tool_names?.includes(tool?.name) ||
+    if (modelProfile.deferredPlugins.some(plugin => (plugin.deferred_tool_contracts !== undefined && !Array.isArray(plugin.deferred_tool_contracts)) ||
+      (plugin.deferred_tool_contracts ?? []).some(tool => !plugin.tool_names?.includes(tool?.name) ||
         typeof tool.description !== 'string' || !tool.schema || typeof tool.schema !== 'object'))) {
       throw new Error('invalid deferred plugin contracts')
     }

@@ -44,6 +44,7 @@ export const dshPluginMessages: Record<string, LabelMap> = {
   'dshPlugins.detectedModulesList': { 'zh-CN': '插件模块：{names}', 'en-US': 'Plugin modules: {names}' },
   'dshPlugins.detectedClientModulesList': { 'zh-CN': '浏览器模块：{names}', 'en-US': 'Browser modules: {names}' },
   'dshPlugins.detectedMcpServersList': { 'zh-CN': 'MCP 服务：{names}', 'en-US': 'MCP servers: {names}' },
+  'dshPlugins.onDemandPolicy': { 'zh-CN': '按需模式在打开界面、调用工具、命令或 Skill 时准备运行环境。未运行期间的实时钩子和模型请求干预不生效；历史数据在调用时同步。', 'en-US': 'On-demand mode prepares a runtime when opening a view or invoking a tool, command or Skill. Live hooks and model request modifications are inactive while the plugin is unloaded. History is synchronized on use.' },
   'dshPlugins.detectedModelProvidersList': { 'zh-CN': 'DSH 模型提供方：{names}（仅作诊断，不参与 MOVO 模型选择）', 'en-US': 'DSH model providers: {names} (diagnostic only; not used in MOVO model selection)' },
   'dshPlugins.reason.other_capabilities_available': { 'zh-CN': '插件已激活并发现其他 DSH 能力；其中部分能力可能不在 MOVO 中使用，实际调用仍需验证。', 'en-US': 'The plugin is active and other DSH capabilities were detected. Some may not be used in MOVO; invocation still needs verification.' },
   'dshPlugins.uiDetected': { 'zh-CN': '发现插件界面', 'en-US': 'Plugin UI detected' },

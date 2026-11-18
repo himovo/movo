@@ -28,8 +28,6 @@ export class ManagedPluginBridge {
             version: manifest.version,
             engines: { dsh: manifest.engines?.dsh },
             compatibility: manifest.dsh?.compatibility,
-            runtimePlacement: typeof manifest.movo?.runtimePlacement === 'string'
-              ? manifest.movo.runtimePlacement : undefined,
           }
         } catch (error) {
           if (error?.code !== 'ENOENT') throw error

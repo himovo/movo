@@ -75,6 +75,7 @@ test('managed plugin activates only for its Runtime and preserves Session handof
           name: 'movo-dsh-test-bundle', version: '1.0.0',
           spec: 'uploaded-plugin', archive_id: archiveId, archive_digest: digest,
           source_scope: 'personal', tool_names: ['movo_plugin_smoke'],
+          skills: [{ name: 'fixture-review', description: 'Review a fixture', userInvocable: true, modelInvocable: true }],
           commands: [{ name: 'movo-smoke', definitionId: 'movo-plugin-smoke-command' }],
           web_routes: [{ kind: 'prefix', path: '/movo-fixture' }],
           client_modules: [{ id: 'movo-dsh-test-bundle', rev: 'fixture' }],
@@ -90,7 +91,7 @@ test('managed plugin activates only for its Runtime and preserves Session handof
     const manifest = await request(base, `${managedPath}/managed-plugins/manifest`, 'POST', {
       name: 'movo-dsh-test-bundle',
     })
-    assert.equal(manifest.runtimePlacement, 'isolated-tool-call-v1')
+    assert.equal(manifest.name, 'movo-dsh-test-bundle')
     assert.ok(active.bundles.some(bundle => bundle.name === 'movo-dsh-test-bundle' && bundle.enabled))
     assert.ok(active.globalTools.includes('movo_plugin_smoke'))
     assert.ok(active.capabilities?.webRoutes?.some(route => route.path === '/movo-fixture') ||
@@ -162,11 +163,17 @@ test('managed plugin activates only for its Runtime and preserves Session handof
       ...managedSpec, isolationKey: 'deferred-plugin:fixture',
     })
     const lazyPath = `/v1/runtimes/${lazy.runtimeId}/sessions`
-    await request(base, lazyPath, 'POST', { sessionId: 'call' })
+    await request(base, lazyPath, 'POST', {
+      sessionId: 'call', seedRuntimeId: plain.runtimeId, seedSessionId: 'plain-session',
+    })
     const result = await request(base, `${lazyPath}/call/deferred-tool`, 'POST', {
       name: 'movo_plugin_smoke', args: {},
     })
     assert.deepEqual(result.value.content, [{ type: 'text', text: 'MOVO_PLUGIN_EXECUTED' }])
+    const skill = await request(base, `${lazyPath}/call/deferred-tool`, 'POST', {
+      name: 'fixture-review', args: {}, operation: 'skill',
+    })
+    assert.equal(skill.value.content, 'FIXTURE_SKILL_CONTENT')
   } finally {
     await host.stop()
     await new Promise(resolve => gateway.close(resolve))

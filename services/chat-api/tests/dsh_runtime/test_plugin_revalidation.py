@@ -66,6 +66,7 @@ def test_existing_active_plugin_without_release_check_is_revalidated():
     row = {"availability": {"dsh_version": "0.2.1-alpha.1", "status": "runtime_active"}}
     assert needs_revalidation(row, "0.2.1-alpha.1")
     row["availability"]["release_compatibility_checked"] = True
+    row["availability"].setdefault("capabilities", {})["on_demand_assessment_version"] = 1
     assert not needs_revalidation(row, "0.2.1-alpha.1")
 
 
@@ -77,6 +78,7 @@ def test_existing_client_module_without_surface_metadata_is_revalidated():
     }}
     assert needs_revalidation(row, "0.2.1-alpha.1")
     row["availability"]["capabilities"]["clientModules"][0]["conversationView"] = False
+    row["availability"].setdefault("capabilities", {})["on_demand_assessment_version"] = 1
     assert not needs_revalidation(row, "0.2.1-alpha.1")
 
 

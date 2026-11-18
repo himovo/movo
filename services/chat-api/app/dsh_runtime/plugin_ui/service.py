@@ -81,6 +81,7 @@ class PluginUiService:
             )
         profile = await self._publisher.publish_model_profile(
             tenant_id=tenant_id, actor_id=user_id, user_id=user_id, activate=False,
+            selected_plugin_id=plugin_id,
         )
         runtime = await self._coordinator.ensure_runtime(
             tenant_id=tenant_id, profile_version=profile.profile_version,

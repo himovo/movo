@@ -184,7 +184,9 @@ export class ContainerPluginRuntimePool {
     const root = `/v1/runtimes/${runtimeId}`
     const sessionId = randomUUID()
     return await this.#reaper.use(entry, async () => {
-      await requestJson(entry, 'POST', `${root}/trusted-session`, { sessionId })
+      await requestJson(entry, 'POST', `${root}/trusted-session`, {
+        sessionId, ...body.context,
+      })
       try {
         const result = await requestJson(entry, 'POST', `${root}/sessions/${sessionId}/deferred-tool`, body, signal)
         return result.value

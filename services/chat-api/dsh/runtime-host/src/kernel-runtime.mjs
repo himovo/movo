@@ -1,4 +1,8 @@
-import { executeDeferredTool, registerDeferredTools } from './deferred-plugin-tools.mjs'
+import { executePluginInvocation } from './deferred-plugin-execution.mjs'
+import { registerDeferredSkillResources } from './deferred-skill-resources.mjs'
+import { registerDeferredTools } from './deferred-plugin-tools.mjs'
+import { registerDeferredSkills } from './deferred-plugin-skills.mjs'
+import { buildForkSeed } from '@deepseek-ai/dsh-session/fork'
 import { requireEnterprisePreset, usesEnterpriseHost } from './runtime-placement.mjs'
 import { join, resolve } from 'node:path'
 import { chmod, mkdir } from 'node:fs/promises'
@@ -54,6 +58,8 @@ export class KernelRuntime {
   #journal = new EventJournal()
   #liveAssistantStream = new LiveAssistantStream(this.#journal)
   #plugins
+  #deferredResourceDispose
+  #deferredSkillDispose
   #deferredToolDispose
   #invokeDeferredTool
   #managedPlugins
@@ -160,7 +166,15 @@ export class KernelRuntime {
         profileVersion: this.profileVersion,
       }, { skillInvocations: this.#skillInvocations })
     }
-    this.#deferredToolDispose = registerDeferredTools(ctx, this.modelProfile?.deferredPlugins, this.#invokeDeferredTool)
+    const invokeDeferred = this.#invokeDeferredTool && ((plugin, name, args, exec) =>
+      this.#invokeDeferredTool(plugin, name, args, {
+        signal: exec.signal, operation: exec.operation,
+        context: this.deferredInvocationContext(exec.agent),
+        modelProfile: this.modelProfile,
+      }))
+    this.#deferredSkillDispose = registerDeferredSkills(ctx, this.modelProfile?.deferredPlugins, invokeDeferred)
+    this.#deferredResourceDispose = registerDeferredSkillResources(ctx, this.modelProfile?.deferredPlugins, invokeDeferred)
+    this.#deferredToolDispose = registerDeferredTools(ctx, this.modelProfile?.deferredPlugins, invokeDeferred)
     this.#sessionComposer = new OfficialSessionComposer(ctx, {
       agentOptions: this.#agentOptions(),
       enterpriseTools: enterpriseToolNames(this.modelProfile),
@@ -222,6 +236,7 @@ export class KernelRuntime {
       meta: {
         ...(workspace === undefined && cwd === undefined ? {} : { cwd: workspace?.path ?? resolve(cwd) }),
         agentPreset: composition.presetId,
+        ...(personalConversationKey ? { personalConversationKey } : {}),
         ...lineage.meta,
       },
       ...lineage.options,
@@ -249,6 +264,19 @@ export class KernelRuntime {
     const agent = this.#requireAgent(sessionId)
     await agent.whenIdle()
     return structuredClone(liveSessionEvents(agent.session))
+  }
+
+  deferredInvocationContext(agent) {
+    const key = agent.session.header.personalConversationKey
+    const events = liveSessionEvents(agent.session).map(event =>
+      event.type === 'working-directory/change' && key
+        ? { ...event, data: { ...event.data, cwd: `/job/home/conversations/${key}` } }
+        : event)
+    return {
+      parentSessionId: agent.id,
+      seed: events.length ? buildForkSeed(events, events.at(-1).seq) : [],
+      personalConversationKey: key,
+    }
   }
 
   async resumeSession(sessionId, cursorFloor = 0) {
@@ -401,6 +429,7 @@ export class KernelRuntime {
   refreshModelCredential(credential) {
     if (this.#modelAdapter === undefined) throw new Error('runtime does not use MOVO Model Gateway')
     this.#modelAdapter.updateCredential(credential)
+    this.modelProfile = Object.freeze({ ...this.modelProfile, ...credential })
     this.#skillProvider?.materializer?.updateCredential(credential.accessToken)
     return { refreshed: true }
   }
@@ -408,6 +437,10 @@ export class KernelRuntime {
   refreshToolCredential(credential) {
     if (this.#toolBridge === undefined) throw new Error('runtime does not use MOVO Tool Gateway')
     this.#toolBridge.updateCredential(credential.accessToken)
+    this.modelProfile = Object.freeze({
+      ...this.modelProfile,
+      toolProfile: { ...this.modelProfile.toolProfile, accessToken: credential.accessToken },
+    })
     this.#webSearchProvider?.updateCredential(credential.accessToken)
     return { refreshed: true }
   }
@@ -484,10 +517,9 @@ export class KernelRuntime {
     }
   }
 
-  async callDeferredTool(sessionId, name, args, signal) {
-    const owned = this.modelProfile?.plugins?.filter(plugin => plugin.tool_names?.includes(name)) ?? []
-    if (owned.length !== 1) throw new Error('Deferred plugin tool is outside the Runtime profile')
-    return await executeDeferredTool(this.#ctx, this.#requireAgent(sessionId), name, args, signal)
+  async callDeferredTool(sessionId, name, args, signal, operation = "tool") {
+    return executePluginInvocation(this.#ctx, this.#requireAgent(sessionId),
+      this.modelProfile?.plugins, name, args, signal, operation)
   }
 
   async managedSessionCapabilities(sessionId) {
@@ -508,6 +540,8 @@ export class KernelRuntime {
 
   async dispose() {
     this.#deferredToolDispose?.()
+    this.#deferredSkillDispose?.()
+    this.#deferredResourceDispose?.()
     for (const [sessionId, handle] of [...this.#handles.entries()]) {
       this.#handles.delete(sessionId)
       handle.agent.cancel({ kind: 'disposed' })

@@ -6,6 +6,7 @@
       <template #trigger><n-button size="small" text type="primary" :title="t('dshPlugins.diagnosis')" :aria-label="t('dshPlugins.diagnosis')"><template #icon><n-icon :component="InformationCircleOutline" /></template></n-button></template>
       <div class="diagnosis">
         <strong>{{ t('dshPlugins.diagnosis') }}</strong>
+        <p class="next-step">{{ t('dshPlugins.onDemandPolicy') }}</p>
         <p v-if="availability?.dsh_version">{{ t('dshPlugins.versionPair', { dsh: availability.dsh_version, plugin: availability.plugin_version || '' }) }}</p>
         <p v-if="availability?.offline_source_dsh_mismatch" class="next-step">{{ t('dshPlugins.offlineSourceVersionMismatch', { source: availability.offline_source_dsh_version || '', current: availability.dsh_version || '' }) }}</p>
         <p>{{ reason }}</p>

@@ -422,91 +422,46 @@ def test_on_demand_runtime_profile_is_versioned_and_preserves_legacy_wire_shape(
     asyncio.run(run())
 
 
-def test_conversation_defers_standalone_ui_but_ui_profile_keeps_it(monkeypatch) -> None:
-    from app.dsh_runtime.profile.plugin_placement import deferred_tool_contracts, is_standalone_ui_candidate
-
+def test_all_plugin_combinations_are_deferred_without_package_declarations(monkeypatch):
     class PluginCatalog:
-        plugins = ()
+        plugins = tuple({
+            "installation_id": str(index), "name": name, "version": "1.0.0",
+            "source_scope": "personal", "spec": name + "@1.0.0",
+            "tool_names": ["lookup", "read"] if index == 1 else [],
+            "deferred_tool_contracts": [],
+            "client_modules": [{"id": name, "conversationView": True}],
+            "skills": [{"name": "review"}], "commands": [{"name": "inspect"}],
+        } for index, name in enumerate(("ui", "mixed", "legacy")))
 
         async def list_enabled(self, tenant_id, user_id):
             return self.plugins
 
-    on_demand_enabled = True
+    enabled = True
 
-    async def on_demand():
-        return on_demand_enabled
+    async def policy():
+        return enabled
 
     async def run():
-        nonlocal on_demand_enabled
-        capabilities = {
-            "runtimePlacement": "standalone-ui-v1",
-            "clientModules": [{"id": "browser-surface", "conversationView": False}],
-            "commands": [], "skills": [], "modelProviders": [], "mcpServers": [], "overrides": [],
-        }
-        assert is_standalone_ui_candidate(capabilities, [])
-        assert not is_standalone_ui_candidate({**capabilities, "runtimePlacement": None}, [])
-        assert not is_standalone_ui_candidate({**capabilities, "clientModules": [{"id": "legacy"}]}, [])
-        assert not is_standalone_ui_candidate({
-            **capabilities, "clientModules": [{"id": "conversation", "conversationView": True}],
-        }, [])
-        assert not is_standalone_ui_candidate({**capabilities, "skills": [{"name": "review"}]}, [])
-        assert not is_standalone_ui_candidate(capabilities, ["lookup"])
-        monkeypatch.setattr("app.dsh_runtime.profile.compiler.uses_on_demand_runtime", on_demand)
-        catalog = PluginCatalog()
-        plugin = {"installation_id": "ui", "name": "browser-surface", "version": "1.0.0",
-                  "source_scope": "personal", "spec": "browser-surface@1.0.0", "standalone_ui_candidate": True}
-        catalog.plugins = (plugin,)
-        compiler = ModelProfileCompiler(FakeCatalog(), plugin_catalog=catalog)
+        nonlocal enabled
+        monkeypatch.setattr("app.dsh_runtime.profile.compiler.uses_on_demand_runtime", policy)
+        compiler = ModelProfileCompiler(FakeCatalog(), plugin_catalog=PluginCatalog())
         scope = {"tenant_id": "tenant-a", "user_id": "alice"}
-        conversation = await compiler.compile(**scope, conversation=True)
-        ui = await compiler.compile(**scope)
-        assert conversation.plugins == ()
-        assert conversation.runtime_placement == "enterprise-host"
-        assert ui.runtime_placement == "legacy"
-        assert ui.plugins[0]["installation_id"] == "ui"
-        assert "standalone_ui_candidate" not in ui.plugins[0]
-        assert conversation.profile_version != ui.profile_version
-        catalog.plugins += ({**plugin, "installation_id": "tool", "name": "tool",
-                             "standalone_ui_candidate": False, "tool_names": ["lookup"]},)
-        mixed = await compiler.compile(**scope, conversation=True)
-        assert [entry["installation_id"] for entry in mixed.plugins] == ["tool"]
-        assert mixed.runtime_placement == "legacy"
-        on_demand_enabled = False
-        forced = await compiler.compile(**scope, conversation=True)
-        assert [entry["installation_id"] for entry in forced.plugins] == ["ui", "tool"]
-        assert forced.runtime_placement == "legacy"
-        on_demand_enabled = True
-        contract = {"name": "lookup", "description": "Look up an order", "schema": {"type": "object"}}
-        assessment = {**capabilities, "runtimePlacement": "isolated-tool-call-v1",
-                      "toolContracts": [contract], "mcpServers": [{"name": "orders"}]}
-        assert deferred_tool_contracts({**assessment, "runtimePlacement": None}, ["lookup"], {}) == []
-        assert deferred_tool_contracts({**assessment, "toolContracts": [{**contract, "name": "read"}]},
-                                       ["read"], {}) == []
-        assert deferred_tool_contracts(assessment, ["lookup"], {"lookup": ["workspace"]}) == []
-        assert deferred_tool_contracts(assessment, ["lookup", "missing"], {}) == []
-        assert deferred_tool_contracts({**assessment, "commands": [{"name": "orders"}]}, ["lookup"], {}) == []
-        catalog.plugins = (plugin, {
-            **catalog.plugins[1],
-            "deferred_tool_contracts": deferred_tool_contracts(assessment, ["lookup"], {}),
-        })
         lazy = await compiler.compile(**scope, conversation=True)
         assert lazy.plugins == ()
+        assert len(lazy.deferred_plugins) == 3
         assert lazy.runtime_placement == "enterprise-host"
-        assert lazy.deferred_plugins[0]["deferred_tool_contracts"] == [contract]
         assert RuntimeProfileBundle.load(RuntimeProfileBundle.export(lazy)) == lazy
-        eligible = catalog.plugins[1]
-        catalog.plugins = (eligible, {
-            **eligible, "name": "needs-session", "installation_id": "eager", "deferred_tool_contracts": [],
-        })
-        eager = await compiler.compile(**scope, conversation=True)
-        assert eager.deferred_plugins == ()
-        assert len(eager.plugins) == 2
-        catalog.plugins = ({
-            **eligible, "tool_names": ["read"],
-            "deferred_tool_contracts": [{**contract, "name": "read"}],
-        },)
-        collision = await compiler.compile(**scope, conversation=True)
-        assert collision.deferred_plugins == ()
-        assert collision.plugins[0]["tool_names"] == ["read"]
+        selected = await compiler.compile(**scope, selected_plugin_id="1")
+        assert len(selected.plugins) == 1
+        assert selected.plugins[0]["name"] == "mixed"
+        assert selected.deferred_plugins == ()
+        assert selected.runtime_placement == "legacy"
+        with pytest.raises(PermissionError):
+            await compiler.compile(**scope, selected_plugin_id="denied")
+        enabled = False
+        forced = await compiler.compile(**scope, conversation=True)
+        assert len(forced.plugins) == 3
+        assert forced.deferred_plugins == ()
+        assert forced.runtime_placement == "legacy"
 
     asyncio.run(run())

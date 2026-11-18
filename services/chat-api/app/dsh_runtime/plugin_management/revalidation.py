@@ -50,7 +50,10 @@ def needs_surface_refresh(row: dict[str, Any], dsh_version: str) -> bool:
         return False
     if availability.get("dsh_version") != dsh_version or not availability.get("release_compatibility_checked"):
         return False
-    modules = (availability.get("capabilities") or {}).get("clientModules") or []
+    capabilities = availability.get("capabilities") or {}
+    if capabilities.get("on_demand_assessment_version") != 1:
+        return True
+    modules = capabilities.get("clientModules") or []
     return any("conversationView" not in item for item in modules if isinstance(item, dict))
 
 

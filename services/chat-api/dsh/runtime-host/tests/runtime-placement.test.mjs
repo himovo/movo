@@ -78,6 +78,9 @@ test('enterprise profile creates and restores a session without requesting a Doc
       modelProfile: { ...profile, runtimePlacement: 'enterprise-host', deferredPlugins: [{
         installation_id: 'fixture', name: 'fixture', version: '1.0.0', spec: 'fixture@1.0.0',
         source_scope: 'personal', tool_names: ['order_lookup'],
+        skills: [{ name: 'fixture-review', description: 'Review', userInvocable: true, modelInvocable: true }],
+        commands: [{ name: 'fixture-command', definitionId: 'fixture-command' }],
+        client_modules: [{ id: 'fixture', conversationView: true }],
         deferred_tool_contracts: [{ name: 'order_lookup', description: 'Look up an order', schema: { type: 'object' } }],
       }] },
     }
@@ -128,7 +131,9 @@ test('enterprise profile creates and restores a session without requesting a Doc
       assert.equal(completed, true)
       assert.equal(dispatched.length, calls)
     }
-    assert.deepEqual(dispatched, Array(2).fill({ name: 'order_lookup', args: {} }))
+    assert.deepEqual(dispatched.map(({ name, args }) => ({ name, args })), Array(2).fill({ name: 'order_lookup', args: {} }))
+    assert.ok(dispatched[1].context.seed.some(event => event.type === 'user/message'))
+    assert.equal(dispatched[1].context.parentSessionId, 'hello')
     assert.deepEqual(leases, ['/v1/plugin-runtimes'])
     await post('/v1/runtimes', { ...spec, isolationKey: 'legacy', modelProfile: profile }, 400)
     await post('/v1/runtimes', { ...spec, isolationKey: 'plugin',

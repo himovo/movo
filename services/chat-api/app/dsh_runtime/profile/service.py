@@ -20,6 +20,7 @@ class RuntimeProfilePublisher:
         user_id: str = "",
         model_instance_id: str | None = None,
         conversation: bool = False,
+        selected_plugin_id: str = "",
         activate: bool = True,
     ) -> RuntimeProfileSnapshot:
         snapshot = await self._compiler.compile(
@@ -27,6 +28,7 @@ class RuntimeProfilePublisher:
             user_id=user_id,
             model_instance_id=model_instance_id,
             conversation=conversation,
+            **({"selected_plugin_id": selected_plugin_id} if selected_plugin_id else {}),
         )
         await self._store.publish(snapshot, actor_id=actor_id, activate=activate)
         return snapshot
@@ -38,6 +40,7 @@ class RuntimeProfilePublisher:
         user_id: str = "",
         model_instance_id: str | None = None,
         conversation: bool = False,
+        selected_plugin_id: str = "",
     ) -> RuntimeProfileSnapshot:
         """Compile the desired immutable snapshot without producing an audit row."""
         return await self._compiler.compile(
@@ -45,6 +48,7 @@ class RuntimeProfilePublisher:
             user_id=user_id,
             model_instance_id=model_instance_id,
             conversation=conversation,
+            **({"selected_plugin_id": selected_plugin_id} if selected_plugin_id else {}),
         )
 
     async def publish_snapshot(

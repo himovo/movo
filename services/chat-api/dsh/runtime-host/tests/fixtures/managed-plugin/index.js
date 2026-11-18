@@ -1,7 +1,19 @@
-export const inject = ['tools', 'commands', 'webServer', 'connection', 'llm', 'agentDefaultModel']
+export const inject = ['tools', 'commands', 'webServer', 'connection', 'llm', 'agentDefaultModel', 'skills']
 export const name = 'movo-dsh-test-bundle'
 
 export function apply(ctx) {
+  ctx.skills.registerProvider(() => ({
+    name: 'fixture-skills',
+    list: async () => [{
+      name: 'fixture-review', description: 'Review a fixture', source: 'fixture', provider: 'fixture-skills',
+      rank: 100,
+      locator: { name: 'fixture-review' }, invocation: { userInvocable: true, modelInvocable: true },
+    }],
+    get: async () => ({
+      name: 'fixture-review', description: 'Review a fixture', source: 'fixture', provider: 'fixture-skills',
+      invocation: { userInvocable: true, modelInvocable: true }, content: 'FIXTURE_SKILL_CONTENT',
+    }),
+  }))
   ctx.effect(() => ctx.webServer.register({
     kind: 'prefix', path: '/movo-fixture',
     handler: async (request, response) => {

@@ -7,6 +7,7 @@
       <template #trigger><n-button size="small" text type="primary" :title="t('plugins.diagnosis')" :aria-label="t('plugins.diagnosis')"><template #icon><n-icon :component="InformationCircleOutline" /></template></n-button></template>
       <div class="diagnosis">
         <strong>{{ t('plugins.diagnosis') }}</strong>
+        <p class="next-step">{{ t('plugins.onDemandPolicy') }}</p>
         <p v-if="issue" class="diagnosis-cause">{{ t(`plugins.issue.${issue}`) }}</p>
         <p v-if="issue === 'version' && requiredVersion">{{ t('plugins.issue.versionDetails', { required: requiredVersion, current: availability?.dsh_version || '—' }) }}</p>
         <p v-else-if="issue === 'version'">{{ t('plugins.versionPair', { dsh: availability?.dsh_version || '—', plugin: availability?.plugin_version || '—' }) }}</p>

@@ -4,6 +4,8 @@ import { SessionId } from '@deepseek-ai/dsh-session'
 import { ASKAI_ENTERPRISE_PRESET_ID } from './overlay.mjs'
 import { normalizePersistedPreset, resolveNativePreset } from './api-compat.mjs'
 import { readPersistedSession } from './session-state.mjs'
+import { PLUGIN_SKILL_RESOURCE_TOOL } from '../deferred-skill-resources.mjs'
+import { deferredToolOwners } from '../deferred-plugin-registry.mjs'
 import { SKILL_RESOURCE_READ_TOOL } from '../skill-resource-tool.mjs'
 
 function selectedPreset(meta, events) {
@@ -18,10 +20,14 @@ function selectedPreset(meta, events) {
 
 export function enterpriseToolNames(modelProfile) {
   const profile = modelProfile?.toolProfile
-  const pluginTools = [...(modelProfile?.plugins ?? []), ...(modelProfile?.deferredPlugins ?? [])].flatMap(plugin => plugin.tool_names ?? [])
+  const pluginTools = [
+    ...(modelProfile?.plugins ?? []).flatMap(plugin => plugin.tool_names ?? []),
+    ...deferredToolOwners(modelProfile?.deferredPlugins, modelProfile?.toolProfile?.tools?.map(tool => tool.name)).map(({ tool }) => tool.name),
+  ]
   const skills = modelProfile?.skillProfile?.skills ?? []
   const skillTools = []
-  if (skills.length > 0) skillTools.push('skill')
+  if (modelProfile?.deferredPlugins?.some(plugin => plugin.skills?.length)) skillTools.push(PLUGIN_SKILL_RESOURCE_TOOL)
+  if (skills.length > 0 || modelProfile?.deferredPlugins?.some(plugin => plugin.skills?.length)) skillTools.push('skill')
   if (skills.some(skill => Boolean(skill.bundle_archive_base64 || skill.bundle_archive_id))) skillTools.push(SKILL_RESOURCE_READ_TOOL)
   if (profile === undefined) return [...new Set([...pluginTools, ...skillTools, 'ask_user_question'])].sort()
   const replaced = new Set(profile.nativeReplacements ?? [])

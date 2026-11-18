@@ -12,7 +12,7 @@ from app.product.execution_access import execution_is_allowed
 from app.dsh_runtime.plugin_management.tool_requirements import tool_requirements
 
 
-from .plugin_placement import deferred_tool_contracts, is_standalone_ui_candidate
+from .plugin_placement import deferred_tool_contracts
 
 
 class MongoPluginCatalog:
@@ -66,10 +66,6 @@ class MongoPluginCatalog:
                 "source_scope": "personal" if row.get("owner_user_id") else "organization",
                 **({"deferred_tool_contracts": contracts} if contracts else {}),
                 "tool_names": list(row.get("tool_names") or []),
-                **({"standalone_ui_candidate": True} if is_standalone_ui_candidate(
-                    (row.get("availability") or {}).get("capabilities") or {},
-                    list(row.get("tool_names") or []),
-                ) else {}),
                 "skills": [
                     {"name": str(item.get("name") or ""),
                      "description": str(item.get("description") or ""),

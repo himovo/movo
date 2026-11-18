@@ -140,9 +140,9 @@ export class RuntimeHttpServer {
         ? await this.#isolated.create(body)
         : await this.#manager.create(body, {
           invokeDeferredTool: this.#isolated instanceof ContainerPluginRuntimePool
-            ? (plugin, name, args, signal) => invokeDeferredTool(
+            ? (plugin, name, args, execution) => invokeDeferredTool(
               this.#isolated, profile => this.#pluginArchives.prepareProfile(profile),
-              body, plugin, name, args, signal,
+              { ...body, modelProfile: execution.modelProfile }, plugin, name, args, execution,
             )
             : undefined,
         })
@@ -248,9 +248,9 @@ export class RuntimeHttpServer {
           process.env.MOVO_DSH_PLUGIN_CHILD === '1' && runtime.isolationKey.startsWith(DEFERRED_PLUGIN_PREFIX)) {
         const controller = new AbortController()
         response.once('close', () => controller.abort())
-        const { name, args } = await readJson(request)
+        const { name, args, operation } = await readJson(request)
         const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(120_000)])
-        return sendJson(response, 200, { value: await runtime.callDeferredTool(sessionId, name, args, signal) })
+        return sendJson(response, 200, { value: await runtime.callDeferredTool(sessionId, name, args, signal, operation) })
       }
       if (request.method === 'GET' && parts.length === 5) return sendJson(response, 200, await runtime.describeLiveSession(sessionId))
       if (request.method === 'GET' && parts[5] === 'plugin-capabilities' && parts.length === 6) {

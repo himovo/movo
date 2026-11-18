@@ -143,7 +143,7 @@ class DshTurnRunner:
             if turn_context:
                 documents = list(turn_context.get("documents") or [])
                 images = list(turn_context.get("images") or [])
-                if (documents or images) and profile.runtime_placement != "enterprise-host":
+                if documents or images:
                     staged = await stage_personal_inputs(binding, message_id, documents + images)
                     turn_context = {
                         **turn_context,

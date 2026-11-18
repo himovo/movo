@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+from .profile.selected_plugin_scope import selected_plugin_scope
+
 import asyncio
 import json
 from collections.abc import AsyncIterator
@@ -240,6 +242,7 @@ class DshChatService:
                     model_instance_id=model_instance_id,
                     activate=False,
                     conversation=True,
+                    **await selected_plugin_scope(tenant_id, user_id, selected_skill_id, selected_command_id),
                 )
                 try:
                     binding = await self._coordinator.create_binding(
@@ -348,6 +351,7 @@ class DshChatService:
                 user_id=user_id,
                 model_instance_id=model_instance_id,
                 conversation=True,
+                **await selected_plugin_scope(tenant_id, user_id, selected_skill_id, selected_command_id),
                 # Conversation profiles include the user's visible Tool set;
                 # they are immutable execution snapshots, not tenant defaults.
                 activate=False,

@@ -62,7 +62,10 @@ class PluginInstallationRepository:
                 "version": row["version"], "spec": row["spec"],
                 "availability.status": {"$in": ["session_exposed", "runtime_active", "verified"]},
                 "availability.dsh_version": dsh_version,
-                "availability.capabilities.clientModules": {"$elemMatch": {"conversationView": {"$exists": False}}},
+                "$and": [{"$or": [
+                    {"availability.capabilities.clientModules": {"$elemMatch": {"conversationView": {"$exists": False}}}},
+                    {"availability.capabilities.on_demand_assessment_version": {"$ne": 1}},
+                ]}],
                 "$or": [
                     {"availability.surface_refresh_started_at": {"$exists": False}},
                     {"availability.surface_refresh_started_at": {"$lt": now - timedelta(minutes=15)}},

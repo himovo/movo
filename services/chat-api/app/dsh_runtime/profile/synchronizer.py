@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from .selected_plugin_scope import selected_plugin_scope
+
 import logging
 from dataclasses import dataclass
 from typing import Any
@@ -64,6 +66,7 @@ class ConversationProfileSynchronizer:
             user_id=user_id,
             model_instance_id=desired_model_id,
             conversation=True,
+            **await selected_plugin_scope(tenant_id, user_id, selected_skill_id, selected_command_id),
         )
         if desired.profile_version == previous_version and not missing_session:
             return ProfileSyncResult(
