@@ -4,12 +4,12 @@ const CONVERSATION_VIEW_REGISTRATION = /\.slots\.(?:inject|register)\s*\(\s*(?:\
 const cache = new Map()
 
 async function hasConversationView(path, revision) {
-  if (!path) return false
+  if (!path) return undefined
   const key = `${path}:${revision}`
   if (!cache.has(key)) {
     cache.set(key, readFile(path, 'utf8').then(
       source => CONVERSATION_VIEW_REGISTRATION.test(source),
-      () => false,
+      () => undefined,
     ))
   }
   return cache.get(key)

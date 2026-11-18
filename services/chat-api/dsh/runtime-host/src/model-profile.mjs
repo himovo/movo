@@ -1,6 +1,9 @@
+import { usesEnterpriseHost } from './runtime-placement.mjs'
+
 const ALLOWED_FIELDS = new Set([
   'profileVersion',
   'subjectUserId',
+  'runtimePlacement',
   'modelInstanceId',
   'modelName',
   'displayName',
@@ -15,6 +18,7 @@ const ALLOWED_FIELDS = new Set([
   'bundleGatewayUrl',
   'pluginGatewayUrl',
   'plugins',
+  'deferredPlugins',
 ])
 
 function nonEmptyString(value) {
@@ -68,6 +72,9 @@ export function normalizeModelProfile(modelProfile, profileVersion) {
   if (modelProfile.subjectUserId !== undefined && typeof modelProfile.subjectUserId !== 'string') {
     throw new Error('subjectUserId must be a string')
   }
+  if (modelProfile.runtimePlacement !== undefined && !usesEnterpriseHost(modelProfile)) {
+    throw new Error('invalid enterprise Host Runtime profile')
+  }
   if (modelProfile.agentName !== undefined &&
       (typeof modelProfile.agentName !== 'string' || !modelProfile.agentName.trim() || modelProfile.agentName.length > 80)) {
     throw new Error('agentName must contain 1 to 80 characters')
@@ -87,6 +94,18 @@ export function normalizeModelProfile(modelProfile, profileVersion) {
     validateSkillProfile(modelProfile.skillProfile)
     if (modelProfile.skillProfile.skills.some(skill => skill.bundle_archive_id) && !nonEmptyString(modelProfile.bundleGatewayUrl)) {
       throw new Error('modelProfile is missing bundleGatewayUrl')
+    }
+  }
+  if (modelProfile.deferredPlugins !== undefined) {
+    if (!usesEnterpriseHost(modelProfile) || !Array.isArray(modelProfile.deferredPlugins)) {
+      throw new Error('invalid deferred plugin profile')
+    }
+    normalizeModelProfile({ ...modelProfile, runtimePlacement: undefined, deferredPlugins: undefined,
+      plugins: modelProfile.deferredPlugins }, profileVersion)
+    if (modelProfile.deferredPlugins.some(plugin => !Array.isArray(plugin.deferred_tool_contracts) ||
+      plugin.deferred_tool_contracts.some(tool => !plugin.tool_names?.includes(tool?.name) ||
+        typeof tool.description !== 'string' || !tool.schema || typeof tool.schema !== 'object'))) {
+      throw new Error('invalid deferred plugin contracts')
     }
   }
   if (modelProfile.plugins !== undefined) {

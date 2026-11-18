@@ -20,6 +20,7 @@ class RuntimeProfileSnapshot(BaseModel):
     content_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
     tenant_id: str = Field(min_length=1, max_length=256)
     subject_user_id: str = Field(default="", max_length=256)
+    runtime_placement: Literal["legacy", "enterprise-host"] = "legacy"
     model_source_tenant_id: str = Field(min_length=1, max_length=256)
     model_instance_id: str = Field(min_length=1, max_length=256)
     provider_id: str = Field(min_length=1, max_length=256)
@@ -38,6 +39,7 @@ class RuntimeProfileSnapshot(BaseModel):
     skill_versions: tuple[str, ...] = ()
     workflow_versions: tuple[str, ...] = ()
     plugin_versions: tuple[str, ...] = ()
+    deferred_plugins: tuple[dict[str, object], ...] = ()
     plugins: tuple[dict[str, object], ...] = ()
 
     def execution_payload(self) -> dict[str, object]:
@@ -48,7 +50,7 @@ class RuntimeProfileSnapshot(BaseModel):
         history may reuse an older profile when its execution contract is
         preserved; separately added plugins do not alter that old contract.
         """
-        return self.model_dump(mode="json", exclude={"content_hash", "profile_version"})
+        return self.model_dump(mode="json", exclude={"content_hash", "profile_version", "runtime_placement"})
 
     def is_execution_compatible_with(self, other: "RuntimeProfileSnapshot") -> bool:
         historical = self.execution_payload()
@@ -116,6 +118,12 @@ class RuntimeProfileSnapshot(BaseModel):
             if not bundle_gateway_url:
                 raise ValueError("GridFS Skill Profile has no bundle gateway")
             payload["bundleGatewayUrl"] = bundle_gateway_url
+        if self.deferred_plugins:
+            if any(item.get("archive_id") for item in self.deferred_plugins):
+                if not plugin_gateway_url:
+                    raise ValueError("Plugin archive Profile has no gateway")
+                payload["pluginGatewayUrl"] = plugin_gateway_url
+            payload["deferredPlugins"] = [dict(item) for item in self.deferred_plugins]
         if self.plugins:
             if any(item.get("archive_id") for item in self.plugins):
                 if not plugin_gateway_url:

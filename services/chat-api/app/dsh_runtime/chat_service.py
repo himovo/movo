@@ -239,6 +239,7 @@ class DshChatService:
                     user_id=user_id,
                     model_instance_id=model_instance_id,
                     activate=False,
+                    conversation=True,
                 )
                 try:
                     binding = await self._coordinator.create_binding(
@@ -346,6 +347,7 @@ class DshChatService:
                 actor_id=user_id,
                 user_id=user_id,
                 model_instance_id=model_instance_id,
+                conversation=True,
                 # Conversation profiles include the user's visible Tool set;
                 # they are immutable execution snapshots, not tenant defaults.
                 activate=False,

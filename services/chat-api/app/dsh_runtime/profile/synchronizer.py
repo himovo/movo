@@ -63,6 +63,7 @@ class ConversationProfileSynchronizer:
             tenant_id=tenant_id,
             user_id=user_id,
             model_instance_id=desired_model_id,
+            conversation=True,
         )
         if desired.profile_version == previous_version and not missing_session:
             return ProfileSyncResult(
@@ -99,6 +100,8 @@ class ConversationProfileSynchronizer:
             if missing_session:
                 raise
             previous = await self._profiles.get(previous_version)
+            if previous.runtime_placement != desired.runtime_placement:
+                raise
             if not can_defer_profile_change(
                 previous, desired, selected_skill_id=selected_skill_id,
                 selected_command_id=selected_command_id,

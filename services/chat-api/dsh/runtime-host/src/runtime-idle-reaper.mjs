@@ -3,12 +3,24 @@ export class RuntimeIdleReaper {
   #entries = new Set()
   #timer
 
-  constructor({ idleMs, onIdle, intervalMs = 60_000 }) {
-    if (!Number.isFinite(idleMs) || idleMs <= 0) throw new TypeError('idleMs must be positive')
-    this.idleMs = idleMs
+  constructor({ idleMs, onIdle, readIdleMs, intervalMs = 60_000 }) {
+    this.setIdleMs(idleMs)
+    this.readIdleMs = readIdleMs
     this.onIdle = onIdle
     this.#timer = setInterval(() => { this.sweep().catch(() => {}) }, intervalMs)
     this.#timer.unref?.()
+  }
+
+  setIdleMs(idleMs) {
+    if (!Number.isFinite(idleMs) || idleMs < 0) throw new TypeError('idleMs must be nonnegative')
+    this.idleMs = idleMs
+  }
+
+  async refreshPolicy() {
+    if (this.readIdleMs) {
+      try { this.setIdleMs(await this.readIdleMs()) }
+      catch { /* retain the last confirmed policy */ }
+    }
   }
 
   add(entry) {
@@ -34,9 +46,12 @@ export class RuntimeIdleReaper {
   delete(entry) { this.#entries.delete(entry) }
 
   async sweep(now = Date.now()) {
+    await this.refreshPolicy()
+    if (this.idleMs === 0) return
     const idle = [...this.#entries].filter(entry =>
       !entry.retiring && entry.inFlight === 0 && now - entry.lastUsedAt >= this.idleMs)
     for (const entry of idle) {
+      if (entry.retiring || entry.inFlight || now - entry.lastUsedAt < this.idleMs || this.idleMs === 0) continue
       entry.retiring = true
       try { await this.onIdle(entry) }
       catch { entry.retiring = false; this.touch(entry) }
@@ -44,6 +59,8 @@ export class RuntimeIdleReaper {
   }
 
   async reclaimOne(now = Date.now(), minimumIdleMs = 60_000) {
+    await this.refreshPolicy()
+    if (this.idleMs === 0) return false
     const entry = [...this.#entries].filter(item => !item.retiring && item.inFlight === 0 &&
       now - item.lastUsedAt >= minimumIdleMs).sort((a, b) => a.lastUsedAt - b.lastUsedAt)[0]
     if (!entry) return false

@@ -80,3 +80,30 @@ def test_control_plane_remains_responsive_with_many_script_waiters(tmp_path, mon
                 results = await asyncio.gather(*calls)
             assert all(result.status_code == 200 for result in results)
     asyncio.run(verify())
+
+
+def test_runtime_policy_defaults_and_survives_restart_and_queue_updates(monkeypatch, tmp_path) -> None:
+    from types import SimpleNamespace
+
+    from app.execution_scheduler import ExecutionScheduler
+    from app.settings_store import SettingsStore
+
+    monkeypatch.setenv("MOVO_SANDBOX_MANAGER_TOKEN", "a" * 64)
+    monkeypatch.setenv("MOVO_SANDBOX_PLUGIN_IDLE_SECONDS", "900")
+    store = SettingsStore(tmp_path)
+    scheduler = ExecutionScheduler(2, 8, store)
+    monkeypatch.setattr(main, "jobs", lambda: SimpleNamespace(scheduler=scheduler))
+    client = TestClient(main.app)
+    headers = {"Authorization": f"Bearer {'a' * 64}"}
+    assert client.get("/v1/settings", headers=headers).json() == {
+        "runtime_mode": "on_demand", "plugin_idle_seconds": 900,
+    }
+    assert client.put("/v1/settings", headers=headers, json={
+        "runtime_mode": "forced", "plugin_idle_seconds": 0, "capacity": 5,
+    }).status_code == 200
+    assert client.put("/v1/settings", headers=headers, json={"max_pending": 3}).status_code == 200
+    restarted = ExecutionScheduler(2, 8, store)
+    assert restarted.runtime_policy() == {"runtime_mode": "forced", "plugin_idle_seconds": 0}
+    assert restarted.status()["capacity"] == 5
+    assert restarted.status()["max_pending"] == 3
+    assert client.put("/v1/settings", headers=headers, json={"plugin_idle_seconds": -1}).status_code == 422

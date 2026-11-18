@@ -1,3 +1,5 @@
+import { requiresIsolatedRuntime, usesEnterpriseHost } from './runtime-placement.mjs'
+import { DEFERRED_PLUGIN_PREFIX, invokeDeferredTool } from './deferred-plugin-tools.mjs'
 import { createServer } from 'node:http'
 
 import { validBearerToken, assertSecureHost } from './host-auth.mjs'
@@ -133,10 +135,17 @@ export class RuntimeHttpServer {
     if (request.method === 'POST' && parts.join('/') === 'v1/runtimes') {
       const body = await readJson(request)
       body.modelProfile = await this.#pluginArchives.prepareProfile(body.modelProfile)
-      const needsPersonalRuntime = Boolean(body.modelProfile?.subjectUserId || body.modelProfile?.plugins?.length)
+      const needsPersonalRuntime = requiresIsolatedRuntime(body.modelProfile)
       const runtime = needsPersonalRuntime && process.env.MOVO_DSH_PLUGIN_CHILD !== '1'
         ? await this.#isolated.create(body)
-        : await this.#manager.create(body)
+        : await this.#manager.create(body, {
+          invokeDeferredTool: this.#isolated instanceof ContainerPluginRuntimePool
+            ? (plugin, name, args, signal) => invokeDeferredTool(
+              this.#isolated, profile => this.#pluginArchives.prepareProfile(profile),
+              body, plugin, name, args, signal,
+            )
+            : undefined,
+        })
       const health = runtimeHealth([])
       return sendJson(response, 201, {
         runtimeId: runtime.runtimeId,
@@ -235,9 +244,22 @@ export class RuntimeHttpServer {
     }
     if (parts[3] === 'sessions' && parts[4] !== undefined) {
       const sessionId = decodeURIComponent(parts[4])
+      if (request.method === 'POST' && parts[5] === 'deferred-tool' && parts.length === 6 &&
+          process.env.MOVO_DSH_PLUGIN_CHILD === '1' && runtime.isolationKey.startsWith(DEFERRED_PLUGIN_PREFIX)) {
+        const controller = new AbortController()
+        response.once('close', () => controller.abort())
+        const { name, args } = await readJson(request)
+        const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(120_000)])
+        return sendJson(response, 200, { value: await runtime.callDeferredTool(sessionId, name, args, signal) })
+      }
       if (request.method === 'GET' && parts.length === 5) return sendJson(response, 200, await runtime.describeLiveSession(sessionId))
       if (request.method === 'GET' && parts[5] === 'plugin-capabilities' && parts.length === 6) {
         return sendJson(response, 200, await runtime.managedSessionCapabilities(sessionId))
+      }
+      if (request.method === 'GET' && parts[5] === 'plugin-tool-contracts' && parts.length === 6 &&
+          runtime.isolationKey.startsWith('plugin-install-validation:')) {
+        const { modelTools } = await runtime.upgradeContractInventory(sessionId)
+        return sendJson(response, 200, { tools: modelTools })
       }
       if (request.method === 'POST' && parts[5] === 'resume') {
         const body = await readJson(request)
@@ -305,6 +327,10 @@ export class RuntimeHttpServer {
       if (request.method === 'DELETE' && parts.length === 5) {
         return sendJson(response, 200, await runtime.disposeSession(sessionId))
       }
+    }
+    if (usesEnterpriseHost(runtime.modelProfile) &&
+        ['plugins', 'managed-plugins'].includes(parts[3]) && request.method !== 'GET') {
+      return sendJson(response, 403, { error: { code: 'forbidden', message: 'plugin operations require an isolated Runtime' } })
     }
     if (parts[3] === 'plugins') {
       const body = request.method === 'GET' ? {} : await readJson(request)

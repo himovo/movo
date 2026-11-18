@@ -129,7 +129,7 @@ class _SpeakerProfiles:
             capabilities=(),
         )
 
-    async def compile_model_profile(self, *, tenant_id: str, user_id: str, model_instance_id: str | None):
+    async def compile_model_profile(self, *, tenant_id: str, user_id: str, model_instance_id: str | None, conversation: bool = False):
         resolved = model_instance_id or self.DEFAULT_MODEL
         snapshot = self._snapshot(tenant_id, user_id, resolved)
         self._snapshots[snapshot.profile_version] = snapshot
@@ -143,6 +143,7 @@ class _SpeakerProfiles:
         user_id: str = "",
         model_instance_id: str | None = None,
         activate: bool = True,
+        conversation: bool = False,
     ):
         snapshot = await self.compile_model_profile(
             tenant_id=tenant_id, user_id=user_id, model_instance_id=model_instance_id,

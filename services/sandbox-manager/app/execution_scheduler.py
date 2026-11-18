@@ -37,18 +37,32 @@ class ExecutionScheduler:
             return dict(running=self._running(), pending=len(self._waiting),
                         capacity=self._capacity, max_pending=self._max_pending)
 
-    def configure(self, *, capacity: int | None = None, max_pending: int | None = None) -> dict:
+    def runtime_policy(self) -> dict:
+        with self._condition:
+            return self._store.runtime_policy()
+
+    def configure(self, *, capacity: int | None = None, max_pending: int | None = None,
+                  runtime_mode: str | None = None, plugin_idle_seconds: int | None = None) -> dict:
         if capacity is not None and (type(capacity) is not int or not 1 <= capacity <= 100):
             raise ValueError("Concurrency limit must be between 1 and 100")
         if max_pending is not None and (type(max_pending) is not int or not 0 <= max_pending <= 100):
             raise ValueError("Pending queue limit must be between 0 and 100")
+        if runtime_mode is not None and runtime_mode not in ("on_demand", "forced"):
+            raise ValueError("Invalid sandbox runtime mode")
+        if plugin_idle_seconds is not None and (type(plugin_idle_seconds) is not int or not 0 <= plugin_idle_seconds <= 604800):
+            raise ValueError("Invalid plugin idle timeout")
         with self._condition:
             values = dict(capacity=self._capacity if capacity is None else capacity,
                           max_pending=self._max_pending if max_pending is None else max_pending)
-            self._store.save(values)
+            policy = self._store.runtime_policy()
+            if runtime_mode is not None:
+                policy["runtime_mode"] = runtime_mode
+            if plugin_idle_seconds is not None:
+                policy["plugin_idle_seconds"] = plugin_idle_seconds
+            self._store.save({**values, **policy})
             self._capacity, self._max_pending = values['capacity'], values['max_pending']
             self._condition.notify_all()
-            return self.status()
+            return {**self.status(), **policy}
 
     def wake(self):
         with self._condition:

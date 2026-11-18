@@ -1,4 +1,14 @@
-from app.dsh_runtime.plugin_management.capability_projection import projected_capabilities
+from app.dsh_runtime.plugin_management.capability_projection import projected_capabilities, validated_tool_contracts
+
+
+def test_tool_contracts_keep_unique_plugin_tools_exposed_to_the_model():
+    schema = {"type": "object"}
+    tool = {"name": "lookup", "description": "Look up a record", "schema": schema}
+    duplicated = {**tool, "name": "duplicate"}
+    assert validated_tool_contracts({"lookup", "duplicate", "invalid"}, [
+        tool, duplicated, duplicated, {**tool, "name": "other"},
+        {**tool, "name": "invalid", "schema": None},
+    ]) == [tool]
 
 
 def test_projection_attributing_native_session_capabilities_to_activated_bundle():
@@ -55,3 +65,14 @@ def test_existing_provider_catalog_change_is_not_misattributed_to_plugin():
         before, after, "plugin", [],
     )
     assert [item["id"] for item in value["modelProviders"]] == ["plugin-provider"]
+
+
+def test_profile_and_runtime_reserve_the_same_tool_names():
+    import re
+    from pathlib import Path
+
+    from app.dsh_runtime.profile.plugin_placement import RESERVED_TOOL_NAMES
+
+    policy = (Path(__file__).resolve().parents[2] / "dsh/runtime-host/src/official-host/tool-name-policy.mjs")
+    declaration = policy.read_text(encoding="utf-8").split("new Set([", 1)[1].split("]))", 1)[0]
+    assert RESERVED_TOOL_NAMES == set(re.findall(r"'([^']+)'", declaration))

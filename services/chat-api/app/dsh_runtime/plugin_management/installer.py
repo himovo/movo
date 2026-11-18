@@ -15,7 +15,7 @@ from app.dsh_runtime.plugin_management.source_policy import is_fixed_npm_source
 from app.dsh_runtime.plugin_management.install_failure import install_error_code, install_error_text, is_missing_registry_dependency
 from app.dsh_runtime.plugin_management.compatibility import classify_conversation_tools
 from app.dsh_runtime.plugin_management.release_compatibility import incompatible_release
-from app.dsh_runtime.plugin_management.capability_projection import projected_capabilities
+from app.dsh_runtime.plugin_management.capability_projection import projected_capabilities, validated_tool_contracts
 from app.dsh_runtime.plugin_management.tool_requirements import tool_requirements
 from app.dsh_runtime.plugin_management.offline_package_capture import initialize_package_source, imported_plugin_record, record_plugin
 
@@ -110,6 +110,7 @@ class DshPluginInstaller:
                 elif inspected.get("problem") == "network":
                     raise PluginInstallError("plugin_registry_unavailable")
             package = None
+            declared_placement = None
             if inspected.get("status") == "refused" and inspected.get("problem") == "already-installed":
                 bundles = await transport.request("GET", path)
                 builtin = next(
@@ -168,6 +169,7 @@ class DshPluginInstaller:
                 manifest = await transport.request("POST", f"{path}/manifest", json={"name": name})
                 if manifest.get("version") != version:
                     raise PluginInstallError("DSH plugin manifest version did not match the installed package")
+                declared_placement = manifest.get("runtimePlacement")
                 mismatch = incompatible_release(manifest, str(original_inventory.get("dshVersion") or health.get("version") or ""))
                 if mismatch:
                     raise PluginInstallError(mismatch, code="incompatible-version",
@@ -228,6 +230,7 @@ class DshPluginInstaller:
             )
             exposed: set[str] = set()
             activated_capabilities: dict[str, Any] = {}
+            tool_contracts: list[dict[str, Any]] = []
             if discovered or activated_inventory.get("skills") or activated_inventory.get("bundles"):
                 try:
                     # The first Runtime discovers root tools. A new immutable
@@ -268,6 +271,17 @@ class DshPluginInstaller:
                     activated_capabilities = await transport.request(
                         "GET", f"/v1/runtimes/{session_validation['runtimeId']}/sessions/{session['sessionId']}/plugin-capabilities",
                     )
+                    if exposed.intersection(discovered):
+                        try:
+                            contracts = await transport.request(
+                                "GET",
+                                f"/v1/runtimes/{session_validation['runtimeId']}/sessions/{session['sessionId']}/plugin-tool-contracts",
+                            )
+                            tool_contracts = validated_tool_contracts(
+                                exposed.intersection(discovered), contracts.get("tools") or [],
+                            )
+                        except DshTransportError:
+                            logger.info("Plugin validation did not provide model tool contracts")
                 except DshTransportError as exc:
                     package["availability"] = {
                         "status": "failed", "reason": str(exc),
@@ -290,6 +304,10 @@ class DshPluginInstaller:
                 baseline_capabilities, activated_capabilities, package["name"],
                 sorted(exposed.intersection(discovered)),
             )
+            if tool_contracts:
+                capabilities["toolContracts"] = tool_contracts
+            if declared_placement in ("standalone-ui-v1", "isolated-tool-call-v1"):
+                capabilities["runtimePlacement"] = declared_placement
             status, reason = classify_conversation_tools(set(discovered), exposed)
             if status == "runtime_active" and any(capabilities.get(key) for key in ("skills", "commands", "clientModules", "modelProviders", "mcpServers", "rows")):
                 reason = "other_capabilities_available"

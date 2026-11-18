@@ -1,5 +1,7 @@
 import { apiClient } from './client'
 
+export type SandboxRuntimeMode = 'on_demand' | 'forced'
+
 export interface SandboxStatus {
   enabled: boolean
   healthy: boolean
@@ -11,6 +13,7 @@ export interface SandboxStatus {
   max_pending?: number
   plugin_runtimes?: number
   plugin_idle_seconds?: number
+  runtime_mode?: SandboxRuntimeMode
 }
 
 export async function fetchSandboxStatus(): Promise<SandboxStatus> {
@@ -18,6 +21,11 @@ export async function fetchSandboxStatus(): Promise<SandboxStatus> {
   return data
 }
 
-export async function saveSandboxLimits(capacity: number, maxPending: number): Promise<void> {
-  await apiClient.put('/api/settings/sandbox/settings', { capacity, max_pending: maxPending })
+export async function saveSandboxSettings(settings: {
+  capacity: number
+  max_pending: number
+  plugin_idle_seconds: number
+  runtime_mode: SandboxRuntimeMode
+}): Promise<void> {
+  await apiClient.put('/api/settings/sandbox/settings', settings)
 }

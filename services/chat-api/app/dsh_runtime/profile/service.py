@@ -19,12 +19,14 @@ class RuntimeProfilePublisher:
         actor_id: str,
         user_id: str = "",
         model_instance_id: str | None = None,
+        conversation: bool = False,
         activate: bool = True,
     ) -> RuntimeProfileSnapshot:
         snapshot = await self._compiler.compile(
             tenant_id=tenant_id,
             user_id=user_id,
             model_instance_id=model_instance_id,
+            conversation=conversation,
         )
         await self._store.publish(snapshot, actor_id=actor_id, activate=activate)
         return snapshot
@@ -35,12 +37,14 @@ class RuntimeProfilePublisher:
         tenant_id: str,
         user_id: str = "",
         model_instance_id: str | None = None,
+        conversation: bool = False,
     ) -> RuntimeProfileSnapshot:
         """Compile the desired immutable snapshot without producing an audit row."""
         return await self._compiler.compile(
             tenant_id=tenant_id,
             user_id=user_id,
             model_instance_id=model_instance_id,
+            conversation=conversation,
         )
 
     async def publish_snapshot(

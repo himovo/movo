@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Plugin installation smoke test",
+  "movo": { "runtimePlacement": "isolated-tool-call-v1" },
   "dsh": {
     "bundle": { "patch": "./cordis.patch.yml" },
     "client": { "platform": "web", "inject": ["@deepseek-ai/dsh-client-runtime"] }

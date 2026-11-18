@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 import asyncio
 import hmac
 import os
@@ -113,6 +115,8 @@ class CreatePluginRuntimeRequest(BaseModel):
 
 
 class UpdateSettingsRequest(BaseModel):
+    runtime_mode: Literal["on_demand", "forced"] | None = None
+    plugin_idle_seconds: int | None = Field(default=None, ge=0, le=604800)
     max_pending: int | None = Field(default=None, ge=0, le=100)
     capacity: int | None = Field(default=None, ge=1, le=100)
 
@@ -135,7 +139,7 @@ def health(authorization: str | None = Header(default=None)) -> dict:
         DockerEngine().request("GET", "/_ping")
     except Exception as exc:
         raise HTTPException(status_code=503, detail="Docker Engine unavailable") from exc
-    return {"ok": True, **jobs().status(), **plugins().status(), **_resident_capacity.status(),
+    return {"ok": True, **jobs().status(), **jobs().scheduler.runtime_policy(), **plugins().status(), **_resident_capacity.status(),
             "task_capacity": _tasks.capacity if _tasks is not None else int(os.environ.get("MOVO_SANDBOX_MAX_TASKS", "10"))}
 
 
@@ -248,6 +252,12 @@ def skill_environment_record(digest: str, record_id: str, authorization: str | N
         except Exception:
             pass
     return record
+
+
+@app.get("/v1/settings")
+def get_settings(authorization: str | None = Header(default=None)) -> dict:
+    _authorize(authorization)
+    return jobs().scheduler.runtime_policy()
 
 
 @app.put("/v1/settings")

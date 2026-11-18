@@ -19,6 +19,22 @@ def _new_providers(before: list[dict[str, Any]], after: list[dict[str, Any]]) ->
             and item.get("id") and str(item["id"]) not in existing]
 
 
+def validated_tool_contracts(names: set[str], contracts: list) -> list[dict[str, Any]]:
+    candidates: dict[str, list[dict[str, Any]]] = {}
+    for item in contracts:
+        if not isinstance(item, dict) or not isinstance(item.get("name"), str) or item["name"] not in names:
+            continue
+        candidates.setdefault(item["name"], []).append(item)
+    result = []
+    for name, matches in sorted(candidates.items()):
+        if len(matches) != 1:
+            continue
+        item = matches[0]
+        if isinstance(item.get("description"), str) and isinstance(item.get("schema"), dict):
+            result.append({"name": name, "description": item["description"], "schema": item["schema"]})
+    return result
+
+
 def projected_capabilities(
     baseline: dict[str, Any], activated: dict[str, Any],
     baseline_session: dict[str, Any], activated_session: dict[str, Any],

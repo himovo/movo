@@ -122,7 +122,7 @@ class DshTurnRunner:
         )
         try:
             profile = await self._profiles.get(str(binding["profile_version"]))
-            session_plugins = tuple(dict(item) for item in profile.plugins)
+            session_plugins = tuple(dict(item) for item in (*profile.plugins, *profile.deferred_plugins))
             tool_ui = tool_presentations(profile)
             delivery_guard = AuthoritativeDeliveryGuard(
                 store=self._authoritative_deliveries,
@@ -143,7 +143,7 @@ class DshTurnRunner:
             if turn_context:
                 documents = list(turn_context.get("documents") or [])
                 images = list(turn_context.get("images") or [])
-                if documents or images:
+                if (documents or images) and profile.runtime_placement != "enterprise-host":
                     staged = await stage_personal_inputs(binding, message_id, documents + images)
                     turn_context = {
                         **turn_context,

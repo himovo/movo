@@ -40,6 +40,7 @@ class _Profiles:
     async def compile_model_profile(self, **scope):
         assert scope == {
             "tenant_id": "tenant-a", "user_id": "user-a", "model_instance_id": "model-a",
+            "conversation": True,
         }
         return self.desired
 

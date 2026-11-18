@@ -1,3 +1,5 @@
+import { executeDeferredTool, registerDeferredTools } from './deferred-plugin-tools.mjs'
+import { requireEnterprisePreset, usesEnterpriseHost } from './runtime-placement.mjs'
 import { join, resolve } from 'node:path'
 import { chmod, mkdir } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
@@ -52,6 +54,8 @@ export class KernelRuntime {
   #journal = new EventJournal()
   #liveAssistantStream = new LiveAssistantStream(this.#journal)
   #plugins
+  #deferredToolDispose
+  #invokeDeferredTool
   #managedPlugins
   #modelAdapter
   #modelAdapterDispose
@@ -73,7 +77,8 @@ export class KernelRuntime {
   #nativePluginWeb
   #isolationAdmissionDispose
 
-  constructor({ runtimeId, isolationKey, profileVersion, storageRoot, modelProfile }) {
+  constructor({ runtimeId, isolationKey, profileVersion, storageRoot, modelProfile, invokeDeferredTool }) {
+    this.#invokeDeferredTool = invokeDeferredTool
     this.runtimeId = runtimeId
     this.isolationKey = isolationKey
     this.profileVersion = profileVersion
@@ -155,6 +160,7 @@ export class KernelRuntime {
         profileVersion: this.profileVersion,
       }, { skillInvocations: this.#skillInvocations })
     }
+    this.#deferredToolDispose = registerDeferredTools(ctx, this.modelProfile?.deferredPlugins, this.#invokeDeferredTool)
     this.#sessionComposer = new OfficialSessionComposer(ctx, {
       agentOptions: this.#agentOptions(),
       enterpriseTools: enterpriseToolNames(this.modelProfile),
@@ -196,7 +202,9 @@ export class KernelRuntime {
     this.#assertStarted()
     if (this.#handles.has(sessionId)) throw new Error(`session already live: ${sessionId}`)
     if (cwd !== undefined && workspaceId !== undefined) throw new Error('session cannot specify both cwd and workspaceId')
-    if (personalConversationKey && process.env.MOVO_PERSONAL_SPACE_ROOT && workspaceId === undefined) {
+    if (usesEnterpriseHost(this.modelProfile)) {
+      requireEnterprisePreset(presetId, workspaceId, cwd)
+    } else if (personalConversationKey && process.env.MOVO_PERSONAL_SPACE_ROOT && workspaceId === undefined) {
       if (!validConversationSpaceKey(personalConversationKey)) throw new Error('invalid personal conversation key')
       cwd = join(process.env.MOVO_PERSONAL_SPACE_ROOT, 'conversations', personalConversationKey)
       await mkdir(cwd, { recursive: true })
@@ -252,6 +260,7 @@ export class KernelRuntime {
       return await this.describeSession(live.agent)
     }
     const persisted = await this.#sessionComposer.persistedIdentity(sessionId)
+    if (usesEnterpriseHost(this.modelProfile)) requireEnterprisePreset(persisted.presetId)
     const composition = await this.#sessionComposer.prepare(persisted.presetId, {
       hasWorkspace: Boolean(persisted.cwd),
     })
@@ -475,6 +484,12 @@ export class KernelRuntime {
     }
   }
 
+  async callDeferredTool(sessionId, name, args, signal) {
+    const owned = this.modelProfile?.plugins?.filter(plugin => plugin.tool_names?.includes(name)) ?? []
+    if (owned.length !== 1) throw new Error('Deferred plugin tool is outside the Runtime profile')
+    return await executeDeferredTool(this.#ctx, this.#requireAgent(sessionId), name, args, signal)
+  }
+
   async managedSessionCapabilities(sessionId) {
     return await sessionPluginCapabilities(this.#ctx, this.#requireAgent(sessionId))
   }
@@ -492,6 +507,7 @@ export class KernelRuntime {
   }
 
   async dispose() {
+    this.#deferredToolDispose?.()
     for (const [sessionId, handle] of [...this.#handles.entries()]) {
       this.#handles.delete(sessionId)
       handle.agent.cancel({ kind: 'disposed' })

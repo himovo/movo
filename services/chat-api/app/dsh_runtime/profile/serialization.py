@@ -9,6 +9,10 @@ def snapshot_document(snapshot: RuntimeProfileSnapshot) -> dict:
     document = snapshot.model_dump(
         mode="json", exclude={"plugins", "plugin_versions"} if not snapshot.plugins else None,
     )
+    if not snapshot.deferred_plugins:
+        document.pop("deferred_plugins", None)
+    if snapshot.runtime_placement == "legacy":
+        document.pop("runtime_placement", None)
     if not snapshot.agent_name:
         from .compiler import ModelProfileCompiler
 

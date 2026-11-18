@@ -29,6 +29,14 @@ class SettingsStore:
     def max_pending(self, default: int) -> int:
         return self._value("max_pending", default, 0)
 
+    def runtime_policy(self) -> dict:
+        values = self._read()
+        placement = values.get("runtime_mode", "on_demand")
+        idle = values.get("plugin_idle_seconds", int(os.environ.get("MOVO_SANDBOX_PLUGIN_IDLE_SECONDS", "900")))
+        if placement not in ("on_demand", "forced") or type(idle) is not int or not 0 <= idle <= 604800:
+            raise ValueError("Invalid sandbox runtime settings")
+        return {"runtime_mode": placement, "plugin_idle_seconds": idle}
+
     def save_max_pending(self, value: int) -> None:
         self.save({**self._read(), "max_pending": value})
 

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { request as httpRequest } from 'node:http'
 
 import { validBearerToken } from './host-auth.mjs'
@@ -8,24 +9,25 @@ import { personalSpaceKey } from './personal-space.mjs'
 
 export { rewritePluginProfile } from './plugin-credential-relay.mjs'
 
-async function managerRequest(baseUrl, token, method, path, body) {
+async function managerRequest(baseUrl, token, method, path, body, timeoutMs = 45_000) {
   const response = await fetch(`${baseUrl.replace(/\/$/, '')}${path}`, {
     method,
     headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    signal: AbortSignal.timeout(45_000),
+    signal: AbortSignal.timeout(timeoutMs),
   })
   const value = await response.json().catch(() => ({}))
   if (!response.ok) throw new Error(value.detail || `Sandbox manager returned HTTP ${response.status}`)
   return value
 }
 
-function requestJson(entry, method, path, body) {
+function requestJson(entry, method, path, body, signal) {
   return new Promise((resolveRequest, rejectRequest) => {
     const request = httpRequest({
       hostname: entry.host, port: entry.port, path, method,
       headers: { authorization: `Bearer ${entry.token}`, 'content-type': 'application/json' },
       timeout: 120_000,
+      signal,
     }, response => {
       let text = ''
       response.on('data', chunk => { text += String(chunk) })
@@ -80,6 +82,10 @@ export class ContainerPluginRuntimePool {
     const idleSeconds = Number(process.env.MOVO_SANDBOX_PLUGIN_IDLE_SECONDS ?? 900)
     this.#reaper = new RuntimeIdleReaper({
       idleMs: idleSeconds * 1000,
+      readIdleMs: async () => {
+        const policy = await managerRequest(this.managerUrl, this.managerToken, 'GET', '/v1/settings', undefined, 2000)
+        return policy.plugin_idle_seconds * 1000
+      },
       onIdle: entry => this.dispose(entry.runtime.runtimeId),
     })
   }
@@ -170,6 +176,22 @@ export class ContainerPluginRuntimePool {
 
   async createSession(entry, body) {
     return await this.#reaper.use(entry, () => requestJson(entry, 'POST', `/v1/runtimes/${entry.runtime.runtimeId}/trusted-session`, body))
+  }
+
+  async callDeferredTool(runtimeId, body, signal) {
+    const entry = this.get(runtimeId)
+    if (!entry) throw new Error('Deferred plugin Runtime is unavailable')
+    const root = `/v1/runtimes/${runtimeId}`
+    const sessionId = randomUUID()
+    return await this.#reaper.use(entry, async () => {
+      await requestJson(entry, 'POST', `${root}/trusted-session`, { sessionId })
+      try {
+        const result = await requestJson(entry, 'POST', `${root}/sessions/${sessionId}/deferred-tool`, body, signal)
+        return result.value
+      } finally {
+        await requestJson(entry, 'DELETE', `${root}/sessions/${sessionId}`).catch(() => {})
+      }
+    })
   }
 
   async forward(entry, request, response) {

@@ -19,7 +19,7 @@ export class RuntimeManager {
     await this.dispose(runtime.runtimeId)
   }
 
-  async create({ isolationKey, profileVersion, modelProfile }) {
+  async create({ isolationKey, profileVersion, modelProfile }, options = {}) {
     if (this.#isolationOwners.has(isolationKey)) {
       throw new Error(`isolation key already has a runtime: ${isolationKey}`)
     }
@@ -30,6 +30,7 @@ export class RuntimeManager {
       profileVersion,
       storageRoot: this.storageRoot,
       modelProfile: normalizeModelProfile(modelProfile, profileVersion),
+      invokeDeferredTool: options.invokeDeferredTool,
     })
     await runtime.start()
     this.#runtimes.set(runtimeId, runtime)

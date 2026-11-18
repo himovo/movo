@@ -122,7 +122,10 @@ def test_legacy_profile_export_keeps_original_wire_shape() -> None:
     async def run() -> None:
         compiler = ModelProfileCompiler(FakeCatalog())
         current = await compiler.compile(tenant_id="tenant-a")
-        document = current.model_dump(mode="json", exclude={"agent_name", "content_hash", "profile_version", "plugins", "plugin_versions"})
+        document = current.model_dump(mode="json", exclude={
+            "agent_name", "content_hash", "profile_version", "plugins", "plugin_versions", "runtime_placement",
+            "deferred_plugins",
+        })
         old_hash = compiler.content_hash(document)
         legacy = current.model_copy(update={"content_hash": old_hash, "profile_version": f"rp-{old_hash[:24]}"})
         exported = RuntimeProfileBundle.export(legacy)
@@ -388,3 +391,122 @@ def test_model_gateway_redacts_provider_secrets() -> None:
     message = ModelGatewayService._safe_message(RuntimeError("API key=provider-secret-value rejected"))
     assert "provider-secret-value" not in message
     assert "[REDACTED]" in message
+
+
+def test_on_demand_runtime_profile_is_versioned_and_preserves_legacy_wire_shape(monkeypatch) -> None:
+    async def run() -> None:
+        compiler = ModelProfileCompiler(FakeCatalog())
+        on_demand = False
+
+        async def runtime_policy() -> bool:
+            return on_demand
+
+        monkeypatch.setattr("app.dsh_runtime.profile.compiler.uses_on_demand_runtime", runtime_policy)
+        legacy = await compiler.compile(tenant_id="tenant-a", user_id="alice")
+        assert "runtime_placement" not in json.loads(RuntimeProfileBundle.export(legacy))
+        on_demand = True
+        profile = await compiler.compile(tenant_id="tenant-a", user_id="alice")
+        assert profile.profile_version != legacy.profile_version
+        assert profile.runtime_placement == "enterprise-host"
+        assert RuntimeProfileBundle.load(RuntimeProfileBundle.export(profile)) == profile
+        assert profile.execution_payload() == legacy.execution_payload()
+        store = InMemoryRuntimeProfileStore()
+        await store.publish(profile, actor_id="alice")
+        resolver = RuntimeProfileResolver(
+            store, ModelGatewayTokenService("runtime-placement-test-secret"), gateway_url="http://model-gateway",
+        )
+        payload = await resolver.resolve(profile.profile_version, tenant_id="tenant-a")
+        assert payload["subjectUserId"] == "alice"
+        assert payload["runtimePlacement"] == "enterprise-host"
+
+    asyncio.run(run())
+
+
+def test_conversation_defers_standalone_ui_but_ui_profile_keeps_it(monkeypatch) -> None:
+    from app.dsh_runtime.profile.plugin_placement import deferred_tool_contracts, is_standalone_ui_candidate
+
+    class PluginCatalog:
+        plugins = ()
+
+        async def list_enabled(self, tenant_id, user_id):
+            return self.plugins
+
+    on_demand_enabled = True
+
+    async def on_demand():
+        return on_demand_enabled
+
+    async def run():
+        nonlocal on_demand_enabled
+        capabilities = {
+            "runtimePlacement": "standalone-ui-v1",
+            "clientModules": [{"id": "browser-surface", "conversationView": False}],
+            "commands": [], "skills": [], "modelProviders": [], "mcpServers": [], "overrides": [],
+        }
+        assert is_standalone_ui_candidate(capabilities, [])
+        assert not is_standalone_ui_candidate({**capabilities, "runtimePlacement": None}, [])
+        assert not is_standalone_ui_candidate({**capabilities, "clientModules": [{"id": "legacy"}]}, [])
+        assert not is_standalone_ui_candidate({
+            **capabilities, "clientModules": [{"id": "conversation", "conversationView": True}],
+        }, [])
+        assert not is_standalone_ui_candidate({**capabilities, "skills": [{"name": "review"}]}, [])
+        assert not is_standalone_ui_candidate(capabilities, ["lookup"])
+        monkeypatch.setattr("app.dsh_runtime.profile.compiler.uses_on_demand_runtime", on_demand)
+        catalog = PluginCatalog()
+        plugin = {"installation_id": "ui", "name": "browser-surface", "version": "1.0.0",
+                  "source_scope": "personal", "spec": "browser-surface@1.0.0", "standalone_ui_candidate": True}
+        catalog.plugins = (plugin,)
+        compiler = ModelProfileCompiler(FakeCatalog(), plugin_catalog=catalog)
+        scope = {"tenant_id": "tenant-a", "user_id": "alice"}
+        conversation = await compiler.compile(**scope, conversation=True)
+        ui = await compiler.compile(**scope)
+        assert conversation.plugins == ()
+        assert conversation.runtime_placement == "enterprise-host"
+        assert ui.runtime_placement == "legacy"
+        assert ui.plugins[0]["installation_id"] == "ui"
+        assert "standalone_ui_candidate" not in ui.plugins[0]
+        assert conversation.profile_version != ui.profile_version
+        catalog.plugins += ({**plugin, "installation_id": "tool", "name": "tool",
+                             "standalone_ui_candidate": False, "tool_names": ["lookup"]},)
+        mixed = await compiler.compile(**scope, conversation=True)
+        assert [entry["installation_id"] for entry in mixed.plugins] == ["tool"]
+        assert mixed.runtime_placement == "legacy"
+        on_demand_enabled = False
+        forced = await compiler.compile(**scope, conversation=True)
+        assert [entry["installation_id"] for entry in forced.plugins] == ["ui", "tool"]
+        assert forced.runtime_placement == "legacy"
+        on_demand_enabled = True
+        contract = {"name": "lookup", "description": "Look up an order", "schema": {"type": "object"}}
+        assessment = {**capabilities, "runtimePlacement": "isolated-tool-call-v1",
+                      "toolContracts": [contract], "mcpServers": [{"name": "orders"}]}
+        assert deferred_tool_contracts({**assessment, "runtimePlacement": None}, ["lookup"], {}) == []
+        assert deferred_tool_contracts({**assessment, "toolContracts": [{**contract, "name": "read"}]},
+                                       ["read"], {}) == []
+        assert deferred_tool_contracts(assessment, ["lookup"], {"lookup": ["workspace"]}) == []
+        assert deferred_tool_contracts(assessment, ["lookup", "missing"], {}) == []
+        assert deferred_tool_contracts({**assessment, "commands": [{"name": "orders"}]}, ["lookup"], {}) == []
+        catalog.plugins = (plugin, {
+            **catalog.plugins[1],
+            "deferred_tool_contracts": deferred_tool_contracts(assessment, ["lookup"], {}),
+        })
+        lazy = await compiler.compile(**scope, conversation=True)
+        assert lazy.plugins == ()
+        assert lazy.runtime_placement == "enterprise-host"
+        assert lazy.deferred_plugins[0]["deferred_tool_contracts"] == [contract]
+        assert RuntimeProfileBundle.load(RuntimeProfileBundle.export(lazy)) == lazy
+        eligible = catalog.plugins[1]
+        catalog.plugins = (eligible, {
+            **eligible, "name": "needs-session", "installation_id": "eager", "deferred_tool_contracts": [],
+        })
+        eager = await compiler.compile(**scope, conversation=True)
+        assert eager.deferred_plugins == ()
+        assert len(eager.plugins) == 2
+        catalog.plugins = ({
+            **eligible, "tool_names": ["read"],
+            "deferred_tool_contracts": [{**contract, "name": "read"}],
+        },)
+        collision = await compiler.compile(**scope, conversation=True)
+        assert collision.deferred_plugins == ()
+        assert collision.plugins[0]["tool_names"] == ["read"]
+
+    asyncio.run(run())

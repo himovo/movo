@@ -64,8 +64,8 @@ test('managed plugin activates only for its Runtime and preserves Session handof
     const plain = await request(base, '/v1/runtimes', 'POST', {
       isolationKey: 'plain-user', profileVersion: 'test',
     })
-    const managed = await request(base, '/v1/runtimes', 'POST', {
-      isolationKey: 'managed-user', profileVersion: 'test',
+    const managedSpec = {
+      isolationKey: 'plugin-install-validation:managed-user', profileVersion: 'test',
       modelProfile: {
         profileVersion: 'test', modelInstanceId: 'test', modelName: 'test',
         gatewayUrl: `${gatewayUrl}/model`, accessToken: 'test',
@@ -80,12 +80,17 @@ test('managed plugin activates only for its Runtime and preserves Session handof
           client_modules: [{ id: 'movo-dsh-test-bundle', rev: 'fixture' }],
         }],
       },
-    })
+    }
+    const managed = await request(base, '/v1/runtimes', 'POST', managedSpec)
     const managedPath = `/v1/runtimes/${managed.runtimeId}`
     const plainPath = `/v1/runtimes/${plain.runtimeId}`
-    const discovered = await request(base, '/v1/runtimes?isolationKey=managed-user')
+    const discovered = await request(base, '/v1/runtimes?isolationKey=plugin-install-validation:managed-user')
     assert.equal(discovered.runtime.modelInstanceId, 'test')
     const active = await request(base, `${managedPath}/managed-plugins`)
+    const manifest = await request(base, `${managedPath}/managed-plugins/manifest`, 'POST', {
+      name: 'movo-dsh-test-bundle',
+    })
+    assert.equal(manifest.runtimePlacement, 'isolated-tool-call-v1')
     assert.ok(active.bundles.some(bundle => bundle.name === 'movo-dsh-test-bundle' && bundle.enabled))
     assert.ok(active.globalTools.includes('movo_plugin_smoke'))
     assert.ok(active.capabilities?.webRoutes?.some(route => route.path === '/movo-fixture') ||
@@ -130,6 +135,11 @@ test('managed plugin activates only for its Runtime and preserves Session handof
     })
     assert.equal(continued.sessionId, 'managed-session')
     assert.ok(continued.capabilityTools.includes('movo_plugin_smoke'), JSON.stringify(continued.capabilityTools))
+    const contracts = await request(base, `${managedPath}/sessions/managed-session/plugin-tool-contracts`)
+    const pluginTool = contracts.tools.find(tool => tool.name === 'movo_plugin_smoke')
+    assert.equal(pluginTool?.schema?.type, 'object')
+    const blocked = await fetch(`${base}${plainPath}/sessions/plain-session/plugin-tool-contracts`)
+    assert.equal(blocked.status, 404)
     const commandId = `dsh_plugin_command:${'b'.repeat(24)}:${Buffer.from('movo-smoke').toString('base64url')}`
     const command = await request(base, `${managedPath}/sessions/managed-session/plugin-command`, 'POST', {
       selectedId: commandId, line: '/movo-smoke hello',
@@ -148,6 +158,15 @@ test('managed plugin activates only for its Runtime and preserves Session handof
       sessionId: 'plain-successor', seedRuntimeId: managed.runtimeId, seedSessionId: 'managed-session',
     })
     assert.equal(back.sessionId, 'plain-successor')
+    const lazy = await request(base, '/v1/runtimes', 'POST', {
+      ...managedSpec, isolationKey: 'deferred-plugin:fixture',
+    })
+    const lazyPath = `/v1/runtimes/${lazy.runtimeId}/sessions`
+    await request(base, lazyPath, 'POST', { sessionId: 'call' })
+    const result = await request(base, `${lazyPath}/call/deferred-tool`, 'POST', {
+      name: 'movo_plugin_smoke', args: {},
+    })
+    assert.deepEqual(result.value.content, [{ type: 'text', text: 'MOVO_PLUGIN_EXECUTED' }])
   } finally {
     await host.stop()
     await new Promise(resolve => gateway.close(resolve))

@@ -38,3 +38,22 @@ test('capacity pressure reclaims only an old idle runtime, never an active reque
     assert.equal(await reaper.reclaimOne(Date.now()+61000),false)
   } finally {release();await work;reaper.stop()}
 })
+
+test('live policy can disable both idle and capacity-pressure reclaim and enable them again', async () => {
+  let configured = 0
+  const removed = []
+  const reaper = new RuntimeIdleReaper({
+    idleMs: 900_000, readIdleMs: async () => configured,
+    onIdle: async entry => { removed.push(entry.id); reaper.delete(entry) },
+  })
+  reaper.add({ id: 'resident' })
+  try {
+    const later = Date.now() + 1_000_000
+    await reaper.sweep(later)
+    assert.equal(await reaper.reclaimOne(later), false)
+    assert.deepEqual(removed, [])
+    configured = 900_000
+    await reaper.sweep(later)
+    assert.deepEqual(removed, ['resident'])
+  } finally { reaper.stop() }
+})

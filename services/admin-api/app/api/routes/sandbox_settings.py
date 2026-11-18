@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 import asyncio
 import json
 import os
@@ -18,6 +20,8 @@ router = APIRouter()
 
 
 class UpdateQueueRequest(BaseModel):
+    runtime_mode: Literal["on_demand", "forced"] | None = None
+    plugin_idle_seconds: int | None = Field(default=None, ge=0, le=604800)
     max_pending: int | None = Field(default=None, ge=0, le=100)
     capacity: int | None = Field(default=None, ge=1, le=100)
 
@@ -54,7 +58,8 @@ def _status() -> dict:
         "resident_containers": int(data.get("resident_containers", 0)),
         "max_pending": int(data.get("max_pending", 0)),
         "plugin_runtimes": int(data.get("plugin_runtimes", 0)),
-        "plugin_idle_seconds": int(os.environ.get("MOVO_SANDBOX_PLUGIN_IDLE_SECONDS", "900")),
+        "runtime_mode": data.get("runtime_mode", "on_demand"),
+        "plugin_idle_seconds": int(data.get("plugin_idle_seconds", 900)),
     }
 
 

@@ -13,12 +13,15 @@ test('client module summaries identify declared conversation views', async () =>
     await writeFile(paths[0], 'ctx.slots.inject("conversation.view", () => ctx.slots.register({name: "conversation.view"}, render))')
     await writeFile(paths[1], 'ctx.slots.register({name: "main"}, render)')
     const modules = {
-      graph: () => ({ entries: [{ id: 'with-view', rev: 'one' }, { id: 'main-only', rev: 'two' }] }),
-      clientPath: id => paths[id === 'with-view' ? 0 : 1],
+      graph: () => ({ entries: [
+        { id: 'with-view', rev: 'one' }, { id: 'main-only', rev: 'two' }, { id: 'missing', rev: 'three' },
+      ] }),
+      clientPath: id => ({ 'with-view': paths[0], 'main-only': paths[1], missing: join(directory, 'missing.js') })[id],
     }
     assert.deepEqual(await clientModuleSummaries(modules), [
       { id: 'with-view', rev: 'one', conversationView: true },
       { id: 'main-only', rev: 'two', conversationView: false },
+      { id: 'missing', rev: 'three', conversationView: undefined },
     ])
   } finally {
     await rm(directory, { recursive: true, force: true })

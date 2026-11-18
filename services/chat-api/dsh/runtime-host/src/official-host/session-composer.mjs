@@ -18,7 +18,7 @@ function selectedPreset(meta, events) {
 
 export function enterpriseToolNames(modelProfile) {
   const profile = modelProfile?.toolProfile
-  const pluginTools = (modelProfile?.plugins ?? []).flatMap(plugin => plugin.tool_names ?? [])
+  const pluginTools = [...(modelProfile?.plugins ?? []), ...(modelProfile?.deferredPlugins ?? [])].flatMap(plugin => plugin.tool_names ?? [])
   const skills = modelProfile?.skillProfile?.skills ?? []
   const skillTools = []
   if (skills.length > 0) skillTools.push('skill')

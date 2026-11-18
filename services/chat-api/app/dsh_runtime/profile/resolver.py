@@ -58,6 +58,8 @@ class RuntimeProfileResolver:
             bundle_gateway_url=self._bundle_gateway_url,
             plugin_gateway_url=self._plugin_gateway_url,
         )
+        if snapshot.runtime_placement == "enterprise-host":
+            payload["runtimePlacement"] = snapshot.runtime_placement
         tool_profile = payload.get("toolProfile")
         if isinstance(tool_profile, dict):
             for tool in tool_profile.get("tools", []):

@@ -6,8 +6,11 @@ import hashlib
 import json
 from typing import Any
 
+from app.execution_isolation.runtime_policy import uses_on_demand_runtime
+
 from .catalog import ModelCatalog
 from .models import RuntimeProfileSnapshot
+from .plugin_placement import RESERVED_TOOL_NAMES
 from .tools import ToolProfileCompiler
 from .skills import SkillProfileCompiler
 from .plugins import MongoPluginCatalog, plugin_versions
@@ -36,6 +39,7 @@ class ModelProfileCompiler:
         tenant_id: str,
         user_id: str = "",
         model_instance_id: str | None = None,
+        conversation: bool = False,
     ) -> RuntimeProfileSnapshot:
         authorized_model_id = model_instance_id
         if self._model_access_policy is not None and user_id:
@@ -56,6 +60,20 @@ class ModelProfileCompiler:
             tenant_id=tenant_id, user_id=user_id, tools=tools,
         ) if self._skill_compiler else None
         plugins = await self._plugin_catalog.list_enabled(tenant_id, user_id) if self._plugin_catalog else ()
+        on_demand = bool(user_id) and await uses_on_demand_runtime()
+        plugins = tuple(
+            {key: value for key, value in plugin.items() if key != "standalone_ui_candidate"}
+            for plugin in plugins
+            if not (conversation and on_demand and plugin.get("standalone_ui_candidate") is True)
+        )
+        deferred_plugins = ()
+        if conversation and on_demand and plugins and all(plugin.get("deferred_tool_contracts") for plugin in plugins):
+            names = [name for plugin in plugins for name in plugin["tool_names"]]
+            blocked_names = RESERVED_TOOL_NAMES.union(tool.name for tool in tools)
+            if len(names) == len(set(names)) and not blocked_names.intersection(names):
+                deferred_plugins, plugins = plugins, ()
+        plugins = tuple({key: value for key, value in plugin.items() if key != "deferred_tool_contracts"}
+                        for plugin in plugins)
         presentation = await self._agent_presentation_resolver(tenant_id) if self._agent_presentation_resolver else None
         payload: dict[str, Any] = {
             "schema_version": "askai.runtime-profile.v1",
@@ -80,6 +98,10 @@ class ModelProfileCompiler:
                 item.version for item in (skill_profile.skills if skill_profile else ()) if item.kind == "workflow"
             ),
         }
+        if not plugins and on_demand:
+            payload["runtime_placement"] = "enterprise-host"
+        if deferred_plugins:
+            payload["deferred_plugins"] = deferred_plugins
         if plugins:
             payload["plugins"] = plugins
             payload["plugin_versions"] = plugin_versions(plugins)
