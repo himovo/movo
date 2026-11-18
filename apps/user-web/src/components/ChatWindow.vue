@@ -631,6 +631,13 @@ useChatWindowLifecycle({
         </template>
       </ChatComposer>
     </div>
+    <EvidenceDrawer
+      :open="evidenceDrawerOpen"
+      :bundle="activeEvidenceBundle"
+      :embedded="isPreviewExpanded && desktopActiveTab?.kind === 'browser'"
+      @close="closeEvidenceDrawer"
+      @open-source="openKnowledgeSourceFromDrawer"
+    />
   </div>
     <ProjectWorkspacePanel
       v-if="capabilities.codeInspector && props.codeSession && hasDesktopCodeTabs"
@@ -702,12 +709,6 @@ useChatWindowLifecycle({
     @close="closePresentationEditor"
     @exported="onPresentationExported"
     @saved="(bp) => { presentationBlueprint = bp }"
-  />
-  <EvidenceDrawer
-    :open="evidenceDrawerOpen"
-    :bundle="activeEvidenceBundle"
-    @close="closeEvidenceDrawer"
-    @open-source="openKnowledgeSourceFromDrawer"
   />
   <KnowledgeSourceViewer
     :open="knowledgeSourceViewerOpen"

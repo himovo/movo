@@ -7,6 +7,7 @@ import { t } from '../../composables/i18n'
 const props = defineProps<{
   open: boolean
   bundle: EvidenceBundleItem | null
+  embedded?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -101,8 +102,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
-  <Teleport to="body">
-    <div v-if="open && bundle" class="fixed inset-0 z-50">
+  <Teleport to="body" :disabled="embedded">
+    <div v-if="open && bundle" :class="[embedded ? 'absolute' : 'fixed', 'inset-0 z-50']">
       <button
         type="button"
         class="absolute inset-0 h-full w-full cursor-default bg-slate-950/20"
