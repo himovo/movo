@@ -18,10 +18,13 @@ type ProjectCreationOptions = {
   startLocalSession: () => { key: string }
   setDraftProject: (key: string, workspace: DshWorkspace, worktree: boolean) => void
   addBinding: (binding: Awaited<ReturnType<typeof createDesktopProject>>, workspace: DshWorkspace) => void
+  historyReference?: (key?: string) => string
+  setHistoryReference?: (key: string, reference: string) => void
   navigateToChat: () => void
 }
 
 export function useProjectCreation(options: ProjectCreationOptions) {
+  let pendingHistoryReference = ''
   const createProjectOpen = ref(false)
   const createProjectBusy = ref(false)
   const createProjectSelecting = ref(false)
@@ -33,6 +36,7 @@ export function useProjectCreation(options: ProjectCreationOptions) {
 
   function openProjectCreate(targetKey: string | null): void {
     if (!options.canUseCode.value || !options.localWorkspacePicker) return
+    pendingHistoryReference = ''
     createProjectTargetKey.value = targetKey
     createProjectWorkspace.value = null
     createProjectSelectionError.value = ''
@@ -46,9 +50,16 @@ export function useProjectCreation(options: ProjectCreationOptions) {
 
   function createProject(): void { openProjectCreate(null) }
 
+  function createProjectFromHistory(key?: string): void {
+    const reference = options.historyReference?.(key) || ''
+    openProjectCreate(null)
+    if (createProjectOpen.value) pendingHistoryReference = reference
+  }
+
   function closeProjectCreate(): void {
     createProjectOpen.value = false
     createProjectTargetKey.value = null
+    pendingHistoryReference = ''
   }
 
   async function chooseProjectFolder(): Promise<void> {
@@ -93,17 +104,27 @@ export function useProjectCreation(options: ProjectCreationOptions) {
     const title = workspace ? workspaceFolderName(workspace) : ''
     if (!workspace || !title || createProjectBusy.value) return
     createProjectBusy.value = true
+    const token = options.token.value
+    const identity = `${options.profile.value?.mainId}:${options.profile.value?.userId}`
+    const assertIdentity = () => {
+      if (token !== options.token.value || identity !== `${options.profile.value?.mainId}:${options.profile.value?.userId}`) {
+        throw new Error(t('code.history.account_changed'))
+      }
+    }
     try {
       const renamed = workspace.title === title ? workspace : await renameDshWorkspace(workspace.workspace_id, title)
+      assertIdentity()
       const binding = await createDesktopProject({
         workspace_id: renamed.workspace_id,
         title: renamed.title,
         worktree: createProjectWorktree.value,
-      }, options.token.value || null)
+      }, token || null)
+      assertIdentity()
       const targetKey = createProjectTargetKey.value
       const pane = targetKey ? options.getPane(targetKey) : options.startLocalSession()
       if (!pane) throw new Error('the target conversation is no longer available')
       options.setDraftProject(pane.key, renamed, createProjectWorktree.value)
+      options.setHistoryReference?.(pane.key, pendingHistoryReference)
       options.addBinding(binding, renamed)
       closeProjectCreate()
       options.navigateToChat()
@@ -114,7 +135,7 @@ export function useProjectCreation(options: ProjectCreationOptions) {
     createProjectOpen, createProjectBusy, createProjectSelecting,
     createProjectSelectionPhase, createProjectSelectionError,
     createProjectWorkspace, createProjectWorktree,
-    addProjectToActiveConversation, createProject, openProjectCreate,
+    addProjectToActiveConversation, createProject, createProjectFromHistory, openProjectCreate,
     closeProjectCreate, chooseProjectFolder, commitProjectCreate,
   }
 }

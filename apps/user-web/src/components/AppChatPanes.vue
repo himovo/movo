@@ -67,7 +67,7 @@ defineProps<{
       @select-code-workspace="actions.selectCodeWorkspace(pane.key, $event)"
       @clear-code-workspace="actions.clearCodeWorkspace(pane.key)"
       @code-worktree="actions.codeWorktree(pane.key, $event)"
-      @start-local-code-task="actions.startLocalCodeTask()"
+      @start-local-code-task="actions.startLocalCodeTask(pane.key)"
       @code-source-ref="actions.codeSourceRef(pane.key, $event)"
       @code-permission-mode="actions.codePermissionMode(pane.key, $event)"
       @code-branch-updated="actions.codeBranchUpdated(pane.key, $event)"

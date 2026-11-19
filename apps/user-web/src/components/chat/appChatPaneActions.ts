@@ -18,7 +18,7 @@ export interface AppChatPaneActions {
   selectCodeWorkspace(key: string, workspace: DshWorkspace): unknown
   clearCodeWorkspace(key: string): unknown
   codeWorktree(key: string, enabled: boolean): unknown
-  startLocalCodeTask(): unknown
+  startLocalCodeTask(key: string): unknown
   codeSourceRef(key: string, fullRef: string): unknown
   codePermissionMode(key: string, mode: CodePermissionMode): unknown
   codeBranchUpdated(key: string, branch: string): unknown

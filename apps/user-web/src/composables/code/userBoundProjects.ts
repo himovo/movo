@@ -70,7 +70,10 @@ export function useUserBoundProjects(options: UserBoundProjectOptions) {
       const nextBindings = await withProjectLoadTimeout(listDesktopProjects(token))
       let localWorkspaces: DshWorkspace[] = []
       try { localWorkspaces = await withProjectLoadTimeout(listDshWorkspaces()) }
-      catch { /* Server-owned projects remain visible as unavailable on this device. */ }
+      catch {
+        // A temporary IPC failure must not move known local projects to another device.
+        localWorkspaces = workspaces.value.filter(workspace => Boolean(workspace.path))
+      }
       if (activeEpoch !== refreshEpoch || identity !== options.identity() || token !== options.authToken.value) return
       const nextWorkspaces = reconcileUserBoundProjects(
         nextBindings, localWorkspaces, options.sessions.value, options.fallbackTitle,

@@ -2,7 +2,6 @@ import { computed, ref, watch, type Ref } from 'vue'
 import type { UserProfile } from '../api/auth'
 import type { SessionSummary } from '../api/sessions'
 import type { DshWorkspace } from '../platform/types'
-import { sortSessionsByRecentActivity } from '../utils/sessionOrdering'
 import { projectHistoryVisibility } from './code/projectHistoryVisibility'
 
 const sidebarHistoryStateKey = 'askai.sidebar-history-state'
@@ -53,11 +52,8 @@ export function useSidebarHistory(options: {
   const visibleProjectHistory = computed(() => projectHistoryVisibility(
     options.sessions.value, options.workspaces.value, options.workspaceTitles.value,
   ))
-  const historyItems = computed(() => options.supportsLocalCodeProjects && options.canUseCode.value
-    ? visibleProjectHistory.value.ordinary
-    : sortSessionsByRecentActivity(options.sessions.value))
-  const projectHistoryGroups = computed(() => options.canUseCode.value && options.supportsLocalCodeProjects
-    ? visibleProjectHistory.value.projects : [])
+  const historyItems = computed(() => visibleProjectHistory.value.ordinary)
+  const projectHistoryGroups = computed(() => visibleProjectHistory.value.projects)
   function isUnavailableProjectHistory(sessionId: string): boolean {
     return options.supportsLocalCodeProjects && visibleProjectHistory.value.unavailableIds.has(sessionId)
   }

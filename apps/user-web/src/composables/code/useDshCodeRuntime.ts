@@ -1,3 +1,4 @@
+import { withCodeHistoryReference } from './historyContinuation'
 import { computed, onBeforeUnmount, reactive } from 'vue'
 import {
   capabilities,
@@ -21,6 +22,7 @@ import { inheritedDraftProjectContext } from './draftProjectContext'
 import { createClientUuid } from '../../utils/clientUuid'
 
 export type CodePaneState = {
+  historyReference: string
   draftId: string
   workspace: DshWorkspace | null
   session: DshCodeSession | null
@@ -43,7 +45,7 @@ type ChatRuntimeBoundary = {
 
 function draftState(): CodePaneState {
   return reactive({
-    draftId: createClientUuid(), workspace: null, session: null, worktree: false, sourceRef: '', permissionMode: 'ask',
+    historyReference: '', draftId: createClientUuid(), workspace: null, session: null, worktree: false, sourceRef: '', permissionMode: 'ask',
     busy: false, restoring: false, stopping: false, error: '', cursor: -1, events: [], approvals: [], approvalBusy: {},
   })
 }
@@ -181,6 +183,8 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
     const source = stateFor(fromKey)
     if (source.session) throw new Error('a started Code task cannot be transferred')
     const target = stateFor(toKey)
+    target.historyReference = source.historyReference
+    source.historyReference = ''
     target.workspace = source.workspace
     target.worktree = source.worktree
     target.sourceRef = source.sourceRef
@@ -244,7 +248,8 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
       if (!conversationId) throw new Error('desktop Code Session was not committed to MOVO history')
       await ensureSubscribed(state)
       turns.set(sessionId, chat.beginExternalTurn(key, text, conversationId))
-      const sent = await sendDshCodeTurn(sessionId, text, state.permissionMode, selectedSkillId)
+      const sent = await sendDshCodeTurn(sessionId, withCodeHistoryReference(text, state.historyReference), state.permissionMode, selectedSkillId)
+      state.historyReference = ''
       turns.get(sessionId)?.bindMessageId(sent.messageId)
       await refreshApprovals(state)
       return true

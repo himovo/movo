@@ -35,8 +35,9 @@ const detail = computed(() => {
       <p v-if="props.project?.git_branch" class="mt-2 truncate font-mono text-[11px] text-slate-500">
         {{ props.project.git_branch }}
       </p>
-      <button v-if="props.canStartLocal && props.localFolderUnavailable" type="button" class="mt-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100" @click="emit('start-local')">
-        {{ t('code.history_read_only.start_local') }}
+      <p v-if="props.canStartLocal" class="mt-2 text-xs leading-5 text-slate-500">{{ t('code.history.continue_hint') }}</p>
+      <button v-if="props.canStartLocal" type="button" class="mt-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100" @click="emit('start-local')">
+        {{ t('code.history.continue_local') }}
       </button>
     </div>
   </div>

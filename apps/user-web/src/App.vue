@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { codeHistoryReference } from './composables/code/historyContinuation'
 import { createDiscreteApi, darkTheme, NConfigProvider, NDialogProvider, NMessageProvider, NNotificationProvider } from 'naive-ui'
 import SkillCreationDialog from './components/SkillCreationDialog.vue'
 import DesktopSettingsDialog from './components/desktop/DesktopSettingsDialog.vue'
@@ -241,7 +242,7 @@ const {
   createProjectOpen, createProjectBusy, createProjectSelecting,
   createProjectSelectionPhase, createProjectSelectionError,
   createProjectWorkspace, createProjectWorktree,
-  addProjectToActiveConversation, createProject, openProjectCreate,
+  addProjectToActiveConversation, createProject, createProjectFromHistory, openProjectCreate,
   closeProjectCreate, chooseProjectFolder, commitProjectCreate,
 } = useProjectCreation({
   canUseCode, localWorkspacePicker: capabilities.localWorkspacePicker,
@@ -251,6 +252,8 @@ const {
   startLocalSession: () => chatRuntime.startLocalSession(),
   setDraftProject: (key, workspace, worktree) => codeRuntime.setDraftProject(key, workspace, worktree),
   addBinding: (binding, workspace) => userBoundProjects.add(binding, workspace),
+  historyReference: key => codeHistoryReference(visibleChatPanes.value.find(pane => pane.key === (key || activeChatKey.value))?.messages || []),
+  setHistoryReference: (key, reference) => { codeRuntime.stateFor(key).historyReference = reference },
   navigateToChat: () => navigateTo('chat'),
 })
 const { logout, handleAuthExpired } = useAuthSessionLifecycle({
@@ -306,6 +309,8 @@ const {
 } = useAppSessionController({
   chatRuntime, codeRuntime, sharedSessions,
   canUseCode: () => canUseCode.value,
+  refreshProjects: userBoundProjects.refresh,
+  canRestoreWorkspace: workspaceId => projectWorkspaces.value.some(workspace => workspace.workspace_id === workspaceId && Boolean(workspace.path) && workspace.status === 'ok'),
   authToken: () => authToken.value,
   userId: getUserId, mainId: getMainId,
   syncDesktopIdentity: syncDesktopAgentIdentity,
@@ -428,7 +433,7 @@ const chatPaneActions = {
   selectCodeWorkspace: selectBoundProject,
   clearCodeWorkspace: codeRuntime.clear,
   codeWorktree: codeRuntime.setWorktree,
-  startLocalCodeTask: createProject,
+  startLocalCodeTask: createProjectFromHistory,
   codeSourceRef: codeRuntime.setSourceRef,
   codePermissionMode: codeRuntime.setPermissionMode,
   codeBranchUpdated: codeRuntime.setWorkspaceBranch,

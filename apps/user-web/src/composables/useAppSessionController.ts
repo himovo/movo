@@ -13,6 +13,8 @@ export function useAppSessionController(options: {
   codeRuntime: CodeRuntime
   sharedSessions: Ref<SessionSummary[]>
   canUseCode: () => boolean
+  canRestoreWorkspace?: (workspaceId: string) => boolean
+  refreshProjects?: () => Promise<void>
   authToken: () => string
   userId: () => string | null
   mainId: () => string
@@ -52,7 +54,10 @@ export function useAppSessionController(options: {
     }
     const pane = await chatRuntime.selectSession(sessionId, userId, options.mainId(), options.authToken() || null)
     options.navigateToChat()
-    if (options.canUseCode() && pane.codeProject?.workspace_id && !codeRuntime.stateFor(pane.key).session) {
+    if (options.canUseCode() && pane.codeProject?.workspace_id) await options.refreshProjects?.()
+    if (options.canUseCode() && pane.codeProject?.workspace_id
+      && (options.canRestoreWorkspace?.(pane.codeProject.workspace_id) ?? true)
+      && !codeRuntime.stateFor(pane.key).session) {
       codeRuntime.beginRestore(pane.key)
       try {
         const identityReady = await options.syncDesktopIdentity(options.authToken(), userId)

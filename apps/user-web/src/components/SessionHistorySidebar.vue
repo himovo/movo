@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { NInput } from 'naive-ui'
 import type { SessionSummary } from '../api/sessions'
 import type { ProjectGroup } from '../composables/code/projectHistoryVisibility'
@@ -52,6 +53,8 @@ const pinnedHistoryExpanded = defineModel<boolean>('pinnedExpanded', { required:
 const normalHistoryExpanded = defineModel<boolean>('normalExpanded', { required: true })
 const sharedHistoryExpanded = defineModel<boolean>('sharedExpanded', { required: true })
 const editingSessionTitle = defineModel<string>('editingTitle', { required: true })
+const projectTab = ref<'local' | 'other'>('local')
+const projectTabs = ['local', 'other'] as const
 </script>
 
 <template>
@@ -222,16 +225,21 @@ const editingSessionTitle = defineModel<string>('editingTitle', { required: true
           </button>
         </template>
         <slot name="desktop-plugin-shortcuts" />
-        <section v-if="canUseCode && supportsLocalCodeProjects" class="space-y-0.5 pt-4" :aria-label="t('projectDialog.projectsLabel')">
+        <section v-if="canUseCode || projectHistoryGroups.length" class="space-y-0.5 pt-4" :aria-label="t('projectDialog.projectsLabel')">
           <div class="group flex items-center justify-between px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">
             <span>{{ t('app.projects') }}</span>
             <button v-if="canUseCode && localWorkspacePicker" type="button" class="flex h-4 w-4 items-center justify-center rounded text-blue-600 opacity-0 transition-opacity hover:bg-blue-50 group-hover:opacity-100" :aria-label="t('app.createProject')" :title="t('app.createProject')" @click="createProject"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button>
           </div>
-          <section v-for="group in projectHistoryGroups" :key="group.workspaceId" class="space-y-0.5">
+          <div class="mx-2 mb-2 flex gap-1 rounded-lg bg-slate-100 p-1" role="tablist" :aria-label="t('code.history.locations')">
+            <button v-for="tab in projectTabs" :key="tab" type="button" role="tab" :aria-selected="projectTab === tab" class="min-w-0 flex-1 rounded-md px-1 py-1.5 text-[11px]" :class="projectTab === tab ? 'bg-white font-medium text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'" @click="projectTab = tab">{{ t(`code.history.tab_${tab}`) }}</button>
+          </div>
+          <p v-if="!projectHistoryGroups.some(group => (group.location || 'local') === projectTab)" class="px-3 py-3 text-xs text-slate-400">{{ t('code.history.empty') }}</p>
+          <section v-for="group in projectHistoryGroups.filter(group => (group.location || 'local') === projectTab)" :key="group.workspaceId" class="space-y-0.5">
             <button type="button" class="group flex w-full min-w-0 items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-500 hover:bg-gray-200/50 hover:text-slate-700" :aria-expanded="projectHistoryExpanded(group.workspaceId)" :title="group.title" @click="toggleProjectHistory(group.workspaceId)">
               <svg v-if="projectHistoryExpanded(group.workspaceId)" class="h-4 w-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7.5h6l2 2h10v9.5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7.5Z"/></svg>
               <svg v-else class="h-4 w-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7.5h6l2 2h10v9.5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7.5Z"/><path d="M3 7.5V6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1.5"/></svg>
               <span class="truncate">{{ group.title }}</span>
+              <span v-if="group.unavailable" class="ml-auto shrink-0 text-[10px] font-normal text-slate-400">{{ t(group.location === 'local' ? 'code.history.folder_missing' : 'app.sidebar.project_history_only') }}</span>
             </button>
             <div
               v-for="session in projectHistoryExpanded(group.workspaceId) ? group.items.filter((item) => !isSessionPinned(item.id)) : []"
