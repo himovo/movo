@@ -1,5 +1,4 @@
 import { resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 
 import { planOverlayRows } from './overlay-planner.mjs'
 
@@ -59,10 +58,9 @@ function hostRows({ askaiPresetRoot, shippedPresetRoot, storageDomainRoot, hostF
       config: { backend: 'json' },
     },
     { id: 'workspace', name: '@deepseek-ai/dsh-workspace' },
-    ...(pluginWeb ? [{ id: 'workspace-controller', name: '@deepseek-ai/dsh-api-workspace-controller' }] : []),
     ...(pluginWeb ? [{
       id: 'plugin-web-startup',
-      name: fileURLToPath(new URL('./web-startup-compat.mjs', import.meta.url)),
+      name: new URL('./web-startup-compat.mjs', import.meta.url).href,
     }] : []),
     ...(pluginWeb ? [{
       id: 'plugin-web-server',
@@ -74,14 +72,7 @@ function hostRows({ askaiPresetRoot, shippedPresetRoot, storageDomainRoot, hostF
       name: '@deepseek-ai/dsh-web-app',
       config: { openBrowser: false, printUrl: false, surfaceContext: false, trustedHosts: [] },
     },
-    { id: 'plugin-client-modules', name: '@deepseek-ai/dsh-client-modules' },
-    { id: 'plugin-session-controller', name: '@deepseek-ai/dsh-api-session-controller' },
-    {
-      id: 'plugin-client-connection',
-      name: '@deepseek-ai/dsh-client-connection',
-      inject: ['webRuntime'],
-      config: { trustedHosts: [] },
-    }] : []),
+    { id: 'plugin-client-modules', name: '@deepseek-ai/dsh-client-modules' }] : []),
     { id: 'plugin-inventory', name: '@deepseek-ai/dsh-host-plugin-inventory' },
   ]
 }

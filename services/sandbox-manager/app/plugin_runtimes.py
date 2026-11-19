@@ -98,10 +98,12 @@ class PluginRuntimes:
         else:
             relative_storage = f"plugin-runtimes/{storage_key}"
             storage = self.volume_root / relative_storage
+            storage_created = not storage.exists()
             storage.mkdir(parents=True, exist_ok=True)
-            storage.chmod(0o777)
+            if storage_created:
+                storage.chmod(0o777)
             storage_volume = self.volume
-        domain = (legacy_storage if legacy_storage.is_dir() else self.volume_root / relative_storage) / storage_key
+        domain = legacy_storage if legacy_storage.is_dir() else self.volume_root / relative_storage
         repair_runtime_storage(domain)
         proxy_id = self.engine.find_compose_service(self.project, "sandbox-egress")
         parent_id = self.engine.find_compose_service(self.project, "dsh-runtime-host")
@@ -126,14 +128,20 @@ class PluginRuntimes:
                 mounts.append({"Type": "volume", "Source": offline_volume, "Target": "/offline-packages"})
             if personal_space_key:
                 personal_root = self.volume_root / "personal" / personal_space_key
+                personal_created = not personal_root.exists()
                 personal_root.mkdir(parents=True, exist_ok=True)
-                personal_root.chmod(0o777)
+                if personal_created:
+                    personal_root.chmod(0o777)
                 plugin_home = personal_root / "plugin-home"
+                plugin_home_created = not plugin_home.exists()
                 plugin_home.mkdir(exist_ok=True)
-                plugin_home.chmod(0o777)
+                if plugin_home_created:
+                    plugin_home.chmod(0o777)
                 personal_tmp = personal_root / "tmp"
+                personal_tmp_created = not personal_tmp.exists()
                 personal_tmp.mkdir(exist_ok=True)
-                personal_tmp.chmod(0o777)
+                if personal_tmp_created:
+                    personal_tmp.chmod(0o777)
                 mounts.append({
                     "Type": "volume", "Source": self.volume,
                     "Target": "/job/home",

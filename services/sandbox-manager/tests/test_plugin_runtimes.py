@@ -145,3 +145,37 @@ def test_existing_plugin_runtime_storage_remains_on_legacy_volume(tmp_path: Path
     assert mount["Source"] == "runtime-volume"
     assert mount["VolumeOptions"]["Subpath"] == f"sandbox-runtimes/{key}"
     assert (legacy / "saved.txt").read_text() == "keep"
+
+
+def test_plugin_runtime_repairs_the_directory_mounted_in_the_container(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("MOVO_SANDBOX_RUNTIME_ROOT", str(tmp_path / "runtime"))
+    monkeypatch.setenv("MOVO_SANDBOX_WORKSPACE_ROOT", str(tmp_path / "workspaces"))
+    monkeypatch.setenv("MOVO_SANDBOX_RUNTIME_IMAGE", "dsh-test:1")
+    monkeypatch.setenv("MOVO_SANDBOX_RUNTIME_VOLUME", "runtime-volume")
+    monkeypatch.setenv("MOVO_SANDBOX_WORKSPACE_VOLUME", "workspace-volume")
+    from app import plugin_runtimes
+    repaired = []
+    monkeypatch.setattr(plugin_runtimes, "repair_runtime_storage", repaired.append)
+    engine = EngineFake()
+    PluginRuntimes(engine).create("tenant:t:profile:p")
+    mount = engine.payload["HostConfig"]["Mounts"][0]
+    assert repaired == [tmp_path / "workspaces" / mount["VolumeOptions"]["Subpath"]]
+
+
+def test_plugin_runtime_reuses_existing_user_owned_directories(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("MOVO_SANDBOX_RUNTIME_ROOT", str(tmp_path / "runtime"))
+    monkeypatch.setenv("MOVO_SANDBOX_WORKSPACE_ROOT", str(tmp_path / "workspaces"))
+    monkeypatch.setenv("MOVO_SANDBOX_RUNTIME_IMAGE", "dsh-test:1")
+    monkeypatch.setenv("MOVO_SANDBOX_RUNTIME_VOLUME", "runtime-volume")
+    monkeypatch.setenv("MOVO_SANDBOX_WORKSPACE_VOLUME", "workspace-volume")
+    from app import plugin_runtimes
+    monkeypatch.setattr(plugin_runtimes, "repair_runtime_storage", lambda path: None)
+    engine = EngineFake()
+    pool = PluginRuntimes(engine)
+    user_key = "a" * 64
+    first = pool.create("tenant:t:profile:p", user_key)
+    pool.dispose(first["lease_id"])
+    def reject_existing_chmod(path: Path, mode: int) -> None:
+        raise AssertionError(f"Existing directory must not be chmodded: {path}")
+    monkeypatch.setattr(Path, "chmod", reject_existing_chmod)
+    pool.create("tenant:t:profile:p", user_key)
