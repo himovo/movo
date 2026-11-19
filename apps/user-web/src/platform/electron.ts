@@ -1,4 +1,5 @@
 import type { AgentStatus, BrowserBounds, BrowserOwner, BrowserPreviewFrame, BrowserPurpose, DesktopUpdateState, DshCodeSession, DshDirectoryEntry, DshExecutionEvent, DshFileDiff, DshFilePreview, DshGitBranchSnapshot, DshGitCommitResult, DshGitPushResult, DshPendingApproval, DshTaskChangeSet, DshTaskFileDiff, DshTerminalEvent, DshTurnCancelResult, DshWorkspace, DshWorkspaceInspection, DshWorkspaceSummary, EmbeddedBrowserState, EnterpriseConnectionResult, PlatformCapabilities, SaveResult, Settings } from './types'
+import { cloneQuestionAnswers } from './cloneQuestionAnswers'
 
 interface ElectronApi {
   pluginUi: { relay(url: string): Promise<string> }
@@ -149,7 +150,7 @@ export const onDshCodeEvent = (listener: (sessionId: string, event: DshExecution
 export const listDshCodeApprovals = (sessionId: string) => api().dshCodeSession.approvals(sessionId)
 export const listDshCodeQuestions = (sessionId: string) => api().dshCodeSession.questions(sessionId)
 export const answerDshCodeQuestion = (sessionId: string, questionId: string, answers: import('./types').DshQuestionAnswer[]) =>
-  api().dshCodeSession.answerQuestion(sessionId, questionId, answers)
+  api().dshCodeSession.answerQuestion(sessionId, questionId, cloneQuestionAnswers(answers))
 export const inspectDshCodeWorkspace = (sessionId: string) => api().dshCodeSession.inspect(sessionId)
 export const getDshWorkspaceSummary = (sessionId: string) => api().dshCodeSession.summary(sessionId)
 export const listDshWorkspaceDirectory = (sessionId: string, path = '') => api().dshCodeSession.listDirectory(sessionId, path)
