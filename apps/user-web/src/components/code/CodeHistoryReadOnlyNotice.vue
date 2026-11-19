@@ -15,10 +15,7 @@ const detail = computed(() => {
   if (props.executionLocation === 'remote_sandbox') {
     return t('code.history_read_only.remote_detail')
   }
-  if (props.localFolderUnavailable) {
-    return t('code.history_read_only.missing_folder_detail')
-  }
-  return t('code.history_read_only.local_detail')
+  return t('code.history.migration_required')
 })
 </script>
 
