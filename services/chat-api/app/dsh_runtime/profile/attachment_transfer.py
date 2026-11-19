@@ -15,6 +15,7 @@ import uuid
 from pathlib import Path
 
 from .runtime_storage import RuntimeStorageLocator
+from .runtime_file_owner import ensure_owned_directory, runtime_owner
 
 
 _DIGEST = re.compile(r"^sha256:([a-f0-9]{64})$")
@@ -43,15 +44,18 @@ class SeedAttachmentTransfer:
                 yield from SeedAttachmentTransfer._references(child)
 
     @staticmethod
-    def _copy(source: Path, target: Path) -> None:
+    def _copy(source: Path, target: Path, *, boundary: Path, owner: tuple[int, int]) -> None:
+        if target.is_symlink():
+            raise ValueError("Runtime attachment target is a symbolic link")
         if target.is_file():
             return
         if not source.is_file():
             raise FileNotFoundError(f"DSH seed attachment is missing: {source}")
-        target.parent.mkdir(parents=True, exist_ok=True)
+        ensure_owned_directory(target.parent, boundary=boundary, owner=owner)
         temporary = target.with_name(f".{target.name}.{uuid.uuid4().hex}.tmp")
         try:
             shutil.copyfile(source, temporary)
+            os.chown(temporary, *owner)
             os.replace(temporary, target)
         finally:
             temporary.unlink(missing_ok=True)
@@ -65,11 +69,13 @@ class SeedAttachmentTransfer:
             for line in journal:
                 references.update(self._references(json.loads(line)))
         source = source_domain / "dsh-home" / "attachments" / "v1"
-        target = self.storage.successor(target_key) / "dsh-home" / "attachments" / "v1"
+        domain = self.storage.successor(target_key)
+        target = domain / "dsh-home" / "attachments" / "v1"
+        owner = runtime_owner(self.storage.primary_root)
         for kind, digest, name in references:
             directory = "file-objects" if kind == "file" else "objects"
             relative = Path(directory) / digest[:2] / digest
-            self._copy(source / relative, target / relative)
+            self._copy(source / relative, target / relative, boundary=domain, owner=owner)
             if kind == "file":
                 alias = Path("files") / digest[:2] / digest / name
-                self._copy(source / alias, target / alias)
+                self._copy(source / alias, target / alias, boundary=domain, owner=owner)

@@ -9,6 +9,7 @@ import secrets
 import threading
 from pathlib import Path
 from uuid import uuid4
+from .runtime_storage_ownership import RUNTIME_GID, RUNTIME_UID, repair_runtime_storage
 
 from .docker_engine import DockerEngine
 from .lease_store import LeaseStore
@@ -100,6 +101,8 @@ class PluginRuntimes:
             storage.mkdir(parents=True, exist_ok=True)
             storage.chmod(0o777)
             storage_volume = self.volume
+        domain = (legacy_storage if legacy_storage.is_dir() else self.volume_root / relative_storage) / storage_key
+        repair_runtime_storage(domain)
         proxy_id = self.engine.find_compose_service(self.project, "sandbox-egress")
         parent_id = self.engine.find_compose_service(self.project, "dsh-runtime-host")
         network_id = None
@@ -144,7 +147,7 @@ class PluginRuntimes:
                 })
             payload = {
                 "Image": self.image,
-                "User": "1000:1000",
+                "User": f"{RUNTIME_UID}:{RUNTIME_GID}",
                 "Entrypoint": ["node"],
                 "Cmd": ["src/host.mjs", "--host", "0.0.0.0", "--port", "8101", "--storage-root", "/data/dsh-runtime"],
                 "WorkingDir": "/app",

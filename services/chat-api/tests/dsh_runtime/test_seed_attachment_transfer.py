@@ -51,6 +51,7 @@ def test_missing_object_blocks_successor_creation(tmp_path: Path):
 
 def test_isolated_runtime_journal_and_attachment_are_migrated(tmp_path: Path):
     primary, workspaces = tmp_path / "runtime", tmp_path / "workspaces"
+    primary.mkdir()
     source, target = "tenant:t:profile:isolated-a", "tenant:t:profile:isolated-b"
     source_hash = hashlib.sha256(source.encode()).hexdigest()
     target_hash = hashlib.sha256(target.encode()).hexdigest()
@@ -72,6 +73,11 @@ def test_isolated_runtime_journal_and_attachment_are_migrated(tmp_path: Path):
     )
     copied = target_domain / "dsh-home/attachments/v1/objects" / digest[:2] / digest
     assert copied.read_bytes() == payload
+    owner = primary.stat()
+    assert target_domain.stat().st_uid == owner.st_uid
+    assert target_domain.stat().st_gid == owner.st_gid
+    assert copied.parent.stat().st_uid == owner.st_uid
+    assert copied.stat().st_uid == owner.st_uid
 
 
 def test_legacy_isolated_runtime_uses_runtime_volume(tmp_path: Path):
