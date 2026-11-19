@@ -20,6 +20,11 @@
   display: none;
 }
 
+html.platform-desktop.platform-windows .desktop-modal-below-chrome {
+  top: 88px;
+  -webkit-app-region: no-drag;
+}
+
 .desktop-settings-modal,
 .desktop-settings-modal * {
   -webkit-app-region: no-drag;

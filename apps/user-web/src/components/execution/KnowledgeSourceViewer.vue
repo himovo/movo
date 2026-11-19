@@ -1071,7 +1071,7 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport to="body">
-    <div v-if="open && bundle" class="fixed inset-0 z-50 bg-slate-950/30 p-4">
+    <div v-if="open && bundle" class="desktop-modal-below-chrome fixed inset-0 z-50 bg-slate-950/30 p-4">
       <section class="mx-auto flex h-full max-w-[min(1480px,96vw)] flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
         <header class="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-4">
           <div class="min-w-0">

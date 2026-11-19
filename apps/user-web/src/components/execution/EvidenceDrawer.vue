@@ -103,7 +103,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
 <template>
   <Teleport to="body" :disabled="embedded">
-    <div v-if="open && bundle" :class="[embedded ? 'absolute' : 'fixed', 'inset-0 z-50']">
+    <div v-if="open && bundle" :class="[embedded ? 'absolute' : 'fixed desktop-modal-below-chrome', 'inset-0 z-50']">
       <button
         type="button"
         class="absolute inset-0 h-full w-full cursor-default bg-slate-950/20"
