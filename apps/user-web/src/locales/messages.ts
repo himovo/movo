@@ -1,3 +1,4 @@
+import { approvalPromptMessages } from './approvalPromptMessages'
 import { scriptAttemptMessages } from './scriptAttemptMessages'
 import { knowledgeMentionMessages } from './knowledgeMentionMessages'
 import { additionalMessages } from './additionalMessages';
@@ -1452,6 +1453,7 @@ export const messages = {
   'code.history_read_only.local_detail': { zh: '该会话绑定到创建它的 MOVO Desktop 与本地项目。请在绑定的桌面端继续执行；Web 不会访问本地文件或命令。', en: 'This task is bound to its MOVO Desktop and local project. Continue on the bound desktop; Web never accesses local files or commands.' },
   'code.history_read_only.missing_folder_detail': { zh: '这台电脑没有原项目目录。历史记录可以查看；如需继续开发，请在本机选择目录，开始一个新会话。', en: 'The original project folder is unavailable on this device. You can read the history; choose a local folder to start a new task.' },
   'code.history_read_only.start_local': { zh: '选择本机目录，开始新会话', en: 'Choose a local folder for a new task' },
+  ...approvalPromptMessages,
   ...pluginEnvironmentMessages,
   ...conversationPluginMessages,
 } as const
