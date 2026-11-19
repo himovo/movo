@@ -33,6 +33,7 @@ test('desktop approval broker exposes and resolves the exact native DSH wait', a
   const fixture = harness()
   const broker = new DesktopApprovalBroker(fixture.ctx)
   assert.equal(fixture.registrations.get('approval/request')?.global, true)
+  assert.equal(fixture.registrations.get('approval/request')?.prepend, true)
   const waiting = fixture.request()
   await Promise.resolve()
   assert.deepEqual(broker.list('session-a').map(item => ({

@@ -37,6 +37,9 @@ export class DesktopApprovalBroker {
         this.#asked.set(session.id, asked.filter(item => item.data.id !== event.data.id))
       }
     }, { global: true })
+    // Plugin Web mounts DSH's remote approval answerer before this broker.
+    // MOVO owns native approvals even when that auxiliary UI is available.
+    // The enterprise bridge is registered later with prepend and keeps its tools.
     this.#disposeApproval = ctx.on('approval/request', async (request, next) => {
       if (this.excludedTools.has(request.toolName)) return next()
       const sessionId = String(request.agent.id)
@@ -90,7 +93,7 @@ export class DesktopApprovalBroker {
         })
         request.signal?.addEventListener('abort', abort, { once: true })
       })
-    }, { global: true })
+    }, { global: true, prepend: true })
   }
 
   list(sessionId) {
