@@ -244,7 +244,7 @@ const projectTabs = ['local', 'other'] as const
             <div
               v-for="session in projectHistoryExpanded(group.workspaceId) ? group.items.filter((item) => !isSessionPinned(item.id)) : []"
               :key="session.id"
-              class="group flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[13px] transition-all"
+              class="group relative flex w-full min-w-0 items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[13px] transition-all"
               :class="session.id === currentSessionId && currentView === 'chat' ? 'bg-white font-semibold text-blue-700 shadow-sm ring-1 ring-gray-200' : 'text-gray-600 hover:bg-gray-200/50 hover:text-gray-900'"
               :title="displaySessionTitle(session)"
             >
