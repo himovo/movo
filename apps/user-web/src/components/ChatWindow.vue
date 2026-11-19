@@ -337,7 +337,6 @@ function onPermissionResolve(msg: Message, requestId: string, decision: 'allow' 
 }
 
 const approvalControl = useDshToolApprovals({
-  messages: displayMessages,
   sessionId: () => props.sessionId,
   authToken: () => props.authToken,
   running: () => Boolean(props.running),

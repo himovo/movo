@@ -5,8 +5,10 @@ import { DesktopApprovalBroker } from '../src/desktop-approval-broker.mjs'
 
 function harness() {
   const listeners = new Map()
-  const ctx = { on: (name, callback) => {
+  const registrations = new Map()
+  const ctx = { on: (name, callback, options) => {
     listeners.set(name, callback)
+    registrations.set(name, options)
     return () => { listeners.delete(name) }
   } }
   const events = [{
@@ -14,7 +16,7 @@ function harness() {
     data: { id: 'approval-a', toolName: 'bash', callId: 'call-a' },
   }]
   return {
-    ctx, events,
+    ctx, events, registrations,
     emit: (event) => listeners.get('session/event')({ id: 'session-a' }, event),
     request: (reason = 'needs wider access') => {
       const event = events.at(-1)
@@ -30,6 +32,7 @@ function harness() {
 test('desktop approval broker exposes and resolves the exact native DSH wait', async () => {
   const fixture = harness()
   const broker = new DesktopApprovalBroker(fixture.ctx)
+  assert.equal(fixture.registrations.get('approval/request')?.global, true)
   const waiting = fixture.request()
   await Promise.resolve()
   assert.deepEqual(broker.list('session-a').map(item => ({

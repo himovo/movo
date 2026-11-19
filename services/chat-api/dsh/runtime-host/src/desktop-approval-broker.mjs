@@ -90,7 +90,7 @@ export class DesktopApprovalBroker {
         })
         request.signal?.addEventListener('abort', abort, { once: true })
       })
-    })
+    }, { global: true })
   }
 
   list(sessionId) {

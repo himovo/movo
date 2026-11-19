@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, ref, watch, type ComputedRef } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import {
   decideToolApproval,
   listPendingToolApprovals,
@@ -7,15 +7,8 @@ import {
   type ToolApprovalGrantScope,
 } from '../api/toolApprovals'
 import type { ExecutionItemV3 } from '../features/execution-v3/domain/model'
-import { ensureMessageExecutionV3 } from '../features/execution-v3/stores/messageExecution'
-
-interface ApprovalMessage {
-  _execV3?: ReturnType<typeof ensureMessageExecutionV3>
-  execution_events?: unknown[]
-}
 
 interface ApprovalControlOptions {
-  messages: ComputedRef<ApprovalMessage[]>
   sessionId: () => string | undefined
   authToken: () => string | undefined
   running: () => boolean
@@ -30,24 +23,7 @@ export function useDshToolApprovals(options: ApprovalControlOptions) {
   const errors = ref<Record<string, string>>({})
   let timer: ReturnType<typeof setInterval> | null = null
 
-  const eventItems = computed(() => options.messages.value.flatMap((message) => {
-    const source = ensureMessageExecutionV3(message).visibleItems as any
-    const items = Array.isArray(source) ? source : source?.value
-    return (Array.isArray(items) ? items : []).filter(
-      (item: ExecutionItemV3) => item.kind === 'approval'
-        && item.status === 'running'
-        && ['askai-approval', 'dsh'].includes(String(item.payload?.source || '')),
-    )
-  }))
-
-  const active = computed<ExecutionItemV3[]>(() => {
-    const byAction = new Map<string, ExecutionItemV3>()
-    for (const item of eventItems.value) byAction.set(actionId(item), item)
-    for (const row of recovered.value) {
-      if (!byAction.has(row.action_id)) byAction.set(row.action_id, recoveredItem(row))
-    }
-    return [...byAction.values()]
-  })
+  const active = computed<ExecutionItemV3[]>(() => recovered.value.map(recoveredItem))
 
   async function refresh() {
     const token = options.authToken()
@@ -59,7 +35,7 @@ export function useDshToolApprovals(options: ApprovalControlOptions) {
     try {
       recovered.value = await listPendingToolApprovals(token, conversationId)
     } catch {
-      // The live V3 event remains usable; the next poll retries durable recovery.
+      // Keep the last authoritative snapshot until the next retry.
     }
   }
 
@@ -80,6 +56,7 @@ export function useDshToolApprovals(options: ApprovalControlOptions) {
       await refresh()
     } catch (error: any) {
       errors.value = { ...errors.value, [id]: String(error?.message || 'Approval failed') }
+      await refresh()
     } finally {
       busy.value = { ...busy.value, [id]: false }
     }

@@ -37,32 +37,3 @@ html.platform-desktop.theme-dark .recording-review-dialog .parameter-tag {
   background: #1c473c !important;
   color: #a6eacb !important;
 }
-
-html.platform-desktop.theme-dark .approval-panel {
-  background: #332b21 !important;
-  color: #f3e7d3 !important;
-  border-color: #8a663d !important;
-}
-
-html.platform-desktop.theme-dark .approval-panel :is(.approval-heading, .approval-description) {
-  color: #f4e8d5 !important;
-}
-
-html.platform-desktop.theme-dark .approval-panel :is(.approval-icon, .approval-risk) {
-  background: #56432a !important;
-  color: #ffe0a1 !important;
-}
-
-html.platform-desktop.theme-dark .approval-panel .approval-button.secondary {
-  background: #3a4050 !important;
-  color: #eef3fb !important;
-  border-color: #657188 !important;
-}
-
-html.platform-desktop.theme-dark .approval-panel .approval-button.secondary:hover {
-  background: #4b5870 !important;
-}
-
-html.platform-desktop.theme-dark .approval-panel .approval-error {
-  color: #ffadb9 !important;
-}

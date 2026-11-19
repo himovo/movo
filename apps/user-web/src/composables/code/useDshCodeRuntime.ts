@@ -57,6 +57,7 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
   const panes = reactive(new Map<string, CodePaneState>())
   const turns = new Map<string, ExternalTurnHandle>()
   const subscribed = new Set<string>()
+  const approvalRefreshes = new Map<string, Promise<void>>()
 
   const eventDispose = capabilities.codeExecution
     ? onDshCodeEvent((sessionId, event) => {
@@ -66,12 +67,15 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
         entry.events.push(event)
         if (entry.events.length > 10_000) entry.events.splice(0, entry.events.length - 10_000)
         turns.get(sessionId)?.apply(event)
-        if (event.item_kind === 'approval') void refreshApprovals(entry)
+        if (event.item_kind === 'approval') {
+          void refreshApprovals(entry)
+        }
         if (terminal(event)) {
           const turn = turns.get(sessionId)
           turns.delete(sessionId)
           entry.busy = false
           entry.stopping = false
+          entry.approvals = []
           void refreshApprovals(entry)
           if (turn) void getLatestDshTaskChanges(sessionId).then(changes => {
             if (changes?.files.length) turn.setCodeChanges(changes)
@@ -197,9 +201,27 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
   async function refreshApprovals(state: CodePaneState) {
     const sessionId = state.session?.kernel_session_id
     if (!sessionId) return
-    try { state.approvals = await listDshCodeApprovals(sessionId) }
-    catch (error) { state.error = codeRuntimeErrorMessage(error, getLocale()) }
+    const ongoing = approvalRefreshes.get(sessionId)
+    if (ongoing) return ongoing
+    const refresh = (async () => {
+      try {
+        const fetched = await listDshCodeApprovals(sessionId)
+        state.approvals = fetched
+      }
+      catch (error) { state.error = codeRuntimeErrorMessage(error, getLocale()) }
+    })()
+    approvalRefreshes.set(sessionId, refresh)
+    try { await refresh } finally { approvalRefreshes.delete(sessionId) }
   }
+
+  // The native approval event can arrive before the runtime registers its
+  // pending request. Reconcile while a turn is running instead of relying on
+  // that single event to populate the approval controls.
+  const approvalPoll = capabilities.codeExecution ? setInterval(() => {
+    for (const state of panes.values()) {
+      if (state.busy && state.session) void refreshApprovals(state)
+    }
+  }, 2_000) : null
 
   async function send(key: string, text: string, modelId?: string, selectedSkillId?: string) {
     const state = stateFor(key)
@@ -231,6 +253,7 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
       turns.get(state.session?.kernel_session_id || '')?.finish()
       turns.delete(state.session?.kernel_session_id || '')
       state.busy = false
+      state.approvals = []
       throw error
     }
   }
@@ -249,6 +272,7 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
       turns.get(sessionId)?.finish()
       turns.delete(sessionId)
       state.busy = false
+      state.approvals = []
       if (result.runtime_recovered) {
         for (const id of subscribed) await unsubscribeDshCodeEvents(id)
         subscribed.clear()
@@ -259,6 +283,7 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
           turns.delete(id)
           entry.busy = false
           entry.stopping = false
+          entry.approvals = []
           await ensureSubscribed(entry)
         }
       }
@@ -281,9 +306,11 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
     state.error = ''
     try {
       await decideDshCodeApproval(sessionId, approvalId, decision, scope)
+      state.approvals = state.approvals.filter(item => item.approval_id !== approvalId)
       await refreshApprovals(state)
     } catch (error) {
       state.error = codeRuntimeErrorMessage(error, getLocale())
+      await refreshApprovals(state)
       throw error
     } finally { delete state.approvalBusy[approvalId] }
   }
@@ -298,11 +325,13 @@ export function useDshCodeRuntime(chat: ChatRuntimeBoundary) {
     for (const sessionId of subscribed) void unsubscribeDshCodeEvents(sessionId)
     subscribed.clear()
     turns.clear()
+    approvalRefreshes.clear()
     panes.clear()
   }
 
   onBeforeUnmount(() => {
     eventDispose()
+    if (approvalPoll) clearInterval(approvalPoll)
     for (const sessionId of subscribed) void unsubscribeDshCodeEvents(sessionId)
   })
 
