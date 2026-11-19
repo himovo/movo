@@ -456,7 +456,7 @@ const sidebarBindings = useAppSidebarBindings({
   handleSidebarAction, toggleUserMenu, openLogin, handleAvatarError,
   pinnedHistoryExpanded, normalHistoryExpanded, sharedHistoryExpanded,
   editingSessionTitle, pinnedSessions, historyItems, sharedSessions,
-  projectHistoryGroups, currentSessionId, currentView, sessionsLoading,
+  projectHistoryGroups, projectWorkspacesLoading, currentSessionId, currentView, sessionsLoading,
   sessionsLoadingMore, sessionsHasMore, sharedSessionsLoading,
   sharedSessionsLoadingMore, sharedSessionsHasMore, sessionPageSize,
   trimmedSessionSearchQuery, editingSessionId, renamingSessionId,

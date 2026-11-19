@@ -1,4 +1,5 @@
 export const codeHistoryMessages = {
+  'code.history.loading': { zh: '正在加载项目会话…', en: 'Loading project tasks…' },
   'code.history.account_changed': { zh: '账号已切换，请重新选择项目。', en: 'Your account changed. Select the project again.' },
   'code.history.locations': { zh: 'Code 会话位置', en: 'Code task location' },
   'code.history.tab_local': { zh: '本机', en: 'This device' },

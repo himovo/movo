@@ -28,6 +28,7 @@ export interface AppSidebarSources {
   historyItems: Ref<History['historyItems']>
   sharedSessions: Ref<History['sharedSessions']>
   projectHistoryGroups: Ref<History['projectHistoryGroups']>
+  projectWorkspacesLoading: Ref<boolean>
   currentSessionId: Ref<History['currentSessionId']>
   currentView: Ref<Features['currentView']>
   sessionsLoading: Ref<boolean>
@@ -109,7 +110,7 @@ export function useAppSidebarBindings(sources: AppSidebarSources) {
     handleSidebarAction, toggleUserMenu, openLogin, handleAvatarError,
     pinnedHistoryExpanded, normalHistoryExpanded, sharedHistoryExpanded,
     editingSessionTitle, pinnedSessions, historyItems, sharedSessions,
-    projectHistoryGroups, currentSessionId, currentView, sessionsLoading,
+    projectHistoryGroups, projectWorkspacesLoading, currentSessionId, currentView, sessionsLoading,
     sessionsLoadingMore, sessionsHasMore, sharedSessionsLoading,
     sharedSessionsLoadingMore, sharedSessionsHasMore, sessionPageSize,
     trimmedSessionSearchQuery, editingSessionId, renamingSessionId,
@@ -160,6 +161,7 @@ export function useAppSidebarBindings(sources: AppSidebarSources) {
     historyItems: historyItems.value,
     sharedSessions: sharedSessions.value,
     projectHistoryGroups: projectHistoryGroups.value,
+    projectWorkspacesLoading: projectWorkspacesLoading.value,
     currentSessionId: currentSessionId.value,
     currentView: currentView.value,
     sessionsLoading: sessionsLoading.value,
