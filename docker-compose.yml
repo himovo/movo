@@ -445,11 +445,14 @@ services:
     image: ${MOVO_IMAGE_PREFIX:-ghcr.io/himovo/movo}-gateway:${MOVO_VERSION:-latest}
     pull_policy: ${MOVO_PULL_POLICY:-missing}
     restart: unless-stopped
+    environment:
+      MOVO_PLUGIN_UI_PORT: ${MOVO_PLUGIN_UI_PORT:-3100}
+      NGINX_ENVSUBST_FILTER: "^MOVO_PLUGIN_UI_PORT$$"
     ports:
       - "${MOVO_PORT:-${ASKAI_PORT:-3000}}:80"
       - "${MOVO_PLUGIN_UI_PORT:-3100}:81"
     volumes:
-      - ./deploy/docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/docker/nginx.conf:/etc/nginx/templates/default.conf.template:ro
     depends_on:
       chat-api:
         condition: service_healthy
