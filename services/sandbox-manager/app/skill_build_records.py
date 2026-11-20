@@ -74,6 +74,16 @@ class SkillBuildRecords:
             record["attempts"].append({"source": source, "exitCode": exit_code})
             self._write(digest, record_id, record)
 
+    def append_note(self, digest: str, record_id: str, note: str) -> None:
+        with self.lock:
+            record = self.get(digest, record_id)
+            if record is None:
+                return
+            combined = record["log"] + _safe_log(f"\n=== {note} ===\n")
+            record["truncated"] = record["truncated"] or len(combined) > MAX_LOG_CHARS
+            record["log"] = combined[-MAX_LOG_CHARS:]
+            self._write(digest, record_id, record)
+
     def finish(self, digest: str, record_id: str, status: str, note: str = "") -> None:
         with self.lock:
             record = self.get(digest, record_id)

@@ -17,6 +17,7 @@ from .dependency_sources import build_attempts, retryable_failure
 from .skill_build_records import SkillBuildRecords, _safe_log, MAX_LOG_CHARS
 from .offline_package_store import OfflinePackageStore
 from .offline_collections import record as record_collection
+from .skill_image_commit import save_skill_image
 
 
 LOG = logging.getLogger(__name__)
@@ -185,7 +186,8 @@ class SkillEnvironments:
                     )
                     output_captured = True
                     if exit_code == 0:
-                        self.engine.commit(container_id, "movo-skill-deps", image.rsplit(":", 1)[1])
+                        save_skill_image(self.engine, container_id, image, deadline=deadline,
+                                         report=lambda note: self.records.append_note(digest, record_id, note))
                         try:
                             record_collection(self.packages.root, digest=digest, record_id=record_id,
                                               source=source.name, base_image_id=self.engine.image_id(self.base_image) or "",
@@ -209,8 +211,8 @@ class SkillEnvironments:
                             )
                         self.engine.remove(container_id)
             raise RuntimeError("Skill dependency installation failed after all sources")
-        except Exception:
-            self.records.finish(digest, record_id, "failed", "Preparation failed; see sandbox manager logs for infrastructure errors")
+        except Exception as exc:
+            self.records.finish(digest, record_id, "failed", f"Preparation failed: {type(exc).__name__}: {exc}")
             LOG.exception("Skill dependency build failed for %s", digest)
             raise
         finally:

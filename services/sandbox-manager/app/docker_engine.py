@@ -167,7 +167,7 @@ class DockerEngine:
                 return None
             raise
 
-    def commit(self, container_id: str, repository: str, tag: str) -> str:
+    def commit(self, container_id: str, repository: str, tag: str, *, timeout: float = 300) -> str:
         return str(self.request("POST", "/commit", params={
             "container": container_id, "repo": repository, "tag": tag,
-        }, timeout=300).json()["Id"])
+        }, timeout=timeout).json()["Id"])

@@ -35,7 +35,7 @@ class ImageEngine:
         self.wait_timeout = timeout
         return 0
 
-    def commit(self, container, repository, tag):
+    def commit(self, container, repository, tag, *, timeout=300):
         self.images[f"{repository}:{tag}"] = "sha256:prepared"
         return "sha256:prepared"
 
