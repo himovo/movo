@@ -247,7 +247,8 @@ def test_build_error_is_reported_without_exposing_install_logs(tmp_path: Path, m
     assert all("secret-token" in environments.records.get(digest, item["id"])["log"] for item in records)
 
 
-def test_network_failure_retries_in_fresh_container(tmp_path: Path, monkeypatch):
+@pytest.mark.parametrize("failure", ["pip timed out", "npm ERR! code ETIMEDOUT"])
+def test_network_failure_retries_in_fresh_container(tmp_path: Path, monkeypatch, failure):
     digest = "f" * 64
     root = tmp_path / "skill-cache" / digest
     root.mkdir(parents=True)
@@ -257,7 +258,7 @@ def test_network_failure_retries_in_fresh_container(tmp_path: Path, monkeypatch)
     monkeypatch.setenv("MOVO_SANDBOX_WORKSPACE_VOLUME", "test-workspaces")
     monkeypatch.setenv("MOVO_SANDBOX_SCRIPT_IMAGE", "base:latest")
     monkeypatch.setenv("MOVO_DEPENDENCY_MIRROR", "cn")
-    engine = RetryingEngine("pip timed out")
+    engine = RetryingEngine(failure)
     image = SkillEnvironments(engine).ready_image(digest)
     assert image.startswith("movo-skill-deps:")
     assert len(engine.environments) == 2

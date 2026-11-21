@@ -60,6 +60,6 @@ def retryable_failure(detail: str) -> bool:
         "timeoutexpired", "timed out", "readtimeout", "connecttimeout",
         "connection refused", "connection reset", "temporary failure in name resolution",
         "name or service not known", "could not resolve", "network is unreachable",
-        "eai_again", "econnreset", "econnrefused", "enotfound",
+        "eai_again", "econnreset", "econnrefused", "enotfound", "etimedout",
         "502 bad gateway", "503 service unavailable", "504 gateway timeout",
     ))
