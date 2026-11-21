@@ -15,6 +15,7 @@ from app.services.search_provider_config import resolve_default_external_search_
 from app.services.search_provider_config import has_saved_external_search_config
 
 from .deepseek_provider import DeepSeekProvider
+from .specstream_provider import SpecStreamProvider
 
 
 logger = logging.getLogger(__name__)
@@ -307,6 +308,13 @@ class ProviderRouter:
                     api_key=str(configured.get("api_key") or "").strip(),
                     model=str(configured.get("model") or "").strip(),
                     base_url=str(configured.get("base_url") or "").strip(),
+                )
+            )
+        elif provider == "specstream" and str((configured or {}).get("api_key") or "").strip():
+            providers.append(
+                SpecStreamProvider(
+                    api_key=str(configured.get("api_key") or "").strip(),
+                    endpoint=str(configured.get("endpoint") or "").strip(),
                 )
             )
 
