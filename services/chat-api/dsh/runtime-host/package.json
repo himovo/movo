@@ -60,7 +60,7 @@
     "@deepseek-ai/dsh-util-workspace-path": "0.2.2-rc.2",
     "@deepseek-ai/dsh-web": "0.2.2-rc.2",
     "@deepseek-ai/dsh-workflow": "0.2.2-rc.2",
-    "@modelcontextprotocol/sdk": "1.31.0",
+    "@modelcontextprotocol/sdk": "1.32.0",
     "fflate": "0.8.3",
     "pnpm": "11.28.5",
     "ws": "8.21.3"
