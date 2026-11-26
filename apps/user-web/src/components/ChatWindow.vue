@@ -40,6 +40,7 @@ import type { AgentPolicySnapshot } from '../api/auth'
 import { useMessageAuthors } from './chat/useMessageAuthors'
 import { useEvidenceViewer } from './chat/useEvidenceViewer'
 import { useStickyChatScroll } from './chat/useStickyChatScroll'
+import ChatTurnNavigation from './chat/ChatTurnNavigation.vue'
 import type { ChatMessage } from './chat/chatMessage'
 import { useChatWindowLifecycle } from './chat/useChatWindowLifecycle'
 import { useChatMessageProjection } from './chat/useChatMessageProjection'
@@ -303,7 +304,7 @@ const {
   showScrollButton, stickyState, stickyAssistantMsgId,
   stickyNeedsInitialAlign, markUserScrollIntent, recomputeStickyTurnMinHeight,
   stickyLog, activateStickyForLatestRunningTurn, setMsgRef, handleScroll,
-  alignStickyAnchorWithRetry, assistantTurnStyle, scrollToBottom,
+  alignStickyAnchorWithRetry, assistantTurnStyle, scrollToBottom, scrollToTurn,
   startLayoutObserver, stopLayoutObserver, resetMessageRefs,
 } = useStickyChatScroll({
   messages, displayMessages, isLoading, messagesContainer, composerContainer,
@@ -381,6 +382,8 @@ useChatWindowLifecycle({
   handleShortcutPreferencesUpdated, startLayoutObserver, stopLayoutObserver,
   cancelPromptGuideClose, stickyLog, alignStickyAnchorWithRetry,
   resetBrowserWorkspace, resetMessageRefs, activateStickyForLatestRunningTurn,
+  active: () => props.active !== false,
+  scrollToLatest: () => scrollToBottom('instant'),
 })
 
 
@@ -438,6 +441,7 @@ useChatWindowLifecycle({
       </div>
     </Transition>
     <!-- Messages Area -->
+    <div class="relative flex min-h-0 flex-1">
     <div
       ref="messagesContainer"
       @scroll="handleScroll"
@@ -451,13 +455,15 @@ useChatWindowLifecycle({
 
             <div 
               v-else
-              class="flex flex-col pb-[85vh] text-sm md:text-base space-y-6 p-4 md:p-6 max-w-4xl mx-auto w-full"
+              class="flex flex-col text-sm md:text-base space-y-6 p-4 md:p-6 ps-12 max-w-4xl mx-auto w-full"
+              :class="stickyState === 'LOCKED' ? 'pb-[85vh]' : 'pb-6'"
               @wheel.passive="markUserScrollIntent"
               @touchstart.passive="markUserScrollIntent"
             >
         <div 
           v-for="(msg, idx) in displayMessages" 
           :key="msg._id || idx"
+          :data-chat-turn-index="msg.role === 'user' && !msg.question_answer ? idx : undefined"
         >
           <div
             :ref="(el) => setMsgRef(el, msg._id || '')" 
@@ -518,6 +524,8 @@ useChatWindowLifecycle({
         </div>
       </div>
     </div>
+    <ChatTurnNavigation :messages="displayMessages" :container="messagesContainer" :session-id="props.sessionId" :user-id="props.userId" :main-id="props.mainId" @jump="scrollToTurn" />
+    </div>
 
     <!-- Scroll Down Button -->
     <transition
@@ -530,7 +538,7 @@ useChatWindowLifecycle({
     >
       <button 
         v-if="showScrollButton"
-        @click="scrollToBottom"
+        @click="scrollToBottom()"
         class="absolute bottom-32 left-1/2 transform -translate-x-1/2 bg-white border border-gray-200 shadow-md rounded-full w-8 h-8 flex items-center justify-center hover:bg-gray-50 z-20 cursor-pointer text-gray-500 hover:text-gray-700 transition-colors"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>

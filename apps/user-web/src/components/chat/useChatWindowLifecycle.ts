@@ -29,6 +29,8 @@ interface Options {
   resetBrowserWorkspace: () => void
   resetMessageRefs: () => void
   activateStickyForLatestRunningTurn: () => void
+  active: () => boolean
+  scrollToLatest: () => Promise<void>
 }
 
 export function useChatWindowLifecycle(options: Options): void {
@@ -63,6 +65,21 @@ export function useChatWindowLifecycle(options: Options): void {
     options.startLayoutObserver()
     nextTick().then(renderContent)
   })
+  let openedSession: string | undefined
+  watch(
+    [options.sessionId, options.active, () => options.displayMessages.value.length > 0, options.isLoading],
+    ([sessionId, active, hasMessages, loading]) => {
+      if (!active || sessionId !== openedSession) openedSession = undefined
+      if (!active || !sessionId || !hasMessages || loading || openedSession === sessionId) return
+      nextTick(() => {
+        if (options.active() && options.sessionId() === sessionId && !options.isLoading.value) {
+          openedSession = sessionId
+          void options.scrollToLatest()
+        }
+      })
+    },
+    { immediate: true, flush: 'post' },
+  )
   watch(options.mainId, () => {
     options.loadChatModels()
     void options.loadPromptGuideShortcuts()

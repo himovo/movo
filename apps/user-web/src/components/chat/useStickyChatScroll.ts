@@ -342,7 +342,7 @@ export function useStickyChatScroll<T extends StickyMessage>(options: {
     return { minHeight: `${minH}px` }
   }
 
-  async function scrollToBottom() {
+  async function scrollToBottom(behavior: ScrollBehavior = 'smooth') {
     // Arrow click is an explicit user action to leave sticky mode.
     if (stickyState.value === 'LOCKED') {
       unlockSticky()
@@ -352,12 +352,24 @@ export function useStickyChatScroll<T extends StickyMessage>(options: {
       isProgrammaticScroll.value = true
       messagesContainer.value.scrollTo({
         top: messagesContainer.value.scrollHeight,
-        behavior: 'smooth'
+        behavior,
       })
       setTimeout(() => {
         isProgrammaticScroll.value = false
       }, 500)
     }
+  }
+
+  async function scrollToTurn(index: number) {
+    if (stickyState.value === 'LOCKED') {
+      unlockSticky()
+      await nextTick()
+    }
+    const container = messagesContainer.value
+    const target = container?.querySelector(`[data-chat-turn-index="${index}"]`)
+    if (!container || !target) return
+    const offset = target.getBoundingClientRect().top - container.getBoundingClientRect().top
+    container.scrollTo({ top: container.scrollTop + offset - 16 })
   }
 
 
@@ -388,7 +400,7 @@ export function useStickyChatScroll<T extends StickyMessage>(options: {
     msgElements, showScrollButton, stickyState, stickyAssistantMsgId,
     stickyNeedsInitialAlign, markUserScrollIntent, recomputeStickyTurnMinHeight,
     stickyLog, activateStickyForLatestRunningTurn, setMsgRef, handleScroll,
-    alignStickyAnchorWithRetry, assistantTurnStyle, scrollToBottom,
+    alignStickyAnchorWithRetry, assistantTurnStyle, scrollToBottom, scrollToTurn,
     startLayoutObserver, stopLayoutObserver, resetMessageRefs,
   }
 }
