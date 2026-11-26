@@ -149,6 +149,7 @@ export function useAppSidebarBindings(sources: AppSidebarSources) {
     onAvatarError: handleAvatarError,
   },
   history: {
+    desktop: capabilities.isDesktop,
     pinnedExpanded: pinnedHistoryExpanded.value,
     normalExpanded: normalHistoryExpanded.value,
     sharedExpanded: sharedHistoryExpanded.value,

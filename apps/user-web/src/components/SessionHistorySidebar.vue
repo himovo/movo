@@ -8,6 +8,7 @@ import { useSessionActivityClock } from '../composables/useSessionActivityClock'
 import SessionActivityLabel from './session/SessionActivityLabel.vue'
 
 const props = defineProps<{
+  desktop: boolean
   pinnedSessions: SessionSummary[]
   historyItems: SessionSummary[]
   sharedSessions: SessionSummary[]
@@ -233,7 +234,7 @@ watch([hasOtherDevices, projectHistoryLoading], ([hasOther, loading]) => {
           </button>
         </template>
         <slot name="desktop-plugin-shortcuts" />
-        <section v-if="canUseCode || projectHistoryGroups.length" class="space-y-0.5 pt-4" :aria-label="t('projectDialog.projectsLabel')">
+        <section v-if="desktop && (canUseCode || projectHistoryGroups.length)" class="space-y-0.5 pt-4" :aria-label="t('projectDialog.projectsLabel')">
           <div class="group flex items-center justify-between px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">
             <span>{{ t('app.projects') }}</span>
             <button v-if="canUseCode && localWorkspacePicker" type="button" class="flex h-4 w-4 items-center justify-center rounded text-blue-600 opacity-0 transition-opacity hover:bg-blue-50 group-hover:opacity-100" :aria-label="t('app.createProject')" :title="t('app.createProject')" @click="createProject"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button>
