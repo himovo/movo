@@ -4,6 +4,7 @@ from __future__ import annotations
 
 
 RUNNER_SOURCE = r'''
+import errno
 import importlib.util
 import inspect
 import json
@@ -43,7 +44,15 @@ for arguments in ((inputs, context), (inputs,), ()):
         signature.bind(*arguments)
     except TypeError:
         continue
-    result = run(*arguments)
+    try:
+        result = run(*arguments)
+    except OSError as error:
+        if error.errno != errno.EROFS:
+            raise
+        raise RuntimeError(
+            f"{error}. For final files, pass an absolute path under context['output_dir'] "
+            "to the writer. Use context['work_dir'] for intermediate files."
+        ) from error
     break
 else:
     raise RuntimeError("run() must accept zero, one, or two positional arguments")

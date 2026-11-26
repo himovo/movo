@@ -33,6 +33,20 @@ def test_isolated_runner_reuses_workspace_and_accepts_one_argument(tmp_path: Pat
     assert json.loads(second.stdout)["value"] == "kept"
 
 
+def test_read_only_output_error_preserves_destination_and_explains_recovery(tmp_path: Path) -> None:
+    completed = _run(tmp_path, (
+        "import errno\n"
+        "import os\n"
+        "def run(inputs, context):\n"
+        "    raise OSError(errno.EROFS, os.strerror(errno.EROFS), '/readonly/report.pdf')\n"
+    ), "readonly-output")
+
+    assert completed.returncode != 0
+    assert "[Errno 30]" in completed.stderr
+    assert "/readonly/report.pdf" in completed.stderr
+    assert "context['output_dir']" in completed.stderr
+
+
 def test_ordinary_python_reuses_download_across_call_output_directories(tmp_path: Path) -> None:
     first = _run(tmp_path, compile_script_plugin(
         "import os\nfrom pathlib import Path\n"
