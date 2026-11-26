@@ -15,6 +15,7 @@ import UserMessageContent from './chat/UserMessageContent.vue'
 import AssistantMessageBody from './chat/AssistantMessageBody.vue'
 import ChatTurnInterruptions from './chat/ChatTurnInterruptions.vue'
 import AssistantImagePreview from './chat/AssistantImagePreview.vue'
+import { imageEditingContext, type ImageEditingContext } from './chat/imageEditingContext'
 import type { DocumentInfo, PendingDocument } from './chat/types'
 import { useDocumentEditors } from './chat/useDocumentEditors'
 import { useChatFilePreview } from './chat/useChatFilePreview'
@@ -214,6 +215,7 @@ const { isOwnMessage, authorLabel, sharedAuthorName, sharedAuthorAvatar, foreign
 })
 
 const imagePreviewOpen = ref(false)
+const imagePreviewEditContext = ref<ImageEditingContext>()
 const imagePreviewSrc = ref('')
 const imagePreviewAlt = ref('preview')
 const isLoading = ref(false)
@@ -361,8 +363,9 @@ const {
   confirmPresentationPreview, openHtmlPreview, openFilePreview: openDocumentPreview,
 })
 
-function openImagePreview(src?: string, alt?: string) {
+function openImagePreview(src?: string, alt?: string, message?: ChatMessage) {
   if (!src) return
+  imagePreviewEditContext.value = imageEditingContext(props.sessionId, message)
   imagePreviewSrc.value = src
   imagePreviewAlt.value = alt || 'preview'
   imagePreviewOpen.value = true
@@ -482,6 +485,7 @@ useChatWindowLifecycle({
             <AssistantMessageBody
               v-if="msg.role === 'assistant'"
               :message="msg"
+              :session-id="props.sessionId"
               :live="isAssistantGenerating(idx, msg)"
               :connection-lost-at="msg._connectionLostAt"
               :code-session="props.codeSession"
@@ -495,7 +499,7 @@ useChatWindowLifecycle({
               @show-browser="openBrowserForIntervention"
               @download-artifact-path="path => downloadMessageArtifact(msg, path)"
               @open-file="path => emit('open-code-file', path)"
-              @image-preview="({ src, alt }) => openImagePreview(src, alt)"
+              @image-preview="({ src, alt }) => openImagePreview(src, alt, msg)"
               @review-code-changes="(changes, path) => emit('review-code-changes', changes, path)"
               @changes-undone="changes => { msg._codeChanges = changes; emit('code-workspace-change') }"
               @artifact-open="artifact => onArtifactOpen(artifact, msg, idx)"
@@ -515,7 +519,7 @@ useChatWindowLifecycle({
               :author-label="authorLabel(msg)"
               :locale="locale"
               :session-id="props.sessionId"
-              @image-preview="openImagePreview"
+              @image-preview="(src, alt) => openImagePreview(src, alt, msg)"
               @document-preview="openDocumentPreview"
               @schedule="emit('schedule-message', $event)"
             />
@@ -703,6 +707,7 @@ useChatWindowLifecycle({
     v-if="imagePreviewOpen"
     :src="imagePreviewSrc"
     :alt="imagePreviewAlt"
+    :edit-context="imagePreviewEditContext"
     @close="closeImagePreview"
   />
 

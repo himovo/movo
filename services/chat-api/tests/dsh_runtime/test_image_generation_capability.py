@@ -69,6 +69,7 @@ def test_image_generation_reuses_configured_service_and_returns_embeddable_markd
             "object_path": f"generated/user-a/image-{index}.png",
             "provider_type": "provider-secret-shape",
             "model_name": "provider-specific-model",
+            "model_id": "original-model",
         }
 
     progress: list[dict] = []
@@ -90,19 +91,30 @@ def test_image_generation_reuses_configured_service_and_returns_embeddable_markd
     assert "model_name" not in result["assets"][0]
     assert calls[0]["user_id"] == "user-a"
     assert calls[0]["output_spec"] == {"main_id": "tenant-a"}
-    assert [row["payload"]["text"] for row in progress] == [
+    assert [row["payload"]["text"] for row in progress if row["item_kind"] == "commentary"] == [
         "正在生成第 1/2 张图片", "第 1/2 张图片已生成",
         "正在生成第 2/2 张图片", "第 2/2 张图片已生成",
     ]
+    documents = result["documents"]
+    assert len(documents) == 2
+    assert documents[0]["object_path"] == "generated/user-a/image-1.png"
+    assert documents[0]["content_type"] == "image/png"
+    assert documents[0]["image_model_id"] == "original-model"
+    assert result["assets"][0]["image_model_id"] == "original-model"
+    deliveries = [row for row in progress if row["item_kind"] == "artifact"]
+    assert [row["payload"]["object_path"] for row in deliveries] == [doc["object_path"] for doc in documents]
+    assert deliveries[0]["parent_item_id"] == "image-action-a"
 
 
 def test_partial_image_generation_preserves_successful_assets_for_continuation() -> None:
     calls = 0
+    progress = []
 
     async def generator(**kwargs):
         nonlocal calls
         calls += 1
         if calls == 2:
+            assert any(row["item_kind"] == "artifact" for row in progress)
             raise RuntimeError("provider temporarily unavailable")
         return {
             "image_url": "https://assets.example.test/ok.png",
@@ -111,11 +123,25 @@ def test_partial_image_generation_preserves_successful_assets_for_continuation()
 
     result = asyncio.run(ImageGenerationCapability(generator).run(
         {"images": [{"prompt": "one"}, {"prompt": "two"}]},
-        _context([]),
+        _context(progress),
     ))
     assert result["success"] is True
     assert result["status"] == "partial_success"
     assert result["continuation_required"] is True
     assert result["generated_count"] == 1
     assert result["failures"][0]["index"] == 2
+    assert len(result["documents"]) == 1
+
+
+def test_failed_image_generation_does_not_publish_a_delivery() -> None:
+    async def generator(**kwargs):
+        raise RuntimeError("provider unavailable")
+
+    progress = []
+    result = asyncio.run(ImageGenerationCapability(generator).run(
+        {"images": [{"prompt": "A cat"}]}, _context(progress),
+    ))
+    assert result["status"] == "failed"
+    assert result["documents"] == []
+    assert not any(row["item_kind"] == "artifact" for row in progress)
 

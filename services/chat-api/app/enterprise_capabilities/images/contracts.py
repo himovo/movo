@@ -38,6 +38,7 @@ def image_generation_output_schema() -> dict[str, Any]:
             "index": {"type": "integer"},
             "image_url": {"type": "string"},
             "object_path": {"type": "string"},
+            "image_model_id": {"type": "string"},
             "markdown": {"type": "string"},
             "alt_text": {"type": "string"},
             "placement_hint": {"type": "string"},
@@ -62,13 +63,24 @@ def image_generation_output_schema() -> dict[str, Any]:
             "requested_count": {"type": "integer"},
             "generated_count": {"type": "integer"},
             "assets": {"type": "array", "items": asset},
+            "documents": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {key: {"type": "string"} for key in (
+                        "type", "filename", "title", "url", "object_path", "content_type", "image_model_id",
+                    )},
+                    "required": ["type", "filename", "title", "url", "object_path", "content_type"],
+                    "additionalProperties": False,
+                },
+            },
             "failures": {"type": "array", "items": failure},
             "continuation_required": {"type": "boolean"},
             "message": {"type": "string"},
         },
         "required": [
             "success", "status", "requested_count", "generated_count",
-            "assets", "failures", "continuation_required", "message",
+            "assets", "documents", "failures", "continuation_required", "message",
         ],
         "additionalProperties": False,
     }

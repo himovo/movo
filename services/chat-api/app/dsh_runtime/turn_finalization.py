@@ -13,6 +13,7 @@ from app.dsh_runtime.conversation import ConversationRepository
 from app.execution_isolation.task_audit import cleanup_task_audit, finalize_task_audit
 from app.dsh_runtime.plugin_management.audit import index_plugin_calls
 from app.dsh_runtime.personal_output_delivery import deliver_personal_outputs
+from app.dsh_runtime.projected_documents import projected_documents
 
 
 logger = logging.getLogger(__name__)
@@ -85,7 +86,7 @@ class TurnStateFinalizer:
                     tenant_id=str(binding["tenant_id"]),
                     user_id=str(binding["user_id"]),
                     content=assistant.content,
-                    documents=delivered or None,
+                    documents=projected_documents(assistant.execution_events, delivered) or None,
                     execution_events=list(assistant.execution_events),
                     evidence_bundles=(
                         None

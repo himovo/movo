@@ -8,6 +8,7 @@ export interface PendingDocument {
 }
 
 export interface DocumentInfo {
+  image_model_id?: string
   id?: string
   type: 'pdf' | 'doc' | 'docx' | 'xls' | 'xlsx' | 'xlsm' | 'ppt' | 'pptx' | 'md' | 'txt' | 'csv' | 'tsv' | 'html' | 'presentation_preview_bundle' | 'generic'
   url: string

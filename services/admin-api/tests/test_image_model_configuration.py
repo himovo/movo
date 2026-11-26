@@ -8,6 +8,14 @@ from app.services.image_model_configuration import (
 )
 
 
+def test_image_edit_settings_round_trip_without_changing_generation_settings():
+    raw = {"editRequestFormat": "json", "editRequestPath": "/images/generations", "editImageField": "image", "size": "1024*1024"}
+    settings = normalize_image_settings(runtime_kind="openai_images", model_name="any-model", raw=raw)
+    assert settings["edit_request_format"] == "json"
+    assert settings["size"] == "1024*1024"
+    assert serialize_image_settings(settings) == raw
+
+
 def test_legacy_image_capability_is_normalized() -> None:
     assert normalize_capabilities(["chat", "image", "image_generation"]) == [
         "chat",

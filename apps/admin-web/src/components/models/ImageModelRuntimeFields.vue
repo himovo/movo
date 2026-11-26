@@ -24,6 +24,17 @@
           </div>
         </template>
         <div class="advanced-fields">
+          <n-form-item v-if="runtimeKind !== 'dashscope_image'" :label="t('models.imageEditFormat')">
+            <n-select :value="imageSettings.editRequestFormat || null" clearable :placeholder="t('models.imageEditAuto')"
+              :options="[{ label: 'JSON', value: 'json' }, { label: 'Multipart', value: 'multipart' }]"
+              @update:value="updateSetting('editRequestFormat', $event || '')" />
+          </n-form-item>
+          <n-form-item v-if="runtimeKind !== 'dashscope_image'" :label="t('models.imageEditPath')">
+            <n-input :value="imageSettings.editRequestPath || ''" placeholder="/images/edits" @update:value="updateSetting('editRequestPath', $event)" />
+          </n-form-item>
+          <n-form-item v-if="imageSettings.editRequestFormat === 'json' || runtimeKind === 'custom_images'" :label="t('models.imageEditField')">
+            <n-input :value="imageSettings.editImageField || ''" placeholder="image" @update:value="updateSetting('editImageField', $event)" />
+          </n-form-item>
           <n-form-item :label="t('legacy.quality')">
             <n-select
               :value="imageSettings.quality || null"

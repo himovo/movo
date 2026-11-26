@@ -18,6 +18,9 @@ export interface ImageModelSettings {
   n?: number | null;
   ratio?: string;
   requestPath?: string;
+  editRequestFormat?: 'json' | 'multipart' | '';
+  editRequestPath?: string;
+  editImageField?: string;
   responseUrlPath?: string;
   responseBase64Path?: string;
   extraParamsJson?: string;

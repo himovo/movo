@@ -413,11 +413,12 @@ class ConversationRepository:
             update["documents"] = list(documents)
         if evidence_bundles is not None:
             update["evidence_bundles"] = list(evidence_bundles)
-        result = await self._messages.update_one(
+        from app.dsh_runtime.projected_documents import update_projection
+        result = await update_projection(self._messages,
             # Session-scoped: the finalizer may call with the binding subject,
             # which can differ from the message's author.
             {"message_id": message_id, "main_id": tenant_id},
-            {"$set": update},
+            update,
         )
         if result.matched_count == 0:
             raise LookupError("assistant_message_not_found")

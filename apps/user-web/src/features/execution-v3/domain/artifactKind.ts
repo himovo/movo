@@ -14,6 +14,7 @@ export interface ArtifactIdentity {
 }
 
 const SUPPORTED_KINDS = new Set([
+  'png', 'jpg', 'jpeg', 'webp', 'gif', 'avif', 'image',
   'pdf', 'doc', 'docx', 'xls', 'xlsx', 'xlsm', 'ppt', 'pptx', 'md', 'html',
   'presentation_preview_bundle', 'email_draft', 'code_diff',
 ])
@@ -26,6 +27,8 @@ const SEMANTIC_KINDS = new Set([
 ])
 
 const MIME_KINDS: Record<string, string> = {
+  'image/png': 'png', 'image/jpeg': 'jpeg', 'image/webp': 'webp',
+  'image/gif': 'gif', 'image/avif': 'avif',
   'application/pdf': 'pdf',
   'application/msword': 'doc',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
@@ -36,6 +39,10 @@ const MIME_KINDS: Record<string, string> = {
   'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
   'text/markdown': 'md',
   'text/html': 'html',
+}
+
+export function isImageArtifact(artifact: ArtifactIdentity): boolean {
+  return ['png', 'jpg', 'jpeg', 'webp', 'gif', 'avif', 'image'].includes(resolveArtifactKind(artifact))
 }
 
 function normalizedExtension(value: unknown): string {

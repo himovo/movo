@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, provide } from 'vue'
+import { imageEditingKey, imageEditingContext } from './imageEditingContext'
 import ExecutionViewV3 from '../../features/execution-v3/components/ExecutionViewV3.vue'
 import ArtifactList from '../execution/ArtifactList.vue'
 import AssistantMarkdown from './AssistantMarkdown.vue'
@@ -19,6 +20,7 @@ import type { BrowserAssistanceHandoff } from '../../composables/browser/useBrow
 
 const props = defineProps<{
   message: ChatMessage
+  sessionId?: string
   live: boolean
   connectionLostAt?: number
   codeSession?: DshCodeSession | null
@@ -51,6 +53,7 @@ const emit = defineEmits<{
 }>()
 
 const store = computed(() => ensureMessageExecutionV3(props.message))
+provide(imageEditingKey, computed(() => imageEditingContext(props.sessionId, props.message)))
 const artifactPaths = computed(() => {
   const state = store.value.state
   const artifacts = withoutCodeChangeArtifacts(visibleAnswerArtifacts(state.artifacts, state.runStatus), props.codeSession ? props.message._codeChanges : undefined)
@@ -102,6 +105,7 @@ const artifactPaths = computed(() => {
   <div class="mt-3">
     <ArtifactList
       :store="store"
+      :content="message.content"
       :code-changes="codeSession ? message._codeChanges : undefined"
       @open="emit('artifact-open', $event)"
       @edit="emit('artifact-edit', $event)"

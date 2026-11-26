@@ -1,4 +1,5 @@
 export interface ArtifactItem {
+  image_model_id?: string
   id: string
   ts: number
   kind: string

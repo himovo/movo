@@ -59,6 +59,13 @@ def normalize_image_settings(
         return {}
     del model_name
     result: dict[str, Any] = {}
+    edit_format = str(source.get("edit_request_format", source.get("editRequestFormat", "")) or "")
+    if edit_format in {"json", "multipart"}:
+        result["edit_request_format"] = edit_format
+    for key, camel in (("edit_request_path", "editRequestPath"), ("edit_image_field", "editImageField")):
+        value = str(source.get(key, source.get(camel, "")) or "").strip()
+        if value:
+            result[key] = value
     for key, camel_key in (
         ("size", "size"),
         ("quality", "quality"),
@@ -116,6 +123,9 @@ def serialize_image_settings(settings: dict[str, Any]) -> dict[str, Any]:
         ("ratio", "ratio"),
         ("n", "n"),
         ("request_path", "requestPath"),
+        ("edit_request_format", "editRequestFormat"),
+        ("edit_request_path", "editRequestPath"),
+        ("edit_image_field", "editImageField"),
         ("response_url_path", "responseUrlPath"),
         ("response_base64_path", "responseBase64Path"),
     ):

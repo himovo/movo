@@ -8,6 +8,7 @@ from app.enterprise_capabilities.runtime.contracts import CapabilityExecutionCon
 from app.services.image_generation import generate_image_asset
 
 from .progress import ImageGenerationProgress
+from .delivery import image_document, image_delivery_event
 
 
 ImageGenerator = Callable[..., Awaitable[dict[str, Any]]]
@@ -65,10 +66,15 @@ class ImageGenerationCapability:
                     "index": index,
                     "image_url": image_url,
                     "object_path": object_path,
+                    "image_model_id": str(generated.get("model_id") or ""),
                     "markdown": f"![{alt_text}]({image_url})",
                     "alt_text": alt_text,
                     "placement_hint": _plain_text(spec.get("placement_hint"))[:500],
                 })
+                await context.publish_progress(image_delivery_event(
+                    image_document(assets[-1]), message_id=context.message_id,
+                    action_id=context.action_id, index=index,
+                ))
                 await context.publish_progress(progress.row(stage="completed", index=index, total=total))
             except Exception as exc:
                 failures.append({"index": index, "error": f"{type(exc).__name__}: {str(exc)[:1000]}"})
@@ -91,6 +97,7 @@ class ImageGenerationCapability:
             "requested_count": requested,
             "generated_count": generated,
             "assets": assets,
+            "documents": [image_document(asset) for asset in assets],
             "failures": failures,
             "continuation_required": status == "partial_success",
             "message": "" if status == "completed" else (

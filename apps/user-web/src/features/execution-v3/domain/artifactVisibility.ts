@@ -1,14 +1,15 @@
 import type { ArtifactItem } from './delivery'
 import { finalPresentationDelivery, isPresentationDelivery } from './presentationDelivery'
+import { isImageArtifact } from './artifactKind'
 
 /** Tool artifact metadata, rather than model prose, determines deliverables. */
 export function visibleAnswerArtifacts(
   artifacts: ArtifactItem[],
   runStatus: string,
 ): ArtifactItem[] {
-  if (runStatus === 'running') return []
   const visible = artifacts.filter((item) =>
-    item.lifecycle?.toLowerCase() !== 'intermediate'
+    (runStatus !== 'running' || isImageArtifact(item))
+    && item.lifecycle?.toLowerCase() !== 'intermediate'
     && item.visibility?.toLowerCase() !== 'internal',
   )
   const presentation = finalPresentationDelivery(visible)

@@ -1,5 +1,9 @@
 /** Labels that previously had no catalog entry. */
 export const additionalMessages = {
+  "models.imageEditFormat": { "zh-CN": "\u56fe\u7247\u7f16\u8f91\u8bf7\u6c42\u683c\u5f0f", "en-US": "Image edit request format" },
+  "models.imageEditAuto": { "zh-CN": "\u9ed8\u8ba4\uff08\u6309\u63a5\u53e3\u7c7b\u578b\uff09", "en-US": "Default (by API type)" },
+  "models.imageEditPath": { "zh-CN": "\u56fe\u7247\u7f16\u8f91\u8bf7\u6c42\u8def\u5f84", "en-US": "Image edit request path" },
+  "models.imageEditField": { "zh-CN": "\u7f16\u8f91\u539f\u56fe\u5b57\u6bb5\u540d", "en-US": "Source image field" },
   'models.contextCapacity': { 'zh-CN': '\u4e0a\u4e0b\u6587\u957f\u5ea6', 'en-US': 'Context length' },
   'toolOutput.importTitle': { 'zh-CN': '\u4ece JSON \u6837\u4f8b\u5bfc\u5165', 'en-US': 'Import JSON sample' },
   'toolOutput.sampleLabel': { 'zh-CN': '\u7c98\u8d34\u5b8c\u6574\u7684\u63a5\u53e3\u54cd\u5e94 JSON', 'en-US': 'Paste the full JSON response' },
