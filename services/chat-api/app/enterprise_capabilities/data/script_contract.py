@@ -3,7 +3,23 @@
 from __future__ import annotations
 
 import ast
-import textwrap
+
+
+def _indent_script_body(source: str, tree: ast.Module) -> str:
+    literal_lines: set[int] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.JoinedStr) or (
+            isinstance(node, ast.Constant) and isinstance(node.value, (str, bytes))
+        ):
+            # The first line starts in Python code. Prefixing later lines
+            # can change the literal value, including at the closing quotes.
+            literal_lines.update(range(node.lineno + 1, node.end_lineno + 1))
+    # Match the physical newline rules used by the Python parser.
+    lines = source.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    return "\n".join(
+        line if line_number in literal_lines or not line.strip() else "    " + line
+        for line_number, line in enumerate(lines, start=1)
+    )
 
 
 def compile_script_plugin(code: str) -> str:
@@ -19,7 +35,7 @@ def compile_script_plugin(code: str) -> str:
     tree = ast.parse(source, mode="exec")
     if any(isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "run" for node in tree.body):
         return source
-    indented = textwrap.indent(source, "    ")
+    indented = _indent_script_body(source, tree)
     return (
         "def run(inputs, context):\n"
         "    import io as _io\n"

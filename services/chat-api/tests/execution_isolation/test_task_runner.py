@@ -67,6 +67,34 @@ def test_ordinary_python_reuses_download_across_call_output_directories(tmp_path
     assert first_lines[0].split()[1] != second_lines[1].split()[1]
 
 
+def test_ordinary_python_preserves_multiline_file_contents(tmp_path: Path) -> None:
+    completed = _run(tmp_path, compile_script_plugin(
+        "from pathlib import Path\n"
+        "value = 'ready'\n"
+        "if value:\n"
+        "    Path('hello.py').write_bytes(b'''def hello():\n"
+        "    return 'ready'\n"
+        "\n"
+        "print(hello())\n"
+        "''')\n"
+        "    Path('settings.yaml').write_text(f'''status:\n"
+        "  value: {value}\n"
+        "''', encoding='utf-8')\n"
+        "    print('generated')\n"
+    ), "multiline")
+
+    assert completed.returncode == 0, completed.stderr
+    out = tmp_path / "calls" / "multiline" / "out"
+    script = out / "hello.py"
+    assert script.read_bytes() == b"def hello():\n    return 'ready'\n\nprint(hello())\n"
+    assert (out / "settings.yaml").read_bytes() == b"status:\n  value: ready\n"
+    executed = subprocess.run([sys.executable, "-I", str(script)], capture_output=True, text=True, check=True)
+    assert executed.stdout == "ready\n"
+    result = json.loads(completed.stdout)
+    assert result["data"]["stdout"] == ["generated"]
+    assert {item["filename"] for item in result["artifacts"]} == {"hello.py", "settings.yaml"}
+
+
 def test_ordinary_python_does_not_deliver_bytecode_cache(tmp_path: Path) -> None:
     completed = _run(tmp_path, compile_script_plugin(
         "from pathlib import Path\n"
