@@ -47,8 +47,9 @@ test('native plugin web relay keeps the DSH operator cookie internal and rejects
     response.end(JSON.stringify({ path: request.url }))
   })
   await new Promise(resolve => native.listen(0, '127.0.0.1', resolve))
+  const prefixes = new Map()
   const ctx = { get: name => ({
-    webServer: { port: native.address().port },
+    webServer: { port: native.address().port, prefixes },
     connection: { authenticatedUrl: url => `${url}?token=internal` },
   })[name] }
   const bridge = new NativePluginWeb(ctx, [{
@@ -70,6 +71,11 @@ test('native plugin web relay keeps the DSH operator cookie internal and rejects
     assert.equal(allowed.headers.get('set-cookie'), null)
     assert.equal((await fetch(`${base}/api/session.create`)).status, 403)
     assert.equal((await fetch(`${base}/other-plugin/data`)).status, 403)
+    // A plugin may add a route after its installation capability snapshot.
+    prefixes.set('/late-page', {})
+    assert.equal((await fetch(`${base}/late-page/api/data`)).status, 200)
+    prefixes.delete('/late-page')
+    assert.equal((await fetch(`${base}/late-page/api/data`)).status, 403)
   } finally {
     await new Promise(resolve => outer.close(resolve))
     await new Promise(resolve => native.close(resolve))

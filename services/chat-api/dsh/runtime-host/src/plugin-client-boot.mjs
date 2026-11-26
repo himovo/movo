@@ -9,6 +9,7 @@ const BOOT_SCRIPT = /(<script>globalThis\["__DSH_BOOT__"\] = )(.*?)(<\/script>)/
 const shellParts = await Promise.all([
   './plugin-client-shell/locales.js',
   './plugin-client-shell/conversation.js',
+  './plugin-client-shell/page-status.js',
   './plugin-client-shell/client.js',
 ].map(path => readFile(new URL(path, import.meta.url))))
 export const clientShellSource = Buffer.concat(shellParts.flatMap(part => [part, Buffer.from('\n')]))

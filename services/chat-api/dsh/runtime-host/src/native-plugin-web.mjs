@@ -3,6 +3,7 @@ import { request as httpRequest } from 'node:http'
 import { allowedPluginUiRequest, safePluginRoutes } from './plugin-ui-route-policy.mjs'
 import { clientShellSource, injectPluginClientShell, isClientShellRequest } from './plugin-client-boot.mjs'
 import { proxyPluginUiSocket, rejectUpgrade } from './plugin-ui-websocket.mjs'
+import { respondPluginSettings } from './plugin-ui-settings.mjs'
 
 const REQUEST_HEADERS = new Set([
   'accept', 'accept-language', 'content-type', 'content-length', 'range',
@@ -58,10 +59,21 @@ export class NativePluginWeb {
 
   async proxy(pluginId, path, request, response) {
     const plugin = this.plugins.find(item => item.installation_id === pluginId)
-    const routes = safePluginRoutes(plugin?.web_routes)
     const webServer = this.ctx.get('webServer')
+    // Each UI runtime contains the selected plugin. Consult DSH's live registry:
+    // plugins may register routes after installation-time capability discovery.
+    const routes = safePluginRoutes([
+      ...[...(webServer?.exact?.keys() ?? [])].map(path => ({ kind: 'exact', path })),
+      ...[...(webServer?.prefixes?.keys() ?? [])].map(path => ({ kind: 'prefix', path })),
+      ...(plugin?.web_routes ?? []),
+    ])
     const connection = this.ctx.get('connection')
     const pathname = new URL(path, 'http://plugin-ui.invalid').pathname
+    if (plugin?.client_modules?.length && webServer?.port && connection &&
+        request.method === 'POST' && pathname === '/api/settings/describe') {
+      await respondPluginSettings(this.ctx, plugin, request, response)
+      return
+    }
     if (!plugin || !plugin.client_modules?.length || !webServer?.port || !connection ||
         !isClientShellRequest(pathname, request.method) &&
         !allowedPluginUiRequest({ method: request.method, path: pathname, routes,

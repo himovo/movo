@@ -1,5 +1,5 @@
 <template>
-  <n-drawer :show="show" placement="right" :width="'min(96vw, 1360px)'" drawer-class="plugin-ui-drawer" @update:show="emit('update:show', $event)">
+  <n-drawer :show="show" placement="right" :width="'min(96vw, 1360px)'" class="plugin-ui-drawer" @update:show="emit('update:show', $event)">
     <n-drawer-content :title="name" closable body-content-style="padding: 0; overflow: hidden;">
       <iframe v-if="show && url" class="plugin-frame" :src="url" :title="name"
         ref="pluginFrame"

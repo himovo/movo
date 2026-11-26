@@ -4,6 +4,7 @@ window.__ModuleLoader__.load({
     const React = require('react')
     const { Service } = require('@deepseek-ai/cordis')
     const conversation = require('movo-plugin-conversation-shell')
+    const { Waiting, Boundary, Status } = require('movo-plugin-page-status')
     return {
       inject: ['slots', 'sessions'],
       apply(ctx) {
@@ -29,6 +30,8 @@ window.__ModuleLoader__.load({
           if (conversationMode) {
             return conversation.render(ctx, SessionProvider, renderSlot)
           }
+          const [failed, setFailed] = React.useState(false)
+          React.useEffect(() => ctx.slots.onEntryError(() => setFailed(true)), [])
           React.useSyncExternalStore(
             React.useCallback(notify => ctx.slots.subscribe('main', notify), []),
             React.useCallback(() => ctx.slots.getVersion('main'), []),
@@ -36,7 +39,9 @@ window.__ModuleLoader__.load({
           const entries = ctx.slots.entries('main')
           const initial = new URLSearchParams(window.location.search).get('panel')
           const [active, setActive] = React.useState(initial)
-          const keys = entries.filter(entry => entry.registrant === window.__MOVO_PLUGIN_MODULE__)
+          // The isolated boot contains one plugin and the native conversation page.
+          // Runtime fiber names are not stable package identifiers.
+          const keys = entries.filter(entry => entry.options.key !== 'conversation')
             .map(entry => entry.options.key).filter(Boolean)
           const key = keys.includes(active) ? active : keys[0]
           return React.createElement('main', {
@@ -51,7 +56,9 @@ window.__ModuleLoader__.load({
             'aria-current': panel === key ? 'page' : undefined,
             style: { border: 0, padding: '8px 12px', cursor: 'pointer', background: panel === key ? '#eaf1ff' : 'transparent' },
           }, panel))) : null,
-          key ? renderSlot('main', {}, { entryKey: key }) : null)
+          failed ? React.createElement(Status, { failed: true })
+            : key ? React.createElement(Boundary, { key }, renderSlot('main', {}, { entryKey: key }))
+            : React.createElement(Waiting))
         })
       },
     }

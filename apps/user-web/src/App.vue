@@ -683,7 +683,7 @@ const sidebarBindings = useAppSidebarBindings({
     />
   </div>
 
-  <SkillCreationDialog v-model:name="skillName" v-model:summary="skillSummary" v-model:type="skillType" v-model:scenario="skillScenario" v-model:channels="skillChannels" v-model:forms="skillForms" v-model:audience="skillAudience" v-model:style="skillStyle" v-model:required="skillRequired" v-model:forbidden="skillForbidden" :open="skillFormOpen" :creating="skillCreating" :enriching="skillEnriching" @close="closeSkillForm" @enrich="enrichDraftFromForm" @create="createSkill" />
+  <SkillCreationDialog v-model:name="skillName" v-model:summary="skillSummary" v-model:type="skillType" v-model:scenario="skillScenario" v-model:channels="skillChannels" v-model:forms="skillForms" v-model:audience="skillAudience" v-model:preferred-style="skillStyle" v-model:required="skillRequired" v-model:forbidden="skillForbidden" :open="skillFormOpen" :creating="skillCreating" :enriching="skillEnriching" @close="closeSkillForm" @enrich="enrichDraftFromForm" @create="createSkill" />
   <PersonalizationDialog
     :open="personalizationOpen"
     :locale="locale"

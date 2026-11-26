@@ -30,6 +30,8 @@ function pluginRoute(route) {
 export function allowedPluginUiRequest({ method, path, routes = [], remoteEndpoints = [], pluginName = '', hasGenericApiRoute = false }) {
   const pathname = normalizedPath(path)
   if (!pathname) return false
+  // Settings reads use a separately scoped local adapter, never a raw proxy.
+  if (pathname.startsWith('/api/settings/')) return false
   const namespace = typeof pluginName === 'string' && /^[A-Za-z0-9@._/-]{1,128}$/.test(pluginName)
     ? pluginName.replace(/^@/, '').replace('/', '-') : ''
   if (namespace && hasGenericApiRoute && pathname.startsWith(`/api/${namespace}/`)) {

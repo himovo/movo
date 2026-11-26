@@ -97,6 +97,17 @@ test('managed plugin activates only for its Runtime and preserves Session handof
     assert.ok(active.capabilities?.webRoutes?.some(route => route.path === '/movo-fixture') ||
       active.webRoutes?.some(route => route.path === '/movo-fixture'))
     const uiBase = `${base}${managedPath}/plugin-ui/${'b'.repeat(24)}`
+    const settingsResponse = await fetch(`${uiBase}/api/settings/describe`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ type: 'client-request', rpcId: 'settings-bootstrap', method: 'settings/describe', payload: [] }),
+    })
+    assert.equal(settingsResponse.status, 200)
+    const settings = await settingsResponse.json()
+    assert.equal(settings.rpcId, 'settings-bootstrap')
+    assert.equal(settings.result.ok, true, JSON.stringify(settings))
+    assert.equal(settings.result.value.writable, false)
+    assert.ok(settings.result.value.namespaces.some(item => item.ns === 'ui-settings'), JSON.stringify(settings))
+    assert.ok(!settings.result.value.namespaces.some(item => item.ns === 'askai-model-gateway'))
     const uiRoute = await fetch(`${uiBase}/movo-fixture/ready`)
     assert.equal(uiRoute.status, 200)
     assert.deepEqual(await uiRoute.json(), { marker: 'FIXTURE_UI_READY' })

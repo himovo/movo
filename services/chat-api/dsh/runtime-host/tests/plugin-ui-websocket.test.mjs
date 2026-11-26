@@ -18,7 +18,7 @@ test('plugin UI socket forwards only declared and read-only streams', async () =
   const proxyServer = createServer()
   proxyServer.on('upgrade', (request, socket, head) => proxyPluginUiSocket(
     request, socket, head, { url: `ws://127.0.0.1:${nativePort}` },
-    { endpoints: ['plugin/read'] },
+    { endpoints: ['plugin/read', 'settings/describe', 'settings/update'] },
   ))
   const proxyPort = await listen(proxyServer)
   try {
@@ -33,6 +33,11 @@ test('plugin UI socket forwards only declared and read-only streams', async () =
     const closed = new Promise(resolve => client.once('close', resolve))
     client.send(JSON.stringify({ type: 'open', streamId: 'two', endpoint: 'session/create', payload: {} }))
     await closed
+    const settingsClient = new WebSocket(`ws://127.0.0.1:${proxyPort}`)
+    await new Promise(resolve => settingsClient.once('open', resolve))
+    const settingsClosed = new Promise(resolve => settingsClient.once('close', resolve))
+    settingsClient.send(JSON.stringify({ type: 'open', streamId: 'settings', endpoint: 'settings/describe', payload: {} }))
+    await settingsClosed
   } finally {
     for (const socket of nativeSockets.clients) socket.terminate()
     await new Promise(resolve => proxyServer.close(resolve))

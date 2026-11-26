@@ -3,6 +3,13 @@ import test from 'node:test'
 
 import { allowedPluginUiRequest, safePluginRoutes } from '../src/plugin-ui-route-policy.mjs'
 
+test('global settings never pass through an attributed or generic plugin API route', () => {
+  for (const endpoint of ['settings/describe', 'settings/update', 'settings/replace', 'settings/mutate']) {
+    assert.equal(allowedPluginUiRequest({ method: 'POST', path: `/api/${endpoint}`,
+      remoteEndpoints: [endpoint], pluginName: 'settings', hasGenericApiRoute: true }), false)
+  }
+})
+
 test('plugin UI policy permits only native static assets and attributed plugin routes', () => {
   const routes = [{ kind: 'prefix', path: '/media-desk' }, { kind: 'exact', path: '/papers/report' }]
   const allow = (method, path) => allowedPluginUiRequest({ method, path, routes })

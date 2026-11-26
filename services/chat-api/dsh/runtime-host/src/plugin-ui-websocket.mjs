@@ -30,7 +30,7 @@ export function proxyPluginUiSocket(request, socket, head, target, { endpoints }
         let frame
         try { frame = JSON.parse(String(data)) } catch { close(); return }
         if (frame?.type === 'open') {
-          if (!allowed.has(frame.endpoint) || typeof frame.streamId !== 'string') { close(); return }
+          if (!allowed.has(frame.endpoint) || String(frame.endpoint).startsWith('settings/') || typeof frame.streamId !== 'string') { close(); return }
           streams.set(frame.streamId, frame.endpoint)
         } else if (frame?.type === 'cancel') {
           if (!streams.has(frame.streamId)) { close(); return }
