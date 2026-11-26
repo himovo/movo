@@ -10,6 +10,8 @@ from .errors import DshProtocolError
 
 
 NATIVE_EVENT_TYPES: dict[str, str] = {
+    "compaction/start": "context.compaction.started",
+    "compaction/end": "context.compaction.completed",
     "assistant/chunk": "agent.message.delta",
     "assistant/message": "agent.message.completed",
     "tool/call": "tool.call.started",

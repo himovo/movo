@@ -162,7 +162,7 @@ class DshTurnRunner:
                     session_id=str(binding["kernel_session_id"]),
                     request_id=request_id,
                     mode=SendMode.FOLLOWUP,
-                    content=[ContentBlock(type="text", data={"text": text + references + delivery_prompt}), *image_blocks],
+                    content=[ContentBlock(type="text", data={"text": text if text.strip() == "/compact" else text + references + delivery_prompt}), *image_blocks],
                     temporal_context=temporal_context,
                     turn_context=kernel_turn_context(turn_context),
                 )

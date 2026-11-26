@@ -33,6 +33,16 @@ class KernelEventProjector:
 
         if event_type == "turn.started":
             projected_type, payload = "run.started", {"kernel": "dsh"}
+        elif event_type in {"context.compaction.started", "context.compaction.completed"}:
+            started = event_type.endswith(".started")
+            failed = bool(event.payload.get("error"))
+            projected_type = "item.started" if started else ("item.failed" if failed else "item.completed")
+            item_kind = "activity"
+            item_id = f"{message_id}:compaction:{event.payload.get('compactionId', 'manual')}"
+            payload = {
+                "category": "compaction",
+                "label": "context.compacting" if started else ("context.compactionFailed" if failed else "context.compacted"),
+            }
         elif event_type == "skill.selected":
             source_id = str(event.payload.get("sourceId") or event.payload.get("source_id") or "").strip()
             skill_name = str(event.payload.get("displayName") or event.payload.get("display_name") or "").strip()

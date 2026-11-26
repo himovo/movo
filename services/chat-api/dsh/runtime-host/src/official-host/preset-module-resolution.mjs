@@ -1,5 +1,6 @@
 import { dirname, isAbsolute, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { NATIVE_COMPACTION_CONFIG } from './compaction-config.mjs'
 
 function loaderSpecifier(name) {
   // DSH's declarative preset tree imports row names directly. A Windows
@@ -20,6 +21,9 @@ function resolveRows(rows, installation, presetId) {
     let config = row.group === true && Array.isArray(row.config)
       ? resolveRows(row.config, installation, presetId)
       : row.config
+    if (row.name === '@deepseek-ai/dsh-compaction-basic') {
+      config = { ...NATIVE_COMPACTION_CONFIG, ...config }
+    }
     // The shipped Cordis preset resolves its bundled skills through baseUrl.
     // In an embedded Host that URL is MOVO's profile, not DSH's installation.
     if (presetId === 'cordis' && row.id === 'skill-filesystem' && Array.isArray(config?.customSkillDirs)) {

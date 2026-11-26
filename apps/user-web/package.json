@@ -9,6 +9,7 @@
         "build:test": "vite build --mode test",
         "build:prod": "vite build --mode production",
         "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+        "test:context-usage": "esbuild tests/context-usage-loading.test.ts --bundle --platform=node --format=esm --packages=external --define:import.meta.env='{}' --outfile=.tmp-context-loading.mjs && node .tmp-context-loading.mjs && node -e \"require('node:fs').rmSync('.tmp-context-loading.mjs', { force: true })\"",
         "test:execution-v3": "esbuild tests/execution-v3-store.test.ts --bundle --platform=node --format=esm --outfile=/tmp/askai-execution-v3-test.mjs && node /tmp/askai-execution-v3-test.mjs && esbuild tests/failure-message.test.ts --bundle --platform=node --format=esm --outfile=/tmp/movo-failure-message-test.mjs && node /tmp/movo-failure-message-test.mjs",
         "test:session-ordering": "esbuild tests/session-ordering.test.ts --bundle --platform=node --format=esm --outfile=/tmp/askai-session-ordering-test.mjs && node /tmp/askai-session-ordering-test.mjs",
         "test:chart-payload": "esbuild tests/chart-payload.test.ts --bundle --platform=node --format=esm --outfile=/tmp/movo-chart-payload-test.mjs && node /tmp/movo-chart-payload-test.mjs",

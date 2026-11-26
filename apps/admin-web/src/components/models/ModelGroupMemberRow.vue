@@ -6,6 +6,7 @@ import { createModelInstance, deleteModelInstance, updateModelInstance, type Ima
 import adminProductUiExtension from '@movo-admin-product-extension';
 import ImageModelRuntimeFields from './ImageModelRuntimeFields.vue';
 import ModelPricingFields from './ModelPricingFields.vue';
+import ModelContextCapacityField from './ModelContextCapacityField.vue';
 import ModelAccessExtensionPanel from './ModelAccessExtensionPanel.vue';
 import { capabilityLabel } from './capabilityLabels';
 import { modelApiErrorText } from './modelApiError';
@@ -19,6 +20,7 @@ import TrashOutline from '@vicons/ionicons5/es/TrashOutline';
 const props = defineProps<{ group: ModelGroupItem; provider?: ModelProviderItem; model?: ModelInstanceItem; expanded?: boolean }>();
 const emit = defineEmits<{ (event: 'saved', model: ModelInstanceItem): void; (event: 'deleted', id: string): void; (event: 'cancel'): void; (event: 'select', id: string): void }>();
 const message = useMessage();
+const contextCapacity = ref(0);
 const extension = adminProductUiExtension.modelAccess;
 const open = ref(Boolean(props.expanded || !props.model));
 const saving = ref(false);
@@ -32,6 +34,7 @@ const runtimeDefault = computed<ImageRuntimeKind>(() => props.provider?.provider
 
 watch(() => props.model?.id, async () => {
   const model = props.model;
+  contextCapacity.value = model?.maxContextTokens || 0;
   form.value = model
     ? { displayName: model.displayName, modelName: model.modelName, capabilities: [...model.capabilities], status: model.status, runtimeKind: model.runtimeKind || runtimeDefault.value, imageSettings: { ...model.imageSettings }, pricing: model.pricing ? { ...model.pricing } : null }
     : { displayName: '', modelName: '', capabilities: ['chat'], status: 'active', runtimeKind: runtimeDefault.value, imageSettings: {}, pricing: null };
@@ -68,7 +71,7 @@ async function save() {
       baseUrl: props.group.baseUrl, apiVersion: props.group.apiVersion, apiKey: '',
       capabilities: [...form.value.capabilities],
       runtimeKind: imageModel.value ? form.value.runtimeKind : '', imageSettings: imageModel.value ? { ...form.value.imageSettings } : {},
-      maxContextTokens: props.model?.maxContextTokens || 0, status: form.value.status,
+      maxContextTokens: contextCapacity.value || 0, status: form.value.status,
       isDefault: props.model?.isDefault || false, priority: props.model?.priority || 100,
       pricing: form.value.pricing,
     };
@@ -110,6 +113,7 @@ async function remove() {
           <n-form-item :label="t('legacy.capabilities')"><n-select v-model:value="form.capabilities" multiple :options="capabilityOptions" /></n-form-item>
           <n-form-item :label="t('legacy.status')"><n-select v-model:value="form.status" :options="[{ label: t('modelGroup.active'), value: 'active' }, { label: t('modelGroup.disabled'), value: 'disabled' }]" /></n-form-item>
         </div>
+        <ModelContextCapacityField v-model="contextCapacity" />
         <ModelPricingFields v-model="form.pricing" />
         <n-collapse v-if="imageModel"><n-collapse-item :title="t('modelGroup.imageSettings')" name="image"><ImageModelRuntimeFields v-model:runtimeKind="form.runtimeKind" v-model:imageSettings="form.imageSettings" :provider-type="provider?.providerType || ''" /></n-collapse-item></n-collapse>
         <n-collapse v-if="extension && selectable"><n-collapse-item :title="t('modelGroup.memberAccess')" name="access"><ModelAccessExtensionPanel v-model="access" :loading="accessLoading" grouped /></n-collapse-item></n-collapse>

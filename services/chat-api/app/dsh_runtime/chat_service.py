@@ -170,7 +170,11 @@ class DshChatService:
     ) -> PreparedTurn:
         if self._topic_admission is None:
             raise RuntimeError("topic admission is not configured")
-        await self._topic_admission.require(main_id=tenant_id, user_id=user_id, text=text)
+        if text.strip() == "/compact" and not selected_command_id:
+            if images or documents or knowledge_references or selected_skill_id or selected_writing_skill_id:
+                raise ValueError("The native /compact command does not accept attachments or Skills")
+        else:
+            await self._topic_admission.require(main_id=tenant_id, user_id=user_id, text=text)
         from app.knowledge_references.admission import admit_references
         admitted_references = await admit_references(knowledge_references, main_id=tenant_id, user_id=user_id)
         temporal_context = build_temporal_context(timezone_name)

@@ -6,6 +6,7 @@ import { mkdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 import { pluginUserHome } from './plugin-user-home.mjs'
+import { SharedOperation } from './shared-operation.mjs'
 
 const HOST_ENTRY = resolve(dirname(fileURLToPath(import.meta.url)), 'host.mjs')
 const READY_EVENT = 'askai-dsh-runtime-ready'
@@ -86,12 +87,17 @@ function requestJson(port, token, method, path, body) {
 }
 
 export class IsolatedPluginRuntimePool {
+  #creation = new SharedOperation()
   #byRuntime = new Map()
   #byIsolation = new Map()
 
   constructor(storageRoot) { this.storageRoot = storageRoot }
 
   async create(body) {
+    return this.#creation.run(body.isolationKey, () => this.#create(body))
+  }
+
+  async #create(body) {
     if (this.#byIsolation.has(body.isolationKey)) throw new Error('isolation key already has a Runtime')
     const token = randomBytes(32).toString('hex')
     const home = pluginUserHome(this.storageRoot, body)
@@ -176,6 +182,7 @@ export class IsolatedPluginRuntimePool {
   }
 
   async disposeAll() {
+    await this.#creation.drain()
     await Promise.allSettled([...this.#byRuntime.keys()].map(runtimeId => this.dispose(runtimeId)))
   }
 }

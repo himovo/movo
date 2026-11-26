@@ -191,6 +191,12 @@ class DshAgentKernelGateway(AgentKernelContract):
         )
         return self._session_handle(session_id, response)
 
+    async def context_usage(self, session_id: str) -> dict[str, Any]:
+        binding = self._binding(session_id)
+        return await self._transport.request(
+            "GET", f"/v1/runtimes/{binding.runtime_id}/sessions/{session_id}/context",
+        )
+
     async def create_session(self, request: CreateSessionRequest) -> SessionHandle:
         session_id = f"dsh-{uuid4()}"
         spec = request.session_spec
@@ -238,9 +244,14 @@ class DshAgentKernelGateway(AgentKernelContract):
         binding = self._binding(request.session_id)
         await self._refresh_model_credential(binding.runtime_id)
         temporal_context = request.temporal_context or build_temporal_context("UTC")
+        native_compact = (
+            len(request.content) == 1 and request.content[0].type == "text"
+            and str(request.content[0].data.get("text") or "").strip() == "/compact"
+        )
+        operation = "compact" if native_compact else "send"
         response = await self._transport.request(
             "POST",
-            f"/v1/runtimes/{binding.runtime_id}/sessions/{request.session_id}/send",
+            f"/v1/runtimes/{binding.runtime_id}/sessions/{request.session_id}/{operation}",
             json={
                 "requestId": request.request_id,
                 "mode": "steer" if request.mode is SendMode.STEER else "followup",

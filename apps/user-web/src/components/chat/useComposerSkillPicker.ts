@@ -1,5 +1,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch, type Ref } from 'vue'
 import { fetchSelectablePluginCommands, fetchSelectablePluginSkills, fetchSelectableSkills, type SelectableSkillItem } from '../../api/skills'
+import { COMPACTION_COMMAND_ID, SKILL_MENU_ID } from './compactionCommand'
+import { composerMenuEntries } from './composerMenuEntries'
 
 type Scope = 'all' | 'user' | 'organization'
 
@@ -21,6 +23,7 @@ export function useComposerSkillPicker(options: Options) {
   const loading = ref(false)
   const loadingMore = ref(false)
   const scope = ref<Scope>('all')
+  const view = ref<'commands' | 'skills'>('commands')
   const keyword = ref('')
   const cursor = ref('')
   const hasMore = ref(false)
@@ -29,7 +32,12 @@ export function useComposerSkillPicker(options: Options) {
   const commandCursor = ref('')
   const commandHasMore = ref(false)
   const combinedHasMore = computed(() => hasMore.value || pluginHasMore.value || commandHasMore.value)
-  const items = ref<SelectableSkillItem[]>([])
+  const catalogItems = ref<SelectableSkillItem[]>([])
+  const items = computed<SelectableSkillItem[]>(() => {
+    return view.value === 'commands'
+      ? composerMenuEntries(keyword.value, loading.value ? [] : catalogItems.value.filter(item => item.entryKind === 'command'))
+      : catalogItems.value
+  })
   const activeIndex = ref(-1)
   const selectedSkill = ref<SelectableSkillItem | null>(null)
   const triggerRange = ref<{ start: number; end: number } | null>(null)
@@ -40,6 +48,7 @@ export function useComposerSkillPicker(options: Options) {
     open.value = false
     activeIndex.value = -1
     triggerRange.value = null
+    view.value = 'commands'
   }
 
   function normalizeSlashKeyword(value: string, selection = value.length): string | null {
@@ -68,20 +77,23 @@ export function useComposerSkillPicker(options: Options) {
     } else if ((!hasMore.value && !pluginHasMore.value && !commandHasMore.value) || loadingMore.value) return
 
     const requestId = ++requestSequence
-    if (reset) loading.value = true
+    if (reset) {
+      loading.value = true
+      loadingMore.value = false
+    }
     else loadingMore.value = true
     try {
       const [native, plugin, commands] = await Promise.allSettled([
-        options.allowSkills() !== false && (reset || hasMore.value) ? fetchSelectableSkills({
+        view.value === 'skills' && options.allowSkills() !== false && (reset || hasMore.value) ? fetchSelectableSkills({
           userId, mainId: options.mainId() || 'default', scope: scope.value,
           keyword: keyword.value, cursor: reset ? '' : cursor.value, limit: 20,
         }) : Promise.resolve(null),
-        options.allowPluginEntries() && (reset || pluginHasMore.value) ? fetchSelectablePluginSkills({
+        view.value === 'skills' && options.allowPluginEntries() && (reset || pluginHasMore.value) ? fetchSelectablePluginSkills({
           scope: scope.value, keyword: keyword.value,
           cursor: reset ? '' : pluginCursor.value, limit: 20,
         }) : Promise.resolve(null),
-        options.allowPluginEntries() && (reset || commandHasMore.value) ? fetchSelectablePluginCommands({
-          scope: scope.value, keyword: keyword.value,
+        view.value === 'commands' && options.allowPluginEntries() && (reset || commandHasMore.value) ? fetchSelectablePluginCommands({
+          scope: 'all', keyword: keyword.value,
           cursor: reset ? '' : commandCursor.value, limit: 20,
         }) : Promise.resolve(null),
       ])
@@ -90,18 +102,18 @@ export function useComposerSkillPicker(options: Options) {
       const pluginPage = plugin.status === 'fulfilled' ? plugin.value : null
       const commandPage = commands.status === 'fulfilled' ? commands.value : null
       const incoming = [...(nativePage?.items || []), ...(pluginPage?.items || []), ...(commandPage?.items || [])]
-      items.value = reset ? incoming : [...items.value, ...incoming]
+      catalogItems.value = reset ? incoming : [...catalogItems.value, ...incoming]
       cursor.value = nativePage?.nextCursor || ''
       hasMore.value = nativePage?.hasMore || false
       pluginCursor.value = pluginPage?.nextCursor || ''
       pluginHasMore.value = pluginPage?.hasMore || false
       commandCursor.value = commandPage?.nextCursor || ''
       commandHasMore.value = commandPage?.hasMore || false
-      if (reset) activeIndex.value = incoming.findIndex(item => item.available !== false)
+      if (reset) activeIndex.value = items.value.findIndex(item => item.available !== false)
       else if (activeIndex.value >= items.value.length) activeIndex.value = items.value.findIndex(item => item.available !== false)
     } catch {
       if (requestId !== requestSequence) return
-      if (reset) items.value = []
+      if (reset) catalogItems.value = []
       hasMore.value = false
       if (reset) activeIndex.value = -1
     } finally {
@@ -122,6 +134,7 @@ export function useComposerSkillPicker(options: Options) {
     open.value = true
     options.closeAttachmentMenu()
     scheduleSearch(nextKeyword)
+    activeIndex.value = items.value.findIndex(item => item.available !== false)
   }
   function handleInput() {
     options.resizeInput()
@@ -137,6 +150,20 @@ export function useComposerSkillPicker(options: Options) {
   }
   function select(skill: SelectableSkillItem) {
     if (skill.available === false) return
+    if (skill.id === SKILL_MENU_ID) {
+      view.value = 'skills'
+      catalogItems.value = []
+      activeIndex.value = -1
+      void load(true)
+      return
+    }
+    if (skill.id === COMPACTION_COMMAND_ID) {
+      selectedSkill.value = null
+      options.input.value = '/compact'
+      close()
+      nextTick(() => { options.resizeInput(); options.inputElement.value?.focus() })
+      return
+    }
     selectedSkill.value = skill
     const range = triggerRange.value
     if (range) options.input.value = `${options.input.value.slice(0, range.start)}${options.input.value.slice(range.end)}`
@@ -146,6 +173,17 @@ export function useComposerSkillPicker(options: Options) {
       options.resizeInput()
       options.inputElement.value?.focus()
     })
+  }
+
+  function backToCommands() {
+    requestSequence++
+    if (searchTimer) clearTimeout(searchTimer)
+    loading.value = false
+    loadingMore.value = false
+    view.value = 'commands'
+    catalogItems.value = []
+    activeIndex.value = 0
+    void load(true)
   }
   function moveActive(delta: number) {
     const selectable = items.value.map((item, index) => item.available !== false ? index : -1).filter(index => index >= 0)
@@ -189,7 +227,7 @@ export function useComposerSkillPicker(options: Options) {
     if (searchTimer) clearTimeout(searchTimer)
     close()
     selectedSkill.value = null
-    items.value = []
+    catalogItems.value = []
   })
   watch(options.allowSkills, allowed => {
     if (allowed !== false || options.allowPluginEntries()) return
@@ -197,7 +235,7 @@ export function useComposerSkillPicker(options: Options) {
     if (searchTimer) clearTimeout(searchTimer)
     close()
     selectedSkill.value = null
-    items.value = []
+    catalogItems.value = []
   })
   onBeforeUnmount(() => {
     requestSequence += 1
@@ -205,7 +243,7 @@ export function useComposerSkillPicker(options: Options) {
   })
 
   return {
-    open, loading, loadingMore, scope, hasMore: combinedHasMore, items, activeIndex,
+    open, loading, loadingMore, scope, view, backToCommands, hasMore: combinedHasMore, items, activeIndex,
     selectedSkill, close, openPicker, handleInput, load, setScope, select,
     moveActive, selectActive, onScroll, selectShortcutSkill,
   }

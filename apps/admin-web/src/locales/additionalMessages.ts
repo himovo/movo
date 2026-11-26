@@ -1,5 +1,6 @@
 /** Labels that previously had no catalog entry. */
 export const additionalMessages = {
+  'models.contextCapacity': { 'zh-CN': '\u4e0a\u4e0b\u6587\u957f\u5ea6', 'en-US': 'Context length' },
   'toolOutput.importTitle': { 'zh-CN': '\u4ece JSON \u6837\u4f8b\u5bfc\u5165', 'en-US': 'Import JSON sample' },
   'toolOutput.sampleLabel': { 'zh-CN': '\u7c98\u8d34\u5b8c\u6574\u7684\u63a5\u53e3\u54cd\u5e94 JSON', 'en-US': 'Paste the full JSON response' },
   'toolOutput.importFields': { 'zh-CN': '\u751f\u6210\u5b57\u6bb5', 'en-US': 'Generate fields' },

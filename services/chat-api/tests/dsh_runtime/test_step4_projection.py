@@ -26,6 +26,24 @@ def _event(event_type: str, payload: dict, cursor: int = 1) -> KernelEventEnvelo
     )
 
 
+def test_native_compaction_events_update_the_same_visible_activity() -> None:
+    mapper = DshEventMapper(kernel_version="0.2.2-rc.2")
+    projector = KernelEventProjector()
+    rows = []
+    for cursor, kind in enumerate(("compaction/start", "compaction/end"), 1):
+        event = mapper.map_event(
+            {"cursor": cursor, "nativeType": kind, "time": 1000,
+             "data": {"compactionId": "compact-a", "turn": 3}},
+            runtime_id="runtime", session_id="session", profile_version="profile",
+        )
+        rows.append(projector.project(event, message_id="message"))
+    assert rows[0]["item_id"] == rows[1]["item_id"]
+    assert rows[0]["type"] == "item.started"
+    assert rows[1]["type"] == "item.completed"
+    assert rows[0]["payload"]["label"] == "context.compacting"
+    assert rows[1]["payload"]["label"] == "context.compacted"
+
+
 def _profile(version: str, model: str) -> RuntimeProfileSnapshot:
     return RuntimeProfileSnapshot(
         profile_version=version,

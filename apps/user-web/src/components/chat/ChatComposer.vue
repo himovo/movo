@@ -16,11 +16,14 @@ import ComposerActionButton from './ComposerActionButton.vue'
 import ComposerAttachmentPreviews from './ComposerAttachmentPreviews.vue'
 import ComposerSkillPicker from './ComposerSkillPicker.vue'
 import ComposerModelPicker from './ComposerModelPicker.vue'
+import ComposerContextUsage from './ComposerContextUsage.vue'
+import { useContextUsage } from './useContextUsage'
 import ComposerAttachmentMenu from './ComposerAttachmentMenu.vue'
 import ComposerSelections from './ComposerSelections.vue'
 import { useComposerAutofocus } from '../../composables/useComposerAutofocus'
 
 const props = defineProps<{
+  sessionId?: string
   running: boolean
   blocked?: boolean
   stopping?: boolean
@@ -49,6 +52,10 @@ const emit = defineEmits<{
 
 const { locale } = useLocale()
 const message = useMessage()
+const { usage: contextUsage, loading: contextUsageLoading, refresh: refreshContextUsage } = useContextUsage({
+  sessionId: () => props.sessionId, modelId: () => props.selectedModelId,
+  active: () => props.active && !props.isNewSessionView, running: () => props.running,
+})
 
 const userInput = ref('')
 const composerInputRef = ref<HTMLTextAreaElement | null>(null)
@@ -78,6 +85,7 @@ const isComposingText = ref(false)
 const {
   open: skillPickerOpen, loading: skillPickerLoading, loadingMore: skillPickerLoadingMore,
   scope: skillPickerScope, hasMore: skillPickerHasMore, items: skillPickerItems,
+  view: skillPickerView, backToCommands: backToComposerCommands,
   activeIndex: activeSkillIndex, selectedSkill, close: closeSkillPicker,
   openPicker: openSkillPicker, handleInput: handleComposerInput,
   load: loadSelectableSkills, setScope: setSkillPickerScope, select: selectSkill,
@@ -242,7 +250,8 @@ function onComposerKeydown(event: KeyboardEvent) {
     }
     if (event.key === 'Escape') {
       event.preventDefault()
-      closeSkillPicker()
+      if (skillPickerView.value === 'skills') backToComposerCommands()
+      else closeSkillPicker()
       return
     }
   }
@@ -403,10 +412,12 @@ watch(() => props.allowKnowledge, (allowed) => {
           v-if="skillPickerOpen"
           ref="skillPickerRef"
           :items="skillPickerItems"
+          :view="skillPickerView"
           :scope="skillPickerScope"
-          :loading="skillPickerLoading"
+          :loading="skillPickerView === 'skills' && skillPickerLoading"
           :loading-more="skillPickerLoadingMore"
           :has-more="skillPickerHasMore"
+          @back="backToComposerCommands"
           :active-index="activeSkillIndex"
           @scope="setSkillPickerScope"
           @select="selectSkill"
@@ -451,6 +462,12 @@ watch(() => props.allowKnowledge, (allowed) => {
         />
         <slot name="model-actions" />
         <div class="flex-1"></div>
+        <ComposerContextUsage
+          :usage="contextUsage"
+          :loading="contextUsageLoading"
+          :selected-model-id="selectedModelId"
+          @refresh="refreshContextUsage"
+        />
         <ComposerModelPicker
           ref="modelSelectorRef"
           :models="chatModels"

@@ -60,7 +60,8 @@ export class AskaiModelGatewayAdapter extends LlmAdapter {
       provider,
       id: model,
       name: this.config.displayName || model,
-      contextWindow: this.config.contextWindow || undefined,
+      context: this.config.contextWindow ? { contextWindow: this.config.contextWindow } : undefined,
+      defaultMaxTokens: this.config.maxOutputTokens || undefined,
       inputModalities: this.config.visionEnabled ? ['text', 'image'] : ['text'],
     }
   }

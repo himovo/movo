@@ -575,6 +575,7 @@ useChatWindowLifecycle({
       <ChatComposer
         v-else
         ref="composerRef"
+        :session-id="props.sessionId"
         :active="props.active"
         :running="isLoading"
         :blocked="Boolean(props.foreignRun || props.foreignRunFinished || props.serverRunUnattached)"

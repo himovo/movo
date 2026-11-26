@@ -51,10 +51,15 @@ import { resolvePluginCommand, requireCurrentCommand } from './plugin-command-se
 import { installIsolatedExecutionAdmission } from './isolated-execution-admission.mjs'
 import { NativePluginWeb } from './native-plugin-web.mjs'
 import { migrateLegacyHostStorage } from './plugin-user-home.mjs'
+import { NativeCompactionCommand } from './native-compaction-command.mjs'
+import { readContextUsage } from './official-host/context-usage.mjs'
+import { SharedOperation } from './shared-operation.mjs'
 
 export class KernelRuntime {
   #ctx
   #handles = new Map()
+  #resuming = new SharedOperation()
+  #compactionCommand = new NativeCompactionCommand()
   #journal = new EventJournal()
   #liveAssistantStream = new LiveAssistantStream(this.#journal)
   #plugins
@@ -280,6 +285,13 @@ export class KernelRuntime {
   }
 
   async resumeSession(sessionId, cursorFloor = 0) {
+    if (!Number.isSafeInteger(cursorFloor) || cursorFloor < 0) throw new TypeError('cursor floor must be a nonnegative safe integer')
+    const result = await this.#resuming.run(sessionId, () => this.#resumeSession(sessionId, cursorFloor))
+    this.#journal.ensureCursorFloor(sessionId, cursorFloor)
+    return result
+  }
+
+  async #resumeSession(sessionId, cursorFloor = 0) {
     this.#assertStarted()
     if (!Number.isSafeInteger(cursorFloor) || cursorFloor < 0) throw new TypeError('invalid cursor floor')
     const live = this.#handles.get(sessionId)
@@ -298,9 +310,10 @@ export class KernelRuntime {
       setup: composition.setup,
     })
     this.#handles.set(sessionId, handle)
+    const commands = new Set()
     this.#journal.resetFromEvents(
       sessionId,
-      persisted.events.flatMap(event => compatibleSessionEvents(event)),
+      persisted.events.flatMap(event => compatibleSessionEvents(event, commands)),
     )
     this.#journal.ensureCursorFloor(sessionId, cursorFloor)
     this.#journal.append(sessionId, 'agent/status', { status: handle.agent.status })
@@ -309,6 +322,8 @@ export class KernelRuntime {
 
   async send({ sessionId, mode, content, temporalContext, turnContext, permissionPreset, approvalReviewer, approvalPolicy }) {
     const agent = this.#requireAgent(sessionId)
+    if (this.#compactionCommand.isActive(sessionId)) throw new Error('Session has an active compaction command')
+    if (this.#compactionCommand.accepts(content)) return this.#compactionCommand.start(this.#ctx, agent)
     if (agent.session?.header?.agentPreset === 'code' && (permissionPreset !== undefined || approvalReviewer !== undefined || approvalPolicy !== undefined)) {
       const policy = codePermissionPolicy({ permissionPreset, approvalReviewer, approvalPolicy })
       this.#ctx.permissionPresets.set(agent.session, policy.permissionPreset)
@@ -386,8 +401,13 @@ export class KernelRuntime {
     return { commandId: execution.commandId, result: execution.result }
   }
 
+  async compact(sessionId) {
+    return this.#compactionCommand.start(this.#ctx, this.#requireAgent(sessionId))
+  }
+
   async cancel(sessionId, cause) {
     const agent = this.#requireAgent(sessionId)
+    await this.#compactionCommand.cancel(sessionId)
     return await cancelSessionWork(this.#ctx, agent, cause)
   }
 
@@ -471,6 +491,10 @@ export class KernelRuntime {
     return await this.describeSession(this.#requireAgent(sessionId))
   }
 
+  async contextUsage(sessionId) {
+    return readContextUsage(this.#ctx, this.#requireAgent(sessionId), this.#compactionCommand.isActive(sessionId))
+  }
+
   async upgradeContractInventory(sessionId) {
     const agent = this.#requireAgent(sessionId)
     const assembly = await this.#ctx.systemPrompt.assemble(assembleContextFor(agent))
@@ -483,6 +507,7 @@ export class KernelRuntime {
   async disposeSession(sessionId) {
     const handle = this.#handles.get(sessionId)
     if (handle === undefined) return { disposed: false }
+    await this.#compactionCommand.cancel(sessionId)
     this.#handles.delete(sessionId)
     this.#temporalContext.remove(sessionId)
     this.#turnContext.remove(sessionId)
@@ -539,10 +564,12 @@ export class KernelRuntime {
   }
 
   async dispose() {
+    await this.#resuming.drain()
     this.#deferredToolDispose?.()
     this.#deferredSkillDispose?.()
     this.#deferredResourceDispose?.()
     for (const [sessionId, handle] of [...this.#handles.entries()]) {
+      await this.#compactionCommand.cancel(sessionId)
       this.#handles.delete(sessionId)
       handle.agent.cancel({ kind: 'disposed' })
       await handle.dispose()

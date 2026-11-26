@@ -26,6 +26,7 @@ class FakeHostTransport:
         self.kernel_version = "0.1.0-rc.6"
         self.last_send_payload: Mapping[str, Any] | None = None
         self.last_session_payload: Mapping[str, Any] | None = None
+        self.compact_requests = 0
 
     async def request(
         self,
@@ -51,6 +52,9 @@ class FakeHostTransport:
                 "presetId": json["presetId"],
                 "workspaceId": json.get("workspaceId"),
             }
+        if method == "POST" and path.endswith("/compact"):
+            self.compact_requests += 1
+            return {"accepted": True, "messageId": "compact-1"}
         if method == "POST" and path.endswith("/send"):
             self.last_send_payload = json
             return {"accepted": True, "messageId": "message-1"}
@@ -143,6 +147,20 @@ def test_gateway_forwards_predecessor_identity_for_native_session_seed() -> None
         assert transport.last_session_payload["seedRuntimeId"] == "runtime-old"
         assert transport.last_session_payload["seedSessionId"] == "session-old"
 
+    asyncio.run(run())
+
+
+def test_compact_uses_a_dedicated_route_and_never_sends_an_llm_message() -> None:
+    async def run() -> None:
+        transport = FakeHostTransport()
+        gateway, session_id = await _prepared_gateway(transport)
+        result = await gateway.send(SendRequest(
+            session_id=session_id, request_id="compact-request",
+            content=[ContentBlock(type="text", data={"text": "/compact"})],
+        ))
+        assert result == "compact-1"
+        assert transport.compact_requests == 1
+        assert transport.last_send_payload is None
     asyncio.run(run())
 
 

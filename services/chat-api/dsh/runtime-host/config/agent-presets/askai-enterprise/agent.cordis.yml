@@ -2,6 +2,15 @@
 # Enterprise tools are registered by the ASKAI Tool Gateway on the host plane;
 # this scoped row only supplies the ASKAI persona. Code sessions select DSH's
 # shipped `code` preset instead of copying any of its composition here.
+- id: compaction-basic
+  name: '@deepseek-ai/dsh-compaction-basic'
+  config:
+    headroomTokens: 2048
+    maxTokens: 4096
+
+- id: command-compact
+  name: '@deepseek-ai/dsh-command-compact'
+
 - id: askai-enterprise-persona
   name: '../../../src/official-host/enterprise-preset-plugin.mjs'
 

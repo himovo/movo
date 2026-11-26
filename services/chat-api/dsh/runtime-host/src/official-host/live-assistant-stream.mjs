@@ -8,6 +8,7 @@ function stepKey(turn, step) {
 export class LiveAssistantStream {
   #journal
   #attempts = new Map()
+  #commands = new Set()
 
   constructor(journal) {
     this.#journal = journal
@@ -49,7 +50,7 @@ export class LiveAssistantStream {
     const attempt = this.#attempts.get(session.id)?.get(stepKey(event.data?.turn, event.data?.step))
     const settled = event.type === 'assistant/message' || event.type === 'assistant/attempt'
     // DSH commits the durable event before publishing the matching end frame.
-    const events = settled && attempt !== undefined ? [event] : compatibleSessionEvents(event)
+    const events = settled && attempt !== undefined ? [event] : compatibleSessionEvents(event, this.#commands)
     for (const compatible of events) {
       this.#journal.append(session.id, compatible.type, compatible.data, compatible.seq ?? event.seq)
     }

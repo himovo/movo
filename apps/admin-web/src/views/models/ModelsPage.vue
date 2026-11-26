@@ -217,6 +217,9 @@
           <n-grid-item v-if="form.groupId" :span="2">
             <n-alert type="info" :bordered="false">{{ t('modelGroup.sharedConnection', { name: groups.find((item) => item.id === form.groupId)?.name || '' }) }}</n-alert>
           </n-grid-item>
+          <n-grid-item>
+            <ModelContextCapacityField v-model="form.maxContextTokens" />
+          </n-grid-item>
           <n-grid-item :span="2"><ModelPricingFields v-model="form.pricing" /></n-grid-item>
           <n-grid-item v-if="hasImageCapability" :span="2">
             <ImageModelRuntimeFields
@@ -300,6 +303,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import ModelContextCapacityField from '@/components/models/ModelContextCapacityField.vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { NAlert, useDialog, useMessage } from 'naive-ui';
@@ -384,6 +388,7 @@ const defaultForm = (): ModelForm => ({
   orgId: '',
   displayName: '',
   modelName: '',
+  maxContextTokens: 0,
   baseUrl: '',
   apiVersion: '',
   apiKey: '',
@@ -589,6 +594,7 @@ function openEdit(row: ModelInstanceItem) {
     orgId: row.orgId,
     displayName: row.displayName,
     modelName: row.modelName,
+    maxContextTokens: row.maxContextTokens || 0,
     baseUrl: row.baseUrl,
     apiVersion: row.apiVersion || '',
     apiKey: '',
@@ -652,7 +658,7 @@ async function saveModel() {
       runtimeKind: hasImageCapability.value ? form.value.runtimeKind || recommendedImageRuntime(currentProvider.value) : '',
       imageSettings: hasImageCapability.value ? { ...form.value.imageSettings } : {},
       pricing: form.value.pricing,
-      maxContextTokens: 0,
+      maxContextTokens: form.value.maxContextTokens || 0,
       status: form.value.status,
       isDefault: false,
     };

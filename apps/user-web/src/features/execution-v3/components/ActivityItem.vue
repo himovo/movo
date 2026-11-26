@@ -32,6 +32,7 @@ const stateText = computed(() => {
 const text = computed(() => {
   const payload = props.item.payload || {}
   if (props.item.kind === 'activity') {
+    if (category.value === 'compaction') return t(String(payload.label || 'context.compacting'))
     if (category.value === 'skill') {
       const automatic = payload.selection_mode === 'automatic'
       const organization = payload.source_scope === 'organization'

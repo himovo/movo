@@ -315,6 +315,12 @@ class ModelGatewayService:
     @staticmethod
     def _classify_provider_failure(exc: Exception) -> tuple[str, bool]:
         text = str(exc).lower()
+        if any(value in text for value in (
+            "context_length_exceeded", "context_window_exceeded",
+            "maximum context length", "context window exceeded",
+            "context length exceeded", "prompt is too long", "input is too long",
+        )):
+            return "context_window_exceeded", False
         if any(value in text for value in ("401", "403", "unauthorized", "api key", "authentication")):
             return "model_authentication_failed", False
         if any(value in text for value in ("insufficient quota", "balance", "credits exhausted")):

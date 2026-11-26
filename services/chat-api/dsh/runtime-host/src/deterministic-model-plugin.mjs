@@ -29,7 +29,7 @@ class AskaiDeterministicAdapter extends LlmAdapter {
   }
 
   async resolveModel(provider, model) {
-    return { provider, id: model, name: model, contextWindow: 32_768 }
+    return { provider, id: model, name: model, context: { contextWindow: 32_768 } }
   }
 
   async *stream(options) {

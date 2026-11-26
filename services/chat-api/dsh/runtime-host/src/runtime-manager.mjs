@@ -2,9 +2,11 @@ import { randomUUID } from 'node:crypto'
 import { rm } from 'node:fs/promises'
 import { KernelRuntime } from './kernel-runtime.mjs'
 import { normalizeModelProfile } from './model-profile.mjs'
+import { SharedOperation } from './shared-operation.mjs'
 
 export class RuntimeManager {
   #runtimes = new Map()
+  #creation = new SharedOperation()
   #isolationOwners = new Map()
 
   constructor({ storageRoot }) {
@@ -19,7 +21,11 @@ export class RuntimeManager {
     await this.dispose(runtime.runtimeId)
   }
 
-  async create({ isolationKey, profileVersion, modelProfile }, options = {}) {
+  async create(body, options = {}) {
+    return this.#creation.run(body.isolationKey, () => this.#create(body, options))
+  }
+
+  async #create({ isolationKey, profileVersion, modelProfile }, options = {}) {
     if (this.#isolationOwners.has(isolationKey)) {
       throw new Error(`isolation key already has a runtime: ${isolationKey}`)
     }
@@ -74,6 +80,7 @@ export class RuntimeManager {
   }
 
   async disposeAll() {
+    await this.#creation.drain()
     for (const runtimeId of [...this.#runtimes.keys()]) await this.dispose(runtimeId)
   }
 

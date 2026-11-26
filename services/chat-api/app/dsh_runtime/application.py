@@ -44,6 +44,7 @@ from app.governance.position_policy import MongoEmployeePolicyResolver
 from app.governance.topic_admission import TopicAdmissionService
 from app.services.presentation.execution import PresentationJobRepository
 from app.product.extensions import get_product_extension
+from app.dsh_runtime.context_usage import ContextUsageReader
 
 
 class DshRuntimeApplication:
@@ -52,6 +53,7 @@ class DshRuntimeApplication:
     def __init__(self) -> None:
         self._transport: HttpKernelHostTransport | None = None
         self.chat: DshChatService | None = None
+        self.context_usage: ContextUsageReader | None = None
         self.claim_recovery: TurnTerminalRecovery | None = None
         self.tools: EnterpriseToolService | None = None
         self.desktop_bootstrap: DesktopRuntimeBootstrapService | None = None
@@ -154,6 +156,7 @@ class DshRuntimeApplication:
                 if os.environ.get("MOVO_SANDBOX_MANAGER_URL", "").strip() else None,
             ),
         )
+        self.context_usage = ContextUsageReader(bindings=bindings, coordinator=coordinator, gateway=gateway)
         self.plugin_ui = PluginUiService(
             publisher=publisher, coordinator=coordinator,
             runtime_host_url=settings.DSH_RUNTIME_HOST_URL,

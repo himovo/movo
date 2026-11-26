@@ -1,6 +1,7 @@
 import { resolve } from 'node:path'
 
 import { planOverlayRows } from './overlay-planner.mjs'
+import { NATIVE_COMPACTION_CONFIG } from './compaction-config.mjs'
 
 export const ASKAI_DSH_HOST_OVERLAY_VERSION = 'askai-dsh-host-v2'
 export const ASKAI_ENTERPRISE_PRESET_ID = 'askai-enterprise'
@@ -32,6 +33,17 @@ function hostRows({ askaiPresetRoot, shippedPresetRoot, storageDomainRoot, hostF
         description: '使用 MOVO 企业工具的普通会话',
         order: 0,
         plugins: [
+          {
+            id: 'compaction', name: 'cordis:group', group: true,
+            isolate: { compaction: true },
+            config: [
+              {
+                id: 'compaction-basic', name: '@deepseek-ai/dsh-compaction-basic',
+                config: { ...NATIVE_COMPACTION_CONFIG },
+              },
+              { id: 'command-compact', name: '@deepseek-ai/dsh-command-compact' },
+            ],
+          },
           { id: 'askai-enterprise-persona', name: resolve(askaiPresetRoot, '..', '..', 'src', 'official-host', 'enterprise-preset-plugin.mjs') },
           { id: 'tool-web', name: '@deepseek-ai/dsh-tool-web', config: { fetch: false, searchMaxResults: 8, searchTimeoutMs: 60000 } },
           { id: 'tool-skill', name: '@deepseek-ai/dsh-tool-skill' },

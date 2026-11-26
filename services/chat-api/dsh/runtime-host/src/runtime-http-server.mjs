@@ -253,6 +253,9 @@ export class RuntimeHttpServer {
         return sendJson(response, 200, { value: await runtime.callDeferredTool(sessionId, name, args, signal, operation) })
       }
       if (request.method === 'GET' && parts.length === 5) return sendJson(response, 200, await runtime.describeLiveSession(sessionId))
+      if (request.method === 'GET' && parts[5] === 'context' && parts.length === 6) {
+        return sendJson(response, 200, await runtime.contextUsage(sessionId))
+      }
       if (request.method === 'GET' && parts[5] === 'plugin-capabilities' && parts.length === 6) {
         return sendJson(response, 200, await runtime.managedSessionCapabilities(sessionId))
       }
@@ -267,6 +270,9 @@ export class RuntimeHttpServer {
       }
       if (request.method === 'POST' && parts[5] === 'send') {
         return sendJson(response, 202, await runtime.send({ sessionId, ...await readJson(request) }))
+      }
+      if (request.method === 'POST' && parts[5] === 'compact' && parts.length === 6) {
+        return sendJson(response, 202, await runtime.compact(sessionId))
       }
       if (request.method === 'POST' && parts[5] === 'plugin-command' && parts.length === 6) {
         const body = await readJson(request)

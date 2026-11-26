@@ -399,6 +399,8 @@ async def _test_model_gateway_enforces_scope_maps_messages_and_usage() -> None:
         (RuntimeError("429 rate limit"), "model_rate_limited", True),
         (RuntimeError("insufficient quota"), "model_quota_exhausted", False),
         (TimeoutError("timed out"), "model_timeout", True),
+        (RuntimeError("context_length_exceeded"), "context_window_exceeded", False),
+        (RuntimeError("maximum context length is 128000 tokens"), "context_window_exceeded", False),
     ],
 )
 def test_model_gateway_normalizes_provider_failures(

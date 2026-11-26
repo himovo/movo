@@ -124,6 +124,7 @@ async def request_logging_middleware(request, call_next):
 
 from app.api.endpoints import (
     auth,
+    context_usage,
     dsh_chat,
     chat_file_preview,
     desktop_release,
@@ -197,6 +198,7 @@ app.include_router(skill_shares.router, prefix="/api")
 app.include_router(session_shares.router, prefix="/api")
 app.include_router(session_snapshots.router, prefix="/api")
 app.include_router(session_live.router, prefix="/api")
+app.include_router(context_usage.router, prefix="/api")
 app.include_router(resource_feedback.router, prefix="/api")
 app.include_router(personal_knowledge.router, prefix="/api")
 app.include_router(site_profiles.router, prefix="/api")
