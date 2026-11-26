@@ -8,6 +8,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.enterprise_capabilities.data.script_environment_help import SCRIPT_WORKSPACE_SYSTEM_INSTRUCTION
 from app.llm.base import BaseLLMClient
 from app.llm.configured_models import (
     ModelConfigError,
@@ -68,7 +69,6 @@ class ModelGatewayService:
         self._validate_scope(request, claims)
         try:
             client = await self._client_factory(claims.model_instance_id, claims.tenant_id, request, claims.user_id)
-            messages = self._messages(request)
             kwargs: dict[str, Any] = {}
             if request.maxTokens:
                 kwargs["max_tokens"] = request.maxTokens
@@ -80,6 +80,7 @@ class ModelGatewayService:
             if tools:
                 kwargs["tools"] = to_openai_chat_tools(tools)
                 kwargs["tool_choice"] = "auto"
+            messages = self._messages(request, provider_tools=kwargs.get("tools"))
             log_tool_offer(session_id=request.sessionId or "", profile_version=request.profileVersion,
                            model_id=request.modelInstanceId, model_name=request.model,
                            incoming=request.tools, visible=tools, knowledge_only=request.knowledgeQaEnabled)
@@ -120,7 +121,6 @@ class ModelGatewayService:
             code, retryable = self._classify_provider_failure(exc)
             raise ModelGatewayFailure(code, self._safe_message(exc), retryable=retryable) from exc
 
-        messages = self._messages(request)
         kwargs: dict[str, Any] = {}
         if request.maxTokens:
             kwargs["max_tokens"] = request.maxTokens
@@ -132,6 +132,7 @@ class ModelGatewayService:
         if tools:
             kwargs["tools"] = to_openai_chat_tools(tools)
             kwargs["tool_choice"] = "auto"
+        messages = self._messages(request, provider_tools=kwargs.get("tools"))
         log_tool_offer(session_id=request.sessionId or "", profile_version=request.profileVersion,
                        model_id=request.modelInstanceId, model_name=request.model,
                        incoming=request.tools, visible=tools, knowledge_only=request.knowledgeQaEnabled)
@@ -228,10 +229,15 @@ class ModelGatewayService:
             raise ModelGatewayFailure("provider_scope_mismatch", "provider scope mismatch", retryable=False)
 
     @staticmethod
-    def _messages(request: ModelGatewayRequest) -> list[Message]:
+    def _messages(
+        request: ModelGatewayRequest, *, provider_tools: list[dict[str, Any]] | None = None,
+    ) -> list[Message]:
         result: list[Message] = []
-        if request.system:
-            result.append(Message(role=Role.SYSTEM, content=request.system))
+        system = request.system or ""
+        if any(tool["function"]["name"] == "run_script" for tool in provider_tools or []):
+            system = "\n\n".join(filter(None, (system, SCRIPT_WORKSPACE_SYSTEM_INSTRUCTION)))
+        if system:
+            result.append(Message(role=Role.SYSTEM, content=system))
         for raw in normalize_tool_history(request.messages):
             role_value = str(raw.get("role") or "user")
             try:

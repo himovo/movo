@@ -1,5 +1,16 @@
 """Server task-container capabilities exposed to the agent."""
 
+SCRIPT_WORKSPACE_SYSTEM_INSTRUCTION = (
+    "MOVO script workspace policy: The server sandbox root filesystem is read-only. "
+    "For run_script, use the writable directories supplied by MOVO at runtime. "
+    "Build intermediate files under work_dir and put deliverable files under the current "
+    "call's output_dir. In a custom run(inputs, context), use context['work_dir'] and "
+    "context['output_dir']. Use these values to build absolute paths and pass them to Skill "
+    "functions or commands that take a write destination. When adapting a Skill example, "
+    "replace its example write destinations, such as /app, with the appropriate "
+    "runtime directory. Keep read paths for inputs, templates, and installed Skill resources intact."
+)
+
 SCRIPT_ENVIRONMENT_HELP = (
     "The server task sandbox includes curl, wget, ssh, git, jq, and Python/Node runtimes. "
     "A selected Skill is optional. Use Python subprocess to run these commands when needed. "

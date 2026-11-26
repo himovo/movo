@@ -285,6 +285,48 @@ def test_model_gateway_enforces_scope_maps_messages_and_usage() -> None:
     asyncio.run(_test_model_gateway_enforces_scope_maps_messages_and_usage())
 
 
+@pytest.mark.parametrize("knowledge_only", [False, True])
+def test_gateway_exposes_script_workspace_as_system_instruction(knowledge_only: bool) -> None:
+    client = FakeClient()
+
+    async def factory(*_args):
+        return client
+
+    async def run():
+        tokens = ModelGatewayTokenService("step-3-test-signing-secret")
+        claims = tokens.verify(tokens.issue(
+            tenant_id="tenant-a", profile_version="profile-a", model_instance_id="model-a",
+            user_id="speaker-a",
+        ))
+        request = ModelGatewayRequest(
+            profileVersion="profile-a", modelInstanceId="model-a", provider="askai-model-gateway",
+            model="deepseek-chat", system="enterprise system",
+            messages=[{"role": "user", "content": "build a report"}],
+            tools=[{"name": "run_script"}, {"name": "knowledge_search"}],
+            knowledgeQaEnabled=knowledge_only,
+        )
+        gateway = ModelGatewayService(factory)
+        await gateway.generate(request, claims)
+        stream = await gateway.stream(request, claims)
+        assert [event async for event in stream][-1]["type"] == "finish"
+
+    asyncio.run(run())
+    assert len(client.calls) == 2
+    for messages, kwargs in client.calls:
+        assert [message.role for message in messages] == [Role.SYSTEM, Role.USER]
+        assert messages[1].content == "build a report"
+        assert messages[0].content.startswith("enterprise system")
+        tool_names = {tool["function"]["name"] for tool in kwargs["tools"]}
+        if knowledge_only:
+            assert "run_script" not in tool_names
+            assert messages[0].content == "enterprise system"
+        else:
+            assert "run_script" in tool_names
+            assert "root filesystem is read-only" in messages[0].content
+            assert "context['work_dir']" in messages[0].content
+            assert "context['output_dir']" in messages[0].content
+
+
 def test_model_gateway_accounts_usage_to_signed_speaker(monkeypatch: pytest.MonkeyPatch) -> None:
     captured: dict[str, Any] = {}
 
