@@ -73,11 +73,12 @@ class TurnStateFinalizer:
         if flush is not None:
             await self._step(flush, "persist and flush the terminal event")
         if assistant is not None:
-            delivered = None
-            try:
-                delivered = await deliver_personal_outputs(binding, message_id)
-            except Exception:
-                logger.exception("failed to publish personal workspace outputs")
+            delivered = await self._step(
+                lambda: deliver_personal_outputs(
+                    binding, message_id, include_turn_directory=status == "completed" and clear_conversation,
+                ),
+                "publish workspace outputs",
+            )
             await self._step(
                 lambda: self._conversations.update_assistant_projection(
                     message_id=message_id,

@@ -3,9 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 import asyncio
+import pytest
 
 from app.dsh_runtime import personal_output_delivery as delivery
 from app.dsh_runtime.presented_output_selection import selected_paths
+from app.dsh_runtime.turn_output_directory import turn_output_path, turn_output_prompt
 from app.execution_isolation.personal_space import conversation_space_key
 
 
@@ -93,3 +95,65 @@ def test_delivery_uses_only_persisted_present_events(tmp_path: Path, monkeypatch
     binding = {"execution_location": "server", "tenant_id": "tenant", "user_id": "user", "conversation_id": "chat"}
     documents = asyncio.run(delivery.deliver_personal_outputs(binding, "message"))
     assert [item["filename"] for item in documents] == ["final.html"]
+
+
+def test_missing_presented_file_fails_delivery(tmp_path: Path, monkeypatch) -> None:
+    class Cursor:
+        def sort(self, *_args):
+            return self
+
+        async def __aiter__(self):
+            yield {"kernel_event": _present("missing.html")}
+
+    class Collection:
+        def find(self, *_args):
+            return Cursor()
+
+    monkeypatch.setattr(delivery, "_conversation_root", lambda _binding: tmp_path)
+    monkeypatch.setattr(delivery, "get_db", lambda: SimpleNamespace(kernel_event_inbox=Collection()))
+    binding = {"execution_location": "server", "tenant_id": "tenant", "user_id": "user", "conversation_id": "chat"}
+    with pytest.raises(FileNotFoundError, match="presented files were not found"):
+        asyncio.run(delivery.deliver_personal_outputs(binding, "message"))
+
+
+@pytest.mark.parametrize("presented", [False, True])
+def test_turn_directory_is_a_scoped_delivery_fallback(tmp_path: Path, monkeypatch, presented: bool) -> None:
+    conversation = tmp_path / "conversation"
+    current = conversation / turn_output_path("message")
+    current.mkdir(parents=True)
+    (current / "report.pdf").write_bytes(b"report")
+    (current / "summary.txt").write_text("summary")
+    previous = conversation / turn_output_path("previous")
+    previous.mkdir()
+    (previous / "old.txt").write_text("old")
+    draft = conversation / "draft.txt"
+    draft.write_text("draft")
+    (current / "draft-link.txt").symlink_to(draft)
+    uploads = []
+
+    class Cursor:
+        def sort(self, *_args):
+            return self
+
+        async def __aiter__(self):
+            if presented:
+                yield {"kernel_event": _present(str(turn_output_path("message") / "report.pdf"))}
+
+    class Storage:
+        def upload_bytes_with_path(self, *, content, user_id, file_name, content_type):
+            uploads.append(file_name)
+            return "signed", f"user/{file_name}"
+
+        def sign_url(self, _path):
+            return "signed"
+
+    collection = SimpleNamespace(find=lambda *_args: Cursor())
+    monkeypatch.setattr(delivery, "_conversation_root", lambda _binding: conversation)
+    monkeypatch.setattr(delivery, "get_db", lambda: SimpleNamespace(kernel_event_inbox=collection))
+    monkeypatch.setattr(delivery, "AliyunOSSUploader", Storage)
+    binding = {"execution_location": "server", "tenant_id": "tenant", "user_id": "user", "conversation_id": "chat"}
+    assert str(turn_output_path("message")) in turn_output_prompt(binding, "message")
+    documents = asyncio.run(delivery.deliver_personal_outputs(binding, "message", include_turn_directory=True))
+    assert [item["filename"] for item in documents] == uploads == ["report.pdf", "summary.txt"]
+    explicit_only = asyncio.run(delivery.deliver_personal_outputs(binding, "message"))
+    assert [item["filename"] for item in explicit_only] == (["report.pdf"] if presented else [])

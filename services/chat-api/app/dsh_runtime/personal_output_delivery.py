@@ -1,4 +1,4 @@
-"""Publish explicitly presented server Session files into the conversation."""
+"""Publish selected server Session files into the conversation."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from typing import Any
 from app.execution_isolation.personal_space import conversation_space_key, personal_space_key
 from app.core.db import get_db
 from app.dsh_runtime.presented_output_selection import selected_paths
+from app.dsh_runtime.turn_output_directory import turn_output_files
 from app.utils.oss_uploader import AliyunOSSUploader
 
 
@@ -56,10 +57,14 @@ def _publish(binding: dict[str, Any], files: list[Path]) -> list[dict[str, Any]]
             "url": storage.sign_url(object_path) or signed_url,
             "object_path": object_path,
         })
+    if files and not documents:
+        raise ValueError("presented files exceed delivery limits")
     return documents
 
 
-async def deliver_personal_outputs(binding: dict[str, Any], message_id: str) -> list[dict[str, Any]]:
+async def deliver_personal_outputs(
+    binding: dict[str, Any], message_id: str, *, include_turn_directory: bool = False,
+) -> list[dict[str, Any]]:
     conversation = _conversation_root(binding)
     if conversation is None:
         return []
@@ -70,5 +75,12 @@ async def deliver_personal_outputs(binding: dict[str, Any], message_id: str) -> 
         "kernel_event.source.native_event_type": "deliverables/presented",
     }, {"kernel_event": 1}).sort("cursor", 1)
     events = [row["kernel_event"] async for row in cursor]
-    files = selected_paths(events, conversation, str(binding["conversation_id"]))
-    return await asyncio.to_thread(_publish, binding, files)
+    def publish_outputs() -> list[dict[str, Any]]:
+        files = selected_paths(events, conversation, str(binding["conversation_id"]))
+        if include_turn_directory:
+            files = list(dict.fromkeys([*files, *turn_output_files(conversation, message_id)]))
+        if events and not files:
+            raise FileNotFoundError("presented files were not found in the conversation workspace")
+        return _publish(binding, files) if files else []
+
+    return await asyncio.to_thread(publish_outputs)

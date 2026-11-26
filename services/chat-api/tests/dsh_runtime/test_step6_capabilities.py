@@ -307,6 +307,14 @@ def test_script_contract_requires_explicit_delivery_scope() -> None:
     assert set(definition.input_schema["required"]) == {"code", "delivery_scope"}
 
 
+def test_final_script_without_deliverable_requests_repair() -> None:
+    with pytest.raises(ValueError, match="Final script delivery produced no files"):
+        asyncio.run(run_script({
+            "code": "def run(inputs, context):\n    return {'data': {'result': 'created'}}",
+            "delivery_scope": "final",
+        }, _context()))
+
+
 def test_ordinary_script_cannot_redirect_artifact_scan_by_reassigning_output_dir(monkeypatch) -> None:
     class Storage:
         def upload_bytes_with_path(self, content, user_id, file_name, content_type=None):

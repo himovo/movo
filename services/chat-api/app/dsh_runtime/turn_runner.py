@@ -30,6 +30,7 @@ from app.dsh_runtime.turn_finalization import (
     TurnStateFinalizer,
 )
 from app.dsh_runtime.turn_reply_buffer import classified_turn_events
+from app.dsh_runtime.turn_output_directory import turn_output_prompt
 from app.enterprise_capabilities.evidence import ExecutionEvidenceRepository
 from app.dsh_runtime.image_input import image_content_blocks
 from app.dsh_runtime.personal_inputs import stage_personal_inputs
@@ -154,12 +155,14 @@ class DshTurnRunner:
                 list((turn_context or {}).get("images") or []),
                 user_id=image_owner_user_id or str(binding["user_id"]),
             )
+            delivery_prompt = turn_output_prompt(binding, message_id)
+            references = reference_prompt((turn_context or {}).get("knowledge_references") or [])
             await self._gateway.send(
                 SendRequest(
                     session_id=str(binding["kernel_session_id"]),
                     request_id=request_id,
                     mode=SendMode.FOLLOWUP,
-                    content=[ContentBlock(type="text", data={"text": text + reference_prompt((turn_context or {}).get("knowledge_references") or [])}), *image_blocks],
+                    content=[ContentBlock(type="text", data={"text": text + references + delivery_prompt}), *image_blocks],
                     temporal_context=temporal_context,
                     turn_context=kernel_turn_context(turn_context),
                 )

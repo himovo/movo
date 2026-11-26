@@ -462,6 +462,25 @@ async function refreshPaneLiveState(pane: ChatRuntimePane, generation: number, s
   handle.openFreshStream(cursor)
 }
 
+async function reconcileFinishedMessage(pane: ChatRuntimePane, sessionId: string, attempt = 0): Promise<void> {
+  const auth = pane.liveAuth
+  if (!auth || pane.sessionId !== sessionId || findPaneByKey(pane.key) !== pane) return
+  let detail: SessionDetail
+  try {
+    detail = await getSession(sessionId, auth.userId, auth.mainId, auth.authToken)
+  } catch {
+    if (attempt < 4 && pane.sessionId === sessionId && pane.liveAuth === auth) {
+      window.setTimeout(() => { void reconcileFinishedMessage(pane, sessionId, attempt + 1) }, 1000 * 2 ** attempt)
+    }
+    return
+  }
+  if (pane.sessionId !== sessionId || pane.liveAuth !== auth || findPaneByKey(pane.key) !== pane) return
+  pane.messages = mergeAuthoritativeMessages(pane.messages, detail.messages || []).messages
+  for (const message of pane.messages) {
+    if (message.role === 'assistant') reconcileMessageExecutionSnapshot(message)
+  }
+}
+
 /**
  * T8 removed-member 404: a 401/404/410 close carries no revocable frame, so
  * the pane probes readability exactly once — an unreadable session latches
@@ -1028,6 +1047,7 @@ async function sendMessage(key: string, input: SendInput, callbacks: RuntimeCall
     assistantMsg.evidence_bundles = assistantMsg._execV3?.state.evidenceBundles || undefined
 
     const resolvedSessionId = assistantMsg._backendSid || pane.sessionId
+    if (resolvedSessionId) await reconcileFinishedMessage(pane, resolvedSessionId)
     await refreshAfterRun(callbacks, resolvedSessionId)
   }
 }
@@ -1167,6 +1187,7 @@ export function useChatRuntimeStore(callbacks: RuntimeCallbacks = {}) {
             if (pane.abortController === controller) pane.abortController = null
             pane.activeAssistantMessageId = null
             setPaneRunning(pane, false)
+            if (pane.sessionId) await reconcileFinishedMessage(pane, pane.sessionId)
             await refreshAfterRun(callbacks, pane.sessionId)
           }
         })()

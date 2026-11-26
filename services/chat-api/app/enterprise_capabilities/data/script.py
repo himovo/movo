@@ -88,5 +88,12 @@ async def run_script(arguments: dict[str, Any], context: CapabilityExecutionCont
     if terminal_status != "succeeded":
         detail = f": {terminal_error}" if terminal_error else ""
         raise RuntimeError(f"script plugin failed: {terminal_status or 'unknown'}{detail}")
+    if str(arguments.get("delivery_scope") or "").lower() == "final" and not (
+        artifacts.get("documents") or artifacts.get("images")
+    ):
+        raise ValueError(
+            "Final script delivery produced no files. Write deliverables to context['output_dir'] "
+            "or use present for completed files in the conversation workspace."
+        )
     scoped = apply_result_delivery_scope(artifacts, arguments.get("delivery_scope"))
     return {"success": True, **scoped}

@@ -3,6 +3,7 @@ import test from 'node:test'
 import { findMarkdownDocument, upsertDocumentEverywhere } from '../src/components/chat/documentArtifacts'
 import type { DocumentInfo } from '../src/components/chat/types'
 import { ensureMessageExecutionV3, reconcileMessageExecutionSnapshot } from '../src/features/execution-v3/stores/messageExecution'
+import { artifactReferences } from '../src/components/chat/artifactReferences'
 
 test('replacing an exported document updates the existing message and artifact', () => {
   const previous: DocumentInfo = { id: 'doc-1', type: 'docx', url: '/old', filename: 'report.docx' }
@@ -38,4 +39,14 @@ test('persisted plugin outputs join existing tool artifacts after a live snapsho
   reconcileMessageExecutionSnapshot(message)
   reconcileMessageExecutionSnapshot(message)
   assert.deepEqual(store.state.artifacts.map((artifact) => artifact.filename), ['first.xlsx', 'report.docx'])
+})
+
+test('delivered HTML resolves by unique filename and exact path', () => {
+  const first = { id: 'first', ts: 1, kind: 'html', filename: 'report.html', object_path: 'user/first/report.html' }
+  assert.equal(artifactReferences([first])['report.html'], first.object_path)
+  const second = { id: 'second', ts: 2, kind: 'html', filename: 'report.html', object_path: 'user/second/report.html' }
+  const references = artifactReferences([first, second])
+  assert.equal(references['report.html'], undefined)
+  assert.equal(references[first.object_path], first.object_path)
+  assert.equal(references[second.object_path], second.object_path)
 })

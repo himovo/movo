@@ -41,6 +41,12 @@ function inline(tokens: Token[], props: { fileReferences: boolean; artifactPaths
     if (token.type === 'text') { append(token.content); continue }
     if (token.type === 'softbreak' || token.type === 'hardbreak') { append(h('br')); continue }
     if (token.type === 'code_inline') {
+      const artifact = Object.prototype.hasOwnProperty.call(props.artifactPaths, token.content)
+        ? props.artifactPaths[token.content] : null
+      if (artifact) {
+        append(h('button', { type: 'button', 'data-artifact-path': artifact, class: 'assistant-inline-code assistant-file-reference' }, token.content))
+        continue
+      }
       const path = props.fileReferences ? workspaceFileReference(token.content) : null
       append(h('code', { class: path ? 'assistant-inline-code assistant-file-reference' : 'assistant-inline-code', ...(path ? { 'data-workspace-file': path, role: 'button', tabindex: 0 } : {}) }, token.content))
       continue

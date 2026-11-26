@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from app.enterprise_capabilities.data.script_engine.artifact_export import export_script_artifacts
+from app.enterprise_capabilities.data.script_engine import executor as script_executor
 
 
 class Storage:
@@ -42,6 +43,20 @@ def test_generated_html_is_delivered_as_a_document(tmp_path: Path):
     )
     assert result["documents"][0]["type"] == "html"
     assert result["documents"][0]["object_path"] == "user-a/report.html"
+
+
+def test_undeclared_html_in_call_output_is_delivered(tmp_path: Path, monkeypatch):
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+    (output_dir / "report.html").write_bytes(b"sandbox output")
+    monkeypatch.setattr(script_executor, "export_script_artifacts", lambda **kwargs: export_script_artifacts(
+        **kwargs, uploader=Storage(),
+    ))
+    result = script_executor.ScriptPluginExecutor()._build_artifacts(
+        result={"data": {}, "artifacts": []}, output_dir=output_dir,
+        user_id="user-a", duration_ms=1, stderr="",
+    )
+    assert [document["filename"] for document in result["documents"]] == ["report.html"]
 
 
 def test_generated_python_is_delivered_without_a_document_format_allowlist(tmp_path: Path):

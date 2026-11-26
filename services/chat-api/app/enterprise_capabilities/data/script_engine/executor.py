@@ -557,6 +557,12 @@ class ScriptPluginExecutor(BaseExecutor):
         raw_artifacts = result.get("artifacts") if isinstance(result.get("artifacts"), list) else []
         if not raw_artifacts and isinstance(result.get("files"), list):
             raw_artifacts = result.get("files") or []
+        if not raw_artifacts:
+            raw_artifacts = [
+                {"path": path.relative_to(output_dir).as_posix(), "filename": path.name}
+                for path in sorted(output_dir.rglob("*"))
+                if path.is_file() and not path.is_symlink() and "__pycache__" not in path.parts
+            ]
         exported = export_script_artifacts(
             raw_artifacts=raw_artifacts,
             output_dir=output_dir,

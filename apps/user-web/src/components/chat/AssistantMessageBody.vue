@@ -9,6 +9,7 @@ import LocalBrowserInterventionPrompt from '../execution/LocalBrowserInterventio
 import { ensureMessageExecutionV3 } from '../../features/execution-v3/stores/messageExecution'
 import { visibleAnswerArtifacts } from '../../features/execution-v3/domain/artifactVisibility'
 import { withoutCodeChangeArtifacts } from './codeChangeArtifacts'
+import { artifactReferences } from './artifactReferences'
 import type { ArtifactItem } from '../../features/execution-v3/domain/delivery'
 import type { DshCodeSession, DshTaskChangeSet } from '../../platform/types'
 import type { Locale } from '../../locales/messages'
@@ -53,16 +54,7 @@ const store = computed(() => ensureMessageExecutionV3(props.message))
 const artifactPaths = computed(() => {
   const state = store.value.state
   const artifacts = withoutCodeChangeArtifacts(visibleAnswerArtifacts(state.artifacts, state.runStatus), props.codeSession ? props.message._codeChanges : undefined)
-  const references: Record<string, string> = {}
-  const names = new Map<string, string | null>()
-  for (const item of artifacts) {
-    const key = item.object_path || item.id
-    if (!key) continue
-    if (item.object_path) references[item.object_path] = key
-    if (item.filename) names.set(item.filename, names.has(item.filename) ? null : key)
-  }
-  for (const [name, key] of names) if (key) references[name] = key
-  return references
+  return artifactReferences(artifacts)
 })
 
 </script>
