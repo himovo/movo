@@ -175,12 +175,22 @@
                       <template #icon><ToolIcon name="schema" /></template>
                       {{ t('legacy.generate_from_response') }}
                     </n-button>
+                    <ToolOutputSample @import="applyOutputSchema" />
                     <n-button type="primary" ghost @click="addOutputNode()">
                       <template #icon><ToolIcon name="add" /></template>
                       {{ t('legacy.add_field_f2772f0') }}
                     </n-button>
                   </n-space>
                 </div>
+
+                <details class="output-decoding">
+<summary>{{ t('toolOutput.decodeField') }}</summary>
+<n-input
+                  v-model:value="form.config.responseJsonPath"
+                  :placeholder="t('toolOutput.decodeField')"
+                />
+                <small>{{ t('toolOutput.decodeHint') }}</small>
+</details>
                 <SchemaEditor
                   mode="output"
                   :nodes="outputSchema"

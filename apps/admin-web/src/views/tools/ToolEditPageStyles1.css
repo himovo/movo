@@ -280,3 +280,15 @@
   font-size: 13px;
   font-weight: 600;
 }
+.output-decoding {
+  margin: 12px 0;
+  flex-shrink: 0;
+}
+:deep(.schema-empty) {
+  flex: 1;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}

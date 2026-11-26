@@ -18,6 +18,7 @@ from app.llm.factory import get_llm_client
 from app.llm.types import Message, Role
 from app.services.external_tool_limits import enabled_mcp_tool_names, validate_mcp_activation
 from app.services.http_proxy_policy import should_trust_environment_proxy
+from app.services.http_tool_response import decode_response_json_field
 from app.services.mcp_call_result import build_mcp_call_outcome
 from app.services.mcp_streamable_http import StreamableHttpMcpClient
 
@@ -587,9 +588,14 @@ class ExternalToolService:
         resolved = self._resolve_http_request(tool, test_input)
         if resolved["executionMode"] == "plugin_gateway":
             result = await self._test_http_via_plugin_gateway(tool, resolved)
-            result["debug"] = self._build_debug_trace(resolved, tool)
-            return result
-        result = await self._test_http_direct(resolved)
+        else:
+            result = await self._test_http_direct(resolved)
+        response_json_path = str(_safe_dict(tool.get("config")).get("responseJsonPath") or "")
+        raw = result.get("raw")
+        decoded = decode_response_json_field(raw, response_json_path)
+        if decoded is not raw:
+            result["raw"] = decoded
+            result["responseSummary"] = _short_text(decoded)
         result["debug"] = self._build_debug_trace(resolved, tool)
         return result
 

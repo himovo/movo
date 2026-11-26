@@ -318,3 +318,15 @@
   min-width: 900px;
   grid-template-columns: 180px minmax(260px, 1fr) 140px 140px 72px 132px;
 }
+.output-decoding {
+  margin: 12px 0;
+  flex-shrink: 0;
+}
+:deep(.schema-empty) {
+  flex: 1;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}

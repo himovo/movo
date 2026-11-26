@@ -238,12 +238,22 @@
                   <template #icon><n-icon><SparklesOutline /></n-icon></template>
                   {{ t('legacy.generate_output_schema') }}
                 </n-button>
+                <ToolOutputSample @import="applyOutputSchema" />
                 <n-button type="primary" ghost @click="addOutputNode()">
                   <template #icon><n-icon><AddOutline /></n-icon></template>
                   {{ t('legacy.add_field') }}
                 </n-button>
               </n-space>
             </div>
+
+            <details class="output-decoding">
+<summary>{{ t('toolOutput.decodeField') }}</summary>
+<n-input
+              v-model:value="form.config.responseJsonPath"
+              :placeholder="t('toolOutput.decodeField')"
+            />
+            <small>{{ t('toolOutput.decodeHint') }}</small>
+</details>
             <SchemaEditor
               mode="output"
               :nodes="outputSchema"
