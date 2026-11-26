@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import uuid
 from typing import Any, Dict, Iterable, List
@@ -43,18 +44,49 @@ class StreamableHttpMcpClient:
             transport=self._transport,
             trust_env=should_trust_environment_proxy(self._endpoint),
         ) as client:
-            initialized = await self._initialize(client)
-            if initialized is None:
-                return await self._request(client, method, params or {}, self._base_headers())
+            if method == "tools/list":
+                try:
+                    return await asyncio.wait_for(
+                        self._list_tools(client, params or {}), timeout=self._timeout
+                    )
+                except asyncio.TimeoutError as exc:
+                    raise McpTransportError("MCP tool discovery timed out") from exc
 
+            headers = await self._session_headers(client)
+            return await self._request(client, method, params or {}, headers)
+
+    async def _session_headers(self, client: httpx.AsyncClient) -> Dict[str, str]:
+        initialized = await self._initialize(client)
+        headers = self._base_headers()
+        if initialized is not None:
             session_id, protocol_version = initialized
-            session_headers = self._base_headers()
-            session_headers["MCP-Protocol-Version"] = protocol_version
+            headers["MCP-Protocol-Version"] = protocol_version
             if session_id:
-                session_headers["Mcp-Session-Id"] = session_id
+                headers["Mcp-Session-Id"] = session_id
+            await self._notify_initialized(client, headers)
+        return headers
 
-            await self._notify_initialized(client, session_headers)
-            return await self._request(client, method, params or {}, session_headers)
+    async def _list_tools(
+        self, client: httpx.AsyncClient, params: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        headers = await self._session_headers(client)
+        page = await self._request(client, "tools/list", params, headers)
+        tools = []
+        seen_cursors = set()
+        while True:
+            page_tools = page.get("tools")
+            if not isinstance(page_tools, list):
+                raise McpTransportError("MCP tools/list response is missing a tools array")
+            tools.extend(page_tools)
+
+            cursor = page.pop("nextCursor", None)
+            if cursor is None:
+                return {**page, "tools": tools}
+            if not isinstance(cursor, str) or not cursor or cursor in seen_cursors:
+                raise McpTransportError("MCP tools/list returned an invalid or repeated cursor")
+            seen_cursors.add(cursor)
+            page = await self._request(client, "tools/list", {**params, "cursor": cursor}, headers)
+
     async def _initialize(self, client: httpx.AsyncClient) -> tuple[str, str] | None:
         request_id = uuid.uuid4().hex
         headers = self._base_headers()

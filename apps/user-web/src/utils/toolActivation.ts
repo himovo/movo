@@ -1,8 +1,6 @@
 import type { ExternalToolItem, ToolPayload } from '../api/tools';
 import { t } from '../composables/i18n';
 
-export const MCP_ENABLED_TOOL_LIMIT = 50;
-
 type ToolLike = Pick<ExternalToolItem, 'type' | 'status' | 'config' | 'discoveredTools' | 'name'>;
 
 export function enabledMcpToolNames(config: Record<string, any> | undefined): string[] {
@@ -14,10 +12,7 @@ export function mcpActivationError(tool: ToolLike | ToolPayload): string {
   if (tool.type !== 'mcp' || tool.status !== 'active') return '';
   const names = enabledMcpToolNames(tool.config);
   if (names.length === 0) {
-    return t('toolActivation.selectRequired', { limit: MCP_ENABLED_TOOL_LIMIT });
-  }
-  if (names.length > MCP_ENABLED_TOOL_LIMIT) {
-    return t('toolActivation.overLimit', { count: names.length, limit: MCP_ENABLED_TOOL_LIMIT });
+    return t('toolActivation.selectRequired');
   }
   return '';
 }
@@ -30,9 +25,6 @@ export function nextMcpToolSelection(current: string[], name: string, checked: b
     return { names: currentNames.filter((item) => item !== normalized), error: '' };
   }
   if (currentNames.includes(normalized)) return { names: currentNames, error: '' };
-  if (currentNames.length >= MCP_ENABLED_TOOL_LIMIT) {
-    return { names: currentNames, error: t('toolActivation.selectionLimit', { limit: MCP_ENABLED_TOOL_LIMIT }) };
-  }
   return { names: [...currentNames, normalized], error: '' };
 }
 

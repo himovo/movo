@@ -16,7 +16,7 @@ from app.core.db import get_db
 from app.core.tenant import add_main_scope, resolve_main_id
 from app.llm.factory import get_llm_client
 from app.llm.types import Message, Role
-from app.services.external_tool_limits import MCP_ENABLED_TOOL_LIMIT, enabled_mcp_tool_names, validate_mcp_activation
+from app.services.external_tool_limits import enabled_mcp_tool_names, validate_mcp_activation
 from app.services.http_proxy_policy import should_trust_environment_proxy
 from app.services.mcp_call_result import build_mcp_call_outcome
 from app.services.mcp_streamable_http import StreamableHttpMcpClient
@@ -436,8 +436,6 @@ class ExternalToolService:
             )
         db = get_db()
         update_fields: Dict[str, Any] = {"discovered_tools": _mongo_safe_value(normalized), "updated_at": _now()}
-        if len(normalized) > MCP_ENABLED_TOOL_LIMIT:
-            update_fields["status"] = "disabled"
         await db.external_tools.update_one(
             add_main_scope(
                 {"_id": str(tool_id), **({"scope": "user", "owner_user_id": str(owner_user_id or "").strip()} if str(scope or "organization").strip().lower() == "user" else {})},
@@ -446,8 +444,6 @@ class ExternalToolService:
             {"$set": update_fields},
         )
         message = f"发现 {len(normalized)} 个 MCP tools"
-        if len(normalized) > MCP_ENABLED_TOOL_LIMIT:
-            message += f"，超过 {MCP_ENABLED_TOOL_LIMIT} 个，已保持禁用；请选择不超过 {MCP_ENABLED_TOOL_LIMIT} 个工具后再启用"
         return {"success": True, "tools": normalized, "message": message}
 
     async def execute_runtime(
@@ -493,8 +489,6 @@ class ExternalToolService:
             enabled = set(enabled_mcp_tool_names(config))
             if not enabled:
                 raise ValueError("MCP 未选择可用工具，请先在工具配置中选择允许 Agent 使用的 MCP 工具")
-            if len(enabled) > MCP_ENABLED_TOOL_LIMIT:
-                raise ValueError(f"MCP 启用工具超过上限 {MCP_ENABLED_TOOL_LIMIT} 个，请减少后再调用")
             if tool_name not in enabled:
                 raise ValueError(f"MCP 工具未启用：{tool_name}")
             result = await self._mcp_jsonrpc(
@@ -1002,7 +996,7 @@ class ExternalToolRegistry:
             config = _safe_dict(tool.get("config"))
             if tool["type"] == "mcp":
                 enabled = enabled_mcp_tool_names(config)
-                if not enabled or len(enabled) > MCP_ENABLED_TOOL_LIMIT:
+                if not enabled:
                     logger.warning(
                         "external_tool_registry_skip_mcp main_id=%s tool_id=%s enabled_tool_count=%s",
                         main_id,

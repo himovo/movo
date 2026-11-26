@@ -3,9 +3,6 @@ from __future__ import annotations
 from typing import Any, Mapping
 
 
-MCP_ENABLED_TOOL_LIMIT = 50
-
-
 def _safe_list(value: Any) -> list[Any]:
     return list(value) if isinstance(value, list) else []
 
@@ -15,12 +12,12 @@ def _safe_dict(value: Any) -> dict[str, Any]:
 
 
 def enabled_mcp_tool_names(config: Mapping[str, Any] | None) -> list[str]:
-    names: list[str] = []
+    names: dict[str, None] = {}
     for item in _safe_list(_safe_dict(config).get("enabledToolNames")):
         name = str(item or "").strip()
-        if name and name not in names:
-            names.append(name)
-    return names
+        if name:
+            names[name] = None
+    return list(names)
 
 
 def validate_mcp_activation(*, tool_type: str, status: str, config: Mapping[str, Any] | None) -> str:
@@ -30,7 +27,5 @@ def validate_mcp_activation(*, tool_type: str, status: str, config: Mapping[str,
         return ""
     names = enabled_mcp_tool_names(config)
     if not names:
-        return f"请先选择允许 Agent 使用的 MCP 工具，最多 {MCP_ENABLED_TOOL_LIMIT} 个"
-    if len(names) > MCP_ENABLED_TOOL_LIMIT:
-        return f"MCP 已选择 {len(names)} 个工具，超过上限 {MCP_ENABLED_TOOL_LIMIT} 个，请减少后再启用"
+        return "Please select at least one MCP tool for the Agent."
     return ""

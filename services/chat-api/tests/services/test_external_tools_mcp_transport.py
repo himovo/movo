@@ -2,9 +2,35 @@ import asyncio
 import json
 
 import httpx
+import pytest
 
 from app.services import external_tools
-from app.services.mcp_streamable_http import StreamableHttpMcpClient
+from app.services.mcp_streamable_http import McpTransportError, StreamableHttpMcpClient
+
+
+def test_discovery_rejects_repeated_cursor():
+    cursors = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        payload = json.loads(request.content)
+        if payload["method"] == "initialize":
+            return httpx.Response(405)
+        cursors.append(payload["params"].get("cursor"))
+        return httpx.Response(
+            200,
+            json={
+                "jsonrpc": "2.0",
+                "id": payload["id"],
+                "result": {"tools": [], "nextCursor": "repeated"},
+            },
+        )
+
+    client = StreamableHttpMcpClient(
+        endpoint="https://mcp.example.test/mcp", transport=httpx.MockTransport(handler)
+    )
+    with pytest.raises(McpTransportError, match="repeated cursor"):
+        asyncio.run(client.call("tools/list"))
+    assert cursors == [None, "repeated"]
 
 
 def test_external_tool_service_passes_auth_and_runtime_identity_to_mcp_transport(monkeypatch):
@@ -100,7 +126,9 @@ def test_external_tool_service_completes_real_session_handshake(monkeypatch):
 def test_discovery_debug_and_runtime_paths_all_use_initialized_sessions(monkeypatch):
     methods = []
     sessions = set()
+    discovery_session = {}
     update = {}
+    selected_names = [f"tool_{index}" for index in range(60)]
 
     def handler(request: httpx.Request) -> httpx.Response:
         payload = json.loads(request.content)
@@ -123,6 +151,23 @@ def test_discovery_debug_and_runtime_paths_all_use_initialized_sessions(monkeypa
         if method == "notifications/initialized":
             return httpx.Response(202)
         if method == "tools/list":
+            session_id = request.headers["Mcp-Session-Id"]
+            cursor = payload["params"].get("cursor")
+            if cursor is None:
+                discovery_session["id"] = session_id
+                return httpx.Response(
+                    200,
+                    json={
+                        "jsonrpc": "2.0",
+                        "id": payload["id"],
+                        "result": {
+                            "tools": [{"name": name} for name in selected_names[:40]],
+                            "nextCursor": "second-page",
+                        },
+                    },
+                )
+            assert cursor == "second-page"
+            assert session_id == discovery_session["id"]
             result = {
                 "tools": [
                     {
@@ -130,7 +175,7 @@ def test_discovery_debug_and_runtime_paths_all_use_initialized_sessions(monkeypa
                         "description": "Search records",
                         "inputSchema": {"type": "object"},
                     }
-                ]
+                ] + [{"name": name} for name in selected_names[40:]]
             }
         else:
             assert method == "tools/call"
@@ -165,7 +210,7 @@ def test_discovery_debug_and_runtime_paths_all_use_initialized_sessions(monkeypa
             "endpoint": "https://mcp.example.test/mcp",
             "authType": "bearer",
             "authToken": "configured-token",
-            "enabledToolNames": ["search"],
+            "enabledToolNames": [*selected_names, "search"],
         },
     }
 
@@ -197,7 +242,10 @@ def test_discovery_debug_and_runtime_paths_all_use_initialized_sessions(monkeypa
 
     discovery, connection_test, call_test, runtime = asyncio.run(exercise_all_paths())
 
-    assert discovery["tools"][0]["name"] == "search"
+    assert {entry["name"] for entry in discovery["tools"]} == {*selected_names, "search"}
+    assert not external_tools.validate_mcp_activation(
+        tool_type="mcp", status="active", config=tool["config"]
+    )
     assert connection_test["success"] is True
     assert call_test["raw"]["content"][0]["text"] == "found"
     assert runtime["raw"]["content"][0]["text"] == "found"
@@ -206,8 +254,10 @@ def test_discovery_debug_and_runtime_paths_all_use_initialized_sessions(monkeypa
         "initialize",
         "notifications/initialized",
         "tools/list",
+        "tools/list",
         "initialize",
         "notifications/initialized",
+        "tools/list",
         "tools/list",
         "initialize",
         "notifications/initialized",
@@ -216,4 +266,7 @@ def test_discovery_debug_and_runtime_paths_all_use_initialized_sessions(monkeypa
         "notifications/initialized",
         "tools/call",
     ]
-    assert update["operation"]["$set"]["discovered_tools"][0]["name"] == "search"
+    fields = update["operation"]["$set"]
+    assert fields["discovered_tools"] == discovery["tools"]
+    assert "status" not in fields
+    assert "config" not in fields
