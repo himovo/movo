@@ -4,6 +4,7 @@ import type { KnowledgeReference } from '../../api/knowledgeReferences'
 import AnsweredQuestionMessage from './AnsweredQuestionMessage.vue'
 import UserMessageActions from './UserMessageActions.vue'
 import UserMessageAuthor from './UserMessageAuthor.vue'
+import CollapsibleUserText from './CollapsibleUserText.vue'
 import type { QuestionAnswerEntry } from './questionAnswerHistory'
 import type { DocumentInfo } from './types'
 import { getDisplayDocuments } from './documentArtifacts'
@@ -66,7 +67,7 @@ function normalizeUserContent(content: string): string {
       {{ t('scheduled.autoSent') }}
     </div>
     <AnsweredQuestionMessage v-if="message.question_answer" :entry="message.question_answer" />
-    <div v-else class="whitespace-pre-wrap leading-7">{{ normalizeUserContent(message.content) }}</div>
+    <CollapsibleUserText v-else :text="normalizeUserContent(message.content)" :locale="locale" />
     <KnowledgeReferenceChips :items="message.knowledge_references || []" />
     <div v-if="message.images?.length" class="mt-3 flex flex-wrap gap-2">
     <img
