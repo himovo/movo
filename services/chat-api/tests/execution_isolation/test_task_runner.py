@@ -67,6 +67,20 @@ def test_ordinary_python_reuses_download_across_call_output_directories(tmp_path
     assert first_lines[0].split()[1] != second_lines[1].split()[1]
 
 
+def test_output_variable_and_invented_environment_variable_are_not_equivalent(tmp_path: Path) -> None:
+    completed = _run(tmp_path, compile_script_plugin(
+        "import os\nfrom pathlib import Path\n"
+        "os.environ.pop('OUT_DIR', None)\n"
+        "print(os.environ.get('OUT_DIR') or '/app')\n"
+        "Path(output_dir).joinpath('report.html').write_text('<h1>ready</h1>', encoding='utf-8')\n"
+    ), "directory-contract")
+    assert completed.returncode == 0, completed.stderr
+    result = json.loads(completed.stdout)
+    assert result['data']['stdout'] == ['/app']
+    assert result['artifacts'] == [{'path': 'report.html', 'filename': 'report.html'}]
+    assert (tmp_path / 'calls/directory-contract/out/report.html').read_text() == '<h1>ready</h1>'
+
+
 def test_ordinary_python_preserves_multiline_file_contents(tmp_path: Path) -> None:
     completed = _run(tmp_path, compile_script_plugin(
         "from pathlib import Path\n"

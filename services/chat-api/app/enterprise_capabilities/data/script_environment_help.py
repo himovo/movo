@@ -9,6 +9,14 @@ SCRIPT_WORKSPACE_SYSTEM_INSTRUCTION = (
     "functions or commands that take a write destination. When adapting a Skill example, "
     "replace its example write destinations, such as /app, with the appropriate "
     "runtime directory. Keep read paths for inputs, templates, and installed Skill resources intact."
+    " Before every write, derive the destination from the supplied runtime directories. "
+    "In ordinary Python, output_dir and work_dir are already defined variables; "
+    "for example: Path(output_dir).joinpath('report.html').write_text(html, encoding='utf-8'). "
+    "In a custom run(inputs, context), use Path(context['output_dir']) instead. "
+    "Do not invent environment variables such as OUT_DIR or OUTPUT_DIR, and do not use "
+    "hard-coded write destinations such as /app, /root, /usr, /etc, /opt, a filesystem root, "
+    "or client-device paths. Do not fall back to these locations when a directory is missing; "
+    "report the missing runtime directory instead. This restriction concerns writes, not reads."
 )
 
 SCRIPT_ENVIRONMENT_HELP = (
@@ -22,7 +30,10 @@ SCRIPT_ENVIRONMENT_HELP = (
     "In a custom run(inputs, context), build absolute paths from context['output_dir'] for final "
     "files and context['work_dir'] for intermediate files. Pass those paths explicitly to Skill "
     "functions and subprocesses that accept an output path; their defaults may use a different "
-    "directory. The current directory and the Skill installation directory are not output destinations. "
+    "directory. Ordinary Python must use the supplied output_dir variable for deliverables, "
+    "not os.environ.get('OUT_DIR') or a hard-coded fallback such as /app. "
+    "A custom run(inputs, context) must return a dictionary, not a path string or a list. "
+    "The current directory and the Skill installation directory are not output destinations. "
     "home_dir is the user's persistent server file space across turns. conversation_dir is its "
     "current conversation folder. Use conversation_dir for conversation-specific files. "
     "Internal call directories are archived for audit and removed when the turn ends. "
