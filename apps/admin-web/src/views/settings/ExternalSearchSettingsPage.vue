@@ -261,7 +261,7 @@
                   </n-form-item>
                 </n-grid-item>
 
-                <n-grid-item v-if="selectedProvider === 'baidu_qianfan' || selectedProvider === 'deepseek'" :span="2">
+                <n-grid-item v-if="selectedProvider === 'baidu_qianfan' || selectedProvider === 'deepseek' || selectedProvider === 'specstream'" :span="2">
                   <n-form-item label="Endpoint">
                     <n-input v-model:value="form.endpoint">
                       <template #prefix>

@@ -64,6 +64,14 @@ PROVIDERS: dict[str, dict[str, Any]] = {
         "model": "",
         "priority": 50,
     },
+    "specstream": {
+        "label": "SpecStream",
+        "description": "使用 SpecStream Search API 检索实时网页，支持快速模式。",
+        "endpoint": "https://api.specstream.ai/v1/web-search",
+        "base_url": "",
+        "model": "",
+        "priority": 60,
+    },
 }
 
 
@@ -193,6 +201,18 @@ async def test_provider(provider: str, config: dict[str, str], query: str) -> li
                 {"query": search_query, "count": 3, "need_content": False},
             )
             return _reference_rows(data.get("results"))
+        if token == "specstream":
+            data = _post_json(
+                config["endpoint"],
+                {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "Authorization": f"Bearer {config['api_key']}",
+                },
+                {"q": search_query, "num": 3, "speed": "fast"},
+            )
+            payload_data = data.get("data") if isinstance(data, dict) and isinstance(data.get("data"), dict) else data
+            return _reference_rows(payload_data.get("sources") if isinstance(payload_data, dict) else None)
         if token == "tavily":
             data = _post_json(
                 "https://api.tavily.com/search",
